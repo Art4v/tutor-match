@@ -17,12 +17,8 @@ export default function HomePage() {
 
   return (
     <div className="bg-white">
-      <section className="max-w-[1200px] mx-auto px-6 pt-20 pb-16">
+      <section className="max-w-[1200px] mx-auto px-6 pt-40 pb-16">
         <div className="max-w-[820px]">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] text-slate-600 mb-6" style={{ border: "1px solid #E5E7EB", background: "#FAFAFA" }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#10B981" }} />
-            4,425 verified tutors · accepting students now
-          </div>
           <h1 className="text-[56px] md:text-[64px] font-semibold text-slate-900 leading-[1.05] tracking-[-0.025em]">
             Find a tutor who's<br />
             <span className="text-slate-500">been where you're going.</span>
@@ -74,15 +70,11 @@ export default function HomePage() {
         <h2 className="text-[24px] font-semibold text-slate-900 tracking-tight mb-10">How tutormatch works</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
-            { n: "01", t: "Browse verified profiles", b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate." },
-            { n: "02", t: "Message before you book", b: "Discuss your goals and lesson schedule directly. Most tutors offer a free 20-minute intro call." },
-            { n: "03", t: "Lessons, in-person or online", b: "Pay safely through tutormatch. We hold payment until 24 hours after the lesson — no agency markup." },
+            { n: "01", t: "Browse verified profiles", b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.", href: "/browse" },
+            { n: "02", t: "Message before you book", b: "Discuss your goals and lesson schedule directly. Most tutors offer a free 20-minute intro call.", href: "/messages" },
+            { n: "03", t: "Lessons, in-person or online", b: "Pay safely through tutormatch. We hold payment until 24 hours after the lesson — no agency markup.", href: "/#top" },
           ].map((s) => (
-            <div key={s.n} className="p-6" style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}>
-              <div className="text-[12.5px] font-semibold tabular-nums text-slate-400 mb-3 tracking-wider">{s.n}</div>
-              <div className="text-[17px] font-semibold text-slate-900 mb-2">{s.t}</div>
-              <p className="text-[14px] text-slate-600 leading-[1.55]">{s.b}</p>
-            </div>
+            <HowItWorksCard key={s.n} {...s} />
           ))}
         </div>
       </section>
@@ -123,6 +115,35 @@ export default function HomePage() {
 
       <Footer />
     </div>
+  );
+}
+
+function HowItWorksCard({ n, t, b, href }) {
+  const [hover, setHover] = useState(false);
+  const onClick = (e) => {
+    if (href === "/#top") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="p-6 block"
+      style={{
+        border: `1px solid ${hover ? "#D1D5DB" : "#E5E7EB"}`,
+        borderRadius: 14,
+        transform: hover ? "translateY(-2px)" : "translateY(0)",
+        transition: "transform 180ms ease-out, border-color 180ms ease-out",
+      }}
+    >
+      <div className="text-[12.5px] font-semibold tabular-nums text-slate-400 mb-3 tracking-wider">{n}</div>
+      <div className="text-[17px] font-semibold text-slate-900 mb-2">{t}</div>
+      <p className="text-[14px] text-slate-600 leading-[1.55]">{b}</p>
+    </a>
   );
 }
 
