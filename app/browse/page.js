@@ -66,20 +66,19 @@ function BrowsePage() {
   return (
     <div className="bg-white">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="mb-6">
-          <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500 mb-3">
-            <Link href="/" className="hover:text-slate-900">Home</Link>
-            <Icon name="chevron-right" size={12} />
-            <span className="text-slate-700">All tutors</span>
-          </div>
-          <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
-            {searchQuery ? <>Results for &ldquo;{searchQuery}&rdquo;</> : "All tutors"}
-          </h1>
-          <div className="text-[14px] text-slate-500 mt-1 tabular-nums">{results.length} tutors match your filters</div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
           <aside className="space-y-6">
+            <div>
+              <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500 mb-3">
+                <Link href="/" className="hover:text-slate-900">Home</Link>
+                <Icon name="chevron-right" size={12} />
+                <span className="text-slate-700">All tutors</span>
+              </div>
+              <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+                {searchQuery ? <>Results for &ldquo;{searchQuery}&rdquo;</> : "All tutors"}
+              </h1>
+              <div className="text-[14px] text-slate-500 mt-1 tabular-nums">{results.length} tutors match your filters</div>
+            </div>
             <FilterGroup title="Location">
               <select
                 value={filters.city}
@@ -88,13 +87,19 @@ function BrowsePage() {
                 style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}
               >
                 <option>All</option>
-                <option>Sydney, NSW</option>
+                <option>Bondi</option>
+                <option>Parramatta</option>
+                <option>Manly</option>
+                <option>Cronulla</option>
+                <option>Penrith</option>
+                <option>Coogee</option>
+                <option>Randwick</option>
               </select>
             </FilterGroup>
 
             <FilterGroup title="Year level">
               <div className="grid grid-cols-2 gap-1.5">
-                {["All", "Year 9", "Year 10", "Year 11", "Year 12"].map((y) => (
+                {["All", "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6", "Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12"].map((y) => (
                   <Chip key={y} active={filters.yearLevel === y} onClick={() => setFilters({ ...filters, yearLevel: y })}>{y}</Chip>
                 ))}
               </div>
@@ -238,10 +243,24 @@ function BrowsePage() {
 }
 
 function FilterGroup({ title, children }) {
+  const [open, setOpen] = useState(true);
   return (
     <div>
-      <div className="text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-2.5">{title}</div>
-      {children}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-2.5 hover:text-slate-700"
+        aria-expanded={open}
+      >
+        <span>{title}</span>
+        <span
+          className="inline-flex text-slate-500"
+          style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 150ms ease-out" }}
+        >
+          <Icon name="chevron-down" size={14} />
+        </span>
+      </button>
+      {open && children}
     </div>
   );
 }

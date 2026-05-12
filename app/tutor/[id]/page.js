@@ -15,7 +15,6 @@ export default function ProfilePage({ params }) {
   const router = useRouter();
   const { savedIds, toggleSave } = useSaved();
   const saved = savedIds.includes(tutor.id);
-  const [tab, setTab] = useState("about");
 
   const onMessage = () => router.push(`/messages?tutor=${tutor.id}`);
 
@@ -109,30 +108,6 @@ export default function ProfilePage({ params }) {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="sticky top-[60px] z-20 bg-white mt-2 pt-2" style={{ borderBottom: "1px solid #E5E7EB" }}>
-          <div className="flex gap-1">
-            {[
-              { id: "about", label: "About" },
-              { id: "experience", label: "Experience" },
-              { id: "reviews", label: `Reviews · ${tutor.reviews}` },
-              { id: "availability", label: "Availability" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className="px-3 pb-3 pt-2 text-[13.5px] font-medium transition-colors"
-                style={{
-                  color: tab === t.id ? "#0F172A" : "#64748B",
-                  borderBottom: tab === t.id ? "2px solid #0F172A" : "2px solid transparent",
-                  marginBottom: -1,
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
           </div>
         </div>
 
