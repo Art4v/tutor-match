@@ -49,15 +49,12 @@ export function TopNav() {
           <span className="text-[11px] text-slate-400 hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border" style={{ borderColor: "#E5E7EB" }}>⌘K</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-1 ml-auto">
-          <NavLink active={isActive("/browse")} href="/browse">Browse</NavLink>
-          <NavLink active={isActive("/messages")} href="/messages">
+        <div className="flex items-center gap-1 ml-auto">
+          <NavLink active={isActive("/browse")} href="/browse" className="hidden md:inline-flex">Browse</NavLink>
+          <NavLink active={isActive("/messages")} href="/messages" className="hidden md:inline-flex">
             Messages
             <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10.5px] font-semibold rounded-full bg-slate-900 text-white">2</span>
           </NavLink>
-        </div>
-
-        <div className="flex items-center gap-2 md:ml-2 ml-auto">
           <Link href="/login">
             <Button variant="ghost" size="sm">Sign in</Button>
           </Link>
@@ -70,11 +67,11 @@ export function TopNav() {
   );
 }
 
-function NavLink({ active, href, children }) {
+function NavLink({ active, href, children, className = "" }) {
   return (
     <Link
       href={href}
-      className="px-3 h-9 inline-flex items-center text-[13.5px] font-medium rounded-md transition-colors"
+      className={`px-3 h-9 items-center text-[13.5px] font-medium rounded-md transition-colors inline-flex ${className}`}
       style={{
         color: active ? "#0F172A" : "#475569",
         background: active ? "#F3F4F6" : "transparent",
