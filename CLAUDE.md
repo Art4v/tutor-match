@@ -1,0 +1,54 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+- `npm run dev` — Next.js dev server on `http://localhost:3000`.
+- `npm run build` — production build. Use this after structural changes to verify the app still compiles. The build requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to be set (placeholders are fine when smoke-testing).
+- `npm run start` — serve the production build locally.
+- `npm run lint` — Next's built-in ESLint.
+
+There are no tests configured.
+
+## Environment
+
+Copy `.env.local.example` → `.env.local` and fill in the two Supabase values. The example file's header comment is the canonical setup checklist (project creation → API keys → running the SQL migration). When this Supabase setup hasn't been done, signup/login will fail at runtime but the rest of the site still works because no public page reads from Supabase yet.
+
+## Architecture
+
+### Big picture
+- **Next.js 14 App Router + JavaScript (no TypeScript) + Tailwind CSS.** Pages live under `app/`; client interactivity is opt-in via `"use client"` at the top of a file. Most pages here are client components because they use `useState`, `useRouter`, or `useSearchParams`.
+- **Public site is currently driven by hardcoded data in `lib/data.js`.** `/browse`, `/tutor/[id]`, and `/messages` read this array directly — Supabase is not yet wired into reads. Slice 1 only added auth pages; subsequent slices are planned to replace `TUTORS` with real queries.
+- **Design system is inline.** The original prototype was an HTML/CSS/JS handoff (preserved in `_design/`, gitignored). Styling is intentionally a mix of Tailwind utility classes for layout and inline `style={{ ... }}` for the specific colors / radii / borders that came from the design. Don't refactor inline styles to a global stylesheet without reason — they keep the design tokens local to where they're used.
+
+### Routes
+
+| Path | File | Notes |
+| --- | --- | --- |
+| `/` | `app/page.js` | Home: hero + search + featured tutors + how-it-works + CTA. |
+| `/browse` | `app/browse/page.js` | Sidebar filters + sortable tutor grid. Reads `?q=` for search query. Wrapped in `Suspense` because of `useSearchParams`. |
+| `/tutor/[id]` | `app/tutor/[id]/page.js` | Profile page with banner, sections, and a sidebar rate card. `notFound()` if id missing. |
+| `/messages` | `app/messages/page.js` | Two-pane messaging with simulated tutor replies. Reads `?tutor=` to deep-link to a conversation. |
+| `/signup`, `/login` | `app/(auth)/...` | Email + password forms. Use `(auth)` route group so they share `app/(auth)/layout.js` (centered card) without affecting URL paths. |
+
+### Auth (Supabase)
+
+- **Schema** lives in `supabase/migrations/0001_init.sql`. Option B layout: a shared `profiles` table 1:1 with `auth.users`, plus role-specific extension tables `tutor_profiles` and `student_profiles` keyed by the same uuid. A `handle_new_user()` trigger reads `role` and `full_name` from `auth.users.raw_user_meta_data` and creates the matching `profiles` + role-specific row atomically on signup. RLS is enabled with self-only policies (public read on `tutor_profiles` will be added in a later slice).
+- **Signup flow**: the form (`app/(auth)/signup/page.js`) calls `supabase.auth.signUp({ email, password, options: { data: { full_name, role } } })`. The role chip (Tutor/Student) decides which extension table gets a row — the database, not the client, makes that decision via the trigger. Do not insert into `profiles` or extension tables directly from the client; let the trigger handle it.
+- **Clients**: `lib/supabase/client.js` for client components (`createBrowserClient`), `lib/supabase/server.js` for server components / route handlers (`createServerClient` wired to `cookies()`). `middleware.js` calls `supabase.auth.getUser()` on every request to refresh the session cookie — the pattern is from the official `@supabase/ssr` docs and the matcher excludes static assets.
+
+### State & navigation
+- `components/SavedContext.js` provides an in-memory "saved tutors" list (no persistence) consumed by `TutorCard` save buttons and the browse page. The provider sits inside `app/layout.js`.
+- Navigation between pages uses `next/link` (`Link`) for static cases and `useRouter().push(...)` for form-submit redirects. Some buttons inside cards stop event propagation (e.g. the save button on `TutorCard`) so the wrapping link doesn't fire.
+
+### Components
+- `components/ui.js` exports the design primitives: `Avatar`, `VerifiedTick`, `OnlineDot`, `Chip`, `Button`. These are the building blocks used across all pages — prefer extending them over inline styles when adding new UI.
+- `components/Icon.js` is a single-file Lucide-style SVG set (40+ icons). Add new icons here rather than importing an icon library; the file is intentionally self-contained.
+- `components/TutorCard.js` is the canonical hover-animated card: `translateY(-2px)` + `border-color` transition driven by `useState(hover)`. Other lift-on-hover cards in the codebase (e.g. the "How tutormatch works" cards on the home page) copy this exact pattern — keep it consistent because Tailwind's `hover:border-...` does not override the inline `style.border`, so the `useState`-driven inline style is the working approach.
+
+### Path alias
+`jsconfig.json` maps `@/*` to the project root. Imports use `@/components/...`, `@/lib/...`, etc.
+
+### `_design/`
+The original HTML/CSS/JS prototype bundle (with a `chat1.md` transcript) lives here for reference. It's gitignored. Treat it as read-only source-of-truth for visual decisions when something seems off in the React port.
