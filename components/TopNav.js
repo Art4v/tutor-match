@@ -58,8 +58,12 @@ export function TopNav() {
         </div>
 
         <div className="flex items-center gap-2 md:ml-2 ml-auto">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/")}>Sign in</Button>
-          <Button variant="primary" size="sm">Become a tutor</Button>
+          <Link href="/login">
+            <Button variant="ghost" size="sm">Sign in</Button>
+          </Link>
+          <Link href="/signup">
+            <Button variant="primary" size="sm">Sign Up</Button>
+          </Link>
         </div>
       </div>
     </div>
