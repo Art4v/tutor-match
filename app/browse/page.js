@@ -89,8 +89,6 @@ function BrowsePage() {
               >
                 <option>All</option>
                 <option>Sydney, NSW</option>
-                <option>Melbourne, VIC</option>
-                <option>Brisbane, QLD</option>
               </select>
             </FilterGroup>
 

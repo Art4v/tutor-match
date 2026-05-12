@@ -52,40 +52,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-[1200px] mx-auto px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[14px] font-semibold text-slate-900 uppercase tracking-wider">Browse by curriculum</h2>
-          <button onClick={() => router.push("/browse")} className="text-[12.5px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1">
-            All subjects <Icon name="arrow-right" size={12} />
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { l: "HSC", n: "1,820 tutors" },
-            { l: "VCE", n: "1,420 tutors" },
-            { l: "QCE", n: "640 tutors" },
-            { l: "IB", n: "310 tutors" },
-            { l: "SAT", n: "180 tutors" },
-            { l: "UCAT", n: "120 tutors" },
-            { l: "Scholarship prep", n: "95 tutors" },
-            { l: "Year 9–10 catch-up", n: "560 tutors" },
-          ].map((p) => (
-            <button
-              key={p.l}
-              onClick={() => router.push("/browse")}
-              className="px-4 py-2.5 text-[13.5px] font-medium text-slate-700 hover:text-slate-900 transition-colors flex items-center gap-2.5"
-              style={{ background: "#F3F4F6", borderRadius: 999 }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#E5E7EB")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#F3F4F6")}
-            >
-              {p.l}
-              <span className="text-slate-400 text-[12px] tabular-nums">{p.n}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-[1200px] mx-auto px-6 mt-20">
+      <section className="max-w-[1200px] mx-auto px-6 mt-6">
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-[24px] font-semibold text-slate-900 tracking-tight">Featured tutors this week</h2>
@@ -103,7 +70,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-[1200px] mx-auto px-6 mt-24">
+      <section className="max-w-[1200px] mx-auto px-6 mt-16">
         <h2 className="text-[24px] font-semibold text-slate-900 tracking-tight mb-10">How tutormatch works</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
@@ -120,7 +87,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-[1200px] mx-auto px-6 mt-24">
+      <section className="max-w-[1200px] mx-auto px-6 mt-16">
         <div
           className="p-10 md:p-14 grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
           style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 20 }}
