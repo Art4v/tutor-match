@@ -13,7 +13,7 @@ There are no tests configured.
 
 ## Environment
 
-Copy `.env.local.example` → `.env.local` and fill in the two Supabase values. The example file's header comment is the canonical setup checklist (project creation → API keys → running the SQL migration). When this Supabase setup hasn't been done, signup/login will fail at runtime but the rest of the site still works because no public page reads from Supabase yet.
+Copy `.env.example` → `.env.local` and fill in the two Supabase values. The example file's header comment is the canonical setup checklist (project creation → API keys → running the SQL migrations). Apply both migrations in `supabase/migrations/` in numeric order in the Supabase SQL Editor — `0001_init.sql` first, then `0002_tutor_profile.sql`. When this Supabase setup hasn't been done, signup/login will fail at runtime but the rest of the site still works because no public page reads from Supabase yet.
 
 ## Architecture
 
@@ -32,11 +32,14 @@ Copy `.env.local.example` → `.env.local` and fill in the two Supabase values. 
 | `/messages` | `app/messages/page.js` | Two-pane messaging with simulated tutor replies. Reads `?tutor=` to deep-link to a conversation. |
 | `/signup`, `/login` | `app/(auth)/...` | Email + password forms. Use `(auth)` route group so they share `app/(auth)/layout.js` (centered card) without affecting URL paths. |
 
-### Auth (Supabase)
+### Supabase
 
-- **Schema** lives in `supabase/migrations/0001_init.sql`. Option B layout: a shared `profiles` table 1:1 with `auth.users`, plus role-specific extension tables `tutor_profiles` and `student_profiles` keyed by the same uuid. A `handle_new_user()` trigger reads `role` and `full_name` from `auth.users.raw_user_meta_data` and creates the matching `profiles` + role-specific row atomically on signup. RLS is enabled with self-only policies (public read on `tutor_profiles` will be added in a later slice).
+- **Schema** lives in `supabase/migrations/`, applied in numeric order:
+  - `0001_init.sql` — Option B layout: a shared `profiles` table 1:1 with `auth.users`, plus role-specific extension tables `tutor_profiles` and `student_profiles` keyed by the same uuid. A `handle_new_user()` trigger reads `role` and `full_name` from `auth.users.raw_user_meta_data` and creates the matching `profiles` + role-specific row atomically on signup. Self-only RLS.
+  - `0002_tutor_profile.sql` — expands `tutor_profiles` with the columns the public profile page needs (bio, atar, rate, availability JSONB, rating, …), adds a seeded `subjects` reference table (17 HSC/UCAT/LSAT subjects), a `tutor_subjects` join table, and ordered child tables `tutor_packages` / `tutor_experience` / `tutor_education` (each with a `position` column). Adds public-read RLS on tutor data; tutor self-write on their own rows.
 - **Signup flow**: the form (`app/(auth)/signup/page.js`) calls `supabase.auth.signUp({ email, password, options: { data: { full_name, role } } })`. The role chip (Tutor/Student) decides which extension table gets a row — the database, not the client, makes that decision via the trigger. Do not insert into `profiles` or extension tables directly from the client; let the trigger handle it.
 - **Clients**: `lib/supabase/client.js` for client components (`createBrowserClient`), `lib/supabase/server.js` for server components / route handlers (`createServerClient` wired to `cookies()`). `middleware.js` calls `supabase.auth.getUser()` on every request to refresh the session cookie — the pattern is from the official `@supabase/ssr` docs and the matcher excludes static assets.
+- **Query helpers**: `lib/supabase/tutors.js` exports `getTutorProfile(supabase, id)`, which selects a tutor row joined with its subjects/packages/experience/education child tables (ordered by `position`) and flattens the `tutor_subjects` join so callers get `subjects: [{ id, name, slug }, ...]`. Defined but not yet consumed — the public pages still read `lib/data.js`. When wiring real data, pass the appropriate client (browser vs. server) in; the helper is client-agnostic.
 
 ### State & navigation
 - `components/SavedContext.js` provides an in-memory "saved tutors" list (no persistence) consumed by `TutorCard` save buttons and the browse page. The provider sits inside `app/layout.js`.

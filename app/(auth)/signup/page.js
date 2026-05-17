@@ -11,7 +11,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("student");
+  const [role, setRole] = useState("tutor");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
@@ -41,7 +41,7 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    router.push("/");
+    router.push("/dashboard");
     router.refresh();
   };
 

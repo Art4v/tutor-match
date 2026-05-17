@@ -1,15 +1,42 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "./Icon";
 import { Button } from "./ui";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [focused, setFocused] = useState(false);
   const [q, setQ] = useState("");
+  const [user, setUser] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) setUser(data.user ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const onLogout = async () => {
+    setLoggingOut(true);
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setLoggingOut(false);
+    router.push("/");
+    router.refresh();
+  };
 
   const isActive = (prefix) => pathname === prefix || pathname.startsWith(prefix + "/");
 
@@ -55,12 +82,36 @@ export function TopNav() {
             Messages
             <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10.5px] font-semibold rounded-full bg-slate-900 text-white">2</span>
           </NavLink>
-          <Link href="/login">
-            <Button variant="ghost" size="sm">Sign in</Button>
-          </Link>
-          <Link href="/signup">
-            <Button variant="primary" size="sm">Sign Up</Button>
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
+                style={{ background: "#F3F4F6" }}
+                title={user.email}
+              >
+                <span
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white"
+                  style={{ background: "#0F172A" }}
+                >
+                  {(user.email || "?").slice(0, 1).toUpperCase()}
+                </span>
+                <span className="max-w-[180px] truncate">{user.email}</span>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={onLogout} disabled={loggingOut}>
+                {loggingOut ? "Logging out…" : "Log out"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">Sign in</Button>
+              </Link>
+              <Link href="/signup">
+                <Button variant="primary" size="sm">Sign Up</Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
