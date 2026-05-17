@@ -3,7 +3,7 @@ import { TopNav } from "@/components/TopNav";
 import { SavedProvider } from "@/components/SavedContext";
 
 export const metadata = {
-  title: "tutormatch — find a tutor who's been where you're going",
+  title: "TutorMatch",
   description: "A directory for high school students looking for serious, verified tutors across Australia.",
 };
 

@@ -72,12 +72,10 @@ export default function SignupPage() {
         <form onSubmit={onSubmit} className="space-y-5">
           <Field label="I am a">
             <div className="flex gap-1.5">
-              <Chip active={role === "student"} onClick={() => setRole("student")}>
-                Student
-              </Chip>
               <Chip active={role === "tutor"} onClick={() => setRole("tutor")}>
                 Tutor
               </Chip>
+              <Chip disabled>Student · Coming soon</Chip>
             </div>
           </Field>
 

@@ -1,0 +1,204 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "@/components/Icon";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSubjectNames, saveTutorProfile } from "@/lib/supabase/tutors";
+import {
+  BannerAvatarSection,
+  IdentitySection,
+  CredentialsSection,
+  AboutSection,
+  StatsSection,
+  RateSection,
+  ExperienceSection,
+  EducationSection,
+  SubjectsSection,
+  ServiceAreaSection,
+  AvailabilitySection,
+  VerificationsSection,
+  Sidebar,
+  SaveBar,
+  MobileSaveBar,
+  Breadcrumb,
+  buildInitialAvailability,
+} from "./sections";
+
+/**
+ * Defaults used when the DB hasn't been populated yet (a brand-new tutor
+ * signup). The handle_new_user() trigger creates an empty tutor_profiles
+ * row, so these mostly cover null columns.
+ */
+function defaultTutor(userId, userEmail, fullName) {
+  return {
+    id: userId,
+    name: fullName || "",
+    role: "",
+    suburb: "",
+    city: "",
+    locationOverride: "",
+    initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
+    avatarBg: "oklch(0.92 0.04 80)",
+    avatarImg: null,
+    verified: false,
+    online: false,
+    deliversInPerson: true,
+    deliversOnline: true,
+    responsiveText: "Usually responds in <1 hr",
+    languages: [],
+    yearsTutoring: 0,
+    credentials: [],
+    bio: "",
+    bioLong: "",
+    atar: 0,
+    rank: "",
+    rankSubject: "",
+    rating: null,
+    reviews: 0,
+    rate: 0,
+    packages: [],
+    experience: [],
+    education: [],
+    subjects: [],
+    serviceArea: { suburb: "", radiusKm: 5 },
+    availability: buildInitialAvailability(),
+    verifications: [
+      { label: "Email verified", done: false },
+      { label: "Phone verified", done: false },
+      { label: "Government ID", done: false },
+      { label: "ATAR transcript", done: false },
+      { label: "Working with Children Check", done: false },
+      { label: "University enrolment", done: false },
+    ],
+    visibility: "public",
+  };
+}
+
+export function DashboardEditor({ initialTutor, userId, userEmail }) {
+  const supabaseRef = useRef(null);
+  if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
+  const supabase = supabaseRef.current;
+
+  const seed = useMemo(
+    () => initialTutor ?? defaultTutor(userId, userEmail),
+    [initialTutor, userId, userEmail]
+  );
+
+  const [tutor, setTutor] = useState(seed);
+  const [snapshot, setSnapshot] = useState(seed);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
+  const [subjectSuggestions, setSubjectSuggestions] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    getSubjectNames(supabase).then((names) => {
+      if (active) setSubjectSuggestions(names);
+    });
+    return () => { active = false; };
+  }, [supabase]);
+
+  const dirty = useMemo(
+    () => JSON.stringify(tutor) !== JSON.stringify(snapshot),
+    [tutor, snapshot]
+  );
+
+  const set = (patch) => setTutor((t) => ({ ...t, ...patch }));
+
+  const showToast = (kind, text, ms = 2400) => {
+    setToast({ kind, text });
+    window.clearTimeout(showToast._timer);
+    showToast._timer = window.setTimeout(() => setToast(null), ms);
+  };
+
+  const onSave = async () => {
+    setSaving(true);
+    const result = await saveTutorProfile(supabase, userId, tutor);
+    setSaving(false);
+    if (!result.ok) {
+      console.error("[dashboard] save failed:", result.error);
+      showToast("error", result.error?.message || "Save failed — please try again.", 4000);
+      return;
+    }
+    setSnapshot(tutor);
+    if (result.droppedSubjects.length > 0) {
+      showToast(
+        "warn",
+        `Saved. Skipped unrecognised subjects: ${result.droppedSubjects.join(", ")}.`,
+        5000
+      );
+    } else {
+      showToast("ok", "Profile saved", 1800);
+    }
+  };
+
+  const onDiscard = () => setTutor(snapshot);
+  const onPreview = () => window.open(`/tutor/${userId}`, "_blank");
+
+  useEffect(() => {
+    const h = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
+
+  const publicHref = `tutormatch.com.au/tutor/${userId}`;
+
+  return (
+    <div className="bg-white min-h-screen pb-32 md:pb-12">
+      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} onPreview={onPreview} />
+
+      <div className="max-w-[1200px] mx-auto px-6">
+        <Breadcrumb />
+
+        <div className="flex items-end justify-between gap-4 mb-7">
+          <div>
+            <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Edit your profile</h1>
+            <p className="text-[14px] text-slate-500 mt-1">Changes appear immediately on your public profile once saved.</p>
+          </div>
+          <div className="hidden lg:block text-[12.5px] text-slate-400 tabular-nums">
+            {dirty ? "Unsaved edits" : "All changes saved"}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+          <div className="space-y-5 min-w-0">
+            <BannerAvatarSection tutor={tutor} set={set} />
+            <IdentitySection tutor={tutor} set={set} />
+            <CredentialsSection tutor={tutor} set={set} />
+            <AboutSection tutor={tutor} set={set} />
+            <StatsSection tutor={tutor} set={set} />
+            <RateSection tutor={tutor} set={set} />
+            <ExperienceSection tutor={tutor} set={set} />
+            <EducationSection tutor={tutor} set={set} />
+            <SubjectsSection tutor={tutor} set={set} suggestions={subjectSuggestions} />
+            <ServiceAreaSection tutor={tutor} set={set} />
+            <AvailabilitySection tutor={tutor} set={set} />
+            <VerificationsSection tutor={tutor} set={set} />
+          </div>
+
+          <div className="lg:sticky lg:top-[88px]">
+            <Sidebar tutor={tutor} set={set} onPreview={onPreview} publicHref={publicHref} />
+          </div>
+        </div>
+      </div>
+
+      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} />
+
+      {toast && (
+        <div
+          className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
+          style={{
+            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "#0F172A",
+            color: "#fff",
+            borderRadius: 999,
+            boxShadow: "0 10px 30px rgba(15,23,42,0.2)",
+            maxWidth: "calc(100vw - 32px)",
+          }}
+        >
+          <Icon name={toast.kind === "ok" ? "check" : toast.kind === "warn" ? "shield" : "x"} size={14} strokeWidth={3} />
+          <span className="truncate">{toast.text}</span>
+        </div>
+      )}
+    </div>
+  );
+}

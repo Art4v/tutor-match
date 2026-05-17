@@ -44,17 +44,18 @@ export function OnlineDot({ size = 8 }) {
   );
 }
 
-export function Chip({ children, tone = "grey", icon, onClick, active }) {
+export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled }) {
   const tones = {
     grey: { bg: active ? "#1F2937" : "#F3F4F6", color: active ? "#fff" : "#374151", border: active ? "#1F2937" : "transparent" },
     line: { bg: "#fff", color: "#374151", border: "#E5E7EB" },
     cream: { bg: "#FAFAFA", color: "#475569", border: "#E5E7EB" },
   };
   const t = tones[tone];
-  const Tag = onClick ? "button" : "span";
+  const clickable = !!onClick && !disabled;
+  const Tag = clickable ? "button" : "span";
   return (
     <Tag
-      onClick={onClick}
+      onClick={clickable ? onClick : undefined}
       className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12.5px] font-medium transition-colors"
       style={{
         background: t.bg,
@@ -62,10 +63,24 @@ export function Chip({ children, tone = "grey", icon, onClick, active }) {
         border: `1px solid ${t.border}`,
         borderRadius: 999,
         lineHeight: 1.2,
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "not-allowed" : clickable ? "pointer" : undefined,
       }}
     >
       {icon && <Icon name={icon} size={12} />}
       {children}
+      {onRemove && !disabled && (
+        <span
+          role="button"
+          aria-label="Remove"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          onMouseDown={(e) => e.preventDefault()}
+          className="inline-flex items-center justify-center -mr-1 ml-0.5 text-slate-500 hover:text-slate-900"
+          style={{ width: 16, height: 16, borderRadius: 999, cursor: "pointer" }}
+        >
+          <Icon name="x" size={10} strokeWidth={2.5} />
+        </span>
+      )}
     </Tag>
   );
 }
