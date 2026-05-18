@@ -1,18 +1,34 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Icon } from "./Icon";
 import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function TopNav() {
   const router = useRouter();
-  const pathname = usePathname();
   const [focused, setFocused] = useState(false);
   const [q, setQ] = useState("");
   const [user, setUser] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -34,11 +50,10 @@ export function TopNav() {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     setLoggingOut(false);
+    setMenuOpen(false);
     router.push("/");
     router.refresh();
   };
-
-  const isActive = (prefix) => pathname === prefix || pathname.startsWith(prefix + "/");
 
   const submitSearch = () => {
     const params = q ? `?q=${encodeURIComponent(q)}` : "";
@@ -46,7 +61,7 @@ export function TopNav() {
   };
 
   return (
-    <div className="sticky top-0 z-30 bg-white" style={{ borderBottom: "1px solid #E5E7EB" }}>
+    <div className="sticky top-0 z-40 bg-white" style={{ borderBottom: "1px solid #E5E7EB" }}>
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2 group">
           <div
@@ -77,14 +92,16 @@ export function TopNav() {
         </div>
 
         <div className="flex items-center gap-1 ml-auto">
-          <NavLink active={isActive("/browse")} href="/browse" className="hidden md:inline-flex">Browse</NavLink>
           {user ? (
-            <>
-              {(() => {
-                const displayName = user.user_metadata?.full_name || user.email || "";
-                return (
-                  <Link
-                    href="/dashboard"
+            (() => {
+              const displayName = user.user_metadata?.full_name || user.email || "";
+              return (
+                <div ref={menuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((o) => !o)}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
                     className="hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
                     style={{ background: "#F3F4F6" }}
                     title={displayName}
@@ -96,13 +113,51 @@ export function TopNav() {
                       {(displayName || "?").slice(0, 1).toUpperCase()}
                     </span>
                     <span className="max-w-[180px] truncate">{displayName}</span>
-                  </Link>
-                );
-              })()}
-              <Button variant="ghost" size="sm" onClick={onLogout} disabled={loggingOut}>
-                {loggingOut ? "Logging out…" : "Log out"}
-              </Button>
-            </>
+                    <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+                  </button>
+                  {menuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-full mt-2 z-40 bg-white"
+                      style={{
+                        border: "1px solid #E5E7EB",
+                        borderRadius: 12,
+                        boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)",
+                        minWidth: 200,
+                        padding: 4,
+                      }}
+                    >
+                      <Link
+                        href="/browse"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
+                      >
+                        Browse
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={onLogout}
+                        disabled={loggingOut}
+                        className="block w-full text-left px-3 py-2 text-[13.5px] hover:bg-slate-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ color: "#DC2626" }}
+                      >
+                        {loggingOut ? "Logging out…" : "Log out"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           ) : (
             <>
               <Link href="/login">
@@ -116,22 +171,5 @@ export function TopNav() {
         </div>
       </div>
     </div>
-  );
-}
-
-function NavLink({ active, href, children, className = "" }) {
-  return (
-    <Link
-      href={href}
-      className={`px-3 h-9 items-center text-[13.5px] font-medium rounded-md transition-colors inline-flex ${className}`}
-      style={{
-        color: active ? "#0F172A" : "#475569",
-        background: active ? "#F3F4F6" : "transparent",
-      }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#F9FAFB"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
-    >
-      {children}
-    </Link>
   );
 }
