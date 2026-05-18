@@ -20,15 +20,18 @@ export default function BrowsePageWrapper() {
 function BrowsePage() {
   const sp = useSearchParams();
   const searchQuery = sp.get("q") || "";
+  const initialSubject = sp.get("subject") || "";
+  const initialCity = sp.get("city") || "All";
+  const initialYear = sp.get("year") || "All";
   const { savedIds, toggleSave } = useSaved();
 
   const [filters, setFilters] = useState({
-    subjects: [],
-    yearLevel: "All",
+    subjects: initialSubject ? [initialSubject] : [],
+    yearLevel: initialYear,
     atarMin: 95,
     mode: "Any",
     rateMax: 150,
-    city: "All",
+    city: initialCity,
   });
   const [sort, setSort] = useState("relevance");
 

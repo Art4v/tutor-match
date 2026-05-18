@@ -53,7 +53,7 @@ export function TopNav() {
             className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-white text-[14px]"
             style={{ background: "#0F172A", letterSpacing: "-0.04em" }}
           >tm</div>
-          <span className="text-[16px] font-semibold text-slate-900 tracking-tight">tutormatch</span>
+          <span className="text-[16px] font-semibold text-slate-900 tracking-tight">TutorMatch</span>
         </Link>
 
         <div

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TUTORS } from "@/lib/data";
 import { Icon } from "@/components/Icon";
@@ -7,12 +7,48 @@ import { Button } from "@/components/ui";
 import { TutorCard } from "@/components/TutorCard";
 import { Footer } from "@/components/Footer";
 
+const LOCATION_OPTIONS = [
+  "Bondi",
+  "Parramatta",
+  "Manly",
+  "Cronulla",
+  "Penrith",
+  "Coogee",
+  "Randwick",
+];
+
+const YEAR_OPTIONS = [
+  "Kindergarden",
+  "Year 1",
+  "Year 2",
+  "Year 3",
+  "Year 4",
+  "Year 5",
+  "Year 6",
+  "Year 7",
+  "Year 8",
+  "Year 9",
+  "Year 10",
+  "Year 11",
+  "Year 12",
+];
+
+const SUBJECT_OPTIONS = Array.from(
+  new Set(TUTORS.flatMap((t) => t.subjects || []))
+);
+
 export default function HomePage() {
   const router = useRouter();
+  const [location, setLocation] = useState("");
+  const [year, setYear] = useState("");
   const [subject, setSubject] = useState("");
   const goBrowse = () => {
-    const params = subject ? `?q=${encodeURIComponent(subject)}` : "";
-    router.push(`/browse${params}`);
+    const params = new URLSearchParams();
+    if (subject) params.set("subject", subject);
+    if (location) params.set("city", location);
+    if (year) params.set("year", year);
+    const qs = params.toString();
+    router.push(`/browse${qs ? `?${qs}` : ""}`);
   };
 
   return (
@@ -29,11 +65,11 @@ export default function HomePage() {
 
           <div
             className="mt-10 grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.4fr_auto] items-stretch bg-white max-w-[860px]"
-            style={{ border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}
+            style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}
           >
-            <SearchField icon="map-pin" label="Location" placeholder="Sydney, NSW" />
-            <SearchField icon="graduation" label="Year" placeholder="Year 12" />
-            <SearchField icon="search" label="Subject" placeholder="Mathematics Ext 2" value={subject} onChange={setSubject} />
+            <SearchField icon="map-pin" label="Location" placeholder="Sydney, NSW" options={LOCATION_OPTIONS} value={location} onChange={setLocation} />
+            <SearchField icon="graduation" label="Year" placeholder="Year 12" options={YEAR_OPTIONS} value={year} onChange={setYear} />
+            <SearchField icon="search" label="Subject" placeholder="Mathematics Ext 2" options={SUBJECT_OPTIONS} value={subject} onChange={setSubject} />
             <div className="p-2 md:p-1.5 flex items-stretch">
               <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>Search</Button>
             </div>
@@ -45,11 +81,11 @@ export default function HomePage() {
       <section className="max-w-[1200px] mx-auto px-6 mt-6">
         <div className="flex items-end justify-between mb-6">
           <div>
-            <h2 className="text-[24px] font-semibold text-slate-900 tracking-tight">Featured tutors this week</h2>
-            <p className="text-[14px] text-slate-500 mt-1">Hand-picked based on student outcomes and recent reviews</p>
+            <h2 className="text-[24px] font-semibold text-slate-900 tracking-tight">Browse our Tutors</h2>
+            <p className="text-[14px] text-slate-500 mt-1">Have a look at all the tutors currently listed.</p>
           </div>
           <button onClick={() => router.push("/browse")} className="text-[13.5px] text-slate-700 hover:text-slate-900 hidden md:inline-flex items-center gap-1">
-            See all 4,425 <Icon name="arrow-right" size={13} />
+            See all<Icon name="arrow-right" size={13} />
           </button>
         </div>
 
@@ -133,20 +169,58 @@ function HowItWorksCard({ n, t, b }) {
   );
 }
 
-function SearchField({ icon, label, placeholder, value, onChange }) {
+function SearchField({ icon, label, placeholder, value, onChange, options = [] }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  const select = (opt) => {
+    onChange && onChange(opt);
+    setOpen(false);
+  };
+
   return (
-    <label className="flex items-center gap-3 px-4 py-3 cursor-text border-r last:border-r-0" style={{ borderColor: "#E5E7EB" }}>
-      <Icon name={icon} size={16} className="text-slate-400 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{label}</div>
-        <input
-          placeholder={placeholder}
-          value={value || ""}
-          onChange={(e) => onChange && onChange(e.target.value)}
-          className="w-full bg-transparent outline-none text-[14px] text-slate-900 placeholder:text-slate-400 mt-0.5"
-        />
-      </div>
-    </label>
+    <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "#E5E7EB" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+      >
+        <Icon name={icon} size={16} className="text-slate-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{label}</div>
+          <div className={"text-[14px] mt-0.5 truncate " + (value ? "text-slate-900" : "text-slate-400")}>
+            {value || placeholder}
+          </div>
+        </div>
+        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+      </button>
+      {open && options.length > 0 && (
+        <div
+          className="absolute left-2 right-2 top-full mt-2 z-40 bg-white max-h-[260px] overflow-y-auto"
+          style={{ border: "1px solid #E5E7EB", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => select(opt)}
+              className="w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100"
+              style={{ background: value === opt ? "#F3F4F6" : "transparent" }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
