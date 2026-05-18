@@ -84,20 +84,25 @@ export function TopNav() {
           </NavLink>
           {user ? (
             <>
-              <Link
-                href="/dashboard"
-                className="hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
-                style={{ background: "#F3F4F6" }}
-                title={user.email}
-              >
-                <span
-                  className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white"
-                  style={{ background: "#0F172A" }}
-                >
-                  {(user.email || "?").slice(0, 1).toUpperCase()}
-                </span>
-                <span className="max-w-[180px] truncate">{user.email}</span>
-              </Link>
+              {(() => {
+                const displayName = user.user_metadata?.full_name || user.email || "";
+                return (
+                  <Link
+                    href="/dashboard"
+                    className="hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
+                    style={{ background: "#F3F4F6" }}
+                    title={displayName}
+                  >
+                    <span
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white"
+                      style={{ background: "#0F172A" }}
+                    >
+                      {(displayName || "?").slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="max-w-[180px] truncate">{displayName}</span>
+                  </Link>
+                );
+              })()}
               <Button variant="ghost" size="sm" onClick={onLogout} disabled={loggingOut}>
                 {loggingOut ? "Logging out…" : "Log out"}
               </Button>
