@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, OnlineDot, Chip, Button } from "@/components/ui";
 import { SaveButton } from "./SaveButton";
 import { RateCard } from "./RateCard";
+import ServiceAreaMap from "./ServiceAreaMap";
 
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
@@ -271,40 +272,20 @@ function VerificationCard({ verifications }) {
 }
 
 function ServiceAreaCard({ tutor }) {
+  const sa = tutor.serviceArea;
+  const radiusKm = sa?.radiusKm ?? 10;
+  const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
   return (
     <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-5 pb-5">
         <div className="text-[14px] font-semibold text-slate-900">Service area</div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5">In-person within 10 km of {tutor.suburb}</div>
+        <div className="text-[12.5px] text-slate-500 mt-0.5">In-person within {radiusKm} km of {sa?.suburb || tutor.suburb}</div>
       </div>
-      <div className="mt-4 relative" style={{ height: 200, background: "#F3F4F6" }}>
-        <svg viewBox="0 0 400 200" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
-          <g stroke="#E5E7EB" strokeWidth="1" fill="none">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <line key={"h" + i} x1="0" y1={i * 25} x2="400" y2={i * 25} />
-            ))}
-            {Array.from({ length: 17 }).map((_, i) => (
-              <line key={"v" + i} x1={i * 25} y1="0" x2={i * 25} y2="200" />
-            ))}
-          </g>
-          <g stroke="#D1D5DB" strokeWidth="2.5" fill="none">
-            <line x1="0" y1="75" x2="400" y2="75" />
-            <line x1="0" y1="135" x2="400" y2="135" />
-            <line x1="125" y1="0" x2="125" y2="200" />
-            <line x1="275" y1="0" x2="275" y2="200" />
-          </g>
-          <rect x="60" y="20" width="55" height="45" fill="#E2E8F0" rx="3" />
-          <rect x="290" y="145" width="80" height="40" fill="#E2E8F0" rx="3" />
-          <circle cx="200" cy="100" r="68" fill="#0F172A" fillOpacity="0.06" stroke="#0F172A" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="3 3" />
-          <g transform="translate(200 100)">
-            <circle r="6" fill="#0F172A" />
-            <circle r="14" fill="#0F172A" fillOpacity="0.12" />
-          </g>
-        </svg>
-        <div className="absolute bottom-3 right-3 text-[10.5px] text-slate-500 bg-white/90 px-2 py-1 rounded" style={{ border: "1px solid #E5E7EB" }}>
-          Map data · approximate
+      {hasCoords && (
+        <div className="px-5 pb-5">
+          <ServiceAreaMap lat={sa.lat} lng={sa.lng} radiusKm={radiusKm} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

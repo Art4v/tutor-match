@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState, Fragment } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, OnlineDot, Chip, Button } from "@/components/ui";
+
+const ServiceMapLeaflet = dynamic(() => import("@/components/ServiceMapLeaflet"), { ssr: false });
 
 /* ============================================================
    Tutor dashboard sections — ported from the claude.ai/design
@@ -520,7 +523,7 @@ export function SubjectsSection({ tutor, set, suggestions }) {
   );
 }
 
-function ServiceMap({ radiusKm }) {
+function ServiceMapPlaceholder({ radiusKm }) {
   const radius = 18 + (Math.min(500, Math.max(1, radiusKm)) / 500) * 68;
   return (
     <div style={{ background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 12, overflow: "hidden", height: 200 }} className="relative">
@@ -546,6 +549,37 @@ function ServiceMap({ radiusKm }) {
 export function ServiceAreaSection({ tutor, set }) {
   const sa = tutor.serviceArea || { suburb: "", radiusKm: 5 };
   const r = sa.radiusKm;
+  const suburb = sa.suburb || "";
+
+  // Debounced geocode: 600ms after the suburb stops changing, fetch coords
+  // unless we already have coords for this exact suburb.
+  useEffect(() => {
+    const trimmed = suburb.trim();
+    if (!trimmed) return;
+    if (sa.geocodedSuburb && sa.geocodedSuburb.toLowerCase() === trimmed.toLowerCase()
+        && Number.isFinite(sa.lat) && Number.isFinite(sa.lng)) {
+      return;
+    }
+    let aborted = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(trimmed)}`);
+        if (!res.ok || aborted) return;
+        const body = await res.json();
+        if (aborted) return;
+        if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
+          set({ serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: trimmed } });
+        } else {
+          set({ serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } });
+        }
+      } catch { /* leave coords as-is on transient error */ }
+    }, 600);
+    return () => { aborted = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suburb]);
+
+  const hasCoords = Number.isFinite(sa.lat) && Number.isFinite(sa.lng);
+
   return (
     <Card>
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
@@ -562,7 +596,9 @@ export function ServiceAreaSection({ tutor, set }) {
             </Field>
           </div>
         </div>
-        <ServiceMap radiusKm={r} />
+        {hasCoords
+          ? <ServiceMapLeaflet lat={sa.lat} lng={sa.lng} radiusKm={r} />
+          : <ServiceMapPlaceholder radiusKm={r} />}
       </div>
     </Card>
   );

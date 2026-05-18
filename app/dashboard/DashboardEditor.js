@@ -112,7 +112,29 @@ export function DashboardEditor({ initialTutor, userId, userEmail }) {
 
   const onSave = async () => {
     setSaving(true);
-    const result = await saveTutorProfile(supabase, userId, tutor);
+    // Last-chance geocode: if the user hit Save before the debounced editor
+    // geocode fired, resolve coords now so the public profile has a map.
+    let toSave = tutor;
+    const sa = tutor.serviceArea;
+    const suburb = (sa?.suburb || "").trim();
+    const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
+      || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
+    if (stale) {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
+        if (res.ok) {
+          const body = await res.json();
+          if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
+            toSave = { ...tutor, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
+            setTutor(toSave);
+          } else {
+            toSave = { ...tutor, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
+            setTutor(toSave);
+          }
+        }
+      } catch { /* save with whatever's there */ }
+    }
+    const result = await saveTutorProfile(supabase, userId, toSave);
     setSaving(false);
     if (!result.ok) {
       console.error("[dashboard] save failed:", result.error);

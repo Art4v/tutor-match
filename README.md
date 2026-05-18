@@ -1,6 +1,6 @@
 # tutormatch
 
-A marketplace web app for finding and booking academic tutors (HSC, UCAT, LAT). Built with Next.js 14 (App Router), Tailwind CSS, and Supabase.
+A marketplace web app for finding and booking academic tutors (HSC, UCAT, LAT, SAT). Built with Next.js 14 (App Router), Tailwind CSS, and Supabase.
 
 This README documents the current state of the project. For day-to-day contributor guidance, see [`CLAUDE.md`](./CLAUDE.md).
 
