@@ -1,22 +1,20 @@
-"use client";
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { notFound } from "next/navigation";
-import { getTutor, TUTORS } from "@/lib/data";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTutorBySlug, getFeaturedTutors } from "@/lib/supabase/tutors";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, OnlineDot, Chip, Button } from "@/components/ui";
-import { useSaved } from "@/components/SavedContext";
+import { SaveButton } from "./SaveButton";
+import { RateCard } from "./RateCard";
 
-export default function ProfilePage({ params }) {
-  const tutor = getTutor(params.id);
+export default async function ProfilePage({ params }) {
+  const supabase = createSupabaseServerClient();
+  const tutor = await getTutorBySlug(supabase, params.slug);
   if (!tutor) return notFound();
 
-  const router = useRouter();
-  const { savedIds, toggleSave } = useSaved();
-  const saved = savedIds.includes(tutor.id);
+  const similar = await getFeaturedTutors(supabase, 3, tutor.id);
 
-  const onMessage = () => router.push(`/messages?tutor=${tutor.id}`);
+  const deliveryLabel = formatDelivery(tutor);
 
   return (
     <div className="bg-white">
@@ -40,13 +38,8 @@ export default function ProfilePage({ params }) {
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <Avatar tutor={tutor} size={108} ring />
               <div className="flex items-center gap-2 mb-1">
-                <Button variant="outline" size="md" icon={saved ? "bookmark-fill" : "bookmark"} onClick={() => toggleSave(tutor.id)}>
-                  {saved ? "Saved" : "Save"}
-                </Button>
+                <SaveButton tutorId={tutor.id} variant="outline" size="md" />
                 <Button variant="outline" size="md" icon="more"></Button>
-                <Button variant="primary" size="md" icon="message" onClick={onMessage}>
-                  Message {tutor.name.split(" ")[0]}
-                </Button>
               </div>
             </div>
 
@@ -55,19 +48,25 @@ export default function ProfilePage({ params }) {
                 <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">{tutor.name}</h1>
                 {tutor.verified && <VerifiedTick size={18} />}
               </div>
-              <div className="text-[15px] text-slate-600 mt-1">{tutor.role}</div>
+              {tutor.role && <div className="text-[15px] text-slate-600 mt-1">{tutor.role}</div>}
               <div className="flex items-center gap-4 text-[13.5px] text-slate-500 mt-2 flex-wrap">
-                <span className="flex items-center gap-1.5">
-                  <Icon name="map-pin" size={13} />
-                  {tutor.location || `${tutor.suburb}, ${tutor.city}`}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Icon name="globe" size={13} /> In-person + online
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#F59E0B" }} />
-                  {tutor.responsive}
-                </span>
+                {(tutor.location || tutor.suburb || tutor.city) && (
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="map-pin" size={13} />
+                    {tutor.location || [tutor.suburb, tutor.city].filter(Boolean).join(", ")}
+                  </span>
+                )}
+                {deliveryLabel && (
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="globe" size={13} /> {deliveryLabel}
+                  </span>
+                )}
+                {tutor.responsive && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#F59E0B" }} />
+                    {tutor.responsive}
+                  </span>
+                )}
                 {tutor.online && (
                   <span className="flex items-center gap-1.5">
                     <OnlineDot size={7} />
@@ -76,31 +75,36 @@ export default function ProfilePage({ params }) {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-1.5 mt-4">
-                {tutor.credentials?.map((c) => (
-                  <Chip key={c} tone="cream" icon={c.includes("ATAR") ? "graduation" : "trophy"}>{c}</Chip>
-                ))}
-              </div>
+              {tutor.credentials.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                  {tutor.credentials.map((c, i) => {
+                    const label = typeof c === "string" ? c : c.label;
+                    const iconHint = typeof c === "string"
+                      ? (label?.includes("ATAR") ? "graduation" : "trophy")
+                      : (c.icon || (label?.includes("ATAR") ? "graduation" : "trophy"));
+                    return (
+                      <Chip key={i} tone="cream" icon={iconHint}>{label}</Chip>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="flex items-center gap-5 mt-5 text-[13px] text-slate-500 pt-5 flex-wrap" style={{ borderTop: "1px solid #F1F5F9" }}>
-                <span className="flex items-center gap-1.5 tabular-nums">
-                  <Icon name="star" size={13} className="text-slate-700" />
-                  <span className="text-slate-900 font-medium">{tutor.rating?.toFixed(1)}</span>
-                  · {tutor.reviews} reviews
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Icon name="users" size={13} />
-                  <span className="text-slate-900 font-medium">40+</span>
-                  <span>students taught</span>
-                </span>
-                {tutor.yearsTutoring && (
+                {tutor.rating != null && (
+                  <span className="flex items-center gap-1.5 tabular-nums">
+                    <Icon name="star" size={13} className="text-slate-700" />
+                    <span className="text-slate-900 font-medium">{tutor.rating.toFixed(1)}</span>
+                    · {tutor.reviews} reviews
+                  </span>
+                )}
+                {tutor.yearsTutoring != null && (
                   <span className="flex items-center gap-1.5">
                     <Icon name="clock" size={13} />
                     <span className="text-slate-900 font-medium">{tutor.yearsTutoring} yrs</span>
                     <span>tutoring</span>
                   </span>
                 )}
-                {tutor.languages && (
+                {tutor.languages.length > 0 && (
                   <span className="flex items-center gap-1.5">
                     <Icon name="language" size={13} />
                     {tutor.languages.join(", ")}
@@ -113,18 +117,20 @@ export default function ProfilePage({ params }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8">
           <div className="space-y-8 min-w-0">
-            <Section id="about" title="About">
-              <div className="text-[15px] text-slate-600 leading-[1.6] whitespace-pre-line">
-                {tutor.bioLong || tutor.bio}
-              </div>
-            </Section>
+            {(tutor.bioLong || tutor.bio) && (
+              <Section id="about" title="About">
+                <div className="text-[15px] text-slate-600 leading-[1.6] whitespace-pre-line">
+                  {tutor.bioLong || tutor.bio}
+                </div>
+              </Section>
+            )}
 
             <Section title="Credentials" subtitle="What sets this tutor apart">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: "ATAR", value: tutor.atar.toFixed(2), icon: "graduation" },
-                  { label: "Rank", value: "State", icon: "trophy", sub: "Maths Ext 2" },
-                  { label: "Rating", value: tutor.rating?.toFixed(1), icon: "star", sub: `${tutor.reviews} reviews` },
+                  { label: "ATAR", value: tutor.atar ? tutor.atar.toFixed(2) : "—", icon: "graduation" },
+                  { label: "Rank", value: tutor.rank || "—", icon: "trophy", sub: tutor.rankSubject || undefined },
+                  { label: "Rating", value: tutor.rating ? tutor.rating.toFixed(1) : "—", icon: "star", sub: tutor.rating ? `${tutor.reviews} reviews` : undefined },
                   { label: "Rate", value: `$${tutor.rate}`, icon: "trending-up", sub: "/hour" },
                 ].map((c) => (
                   <div key={c.label} className="p-4" style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}>
@@ -140,7 +146,7 @@ export default function ProfilePage({ params }) {
               </div>
             </Section>
 
-            {tutor.experience && (
+            {tutor.experience.length > 0 && (
               <Section title="Experience">
                 <ol className="space-y-5">
                   {tutor.experience.map((e, i) => (
@@ -163,7 +169,7 @@ export default function ProfilePage({ params }) {
               </Section>
             )}
 
-            {tutor.education && (
+            {tutor.education.length > 0 && (
               <Section title="Education">
                 <ul className="space-y-4">
                   {tutor.education.map((e, i) => (
@@ -181,9 +187,14 @@ export default function ProfilePage({ params }) {
               </Section>
             )}
 
-            {tutor.reviewsList && (
-              <Section title={`Reviews · ${tutor.reviews}`} subtitle={`${tutor.rating?.toFixed(1)} average from ${tutor.reviews} parents and students`}>
-                <ReviewsList reviews={tutor.reviewsList} />
+            {tutor.reviews > 0 && (
+              <Section
+                title={`Reviews · ${tutor.reviews}`}
+                subtitle={tutor.rating ? `${tutor.rating.toFixed(1)} average from ${tutor.reviews} parents and students` : undefined}
+              >
+                <div className="text-[14px] text-slate-500">
+                  Reviews are coming soon — we&apos;re working on a way for verified students to leave them.
+                </div>
               </Section>
             )}
 
@@ -195,10 +206,10 @@ export default function ProfilePage({ params }) {
           </div>
 
           <aside className="space-y-5">
-            <RateCard tutor={tutor} onMessage={onMessage} />
-            {tutor.verifications && <VerificationCard verifications={tutor.verifications} />}
-            <ServiceAreaCard tutor={tutor} />
-            <SimilarTutorsCard currentId={tutor.id} />
+            <RateCard tutor={tutor} />
+            {tutor.verifications.length > 0 && <VerificationCard verifications={tutor.verifications} />}
+            {tutor.suburb && <ServiceAreaCard tutor={tutor} />}
+            {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
           </aside>
         </div>
       </div>
@@ -211,12 +222,18 @@ export default function ProfilePage({ params }) {
           </div>
           <div className="text-[11.5px] text-slate-500">First lesson free</div>
         </div>
-        <Button variant="primary" size="lg" icon="message" onClick={onMessage}>
-          Message {tutor.name.split(" ")[0]}
-        </Button>
+        <SaveButton tutorId={tutor.id} variant="primary" size="lg" />
       </div>
     </div>
   );
+}
+
+function formatDelivery(tutor) {
+  const parts = [];
+  if (tutor.deliversInPerson) parts.push("In-person");
+  if (tutor.deliversOnline) parts.push("online");
+  if (parts.length === 0) return null;
+  return parts.join(" + ");
 }
 
 function Section({ title, subtitle, children, id }) {
@@ -231,57 +248,6 @@ function Section({ title, subtitle, children, id }) {
   );
 }
 
-function RateCard({ tutor, onMessage }) {
-  const [pkg, setPkg] = useState(0);
-  return (
-    <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
-      <div className="flex items-baseline gap-1">
-        <span className="text-[34px] font-semibold text-slate-900 tabular-nums tracking-tight">${tutor.rate}</span>
-        <span className="text-[14px] text-slate-400">/hour</span>
-      </div>
-      <div className="text-[12.5px] text-slate-500 mt-1">60-minute lesson · first 20 min free</div>
-
-      {tutor.packages && (
-        <div className="mt-5 space-y-2">
-          {tutor.packages.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => setPkg(i)}
-              className="w-full flex items-center justify-between p-3 text-left transition-colors"
-              style={{
-                border: `1px solid ${pkg === i ? "#0F172A" : "#E5E7EB"}`,
-                borderRadius: 10,
-                background: pkg === i ? "#F8FAFC" : "#fff",
-              }}
-            >
-              <div>
-                <div className="text-[13.5px] font-medium text-slate-900">{p.label}</div>
-                <div className="text-[11.5px] text-slate-500">
-                  {p.duration}
-                  {p.save ? ` · ${p.save}` : ""}
-                </div>
-              </div>
-              <div className="text-[15px] font-semibold tabular-nums text-slate-900">${p.price}</div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-5 space-y-2">
-        <Button variant="primary" size="lg" icon="message" full onClick={onMessage}>
-          Message {tutor.name.split(" ")[0]}
-        </Button>
-        <Button variant="outline" size="lg" icon="calendar" full>Request a lesson</Button>
-      </div>
-
-      <div className="mt-4 pt-4 flex items-center gap-2 text-[12px] text-slate-500" style={{ borderTop: "1px solid #F1F5F9" }}>
-        <Icon name="shield" size={13} />
-        Payment held by tutormatch until lesson is confirmed
-      </div>
-    </div>
-  );
-}
-
 function VerificationCard({ verifications }) {
   return (
     <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
@@ -291,7 +257,7 @@ function VerificationCard({ verifications }) {
           <li key={i} className="flex items-center justify-between gap-3 text-[13.5px]">
             <span className="text-slate-700 flex items-center gap-2">
               <Icon
-                name={["identity", "mobile", "ATAR", "Children", "References"].some((k) => v.label.includes(k)) ? "shield-check" : "check-circle"}
+                name={["identity", "mobile", "ATAR", "Children", "References"].some((k) => (v.label || "").includes(k)) ? "shield-check" : "check-circle"}
                 size={14}
                 className="text-slate-400"
               />
@@ -301,9 +267,6 @@ function VerificationCard({ verifications }) {
           </li>
         ))}
       </ul>
-      <button className="w-full mt-4 text-[12.5px] text-slate-500 hover:text-slate-900 inline-flex items-center justify-center gap-1">
-        How verification works <Icon name="arrow-up-right" size={11} />
-      </button>
     </div>
   );
 }
@@ -347,15 +310,14 @@ function ServiceAreaCard({ tutor }) {
   );
 }
 
-function SimilarTutorsCard({ currentId }) {
-  const similar = TUTORS.filter((t) => t.id !== currentId).slice(0, 3);
+function SimilarTutorsCard({ similar }) {
   return (
     <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
       <div className="text-[14px] font-semibold text-slate-900 mb-4">Similar tutors</div>
       <ul className="space-y-4">
         {similar.map((t) => (
           <li key={t.id}>
-            <Link href={`/tutor/${t.id}`} className="flex items-center gap-3 cursor-pointer group">
+            <Link href={`/tutor/${t.slug}`} className="flex items-center gap-3 cursor-pointer group">
               <Avatar tutor={t} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1 text-[13.5px] font-medium text-slate-900 group-hover:underline truncate">
@@ -372,34 +334,6 @@ function SimilarTutorsCard({ currentId }) {
         ))}
       </ul>
     </div>
-  );
-}
-
-function ReviewsList({ reviews }) {
-  return (
-    <ul className="space-y-5">
-      {reviews.map((r, i) => (
-        <li key={i} className="pb-5" style={{ borderBottom: i < reviews.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-medium text-slate-700"
-              style={{ background: `oklch(0.94 0.01 ${(i * 70) % 360})` }}
-            >
-              {r.name.charAt(0)}
-            </div>
-            <div className="flex-1">
-              <div className="text-[13.5px] font-medium text-slate-900">{r.name}</div>
-              <div className="text-[12px] text-slate-500">{r.role} · {r.date}</div>
-            </div>
-            <div className="flex items-center gap-1 text-[12.5px] text-slate-700 tabular-nums">
-              <Icon name="star" size={12} />
-              5.0
-            </div>
-          </div>
-          <p className="text-[14px] text-slate-700 leading-[1.6] mt-3">{r.body}</p>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -427,12 +361,12 @@ function AvailabilityGrid({ availability }) {
               <tr key={h}>
                 <td className="text-slate-400 tabular-nums pr-2 text-right">{h}</td>
                 {days.map((_, di) => {
-                  const v = grid[hi][di];
+                  const v = grid[hi]?.[di] ?? 0;
                   const c = colorFor(v);
                   return (
                     <td key={di}>
                       <div
-                        className="h-8 rounded-md flex items-center justify-center font-medium transition-colors cursor-pointer hover:ring-1 hover:ring-slate-300"
+                        className="h-8 rounded-md flex items-center justify-center font-medium"
                         style={{ background: c.bg, color: c.color }}
                         title={c.label}
                       >
