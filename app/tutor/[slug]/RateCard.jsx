@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 
 export function RateCard({ tutor }) {
@@ -41,13 +40,9 @@ export function RateCard({ tutor }) {
         </div>
       )}
 
-      <div className="mt-5 space-y-2">
-        <Button variant="primary" size="lg" icon="calendar" full>Request a lesson</Button>
-      </div>
-
-      <div className="mt-4 pt-4 flex items-center gap-2 text-[12px] text-slate-500" style={{ borderTop: "1px solid #F1F5F9" }}>
-        <Icon name="shield" size={13} />
-        Payment held by tutormatch until lesson is confirmed
+      <div className="mt-5 space-y-1.5">
+        <Button variant="primary" size="lg" icon="calendar" full disabled>Request a lesson</Button>
+        <div className="text-center text-[12px] text-slate-400">(coming soon)</div>
       </div>
     </div>
   );

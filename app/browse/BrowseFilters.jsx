@@ -35,7 +35,22 @@ export function BrowseFilters({
   // Local mirror so sliders feel snappy while the URL update lands.
   const [atarMin, setAtarMin] = useState(filters.atarMin ?? 90);
   const [rateMax, setRateMax] = useState(filters.rateMax ?? 200);
-  const [yearLevel, setYearLevel] = useState(filters.yearLevel ?? "All");
+  const [yearLevels, setYearLevels] = useState(() => {
+    const initial = filters.yearLevel;
+    if (Array.isArray(initial)) return initial.filter((y) => y && y !== "All");
+    if (!initial || initial === "All") return [];
+    return [initial];
+  });
+
+  const toggleYearLevel = (y) => {
+    if (y === "All") {
+      setYearLevels([]);
+      return;
+    }
+    setYearLevels((curr) =>
+      curr.includes(y) ? curr.filter((v) => v !== y) : [...curr, y]
+    );
+  };
 
   function pushParams(mutate) {
     const params = new URLSearchParams(sp.toString());
@@ -96,8 +111,8 @@ export function BrowseFilters({
           {YEAR_OPTIONS.map((y) => (
             <Chip
               key={y}
-              active={yearLevel === y}
-              onClick={() => setYearLevel(y)}
+              active={y === "All" ? yearLevels.length === 0 : yearLevels.includes(y)}
+              onClick={() => toggleYearLevel(y)}
             >
               {y}
             </Chip>

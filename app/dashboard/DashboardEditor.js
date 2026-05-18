@@ -20,7 +20,6 @@ import {
   Sidebar,
   SaveBar,
   MobileSaveBar,
-  Breadcrumb,
   buildInitialAvailability,
 } from "./sections";
 
@@ -145,11 +144,9 @@ export function DashboardEditor({ initialTutor, userId, userEmail }) {
 
   return (
     <div className="bg-white min-h-screen pb-32 md:pb-12">
-      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} onPreview={onPreview} />
+      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} />
 
-      <div className="max-w-[1200px] mx-auto px-6">
-        <Breadcrumb />
-
+      <div className="max-w-[1200px] mx-auto px-6 pt-6">
         <div className="flex items-end justify-between gap-4 mb-7">
           <div>
             <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Edit your profile</h1>

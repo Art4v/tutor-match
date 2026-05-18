@@ -296,8 +296,6 @@ export function BannerAvatarSection({ tutor, set }) {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-7 pt-5" style={{ borderTop: "1px solid #F1F5F9" }}>
-        <Toggle value={tutor.verified} onChange={(v) => set({ verified: v })} label="Show verified tick" hint="Visible only once your government ID is approved." />
-        <Toggle value={tutor.online} onChange={(v) => set({ online: v })} label="Show as online now" hint="Auto-cleared after 20 min of inactivity." />
         <Toggle value={tutor.deliversInPerson} onChange={(v) => set({ deliversInPerson: v })} label="Accepts in-person lessons" hint="Inside the service area you set below." />
         <Toggle value={tutor.deliversOnline} onChange={(v) => set({ deliversOnline: v })} label="Accepts online lessons" hint="Over Zoom or Google Meet." />
       </div>
@@ -789,7 +787,7 @@ export function Breadcrumb() {
   );
 }
 
-export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, onPreview }) {
+export function SaveBar({ tutor, dirty, saving, onSave, onDiscard }) {
   return (
     <div className="sticky top-0 z-30 bg-white/85 backdrop-blur" style={{ borderBottom: "1px solid #E5E7EB" }}>
       <div className="max-w-[1200px] mx-auto px-6 h-[68px] flex items-center gap-4">
@@ -805,12 +803,8 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, onPreview }) 
         </div>
         <div className="flex-1" />
         <div className="hidden md:flex items-center gap-2">
-          <Button variant="ghost" size="sm" icon="eye" onClick={onPreview}>Preview</Button>
           <Button variant="outline" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
           <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save changes"}</Button>
-        </div>
-        <div className="md:hidden">
-          <Button variant="ghost" size="sm" icon="eye" onClick={onPreview}>Preview</Button>
         </div>
       </div>
     </div>

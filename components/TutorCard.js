@@ -3,12 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { Avatar, VerifiedTick, OnlineDot, Chip } from "./ui";
-import { useSaved } from "./SavedContext";
 
-export function TutorCard({ tutor, compact, withSave = false }) {
+export function TutorCard({ tutor, compact }) {
   const [hover, setHover] = useState(false);
-  const { savedIds, toggleSave } = useSaved();
-  const saved = savedIds.includes(tutor.id);
 
   const visibleSubjects = (tutor.subjects || []).slice(0, 3);
   const moreCount = Math.max(0, (tutor.subjects || []).length - 3);
@@ -28,17 +25,6 @@ export function TutorCard({ tutor, compact, withSave = false }) {
       }}
     >
       <div style={{ height: 48, background: tutor.avatarBg, opacity: 0.55 }} />
-
-      {withSave && (
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSave(tutor.id); }}
-          className="absolute top-2.5 right-2.5 w-8 h-8 inline-flex items-center justify-center rounded-full bg-white/90 hover:bg-white text-slate-700 transition-colors"
-          style={{ border: "1px solid #E5E7EB" }}
-          aria-label={saved ? "Unsave" : "Save"}
-        >
-          <Icon name={saved ? "bookmark-fill" : "bookmark"} size={14} />
-        </button>
-      )}
 
       <div className="px-5 pb-5 flex flex-col flex-1">
         <div style={{ marginTop: -32, marginBottom: 12 }}>

@@ -88,7 +88,7 @@ export default async function BrowsePage({ searchParams }) {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {tutors.map((t) => (
-                  <TutorCard key={t.id} tutor={t} withSave />
+                  <TutorCard key={t.id} tutor={t} />
                 ))}
               </div>
             )}

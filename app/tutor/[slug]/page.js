@@ -38,7 +38,6 @@ export default async function ProfilePage({ params }) {
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <Avatar tutor={tutor} size={108} ring />
               <div className="flex items-center gap-2 mb-1">
-                <SaveButton tutorId={tutor.id} variant="outline" size="md" />
                 <Button variant="outline" size="md" icon="more"></Button>
               </div>
             </div>
