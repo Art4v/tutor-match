@@ -39,12 +39,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3 mt-8 text-[13.5px] text-slate-500">
-            <Stat n="4,425" label="verified tutors" />
-            <Stat n="12" label="curriculum tracks" />
-            <Stat n="48,000+" label="lessons booked" />
-            <Stat n="4.9 / 5.0" label="avg. rating" />
-          </div>
         </div>
       </section>
 
@@ -93,8 +87,8 @@ export default function HomePage() {
               If your ATAR is above 95, tutormatch is the cleanest way to build a private tutoring practice. Set your own rate, choose your own students, keep 92% of every booking.
             </p>
             <div className="flex gap-3 mt-7">
-              <Button variant="primary" size="lg" iconRight="arrow-right">Become a tutor</Button>
-              <Button variant="outline" size="lg">Read the handbook</Button>
+              <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push("/signup")}>Become a tutor</Button>
+              <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>Browse tutors</Button>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -156,11 +150,3 @@ function SearchField({ icon, label, placeholder, value, onChange }) {
   );
 }
 
-function Stat({ n, label }) {
-  return (
-    <span className="flex items-baseline gap-1.5">
-      <span className="text-slate-900 font-semibold tabular-nums">{n}</span>
-      <span>{label}</span>
-    </span>
-  );
-}

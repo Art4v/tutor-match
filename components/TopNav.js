@@ -106,7 +106,7 @@ export function TopNav() {
           ) : (
             <>
               <Link href="/login">
-                <Button variant="ghost" size="sm">Sign in</Button>
+                <Button variant="ghost" size="sm">Log in</Button>
               </Link>
               <Link href="/signup">
                 <Button variant="primary" size="sm">Sign Up</Button>
