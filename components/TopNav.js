@@ -78,10 +78,6 @@ export function TopNav() {
 
         <div className="flex items-center gap-1 ml-auto">
           <NavLink active={isActive("/browse")} href="/browse" className="hidden md:inline-flex">Browse</NavLink>
-          <NavLink active={isActive("/messages")} href="/messages" className="hidden md:inline-flex">
-            Messages
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10.5px] font-semibold rounded-full bg-slate-900 text-white">2</span>
-          </NavLink>
           {user ? (
             <>
               {(() => {

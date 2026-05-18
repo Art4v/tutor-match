@@ -118,18 +118,10 @@ export default function HomePage() {
   );
 }
 
-function HowItWorksCard({ n, t, b, href }) {
+function HowItWorksCard({ n, t, b }) {
   const [hover, setHover] = useState(false);
-  const onClick = (e) => {
-    if (href === "/#top") {
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
   return (
-    <a
-      href={href}
-      onClick={onClick}
+    <div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       className="p-6 block"
@@ -143,7 +135,7 @@ function HowItWorksCard({ n, t, b, href }) {
       <div className="text-[12.5px] font-semibold tabular-nums text-slate-400 mb-3 tracking-wider">{n}</div>
       <div className="text-[17px] font-semibold text-slate-900 mb-2">{t}</div>
       <p className="text-[14px] text-slate-600 leading-[1.55]">{b}</p>
-    </a>
+    </div>
   );
 }
 
