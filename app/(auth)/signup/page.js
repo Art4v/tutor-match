@@ -4,48 +4,72 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Chip } from "@/components/ui";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Icon } from "@/components/Icon";
+import { PASSWORD_RULES, validatePassword } from "@/lib/password";
+import { validateEmailFormat } from "@/lib/email";
 
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [password, setPassword] = useState("");
+  const [pwTouched, setPwTouched] = useState(false);
   const [role, setRole] = useState("tutor");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
 
+  const pw = validatePassword(password);
+  const emailValid = validateEmailFormat(email);
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
-    const supabase = createSupabaseBrowserClient();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // These end up in auth.users.raw_user_meta_data, where the
-        // handle_new_user() trigger reads them to populate the profile rows.
-        data: { full_name: fullName, role },
-      },
-    });
-    setSubmitting(false);
-    if (error) {
-      setError(error.message);
+
+    // Client-side gates: instant feedback so the user fixes obvious problems
+    // before a round-trip. The /api/auth/signup route re-checks both of these
+    // authoritatively (and additionally verifies the email domain exists).
+    if (!emailValid) {
+      setEmailTouched(true);
+      setError("Please enter a valid email address.");
       return;
     }
-    // Supabase doesn't return an error when the email is already registered (it
-    // avoids leaking which emails exist). Instead it returns a user with an
-    // empty `identities` array and no new confirmation email is sent. Detect
-    // that and tell the user to log in rather than showing the "confirm" copy.
-    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    if (!pw.valid) {
+      setPwTouched(true);
+      setError("Please choose a password that meets all the requirements below.");
+      return;
+    }
+
+    setSubmitting(true);
+    let res;
+    let payload;
+    try {
+      res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, password, role }),
+      });
+      payload = await res.json();
+    } catch {
+      setSubmitting(false);
+      setError("Something went wrong. Please try again.");
+      return;
+    }
+    setSubmitting(false);
+
+    if (!res.ok) {
+      setError(payload?.error ?? "Sign up failed. Please try again.");
+      return;
+    }
+    // Supabase returns a user with an empty `identities` array when the email
+    // is already registered — point the user to login rather than "confirm".
+    if (payload.status === "exists") {
       setError("An account with this email already exists. Try logging in instead.");
       return;
     }
-    // If email confirmation is enabled in Supabase, session is null until the
-    // user clicks the link. Show a message instead of redirecting.
-    if (!data.session) {
+    // No session means email confirmation is enabled in Supabase.
+    if (payload.status === "confirm") {
       setNeedsConfirm(true);
       return;
     }
@@ -103,10 +127,17 @@ export default function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailTouched(true)}
               placeholder="you@example.com"
               required
               autoComplete="email"
+              aria-invalid={emailTouched && !emailValid}
             />
+            {emailTouched && email.length > 0 && !emailValid && (
+              <p className="mt-2 text-[12.5px]" style={{ color: "#DC2626" }}>
+                Enter a valid email address, e.g. you@example.com
+              </p>
+            )}
           </Field>
 
           <Field label="Password">
@@ -114,11 +145,30 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => setPwTouched(true)}
               placeholder="At least 8 characters"
               required
               minLength={8}
               autoComplete="new-password"
+              aria-invalid={pwTouched && !pw.valid}
             />
+            {(pwTouched || password.length > 0) && (
+              <ul className="mt-2.5 space-y-1.5">
+                {PASSWORD_RULES.map((rule) => {
+                  const ok = rule.test(password);
+                  return (
+                    <li
+                      key={rule.id}
+                      className="flex items-center gap-1.5 text-[12.5px] leading-none transition-colors"
+                      style={{ color: ok ? "#16A34A" : "#94A3B8" }}
+                    >
+                      <Icon name={ok ? "check" : "x"} size={13} strokeWidth={2.25} />
+                      {rule.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </Field>
 
           {error && (
