@@ -35,6 +35,14 @@ export default function SignupPage() {
       setError(error.message);
       return;
     }
+    // Supabase doesn't return an error when the email is already registered (it
+    // avoids leaking which emails exist). Instead it returns a user with an
+    // empty `identities` array and no new confirmation email is sent. Detect
+    // that and tell the user to log in rather than showing the "confirm" copy.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setError("An account with this email already exists. Try logging in instead.");
+      return;
+    }
     // If email confirmation is enabled in Supabase, session is null until the
     // user clicks the link. Show a message instead of redirecting.
     if (!data.session) {
