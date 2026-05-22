@@ -136,12 +136,12 @@ export function TopNav() {
                         Browse
                       </Link>
                       <Link
-                        href="/dashboard"
+                        href="/settings"
                         role="menuitem"
                         onClick={() => setMenuOpen(false)}
                         className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
                       >
-                        Dashboard
+                        Settings
                       </Link>
                       <button
                         type="button"

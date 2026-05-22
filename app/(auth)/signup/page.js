@@ -49,7 +49,7 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    router.push("/dashboard");
+    router.push("/settings");
     router.refresh();
   };
 

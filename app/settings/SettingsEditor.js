@@ -39,8 +39,8 @@ function defaultTutor(userId, userEmail, fullName) {
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
     avatarBg: "oklch(0.92 0.04 80)",
     avatarImg: null,
+    bannerImg: null,
     verified: false,
-    online: false,
     deliversInPerson: true,
     deliversOnline: true,
     responsiveText: "Usually responds in <1 hr",
@@ -73,7 +73,7 @@ function defaultTutor(userId, userEmail, fullName) {
   };
 }
 
-export function DashboardEditor({ initialTutor, userId, userEmail }) {
+export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
   const supabase = supabaseRef.current;
@@ -137,7 +137,7 @@ export function DashboardEditor({ initialTutor, userId, userEmail }) {
     const result = await saveTutorProfile(supabase, userId, toSave);
     setSaving(false);
     if (!result.ok) {
-      console.error("[dashboard] save failed:", result.error);
+      console.error("[settings] save failed:", result.error);
       showToast("error", result.error?.message || "Save failed — please try again.", 4000);
       return;
     }
@@ -181,7 +181,7 @@ export function DashboardEditor({ initialTutor, userId, userEmail }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
           <div className="space-y-5 min-w-0">
-            <BannerAvatarSection tutor={tutor} set={set} />
+            <BannerAvatarSection tutor={tutor} set={set} supabase={supabase} />
             <IdentitySection tutor={tutor} set={set} />
             <CredentialsSection tutor={tutor} set={set} />
             <AboutSection tutor={tutor} set={set} />
@@ -192,11 +192,11 @@ export function DashboardEditor({ initialTutor, userId, userEmail }) {
             <SubjectsSection tutor={tutor} set={set} suggestions={subjectSuggestions} />
             <ServiceAreaSection tutor={tutor} set={set} />
             <AvailabilitySection tutor={tutor} set={set} />
-            <VerificationsSection tutor={tutor} set={set} />
           </div>
 
-          <div className="lg:sticky lg:top-[88px]">
+          <div className="space-y-5 lg:sticky lg:top-[88px]">
             <Sidebar tutor={tutor} set={set} onPreview={onPreview} publicHref={publicHref} />
+            <VerificationsSection />
           </div>
         </div>
       </div>

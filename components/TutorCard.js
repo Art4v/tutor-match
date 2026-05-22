@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { Avatar, VerifiedTick, OnlineDot, Chip } from "./ui";
+import { Avatar, VerifiedTick, Chip } from "./ui";
 
 export function TutorCard({ tutor, compact }) {
   const [hover, setHover] = useState(false);
@@ -24,7 +24,9 @@ export function TutorCard({ tutor, compact }) {
         transition: "transform 180ms ease-out, border-color 180ms ease-out",
       }}
     >
-      <div style={{ height: 48, background: tutor.avatarBg, opacity: 0.55 }} />
+      <div style={tutor.bannerImg
+        ? { height: 48, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
+        : { height: 48, background: tutor.avatarBg, opacity: 0.55 }} />
 
       <div className="px-5 pb-5 flex flex-col flex-1">
         <div style={{ marginTop: -32, marginBottom: 12 }}>
@@ -36,7 +38,6 @@ export function TutorCard({ tutor, compact }) {
             {tutor.name}
           </span>
           {tutor.verified && <VerifiedTick size={14} />}
-          {tutor.online && <OnlineDot size={7} />}
         </div>
 
         <div className="text-[13.5px] text-slate-500 mt-0.5 truncate">{tutor.role}</div>

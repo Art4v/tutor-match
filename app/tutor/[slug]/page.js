@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorBySlug, getFeaturedTutors } from "@/lib/supabase/tutors";
 import { Icon } from "@/components/Icon";
-import { Avatar, VerifiedTick, OnlineDot, Chip, Button } from "@/components/ui";
+import { Avatar, VerifiedTick, Chip } from "@/components/ui";
 import { SaveButton } from "./SaveButton";
 import { RateCard } from "./RateCard";
 import ServiceAreaMap from "./ServiceAreaMap";
@@ -24,15 +24,14 @@ export default async function ProfilePage({ params }) {
           <div
             style={{
               height: 140,
-              background: `linear-gradient(135deg, ${tutor.avatarBg}, oklch(0.96 0.01 250))`,
+              background: tutor.bannerImg
+                ? `url(${tutor.bannerImg}) center / cover no-repeat`
+                : `linear-gradient(135deg, ${tutor.avatarBg}, oklch(0.96 0.01 250))`,
             }}
           />
           <div className="px-7 pb-7" style={{ marginTop: -54 }}>
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <Avatar tutor={tutor} size={108} ring />
-              <div className="flex items-center gap-2 mb-1">
-                <Button variant="outline" size="md" icon="more"></Button>
-              </div>
             </div>
 
             <div className="mt-5">
@@ -57,12 +56,6 @@ export default async function ProfilePage({ params }) {
                   <span className="flex items-center gap-1.5">
                     <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#F59E0B" }} />
                     {tutor.responsive}
-                  </span>
-                )}
-                {tutor.online && (
-                  <span className="flex items-center gap-1.5">
-                    <OnlineDot size={7} />
-                    <span className="text-slate-700">Online now</span>
                   </span>
                 )}
               </div>
@@ -107,12 +100,16 @@ export default async function ProfilePage({ params }) {
           </div>
         </div>
 
+        {tutor.bio && (
+          <p className="text-[15px] text-slate-600 leading-[1.6] mt-4 max-w-[760px]">{tutor.bio}</p>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8">
           <div className="space-y-8 min-w-0">
-            {(tutor.bioLong || tutor.bio) && (
+            {tutor.bioLong && (
               <Section id="about" title="About">
                 <div className="text-[15px] text-slate-600 leading-[1.6] whitespace-pre-line">
-                  {tutor.bioLong || tutor.bio}
+                  {tutor.bioLong}
                 </div>
               </Section>
             )}
@@ -200,8 +197,8 @@ export default async function ProfilePage({ params }) {
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
-            {tutor.verifications.length > 0 && <VerificationCard verifications={tutor.verifications} />}
-            {tutor.suburb && <ServiceAreaCard tutor={tutor} />}
+            <VerificationCard />
+            {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
           </aside>
         </div>
@@ -254,25 +251,22 @@ function SubjectsCard({ subjects }) {
   );
 }
 
-function VerificationCard({ verifications }) {
+function VerificationCard() {
   return (
     <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4">Verification</div>
-      <ul className="space-y-3">
-        {verifications.map((v, i) => (
-          <li key={i} className="flex items-center justify-between gap-3 text-[13.5px]">
-            <span className="text-slate-700 flex items-center gap-2">
-              <Icon
-                name={["identity", "mobile", "ATAR", "Children", "References"].some((k) => (v.label || "").includes(k)) ? "shield-check" : "check-circle"}
-                size={14}
-                className="text-slate-400"
-              />
-              {v.label}
-            </span>
-            {v.done && <VerifiedTick size={13} />}
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="text-[14px] font-semibold text-slate-900">Verification</div>
+        <span
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+          style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+        >
+          Coming soon
+        </span>
+      </div>
+      <div className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
+        <Icon name="shield" size={14} className="text-slate-400 shrink-0" />
+        Identity &amp; credential checks are coming soon.
+      </div>
     </div>
   );
 }

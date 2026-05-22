@@ -3,9 +3,10 @@ import { useState } from "react";
 import { Icon } from "./Icon";
 
 export function Avatar({ tutor, size = 64, ring = false }) {
+  const img = tutor.avatarImg;
   return (
     <div
-      className="relative flex items-center justify-center font-medium select-none"
+      className="relative flex items-center justify-center font-medium select-none overflow-hidden"
       style={{
         width: size,
         height: size,
@@ -15,9 +16,12 @@ export function Avatar({ tutor, size = 64, ring = false }) {
         fontSize: size * 0.34,
         letterSpacing: "-0.02em",
         boxShadow: ring ? "0 0 0 4px #fff" : "none",
+        backgroundImage: img ? `url(${img})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
-      {tutor.initial}
+      {!img && tutor.initial}
     </div>
   );
 }
@@ -31,16 +35,6 @@ export function VerifiedTick({ size = 14 }) {
     >
       <Icon name="check" size={size * 0.7} strokeWidth={3} />
     </span>
-  );
-}
-
-export function OnlineDot({ size = 8 }) {
-  return (
-    <span
-      className="inline-block align-middle"
-      style={{ width: size, height: size, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 0 2px #fff" }}
-      title="Online now"
-    />
   );
 }
 

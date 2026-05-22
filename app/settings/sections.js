@@ -4,12 +4,14 @@ import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
-import { Avatar, VerifiedTick, OnlineDot, Chip, Button } from "@/components/ui";
+import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { AVAILABILITY_DAYS, AVAILABILITY_HOURS } from "@/lib/availability";
+import { uploadProfileImage } from "@/lib/supabase/storage";
 
 const ServiceMapLeaflet = dynamic(() => import("@/components/ServiceMapLeaflet"), { ssr: false });
 
 /* ============================================================
-   Tutor dashboard sections — ported from the claude.ai/design
+   Tutor settings sections — ported from the claude.ai/design
    bundle (62iWgxnY32ZnT0_dN7rKWQ). The visual language matches
    /tutor/[id]/page.js. The state shape mirrors lib/data.js.
    ============================================================ */
@@ -31,8 +33,10 @@ export const RESPONSE_OPTIONS = [
   "Usually responds within 2 days",
 ];
 
-export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-export const HOUR_LABELS = ["9 am", "10 am", "11 am", "12 pm", "2 pm", "4 pm", "6 pm", "8 pm"];
+// Canonical labels shared with the public profile (lib/availability.js) so the
+// settings grid and the public AvailabilityGrid never drift apart.
+export const DAYS = AVAILABILITY_DAYS;
+export const HOUR_LABELS = AVAILABILITY_HOURS;
 
 export function buildInitialAvailability() {
   return Array.from({ length: 8 }, () => Array(7).fill(0));
@@ -260,40 +264,85 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
    Sections
    ============================================================ */
 
-export function BannerAvatarSection({ tutor, set }) {
+function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint }) {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const onPick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // let the same file be re-picked after a remove
+    if (!file) return;
+    if (!supabase || !userId) { setErr("Sign in again to upload."); return; }
+    setErr(null);
+    setBusy(true);
+    const res = await uploadProfileImage(supabase, userId, kind, file);
+    setBusy(false);
+    if (!res.ok) { setErr(res.error); return; }
+    onChange(res.url);
+  };
+
+  return (
+    <div>
+      <MetaLabel>{label}</MetaLabel>
+      <div className="flex items-center gap-2 mt-2">
+        <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+        <Button variant="outline" size="sm" icon="upload" disabled={busy} onClick={() => inputRef.current?.click()}>
+          {busy ? "Uploading…" : value ? "Replace" : "Upload"}
+        </Button>
+        {value && !busy && (
+          <Button variant="ghost" size="sm" onClick={() => onChange(null)}>Remove</Button>
+        )}
+      </div>
+      {err
+        ? <div className="text-[12px] text-rose-600 mt-1.5">{err}</div>
+        : hint && <div className="text-[12px] text-slate-400 mt-1.5">{hint}</div>}
+    </div>
+  );
+}
+
+export function BannerAvatarSection({ tutor, set, supabase }) {
+  const bannerStyle = tutor.bannerImg
+    ? { background: `url(${tutor.bannerImg}) center / cover no-repeat` }
+    : { background: tutor.avatarBg, opacity: 0.85 };
   return (
     <Card>
-      <SectionHeader title="Banner & avatar" subtitle="The colour band, your initial and badges visible at the top of your profile." />
+      <SectionHeader title="Banner & avatar" subtitle="The banner, your photo and badges visible at the top of your profile." />
       <div className="flex items-stretch gap-5">
-        <div className="relative shrink-0 overflow-hidden" style={{ width: 220, height: 96, background: tutor.avatarBg, opacity: 0.85, border: "1px solid #E5E7EB", borderRadius: 12 }}>
+        <div className="relative shrink-0 overflow-hidden" style={{ width: 220, height: 96, border: "1px solid #E5E7EB", borderRadius: 12, ...bannerStyle }}>
           <div className="absolute left-4 -bottom-6"><Avatar tutor={tutor} size={64} ring /></div>
         </div>
-        <div className="flex-1 min-w-0">
-          <MetaLabel>Banner colour</MetaLabel>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {AVATAR_SWATCHES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => set({ avatarBg: c })}
-                style={{ width: 32, height: 32, borderRadius: 999, background: c, border: `2px solid ${tutor.avatarBg === c ? "#0F172A" : "transparent"}`, boxShadow: "inset 0 0 0 1px #E5E7EB" }}
-                aria-label="Pick swatch"
-              />
-            ))}
-          </div>
-          <div className="mt-4">
-            <MetaLabel>Avatar image</MetaLabel>
-            <div className="flex items-center gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                icon="upload"
-                disabled
-                onClick={() => {}}
-              >
-                Upload photo
-              </Button>
-              <span className="text-[12px] text-slate-400" title="File upload lands in a later slice">Coming soon</span>
+        <div className="flex-1 min-w-0 space-y-4">
+          <ImageUploadControl
+            label="Avatar image"
+            value={tutor.avatarImg}
+            kind="avatar"
+            supabase={supabase}
+            userId={tutor.id}
+            onChange={(url) => set({ avatarImg: url })}
+            hint="Square works best. Falls back to your initial when empty."
+          />
+          <ImageUploadControl
+            label="Banner image"
+            value={tutor.bannerImg}
+            kind="banner"
+            supabase={supabase}
+            userId={tutor.id}
+            onChange={(url) => set({ bannerImg: url })}
+            hint="Wide image, ~1200×320. Falls back to the colour below."
+          />
+          <div>
+            <MetaLabel>Banner colour</MetaLabel>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {AVATAR_SWATCHES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => set({ avatarBg: c })}
+                  style={{ width: 32, height: 32, borderRadius: 999, background: c, border: `2px solid ${tutor.avatarBg === c ? "#0F172A" : "transparent"}`, boxShadow: "inset 0 0 0 1px #E5E7EB" }}
+                  aria-label="Pick swatch"
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -379,7 +428,7 @@ export function AboutSection({ tutor, set }) {
   return (
     <Card>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
-      <Field label="Card bio" hint="Two sentences shown on browse cards and search previews.">
+      <Field label="Tagline" hint="One line shown on your browse cards and under your profile header.">
         <TextInput multiline rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180} placeholder="Patient, structured tutor who writes clear notes…" />
       </Field>
       <div className="mt-5">
@@ -653,28 +702,35 @@ export function AvailabilitySection({ tutor, set }) {
   );
 }
 
-export function VerificationsSection({ tutor, set }) {
-  const list = tutor.verifications || [];
-  const done = list.filter((v) => v.done).length;
+// Verification is parked for a later release. We keep the planned steps visible
+// as a muted, non-interactive preview so tutors know what's coming, but nothing
+// here is wired up yet (the `verifications` data stays dormant).
+const PLANNED_VERIFICATIONS = [
+  "Email verified",
+  "Phone verified",
+  "Government ID",
+  "ATAR transcript",
+  "Working with Children Check",
+  "University enrolment",
+];
+
+export function VerificationsSection() {
   return (
-    <Card>
-      <SectionHeader title="Verifications" subtitle="Verified profiles get the green tick and rank higher in search."
-        right={<span className="text-[12.5px] text-slate-500 tabular-nums">{done} / {list.length} complete</span>} />
-      {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "#FAFAFA", borderRadius: 10 }}>Verification steps will appear here once we launch the verification flow.</div>}
-      <ul className="-my-1">
-        {list.map((v, i) => (
-          <li key={v.label} className="flex items-center gap-3 py-3" style={{ borderTop: i === 0 ? "none" : "1px solid #F1F5F9" }}>
-            <span className="inline-flex items-center justify-center"
-              style={{ width: 32, height: 32, borderRadius: "50%", background: v.done ? "#ECFDF5" : "#F3F4F6", color: v.done ? "#047857" : "#94A3B8" }}>
-              {v.done ? <Icon name="check" size={16} strokeWidth={2.5} /> : <Icon name="shield" size={15} />}
+    <Card padding={20}>
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Verifications</h3>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider" style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}>Coming soon</span>
+      </div>
+      <p className="text-[12.5px] text-slate-500 leading-[1.5] mb-3">
+        Confirm these to unlock the verified badge — coming in a later release.
+      </p>
+      <ul className="-my-0.5">
+        {PLANNED_VERIFICATIONS.map((label, i) => (
+          <li key={label} className="flex items-center gap-2.5 py-2" style={{ borderTop: i === 0 ? "none" : "1px solid #F1F5F9", opacity: 0.7 }}>
+            <span className="inline-flex items-center justify-center shrink-0" style={{ width: 26, height: 26, borderRadius: "50%", background: "#F3F4F6", color: "#94A3B8" }}>
+              <Icon name="shield" size={13} />
             </span>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-medium text-slate-900 flex items-center gap-1.5">{v.label}{v.done && <VerifiedTick size={12} />}</div>
-              <div className="text-[12.5px] text-slate-500 mt-0.5">{v.done ? "Verified — visible on your public profile." : "Not yet started."}</div>
-            </div>
-            {v.done
-              ? <Button variant="ghost" size="sm" onClick={() => set({ verifications: list.map((x, idx) => idx === i ? { ...x, done: false } : x) })}>Revoke</Button>
-              : <Button variant="outline" size="sm" iconRight="arrow-right" onClick={() => set({ verifications: list.map((x, idx) => idx === i ? { ...x, done: true } : x) })}>Start verification</Button>}
+            <div className="flex-1 min-w-0 text-[13px] font-medium text-slate-700">{label}</div>
           </li>
         ))}
       </ul>
@@ -711,13 +767,14 @@ function MiniPreview({ tutor }) {
   const display = { ...tutor, initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial };
   return (
     <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}>
-      <div style={{ height: 56, background: tutor.avatarBg, opacity: 0.85 }} />
+      <div style={tutor.bannerImg
+        ? { height: 56, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
+        : { height: 56, background: tutor.avatarBg, opacity: 0.85 }} />
       <div className="px-4 pb-4">
         <div style={{ marginTop: -28, marginBottom: 10 }}><Avatar tutor={display} size={56} ring /></div>
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[15px] font-semibold text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your name"}</span>
           {tutor.verified && <VerifiedTick size={13} />}
-          {tutor.online && <OnlineDot size={7} />}
         </div>
         <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{tutor.role || "Your headline"}</div>
         <div className="text-[11.5px] text-slate-400 mt-0.5 flex items-center gap-1">
@@ -816,7 +873,7 @@ export function Breadcrumb() {
     <nav className="text-[12.5px] text-slate-500 flex items-center gap-1.5 py-4">
       <Link href="/" className="hover:text-slate-900">Home</Link>
       <Icon name="chevron-right" size={12} className="text-slate-300" />
-      <Link href="/dashboard" className="hover:text-slate-900">Dashboard</Link>
+      <Link href="/settings" className="hover:text-slate-900">Settings</Link>
       <Icon name="chevron-right" size={12} className="text-slate-300" />
       <span className="text-slate-900 font-medium">Edit profile</span>
     </nav>

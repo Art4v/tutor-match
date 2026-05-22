@@ -12,11 +12,11 @@ This README is the high-level project overview. For day-to-day contributor guida
 | --- | --- |
 | Public site (`/`, `/browse`, `/tutor/[slug]`) reading from Supabase | ✅ Implemented (server components, request-time queries) |
 | Auth (signup / login) | ✅ Wired to Supabase Auth |
-| Tutor dashboard / profile editor (`/dashboard`) | ✅ Implemented + persists to Supabase |
+| Tutor settings / profile editor (`/settings`) | ✅ Implemented + persists to Supabase (incl. avatar + banner uploads) |
 | Slug-based public profile URLs (`/tutor/[slug]`) | ✅ Implemented (unique slug auto-generated on tutor signup) |
 | Browse filters with shareable URL state | ✅ Implemented (single-select sidebar filters; year-level chips are multi-select but local-state only) |
 | Service area map | ✅ Real Leaflet + OSM map with circle overlay; Nominatim → Photon geocoder fallback; OSM → CARTO tile fallback |
-| Supabase schema | ✅ 4 migrations defined (`0001`–`0004`) |
+| Supabase schema | ✅ 6 migrations defined (`0001`–`0006`) |
 | Messaging (`/messages`) | 🟡 Stub page only ("messaging is coming soon"); full two-pane impl is in git history |
 | Saved-tutors list | 🟡 In-memory only; only the mobile sticky bar on `/tutor/[slug]` still surfaces it |
 | Booking / payments (Request a lesson) | ❌ Button is disabled with a "coming soon" caption |
@@ -56,6 +56,8 @@ npm install
    2. `0002_tutor_profile.sql`
    3. `0003_tutor_dashboard.sql`
    4. `0004_browse.sql`
+   5. `0005_default_public.sql`
+   6. `0006_profile_images.sql` — adds `avatar_url`/`banner_url` columns and the public `profile-images` Storage bucket (required for avatar + banner uploads)
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -81,7 +83,7 @@ There are no tests configured.
 | `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile. `getTutorBySlug()` → camelCase tutor object; `notFound()` if no match or `visibility ≠ 'public'`. Renders the real Leaflet service-area map when coordinates are available. |
 | `/messages` | `app/messages/page.js` | Stub: "messaging is coming soon". Not linked from the nav. |
 | `/signup`, `/login` | `app/(auth)/...` | Email + password forms sharing `app/(auth)/layout.js` (centered card). |
-| `/dashboard` | `app/dashboard/page.js` | Server component. Redirects to `/login` if no session; otherwise loads the `DashboardEditor` client component. |
+| `/settings` | `app/settings/page.js` | Server component. Redirects to `/login` if no session; otherwise loads the `SettingsEditor` client component. |
 | `/api/geocode` | `app/api/geocode/route.js` | `GET ?q=<suburb>` → `{ lat, lng }` or `{ lat: null, lng: null }`. Backed by `lib/geocode.js`. |
 
 ---
@@ -100,9 +102,9 @@ tutor-match/
 │  ├─ browse/
 │  │  ├─ page.js                # server component; reads filters from searchParams
 │  │  └─ BrowseFilters.jsx      # client; URL-driven sidebar + sort chips
-│  ├─ dashboard/
+│  ├─ settings/
 │  │  ├─ page.js                # server component; gates on auth
-│  │  ├─ DashboardEditor.js     # client component; form state + save flow
+│  │  ├─ SettingsEditor.js      # client component; form state + save flow
 │  │  └─ sections.js            # all visual editor sections + form primitives + ServiceAreaSection
 │  ├─ messages/page.js          # stub
 │  ├─ tutor/[slug]/
@@ -135,7 +137,9 @@ tutor-match/
 │  ├─ 0001_init.sql
 │  ├─ 0002_tutor_profile.sql
 │  ├─ 0003_tutor_dashboard.sql
-│  └─ 0004_browse.sql
+│  ├─ 0004_browse.sql
+│  ├─ 0005_default_public.sql
+│  └─ 0006_profile_images.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -200,22 +204,22 @@ The role chip (Tutor/Student) sets `role` in user metadata. The database trigger
 - `getFeaturedTutors(supabase, limit, excludeId)` — top-N by `rating desc nulls last, review_count desc`. Used by `/` and the "Similar tutors" sidebar.
 - `getTutorBySlug(supabase, slug)` — full detail-page shape. Returns null if no public tutor matches.
 - `getDistinctCities(supabase)`, `getSubjects(supabase)`, `getSubjectNames(supabase)` — feed the filter sidebar + hero search dropdowns.
-- `getTutorProfile(supabase, id)`, `getTutorProfileForEditor(supabase, id)`, `saveTutorProfile(supabase, id, tutor)` — used by `/dashboard`. The editor helper returns camelCase keys matching the editor's in-memory state; `saveTutorProfile` does scalar update + replace-all on the four child tables (subjects, packages, experience, education) — not transactional.
+- `getTutorProfile(supabase, id)`, `getTutorProfileForEditor(supabase, id)`, `saveTutorProfile(supabase, id, tutor)` — used by `/settings`. The editor helper returns camelCase keys matching the editor's in-memory state; `saveTutorProfile` does scalar update + replace-all on the four child tables (subjects, packages, experience, education) — not transactional.
 
 ### Maps & geocoding
 
-The Service area card on `/tutor/[slug]` and the live preview in the dashboard editor both render a real Leaflet map of the suburb with a dashed-circle radius overlay.
+The Service area card on `/tutor/[slug]` and the live preview in the settings editor both render a real Leaflet map of the suburb with a dashed-circle radius overlay.
 
 - **Tiles:** OpenStreetMap by default. On >3 `tileerror` events the map swaps to CARTO Voyager tiles (same coordinate scheme, no key). Implemented inside `components/ServiceMapLeaflet.jsx`.
 - **Geocoding:** `lib/geocode.js` exports `geocodeSuburb(suburb)` (server-only). Tries Nominatim first (sends an identifying `User-Agent` per OSM policy), then Photon. Returns `{ lat, lng } | null`. Results are cached in-process by lowercased suburb.
-- **Browser path:** the dashboard editor never calls Nominatim directly; it hits the local `/api/geocode` proxy (`app/api/geocode/route.js`).
-- **When in the editor:** the base-suburb input is debounced 600ms before geocoding. On `Save`, `DashboardEditor` re-tries the geocode if the stored coords are stale, so the saved row always has the freshest coords we can resolve.
-- **Fallback behavior:** if both Nominatim and Photon fail (typo / unknown suburb / both endpoints down), the dashboard shows an SVG placeholder, the row still saves (without lat/lng), and the public profile card hides the map block entirely — only the "In-person within N km of <suburb>" text line is shown.
+- **Browser path:** the settings editor never calls Nominatim directly; it hits the local `/api/geocode` proxy (`app/api/geocode/route.js`).
+- **When in the editor:** the base-suburb input is debounced 600ms before geocoding. On `Save`, `SettingsEditor` re-tries the geocode if the stored coords are stale, so the saved row always has the freshest coords we can resolve.
+- **Fallback behavior:** if both Nominatim and Photon fail (typo / unknown suburb / both endpoints down), the editor shows an SVG placeholder, the row still saves (without lat/lng), and the public profile card hides the map block entirely — only the "In-person within N km of <suburb>" text line is shown.
 
 ### State & navigation
 
 - **Filter state on `/browse` lives in the URL.** `BrowseFilters.jsx` calls `router.replace()` on every change; the server page re-runs the Supabase query. Repeated `subject=` params encode multi-select. Year-level chips are multi-select in the UI but local state only — they don't yet write to the URL or feed `getTutorsForBrowse()`.
-- `components/TopNav.js` is auth-aware: logged-in users see a single avatar-chip dropdown containing Browse / Dashboard / Log out; logged-out users see only Log in + Sign Up (no Browse). The navbar is `z-40` to stay above the dashboard's own `z-30` sticky save bar.
+- `components/TopNav.js` is auth-aware: logged-in users see a single avatar-chip dropdown containing Browse / Settings / Log out; logged-out users see only Log in + Sign Up (no Browse). The navbar is `z-40` to stay above the settings editor's own `z-30` sticky save bar.
 - `components/SavedContext.js` is an in-memory "saved tutors" list (no persistence). Only the mobile sticky `SaveButton` on `/tutor/[slug]` still consumes it; tutor cards and the desktop tutor banner no longer surface a save button.
 
 ### Path alias

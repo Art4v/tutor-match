@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorProfileForEditor } from "@/lib/supabase/tutors";
-import { DashboardEditor } from "./DashboardEditor";
+import { SettingsEditor } from "./SettingsEditor";
 
-export const metadata = { title: "Edit your profile — tutormatch" };
+export const metadata = { title: "Settings — tutormatch" };
 
-export default async function DashboardPage() {
+export default async function SettingsPage() {
   const supabase = createSupabaseServerClient();
   const {
     data: { user },
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const initialTutor = await getTutorProfileForEditor(supabase, user.id);
 
   return (
-    <DashboardEditor
+    <SettingsEditor
       initialTutor={initialTutor}
       userId={user.id}
       userEmail={user.email}
