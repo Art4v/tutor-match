@@ -11,6 +11,7 @@ export function TopNav() {
   const [focused, setFocused] = useState(false);
   const [q, setQ] = useState("");
   const [user, setUser] = useState(null);
+  const [tutorSlug, setTutorSlug] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -44,6 +45,27 @@ export function TopNav() {
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  // Tutors have a public profile page; fetch their slug so the menu can link to it.
+  useEffect(() => {
+    if (!user || user.user_metadata?.role !== "tutor") {
+      setTutorSlug(null);
+      return;
+    }
+    const supabase = createSupabaseBrowserClient();
+    let active = true;
+    supabase
+      .from("tutor_profiles")
+      .select("slug")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (active) setTutorSlug(data?.slug ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const onLogout = async () => {
     setLoggingOut(true);
@@ -127,6 +149,16 @@ export function TopNav() {
                         padding: 4,
                       }}
                     >
+                      {tutorSlug && (
+                        <Link
+                          href={`/tutor/${tutorSlug}`}
+                          role="menuitem"
+                          onClick={() => setMenuOpen(false)}
+                          className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
+                        >
+                          Profile
+                        </Link>
+                      )}
                       <Link
                         href="/browse"
                         role="menuitem"
