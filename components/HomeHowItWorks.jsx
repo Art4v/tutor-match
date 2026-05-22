@@ -15,7 +15,7 @@ const STEPS = [
   {
     n: "03",
     t: "Lessons, in-person or online",
-    b: "Pay safely through tutormatch. We hold payment until 24 hours after the lesson — no agency markup.",
+    b: "Meet in person or over video. Set a schedule that fits around school and stay in touch with your tutor between sessions.",
   },
 ];
 
