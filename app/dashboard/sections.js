@@ -524,7 +524,7 @@ export function SubjectsSection({ tutor, set, suggestions }) {
 }
 
 function ServiceMapPlaceholder({ radiusKm }) {
-  const radius = 18 + (Math.min(500, Math.max(1, radiusKm)) / 500) * 68;
+  const radius = 18 + (Math.min(50, Math.max(1, radiusKm)) / 50) * 68;
   return (
     <div style={{ background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 12, overflow: "hidden", height: 200 }} className="relative">
       <svg viewBox="0 0 280 200" width="100%" height="100%">
@@ -589,7 +589,7 @@ export function ServiceAreaSection({ tutor, set }) {
           <div className="mt-4">
             <Field label="Travel radius" hint={`In-person lessons within ${r} km of ${sa.suburb || "your base"}.`}>
               <div className="flex items-center gap-3">
-                <input type="range" min={1} max={500} step={1} value={r}
+                <input type="range" min={1} max={50} step={1} value={r}
                   onChange={(e) => set({ serviceArea: { ...sa, radiusKm: Number(e.target.value) } })} className="flex-1" />
                 <span className="text-[14px] tabular-nums font-medium text-slate-900 w-14 text-right">{r} km</span>
               </div>

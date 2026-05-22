@@ -20,14 +20,6 @@ export default async function ProfilePage({ params }) {
   return (
     <div className="bg-white">
       <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-24">
-        <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500 mb-4">
-          <Link href="/" className="hover:text-slate-900">Home</Link>
-          <Icon name="chevron-right" size={12} />
-          <Link href="/browse" className="hover:text-slate-900">Tutors</Link>
-          <Icon name="chevron-right" size={12} />
-          <span className="text-slate-700">{tutor.name}</span>
-        </div>
-
         <div className="relative bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
           <div
             style={{
@@ -207,6 +199,7 @@ export default async function ProfilePage({ params }) {
 
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
+            {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {tutor.verifications.length > 0 && <VerificationCard verifications={tutor.verifications} />}
             {tutor.suburb && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
@@ -245,6 +238,19 @@ function Section({ title, subtitle, children, id }) {
       </div>
       {children}
     </section>
+  );
+}
+
+function SubjectsCard({ subjects }) {
+  return (
+    <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+      <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
+      <div className="flex flex-wrap gap-1.5">
+        {subjects.map((s, i) => (
+          <Chip key={i} tone="cream" icon="graduation">{s}</Chip>
+        ))}
+      </div>
+    </div>
   );
 }
 
