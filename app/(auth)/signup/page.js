@@ -73,7 +73,7 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    router.push("/");
+    router.push("/settings");
     router.refresh();
   };
 
