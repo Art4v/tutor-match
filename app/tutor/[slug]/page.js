@@ -176,16 +176,23 @@ export default async function ProfilePage({ params }) {
               </Section>
             )}
 
-            {tutor.reviews > 0 && (
-              <Section
-                title={`Reviews · ${tutor.reviews}`}
-                subtitle={tutor.rating ? `${tutor.rating.toFixed(1)} average from ${tutor.reviews} parents and students` : undefined}
-              >
-                <div className="text-[14px] text-slate-500">
-                  Reviews are coming soon — we&apos;re working on a way for verified students to leave them.
-                </div>
-              </Section>
-            )}
+            <Section
+              title={
+                <span className="flex items-center gap-2">
+                  Ratings &amp; reviews
+                  <span
+                    className="text-[11px] font-medium uppercase tracking-wider text-slate-500 px-2 py-0.5"
+                    style={{ border: "1px solid #E5E7EB", borderRadius: 999, background: "#FAFAFA" }}
+                  >
+                    Coming soon
+                  </span>
+                </span>
+              }
+            >
+              <div className="text-[14px] text-slate-500">
+                Ratings and reviews are coming soon — we&apos;re working on a way for verified students to leave them.
+              </div>
+            </Section>
 
             {tutor.availability && (
               <Section title="Availability" subtitle="This week — times shown in your timezone">
