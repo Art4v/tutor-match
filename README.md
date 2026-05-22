@@ -11,12 +11,12 @@ This README is the high-level project overview. For day-to-day contributor guida
 | Area | State |
 | --- | --- |
 | Public site (`/`, `/browse`, `/tutor/[slug]`) reading from Supabase | ✅ Implemented (server components, request-time queries) |
-| Auth (signup / login) | ✅ Wired to Supabase Auth |
+| Auth (signup / login) | ✅ Wired to Supabase Auth; signup goes through a server route that validates password policy + email domain (MX lookup) |
 | Tutor settings / profile editor (`/settings`) | ✅ Implemented + persists to Supabase (incl. avatar + banner uploads) |
 | Slug-based public profile URLs (`/tutor/[slug]`) | ✅ Implemented (unique slug auto-generated on tutor signup) |
 | Browse filters with shareable URL state | ✅ Implemented (single-select sidebar filters; year-level chips are multi-select but local-state only) |
 | Service area map | ✅ Real Leaflet + OSM map with circle overlay; Nominatim → Photon geocoder fallback; OSM → CARTO tile fallback |
-| Supabase schema | ✅ 6 migrations defined (`0001`–`0006`) |
+| Supabase schema | ✅ 7 migrations defined (`0001`–`0007`); public listing gated on email confirmation (`0007`) |
 | Messaging (`/messages`) | 🟡 Stub page only ("messaging is coming soon"); full two-pane impl is in git history |
 | Saved-tutors list | 🟡 In-memory only; only the mobile sticky bar on `/tutor/[slug]` still surfaces it |
 | Booking / payments (Request a lesson) | ❌ Button is disabled with a "coming soon" caption |
@@ -58,6 +58,7 @@ npm install
    4. `0004_browse.sql`
    5. `0005_default_public.sql`
    6. `0006_profile_images.sql` — adds `avatar_url`/`banner_url` columns and the public `profile-images` Storage bucket (required for avatar + banner uploads)
+   7. `0007_email_confirmed.sql` — mirrors `auth.users.email_confirmed_at` onto `tutor_profiles` so the public queries can hide unconfirmed signups (required, or the public pages error on the missing column)
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -82,7 +83,8 @@ There are no tests configured.
 | `/browse` | `app/browse/page.js` | Server component. Parses filter state from `searchParams` and calls `getTutorsForBrowse()`. Filter sidebar (`BrowseFilters.jsx`) is a client component — every change rewrites the URL so filters are shareable / back-button-friendly. |
 | `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile. `getTutorBySlug()` → camelCase tutor object; `notFound()` if no match or `visibility ≠ 'public'`. Renders the real Leaflet service-area map when coordinates are available. |
 | `/messages` | `app/messages/page.js` | Stub: "messaging is coming soon". Not linked from the nav. |
-| `/signup`, `/login` | `app/(auth)/...` | Email + password forms sharing `app/(auth)/layout.js` (centered card). |
+| `/signup`, `/login` | `app/(auth)/...` | Email + password forms sharing `app/(auth)/layout.js` (centered card). Signup posts to `/api/auth/signup` (Student role is "coming soon" — only Tutor is selectable). |
+| `/api/auth/signup` | `app/api/auth/signup/route.js` | `POST { fullName, email, password, role }`. Authoritative signup gate: re-validates the password policy + email format and verifies the email domain can receive mail (MX / A-record lookup) before calling `supabase.auth.signUp`. Returns `{ status: "session" \| "confirm" \| "exists" }`. |
 | `/settings` | `app/settings/page.js` | Server component. Redirects to `/login` if no session; otherwise loads the `SettingsEditor` client component. |
 | `/api/geocode` | `app/api/geocode/route.js` | `GET ?q=<suburb>` → `{ lat, lng }` or `{ lat: null, lng: null }`. Backed by `lib/geocode.js`. |
 
@@ -98,6 +100,7 @@ tutor-match/
 │  │  ├─ login/page.js
 │  │  └─ signup/page.js         # role chip → auth.user_metadata.{role, full_name}
 │  ├─ api/
+│  │  ├─ auth/signup/route.js   # POST signup gate: password + email-domain validation → auth.signUp
 │  │  └─ geocode/route.js       # GET /api/geocode?q=<suburb> → { lat, lng }
 │  ├─ browse/
 │  │  ├─ page.js                # server component; reads filters from searchParams
@@ -128,10 +131,14 @@ tutor-match/
 │  ├─ TutorCard.js              # canonical hover-animated card pattern
 │  └─ ui.js                     # Avatar, VerifiedTick, OnlineDot, Chip, Button
 ├─ lib/
+│  ├─ availability.js           # canonical 8×7 availability-grid hour/day labels (shared editor + public)
+│  ├─ email.js                  # email format check + domain extractor (shared client + server)
+│  ├─ password.js               # password policy rules (shared signup form + server route)
 │  ├─ geocode.js                # Nominatim → Photon fallback chain; in-process cache
 │  └─ supabase/
 │     ├─ client.js              # createBrowserClient — for client components
 │     ├─ server.js              # createServerClient — for server components / route handlers
+│     ├─ storage.js             # avatar/banner uploads to the profile-images bucket
 │     └─ tutors.js              # browse, featured, slug, editor, save, subjects, cities
 ├─ supabase/migrations/
 │  ├─ 0001_init.sql
@@ -139,7 +146,8 @@ tutor-match/
 │  ├─ 0003_tutor_dashboard.sql
 │  ├─ 0004_browse.sql
 │  ├─ 0005_default_public.sql
-│  └─ 0006_profile_images.sql
+│  ├─ 0006_profile_images.sql
+│  └─ 0007_email_confirmed.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -183,20 +191,21 @@ Don't refactor inline styles into a global stylesheet without good reason — th
 - `0003_tutor_dashboard.sql` — renames `atar_rank` → `rank`; adds dashboard-editor columns (`headline`, `rank_subject`, `verified`, `delivers_in_person`, `delivers_online`, `service_area` jsonb, `verifications` jsonb, `visibility` text with a check constraint); converts `credentials` from `text[]` to `jsonb` of `{label, icon}`. The `service_area` JSONB shape used by the app is `{ suburb, radiusKm, lat?, lng?, geocodedSuburb? }` — coords are populated by the geocoder; the column itself stays untyped JSONB.
 - `0004_browse.sql` — adds `tutor_profiles.slug` (unique) + a `generate_unique_slug(name)` helper. Extends `handle_new_user()` to populate the slug on new tutor signups and backfills existing rows. Changes the `visibility` default from `'public'` to `'unlisted'` (later reverted in `0005`). Adds filter indexes on `visibility`, `city`, `atar`, `rate`, and a second SELECT policy on `profiles` for public read of tutor rows so the browse join can return tutor names.
 - `0005_default_public.sql` — reverses step 5 of `0004`: sets the `visibility` default back to `'public'` so new tutor signups appear on `/browse` as soon as `handle_new_user()` creates the row. Existing rows are untouched (an optional commented backfill promotes any leftover `'unlisted'` rows).
+- `0006_profile_images.sql` — adds `avatar_url`/`banner_url` text columns to `tutor_profiles` and creates the public `profile-images` Storage bucket with owner-scoped RLS (anyone can read; an authenticated user can only write/replace/delete files under their own `<uid>/...` folder). Backs the avatar + banner uploads in `lib/supabase/storage.js`.
+- `0007_email_confirmed.sql` — gates public listing on email confirmation. The anon read role can't see `auth.users`, so this mirrors `auth.users.email_confirmed_at` onto `tutor_profiles`: `handle_new_user()` copies it on insert (non-null when the project auto-confirms), and an `AFTER UPDATE` trigger on `auth.users` propagates it when the user later clicks the confirmation link. The public query helpers in `lib/supabase/tutors.js` filter `email_confirmed_at IS NOT NULL` alongside `visibility = 'public'`, so unconfirmed signups never appear on `/`, `/browse`, or `/tutor/[slug]`. **This migration is required** — the public queries reference the column, so a DB missing `0007` will error.
 
 **Signup flow**
 
-`app/(auth)/signup/page.js` calls:
+The signup form (`app/(auth)/signup/page.js`) does **not** call `supabase.auth.signUp` directly. It POSTs to `/api/auth/signup` (`app/api/auth/signup/route.js`), the authoritative server-side gate, which:
 
-```js
-supabase.auth.signUp({
-  email,
-  password,
-  options: { data: { full_name, role } },
-});
-```
+1. Re-validates the password against the shared policy in `lib/password.js` (the form shows the same live checklist, but the server is the gate that can't be bypassed by disabling JS).
+2. Validates the email format (`lib/email.js`) and confirms the domain can actually receive mail via a DNS MX lookup (falling back to an A/AAAA record), so typo'd domains like `gmial.con` are rejected.
+3. Calls `supabase.auth.signUp({ email, password, options: { data: { full_name, role } } })` server-side, and returns `{ status }`:
+   - `"session"` — confirmation disabled; the route writes the session cookies onto the response and the client redirects to `/settings`.
+   - `"confirm"` — confirmation enabled; the client shows a "check your email" message.
+   - `"exists"` — email already registered (Supabase signals this with an empty `identities` array rather than an error); the client points the user to log in.
 
-The role chip (Tutor/Student) sets `role` in user metadata. The database trigger — not the client — decides which extension table to populate. **Do not insert into `profiles` or extension tables directly from the client.**
+The role chip sets `role` in user metadata. The database trigger — not the client — decides which extension table to populate. **Do not insert into `profiles` or extension tables directly from the client.** Student signup is currently disabled in the UI ("coming soon"); only Tutor accounts can be created.
 
 **Query helpers (`lib/supabase/tutors.js`)** — all take a Supabase client as the first arg so they work from both server and browser contexts:
 
