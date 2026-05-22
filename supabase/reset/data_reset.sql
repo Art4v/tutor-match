@@ -10,10 +10,13 @@
 --     `public.student_profiles`, and all four tutor child tables
 --     (`tutor_subjects`, `tutor_packages`, `tutor_experience`,
 --     `tutor_education`) — drained via `on delete cascade`.
---   * every uploaded object in the `profile-images` Storage bucket
---     (avatar + banner images from 0006_profile_images.sql). The tutors'
---     `avatar_url` / `banner_url` columns go away with their rows above; this
---     also clears the actual files those URLs pointed at.
+--
+-- DOES NOT delete the uploaded avatar/banner files in the `profile-images`
+-- Storage bucket (0006). Supabase blocks direct DELETEs on storage tables (a
+-- `storage.protect_delete()` trigger), so empty the bucket via the Storage
+-- API: Studio -> Storage -> profile-images -> select all -> delete. The
+-- tutors' `avatar_url` / `banner_url` columns go away with their rows above,
+-- so any files left behind are just orphaned blobs (harmless in dev).
 --
 -- WHAT IT PRESERVES (intentionally):
 --   * The schema itself: tables, columns, indexes, constraints.
@@ -21,20 +24,13 @@
 --     functions and their triggers.
 --   * The seeded `public.subjects` reference table (the 17 HSC/UCAT/LSAT
 --     subjects from 0002_tutor_profile.sql).
---   * The `profile-images` Storage bucket itself and its RLS policies — only
---     the uploaded objects inside it are removed, not the bucket.
+--   * The `profile-images` Storage bucket itself and its RLS policies.
 --
 -- Use this when iterating in dev and you want a fresh slate without having to
 -- re-run every migration.
 -- ============================================================================
 
 begin;
-
--- Uploaded profile images (0006). `storage.objects.owner` references
--- `auth.users` on some Supabase versions, so drain these first to avoid a
--- restrict-FK error when we delete the users below. The bucket row in
--- `storage.buckets` and the bucket's RLS policies are left in place.
-delete from storage.objects where bucket_id = 'profile-images';
 
 -- Cascading FK chain:
 --   auth.users(id)
@@ -65,8 +61,10 @@ restart identity cascade;
 
 commit;
 
--- Sanity check — every count below should be 0, except the two "(kept)" rows:
+-- Sanity check — the public.* / auth.users counts should all be 0.
 -- `subjects` should still be 17 and `profile-images bucket` should still be 1.
+-- `profile-images objects` is NOT auto-cleared (see header) — anything > 0 is
+-- orphaned files to delete via the Storage UI.
 select 'auth.users'                  as table, count(*) from auth.users
 union all select 'profiles',              count(*) from public.profiles
 union all select 'tutor_profiles',        count(*) from public.tutor_profiles
@@ -75,6 +73,6 @@ union all select 'tutor_subjects',        count(*) from public.tutor_subjects
 union all select 'tutor_packages',        count(*) from public.tutor_packages
 union all select 'tutor_experience',      count(*) from public.tutor_experience
 union all select 'tutor_education',       count(*) from public.tutor_education
-union all select 'profile-images objects', count(*) from storage.objects where bucket_id = 'profile-images'
+union all select 'profile-images objects (clear via UI)', count(*) from storage.objects where bucket_id = 'profile-images'
 union all select 'subjects (kept)',       count(*) from public.subjects
 union all select 'profile-images bucket (kept)', count(*) from storage.buckets where id = 'profile-images';
