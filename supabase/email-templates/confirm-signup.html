@@ -1,0 +1,84 @@
+<!--
+  Supabase "Confirm signup" email template.
+  Paste into: Supabase Dashboard → Authentication → Emails → Confirm signup.
+  Template variables: {{ .ConfirmationURL }} is rendered by Supabase.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light only" />
+    <title>Confirm your email</title>
+  </head>
+  <body style="margin:0; padding:0; background:#F8FAFC; font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <!-- Card -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background:#ffffff; border:1px solid #E5E7EB; border-radius:16px; overflow:hidden;">
+            <tr>
+              <td style="padding:36px 36px 8px 36px;">
+                <!-- Logo -->
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="width:40px; height:40px; background:#0F172A; border-radius:8px; text-align:center; vertical-align:middle;">
+                      <span style="color:#ffffff; font-size:18px; font-weight:700; letter-spacing:-0.04em;">tm</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 36px 0 36px;">
+                <h1 style="margin:0; font-size:22px; line-height:1.3; font-weight:700; color:#0F172A; letter-spacing:-0.02em;">
+                  Confirm your email
+                </h1>
+                <p style="margin:14px 0 0 0; font-size:15px; line-height:1.6; color:#475569;">
+                  Thanks for signing up. Click the button below to confirm your email address and finish setting up your account.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 36px 0 36px;">
+                <!-- Button -->
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="background:#0F172A; border-radius:10px;">
+                      <a href="{{ .ConfirmationURL }}"
+                         style="display:inline-block; padding:13px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px;">
+                        Confirm email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 36px 0 36px;">
+                <p style="margin:0; font-size:13px; line-height:1.6; color:#94A3B8;">
+                  If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="margin:8px 0 0 0; font-size:13px; line-height:1.6; word-break:break-all;">
+                  <a href="{{ .ConfirmationURL }}" style="color:#0F172A; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 36px 36px 36px;">
+                <hr style="border:none; border-top:1px solid #F1F5F9; margin:0 0 18px 0;" />
+                <p style="margin:0; font-size:12px; line-height:1.6; color:#94A3B8;">
+                  If you didn't create an account, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <!-- Footer -->
+          <p style="margin:20px 0 0 0; font-size:12px; color:#94A3B8;">
+            &copy; TutorMatch
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
