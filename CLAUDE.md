@@ -15,6 +15,8 @@ There are no tests configured.
 
 Copy `.env.example` → `.env.local` and fill in the two Supabase values. The example file's header comment is the canonical setup checklist (project creation → API keys → running the SQL migrations). Apply every file in `supabase/migrations/` in numeric order in the Supabase SQL Editor — `0001_init.sql`, `0002_tutor_profile.sql`, `0003_tutor_dashboard.sql`, `0004_browse.sql`, `0005_default_public.sql`, `0006_profile_images.sql`, `0007_email_confirmed.sql`. Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
+Auth emails (signup confirmation) are sent **by Supabase** over **Resend custom SMTP**, configured entirely in the Supabase dashboard (Project Settings → Authentication → SMTP Settings) — there is **no Resend key in `.env.local`**, because the app never sends mail itself. This replaces Supabase's built-in sender (capped ~2 emails/hour, poor deliverability). `supabase/email-templates/confirm-signup.html` is the source-of-truth for the confirmation template (pasted into Authentication → Emails → Confirm signup). Without a verified Resend domain the sender is `onboarding@resend.dev`, which only delivers to your own Resend account email; verify a domain (SPF/DKIM/DMARC) to send to anyone. See the README "Configure auth email (Resend SMTP)" section.
+
 ## Architecture
 
 ### Big picture

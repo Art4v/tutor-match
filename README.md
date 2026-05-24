@@ -62,7 +62,30 @@ npm install
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
-### 3. Run
+### 3. Configure auth email (Resend SMTP)
+
+Auth emails (signup confirmation) are sent **by Supabase**, so Resend is wired up in the Supabase
+dashboard, not in this app — there is no Resend env var in `.env.local`. The built-in Supabase
+sender is capped at ~2 emails/hour and has poor deliverability, so confirmations frequently never
+arrive; routing through Resend fixes both.
+
+1. Create a [Resend](https://resend.com) account → **API Keys** → create a key (`re_...`).
+2. Supabase Dashboard → **Project Settings → Authentication → SMTP Settings** → enable Custom SMTP:
+   - Host `smtp.resend.com`, Port `465` (or `587`), Username `resend`, Password = your `re_...` key.
+   - Sender name `TutorMatch`. Sender email `onboarding@resend.dev` until you verify a domain (see below).
+3. Supabase Dashboard → **Authentication → Emails → Confirm signup** → paste
+   `supabase/email-templates/confirm-signup.html` (the source-of-truth for this template).
+4. Supabase Dashboard → **Authentication → Rate Limits** → raise "emails sent per hour" above 2.
+5. Supabase Dashboard → **Authentication → URL Configuration** → set Site URL (`http://localhost:3000`
+   in dev) so the confirmation link redirects back correctly.
+
+**Test mode:** with no verified domain, `onboarding@resend.dev` only delivers to the email you
+registered your Resend account with — sign up with that address when testing locally.
+
+**Going live:** add a domain in Resend (Dashboard → Domains), create the SPF/DKIM/DMARC DNS records
+it shows, wait for "Verified", then change the Supabase Sender email to e.g. `noreply@yourdomain.com`.
+
+### 4. Run
 
 ```bash
 npm run dev      # http://localhost:3000
