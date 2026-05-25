@@ -158,7 +158,6 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   };
 
   const onDiscard = () => setTutor(snapshot);
-  const onPreview = () => window.open(`/tutor/${userId}`, "_blank");
 
   useEffect(() => {
     const h = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
@@ -200,7 +199,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
           </div>
 
           <div className="space-y-5 lg:sticky lg:top-[88px]">
-            <Sidebar tutor={tutor} set={set} onPreview={onPreview} publicHref={publicHref} catalog={subjectCatalog} />
+            <Sidebar tutor={tutor} set={set} publicHref={publicHref} catalog={subjectCatalog} />
             <VerificationsSection />
           </div>
         </div>

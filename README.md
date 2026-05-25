@@ -97,7 +97,6 @@ it shows, wait for "Verified", then change the Supabase Sender email to e.g. `no
 npm run dev      # http://localhost:3000
 npm run build    # production build (requires the two NEXT_PUBLIC_* vars; placeholders are fine for smoke-tests)
 npm run start    # serve the production build
-npm run lint     # Next's built-in ESLint
 ```
 
 There are no tests configured.

@@ -7,7 +7,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` — Next.js dev server on `http://localhost:3000`.
 - `npm run build` — production build. Use this after structural changes to verify the app still compiles. The build requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to be set (placeholders are fine when smoke-testing).
 - `npm run start` — serve the production build locally.
-- `npm run lint` — Next's built-in ESLint.
 
 There are no tests configured.
 

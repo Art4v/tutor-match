@@ -859,11 +859,10 @@ function MiniPreview({ tutor, catalog = [] }) {
   );
 }
 
-export function Sidebar({ tutor, set, onPreview, publicHref, catalog }) {
+export function Sidebar({ tutor, set, publicHref, catalog }) {
   const c = useMemo(() => calcCompletion(tutor), [tutor]);
   const visOptions = [
     { value: "public",   label: "Public", hint: "Visible to everyone." },
-    { value: "unlisted", label: "Unlisted", hint: "Hidden from browse — link only." },
     { value: "hidden",   label: "Hidden", hint: "Profile is offline." },
   ];
   return (
@@ -911,11 +910,10 @@ export function Sidebar({ tutor, set, onPreview, publicHref, catalog }) {
 
       <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Public profile link</h3>
-        <div className="flex items-center gap-2 px-3 py-2 mb-3" style={{ background: "#FAFAFA", borderRadius: 10 }}>
+        <div className="flex items-center gap-2 px-3 py-2" style={{ background: "#FAFAFA", borderRadius: 10 }}>
           <Icon name="globe" size={14} className="text-slate-400 shrink-0" />
           <code className="text-[12.5px] text-slate-700 truncate">{publicHref}</code>
         </div>
-        <Button variant="outline" size="sm" full iconRight="external" onClick={onPreview}>Open public profile</Button>
       </Card>
 
       <div>
