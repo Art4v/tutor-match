@@ -40,8 +40,7 @@ export default async function ProfilePage({ params }) {
                 <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">{tutor.name}</h1>
                 {tutor.verified && <VerifiedTick size={18} />}
               </div>
-              {tutor.role && <div className="text-[15px] text-slate-600 mt-1">{tutor.role}</div>}
-              {tutor.bio && <div className="text-[14px] text-slate-500 mt-1">{tutor.bio}</div>}
+              {tutor.bio && <div className="text-[15px] text-slate-600 mt-1">{tutor.bio}</div>}
               <div className="flex items-center gap-4 text-[13.5px] text-slate-500 mt-2 flex-wrap">
                 {(tutor.suburb || tutor.city) && (
                   <span className="flex items-center gap-1.5">

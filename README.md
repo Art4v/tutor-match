@@ -18,7 +18,7 @@ This README is the high-level project overview. For day-to-day contributor guida
 | Subject catalog | ✅ Exam-scoped Australian catalog (254 subjects across HSC/VCE/IB/QCE/SACE/WACE/TCE/ACT + a `TEST` group for UCAT/GAMSAT/LAT); identified by slug, labelled via `lib/subjects.js` |
 | Location search | ✅ Geospatial — suburb autocomplete (`SuburbAutocomplete` → `/api/places`) yields `lat`/`lng`; `/browse` matches tutors whose travel radius covers the point via the `tutors_within_service_radius` SQL function |
 | Service area map | ✅ Real Leaflet + OSM map with circle overlay; Nominatim/Photon geocoders; OSM → CARTO tile fallback |
-| Supabase schema | ✅ 11 migrations defined (`0001`–`0011`); public listing gated on email confirmation (`0007`); geospatial radius columns + RPC (`0008`); exam-scoped subject catalog (`0009`/`0010`); K–12 year-level range + `GENERAL` exam group (`0011`) |
+| Supabase schema | ✅ 12 migrations defined (`0001`–`0012`); public listing gated on email confirmation (`0007`); geospatial radius columns + RPC (`0008`); exam-scoped subject catalog (`0009`/`0010`); K–12 year-level range + `GENERAL` exam group (`0011`); headline dropped in favour of the tagline (`0012`) |
 | Messaging (`/messages`) | 🟡 Stub page only ("messaging is coming soon"); full two-pane impl is in git history |
 | Booking / payments (Request a lesson) | ❌ Button is disabled with a "coming soon" caption |
 | Student dashboard | ❌ Not started (`student_profiles` table exists but has no UI) |
@@ -64,6 +64,7 @@ npm install
    9. `0009_subject_catalog.sql` — wipes the 17 seeded subjects and reseeds the exam-scoped Australian catalog (254 subjects + a `certificates` reference table; subjects keyed by exam-prefixed slug)
    10. `0010_rename_certificates_to_exams.sql` — pure rename: `certificates` → `exams`, `subjects.certificate_code` → `subjects.exam_code` (no data change)
    11. `0011_year_levels_and_general.sql` — adds `tutor_profiles.year_min`/`year_max` (the K–12 range a tutor teaches; default 7–12, drives the `/browse` year filter) and a new `GENERAL` exam group (English/Mathematics/Science/History/Geography) for pre-Year-11 tutoring
+   12. `0012_remove_headline.sql` — drops `tutor_profiles.headline` (the tagline `bio` takes over its role); backfills any headline text into an empty tagline first
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -183,7 +184,8 @@ tutor-match/
 │  ├─ 0008_service_area_geo.sql
 │  ├─ 0009_subject_catalog.sql
 │  ├─ 0010_rename_certificates_to_exams.sql
-│  └─ 0011_year_levels_and_general.sql
+│  ├─ 0011_year_levels_and_general.sql
+│  └─ 0012_remove_headline.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -224,7 +226,7 @@ Don't refactor inline styles into a global stylesheet without good reason — th
   - a `tutor_subjects` join table,
   - ordered child tables `tutor_packages`, `tutor_experience`, `tutor_education` (each with a `position` column),
   - public-read RLS on tutor data; tutor self-write on their own rows.
-- `0003_tutor_dashboard.sql` — renames `atar_rank` → `rank`; adds dashboard-editor columns (`headline`, `rank_subject`, `verified`, `delivers_in_person`, `delivers_online`, `service_area` jsonb, `verifications` jsonb, `visibility` text with a check constraint); converts `credentials` from `text[]` to `jsonb` of `{label, icon}`. The `service_area` JSONB shape used by the app is `{ suburb, radiusKm, lat?, lng?, geocodedSuburb? }` — coords are populated by the geocoder; the column itself stays untyped JSONB.
+- `0003_tutor_dashboard.sql` — renames `atar_rank` → `rank`; adds dashboard-editor columns (`headline` (removed in `0012`), `rank_subject`, `verified`, `delivers_in_person`, `delivers_online`, `service_area` jsonb, `verifications` jsonb, `visibility` text with a check constraint); converts `credentials` from `text[]` to `jsonb` of `{label, icon}`. The `service_area` JSONB shape used by the app is `{ suburb, radiusKm, lat?, lng?, geocodedSuburb? }` — coords are populated by the geocoder; the column itself stays untyped JSONB.
 - `0004_browse.sql` — adds `tutor_profiles.slug` (unique) + a `generate_unique_slug(name)` helper. Extends `handle_new_user()` to populate the slug on new tutor signups and backfills existing rows. Changes the `visibility` default from `'public'` to `'unlisted'` (later reverted in `0005`). Adds filter indexes on `visibility`, `city`, `atar`, `rate`, and a second SELECT policy on `profiles` for public read of tutor rows so the browse join can return tutor names.
 - `0005_default_public.sql` — reverses step 5 of `0004`: sets the `visibility` default back to `'public'` so new tutor signups appear on `/browse` as soon as `handle_new_user()` creates the row. Existing rows are untouched (an optional commented backfill promotes any leftover `'unlisted'` rows).
 - `0006_profile_images.sql` — adds `avatar_url`/`banner_url` text columns to `tutor_profiles` and creates the public `profile-images` Storage bucket with owner-scoped RLS (anyone can read; an authenticated user can only write/replace/delete files under their own `<uid>/...` folder). Backs the avatar + banner uploads in `lib/supabase/storage.js`.
@@ -233,6 +235,7 @@ Don't refactor inline styles into a global stylesheet without good reason — th
 - `0009_subject_catalog.sql` — replaces the 17 seeded subjects with an extensive **exam-scoped** Australian catalog (254 subjects across 8 senior-secondary certificates — HSC, VCE, IB, QCE, SACE, WACE, TCE, ACT — plus a `TEST` group for admissions/aptitude tests like UCAT, GAMSAT, LAT). Adds a `certificates` reference table and a `subjects.certificate_code` FK; **drops the `subjects.name` UNIQUE constraint** (the same display name recurs across exams) while `slug` stays the unique canonical key, now exam-prefixed (e.g. `vce-biology`, `hsc-biology`; tests are bare, e.g. `ucat`). Wipe-and-reseed: existing `subjects` + their `tutor_subjects` links are cleared. Subjects are identified by **slug, not name**, throughout the data layer; display sites label them via `subjectLabel()` in `lib/subjects.js`.
 - `0010_rename_certificates_to_exams.sql` — pure rename of the 0009 concept: table `certificates` → `exams`, column `subjects.certificate_code` → `subjects.exam_code`, and the RLS policy. No data changes. The codebase uses **"exam"** terminology throughout from here on.
 - `0011_year_levels_and_general.sql` — K–12 additions. Adds `tutor_profiles.year_min`/`year_max` (int, default 7 / 12, check `0–12` + `min ≤ max`; backfilled) — the year-level range a tutor teaches, which `getTutorsForBrowse` matches against each selected year and the profile card displays. Adds a `GENERAL` exam group (position 0) with English/Mathematics/Science/History/Geography (slugs `general-*`) for pre-Year-11 tutoring; it flows through the exam-code-driven catalog automatically and is labelled bare (no prefix) like the `TEST` group. Year labels/formatters live in `lib/yearLevels.js`.
+- `0012_remove_headline.sql` — drops `tutor_profiles.headline`, which overlapped with the tagline (`bio`). The **tagline now takes over**: it's the one-line subtitle under the tutor's name on the profile and the browse card, and the field the `q` (overall) search matches. Existing headline text is backfilled into `bio` where the tagline is empty before the column is dropped.
 
 **Signup flow**
 
@@ -249,7 +252,7 @@ The role chip sets `role` in user metadata. The database trigger — not the cli
 
 **Query helpers (`lib/supabase/tutors.js`)** — all take a Supabase client as the first arg so they work from both server and browser contexts:
 
-- `getTutorsForBrowse(supabase, params)` — paginated `/browse` query (`{ q, name, subjectSlugs[], lat, lng, atarMin, rateMax, modes, sort, page, pageSize }`). Filters by `visibility = 'public'` + confirmed email. `q` is the overall search (headline/city/suburb OR name); `name` filters full_name only. Subject, location (the `tutors_within_service_radius` RPC), and name each resolve to a tutor-id set first, then intersect into one `.in("id", ...)` so the exact count + pagination stay correct. Returns `{ tutors, total }`.
+- `getTutorsForBrowse(supabase, params)` — paginated `/browse` query (`{ q, name, subjectSlugs[], lat, lng, atarMin, rateMax, yearLevels[], modes, sort, page, pageSize }`). Filters by `visibility = 'public'` + confirmed email. `q` is the overall search (tagline `bio`/city/suburb OR name); `name` filters full_name only. Subject, location (the `tutors_within_service_radius` RPC), and name each resolve to a tutor-id set first, then intersect into one `.in("id", ...)` so the exact count + pagination stay correct. Returns `{ tutors, total }`.
 - `getFeaturedTutors(supabase, limit, excludeId)` — top-N by `rating desc nulls last, review_count desc`. Used by `/` and the "Similar tutors" sidebar.
 - `getTutorBySlug(supabase, slug)` — full detail-page shape. Returns null if no public tutor matches.
 - `getSubjects(supabase)` — the exam-scoped subject catalog (`{ name, slug, exam, examName }[]`, sorted) that feeds the `SubjectPicker` on the filter sidebar, hero search, and settings editor.

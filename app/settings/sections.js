@@ -370,7 +370,6 @@ export function IdentitySection({ tutor, set }) {
       <SectionHeader title="Identity" subtitle="Shown directly under your avatar on the public profile." />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Full name" hint="Use the name that matches your government ID."><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
-        <Field label="Headline" hint="One-line role — appears as the subtitle."><TextInput value={tutor.role} onChange={(v) => set({ role: v })} placeholder="ATAR 99.85 · UNSW Med" /></Field>
         <Field label="Location" hint="Set your suburb in Service area below — it powers location search.">
           <div
             className="h-9 px-3 flex items-center text-[14px] text-slate-500"
@@ -400,7 +399,7 @@ export function CredentialsSection({ tutor, set }) {
   const add = () => set({ credentials: [...list, { label: "", icon: "trophy" }] });
   return (
     <Card>
-      <SectionHeader title="Credentials" subtitle="Small chips next to your headline. 2–4 works best."
+      <SectionHeader title="Credentials" subtitle="Small chips next to your name. 2–4 works best."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add credential</Button>} />
       {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "#FAFAFA", borderRadius: 10 }}>No credentials yet — add an award, a degree, or a rank.</div>}
       <div>
@@ -806,7 +805,7 @@ export function VerificationsSection() {
 export function calcCompletion(t) {
   const checks = [
     { key: "Avatar uploaded", ok: !!t.avatarImg },
-    { key: "Name & headline",  ok: !!t.name && !!t.role },
+    { key: "Name & tagline",   ok: !!t.name && !!t.bio },
     { key: "Location",         ok: !!t.suburb && !!t.city },
     { key: "Languages",        ok: (t.languages || []).length > 0 },
     { key: "Credentials",      ok: (t.credentials || []).filter((c) => c.label).length >= 2 },
@@ -840,7 +839,7 @@ function MiniPreview({ tutor, catalog = [] }) {
           <span className="text-[15px] font-semibold text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your name"}</span>
           {tutor.verified && <VerifiedTick size={13} />}
         </div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{tutor.role || "Your headline"}</div>
+        <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{tutor.bio || "Your tagline"}</div>
         <div className="text-[11.5px] text-slate-400 mt-0.5 flex items-center gap-1">
           <Icon name="map-pin" size={10} />{`${tutor.suburb || "Suburb"} · ${tutor.city || "City"}`}
         </div>

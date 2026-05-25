@@ -34,7 +34,6 @@ function defaultTutor(userId, userEmail, fullName) {
   return {
     id: userId,
     name: fullName || "",
-    role: "",
     suburb: "",
     city: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),

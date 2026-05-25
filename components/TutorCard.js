@@ -41,21 +41,12 @@ export function TutorCard({ tutor, compact }) {
           {tutor.verified && <VerifiedTick size={14} />}
         </div>
 
-        <div className="text-[13.5px] text-slate-500 mt-0.5 truncate">{tutor.role}</div>
+        {tutor.bio && <div className="text-[13.5px] text-slate-500 mt-0.5 truncate">{tutor.bio}</div>}
         {(tutor.suburb || tutor.city) && (
           <div className="text-[12.5px] text-slate-400 mt-0.5 flex items-center gap-1">
             <Icon name="map-pin" size={11} />
             {tutor.suburb}{tutor.suburb && tutor.city ? " · " : ""}{tutor.city}
           </div>
-        )}
-
-        {!compact && tutor.bio && (
-          <p
-            className="text-[13.5px] text-slate-600 mt-3 leading-[1.5]"
-            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-          >
-            {tutor.bio}
-          </p>
         )}
 
         <div className="flex flex-wrap gap-1.5 mt-3">
