@@ -41,10 +41,10 @@ export default async function ProfilePage({ params }) {
               </div>
               {tutor.role && <div className="text-[15px] text-slate-600 mt-1">{tutor.role}</div>}
               <div className="flex items-center gap-4 text-[13.5px] text-slate-500 mt-2 flex-wrap">
-                {(tutor.location || tutor.suburb || tutor.city) && (
+                {(tutor.suburb || tutor.city) && (
                   <span className="flex items-center gap-1.5">
                     <Icon name="map-pin" size={13} />
-                    {tutor.location || [tutor.suburb, tutor.city].filter(Boolean).join(", ")}
+                    {[tutor.suburb, tutor.city].filter(Boolean).join(", ")}
                   </span>
                 )}
                 {deliveryLabel && (

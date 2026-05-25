@@ -35,7 +35,6 @@ function defaultTutor(userId, userEmail, fullName) {
     role: "",
     suburb: "",
     city: "",
-    locationOverride: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
     avatarBg: "oklch(0.92 0.04 80)",
     avatarImg: null,

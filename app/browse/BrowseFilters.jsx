@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
@@ -16,7 +16,7 @@ const YEAR_OPTIONS = [
  * new query string so the server component re-runs the Supabase query.
  *
  * Props:
- *   filters       — current values: { subjectSlugs, place, lat, lng, mode, atarMin, rateMax, yearLevel }
+ *   filters       — current values: { name, subjectSlugs, place, lat, lng, modes[], atarMin, rateMax, yearLevel }
  *   subjectOptions — [{ name, slug }, ...]
  *   totalCount     — number, rendered in the header
  *   searchQuery    — current ?q= value, for the header heading
@@ -34,6 +34,8 @@ export function BrowseFilters({
   // Local mirror so sliders feel snappy while the URL update lands.
   const [atarMin, setAtarMin] = useState(filters.atarMin ?? 90);
   const [rateMax, setRateMax] = useState(filters.rateMax ?? 200);
+  const nameInputRef = useRef(null);
+  const [nameInput, setNameInput] = useState(filters.name ?? "");
   const [yearLevels, setYearLevels] = useState(() => {
     const initial = filters.yearLevel;
     if (Array.isArray(initial)) return initial.filter((y) => y && y !== "All");
@@ -86,21 +88,71 @@ export function BrowseFilters({
       }
     });
 
+  const toggleMode = (value) =>
+    pushParams((p) => {
+      const current = p.getAll("mode");
+      p.delete("mode");
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      next.forEach((v) => p.append("mode", v));
+    });
+
+  // Name search: debounce the input to the URL so we don't router.replace on
+  // every keystroke. The reverse-sync only fires when the field isn't focused,
+  // so a chip-remove / clear-all resets the box without clobbering live typing.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if ((filters.name ?? "") !== nameInput.trim()) setSingle("name", nameInput.trim(), "");
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameInput]);
+
+  useEffect(() => {
+    if (document.activeElement !== nameInputRef.current) setNameInput(filters.name ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.name]);
+
   return (
     <aside className="space-y-6">
       <div>
-        <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500 mb-3">
-          <Link href="/" className="hover:text-slate-900">Home</Link>
-          <Icon name="chevron-right" size={12} />
-          <span className="text-slate-700">All tutors</span>
-        </div>
         <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
           {searchQuery ? <>Results for &ldquo;{searchQuery}&rdquo;</> : "All tutors"}
         </h1>
         <div className="text-[14px] text-slate-500 mt-1 tabular-nums">
           {totalCount} tutors match your filters
         </div>
+        <Link
+          href="/browse"
+          className="text-[12.5px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mt-3"
+        >
+          <Icon name="x" size={11} /> Clear all filters
+        </Link>
       </div>
+
+      <FilterGroup title="Name">
+        <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}>
+          <Icon name="user" size={14} className="text-slate-400 shrink-0" />
+          <input
+            ref={nameInputRef}
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            placeholder="Search by name"
+            className="w-full bg-transparent outline-none text-[13.5px] text-slate-900 placeholder:text-slate-400"
+          />
+          {nameInput && (
+            <button
+              type="button"
+              onClick={() => setNameInput("")}
+              className="text-slate-400 hover:text-slate-700 shrink-0"
+              aria-label="Clear name"
+            >
+              <Icon name="x" size={13} />
+            </button>
+          )}
+        </div>
+      </FilterGroup>
 
       <FilterGroup title="Location">
         <SuburbAutocomplete
@@ -148,14 +200,13 @@ export function BrowseFilters({
       <FilterGroup title="Mode">
         <div className="flex gap-1.5">
           {[
-            { label: "Any", value: "" },
             { label: "Online", value: "online" },
             { label: "In-person", value: "inperson" },
           ].map((m) => (
             <Chip
-              key={m.label}
-              active={(filters.mode ?? "") === m.value}
-              onClick={() => setSingle("mode", m.value, "")}
+              key={m.value}
+              active={filters.modes.includes(m.value)}
+              onClick={() => toggleMode(m.value)}
             >
               {m.label}
             </Chip>
@@ -196,13 +247,6 @@ export function BrowseFilters({
           <span>$30</span><span>$200</span>
         </div>
       </FilterGroup>
-
-      <Link
-        href="/browse"
-        className="text-[12.5px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
-      >
-        <Icon name="x" size={11} /> Clear all filters
-      </Link>
     </aside>
   );
 }
@@ -227,21 +271,33 @@ export function BrowseSortAndChips({ filters, subjectOptions }) {
       rest.forEach((s) => p.append("subject", s));
     });
 
+  const removeMode = (value) =>
+    pushParams((p) => {
+      const rest = p.getAll("mode").filter((v) => v !== value);
+      p.delete("mode");
+      rest.forEach((v) => p.append("mode", v));
+    });
+
   const subjectNameFor = (slug) => subjectOptions.find((s) => s.slug === slug)?.name ?? slug;
 
   return (
     <div className="flex items-center justify-between mb-5">
       <div className="flex flex-wrap gap-1.5">
+        {filters.name && (
+          <Chip onClick={() => pushParams((p) => p.delete("name"))} icon="x">
+            &ldquo;{filters.name}&rdquo;
+          </Chip>
+        )}
         {filters.subjectSlugs.map((slug) => (
           <Chip key={slug} onClick={() => removeSubject(slug)} icon="x">
             {subjectNameFor(slug)}
           </Chip>
         ))}
-        {filters.mode && filters.mode !== "any" && (
-          <Chip onClick={() => pushParams((p) => p.delete("mode"))} icon="x">
-            {filters.mode === "online" ? "Online" : "In-person"}
+        {(filters.modes ?? []).map((m) => (
+          <Chip key={m} onClick={() => removeMode(m)} icon="x">
+            {m === "online" ? "Online" : "In-person"}
           </Chip>
-        )}
+        ))}
         {filters.place && (
           <Chip
             onClick={() => pushParams((p) => { p.delete("lat"); p.delete("lng"); p.delete("place"); })}

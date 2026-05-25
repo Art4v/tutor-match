@@ -29,24 +29,26 @@ export default async function BrowsePage({ searchParams }) {
 
   const subjectSlugs = asArray(searchParams.subject);
   const q = (searchParams.q ?? "").toString();
+  const name = (searchParams.name ?? "").toString();
   const lat = parseNumber(searchParams.lat);
   const lng = parseNumber(searchParams.lng);
   const place = (searchParams.place ?? "").toString();
   const atarMin = parseNumber(searchParams.atarMin);
   const rateMax = parseNumber(searchParams.rateMax);
-  const mode = (searchParams.mode ?? "any").toString();
+  const modes = asArray(searchParams.mode);
   const sort = (searchParams.sort ?? "relevance").toString();
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
 
   const [{ tutors, total }, subjectOptions] = await Promise.all([
     getTutorsForBrowse(supabase, {
       q: q || undefined,
+      name: name || undefined,
       subjectSlugs,
       lat,
       lng,
       atarMin,
       rateMax,
-      mode,
+      modes,
       sort,
       page,
       pageSize: PAGE_SIZE,
@@ -57,11 +59,12 @@ export default async function BrowsePage({ searchParams }) {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const filterState = {
+    name: name || null,
     subjectSlugs,
     place: place || null,
     lat,
     lng,
-    mode,
+    modes,
     atarMin,
     rateMax,
     sort,

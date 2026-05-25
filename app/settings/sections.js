@@ -376,9 +376,6 @@ export function IdentitySection({ tutor, set }) {
             {[tutor.suburb, tutor.city].filter(Boolean).join(" · ") || "Not set yet"}
           </div>
         </Field>
-        <Field label="Location override" optional hint="Replaces 'Suburb · City' on cards. Use sparingly.">
-          <TextInput value={tutor.locationOverride} onChange={(v) => set({ locationOverride: v })} placeholder="Greater Sydney" />
-        </Field>
         <Field label="Years tutoring">
           <TextInput type="number" inputMode="numeric" value={tutor.yearsTutoring} onChange={(v) => set({ yearsTutoring: Number(v) || 0 })} suffix="yrs" />
         </Field>
@@ -803,7 +800,7 @@ function MiniPreview({ tutor }) {
         </div>
         <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{tutor.role || "Your headline"}</div>
         <div className="text-[11.5px] text-slate-400 mt-0.5 flex items-center gap-1">
-          <Icon name="map-pin" size={10} />{tutor.locationOverride || `${tutor.suburb || "Suburb"} · ${tutor.city || "City"}`}
+          <Icon name="map-pin" size={10} />{`${tutor.suburb || "Suburb"} · ${tutor.city || "City"}`}
         </div>
         <div className="flex flex-wrap gap-1 mt-3">
           {(tutor.subjects || []).slice(0, 3).map((s) => <Chip key={s}>{s}</Chip>)}

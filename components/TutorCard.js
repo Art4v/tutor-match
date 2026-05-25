@@ -41,10 +41,12 @@ export function TutorCard({ tutor, compact }) {
         </div>
 
         <div className="text-[13.5px] text-slate-500 mt-0.5 truncate">{tutor.role}</div>
-        <div className="text-[12.5px] text-slate-400 mt-0.5 flex items-center gap-1">
-          <Icon name="map-pin" size={11} />
-          {tutor.suburb}{tutor.suburb && tutor.city ? " · " : ""}{tutor.city}
-        </div>
+        {(tutor.suburb || tutor.city) && (
+          <div className="text-[12.5px] text-slate-400 mt-0.5 flex items-center gap-1">
+            <Icon name="map-pin" size={11} />
+            {tutor.suburb}{tutor.suburb && tutor.city ? " · " : ""}{tutor.city}
+          </div>
+        )}
 
         {!compact && tutor.bio && (
           <p
