@@ -54,7 +54,7 @@ export function HomeHero({ catalog }) {
             variant="bar"
             icon="map-pin"
             label="Location"
-            placeholder="Any AU suburb"
+            placeholder="Chatswood"
             value={place?.label ?? ""}
             onSelect={setPlace}
             onClear={() => setPlace(null)}
@@ -74,7 +74,7 @@ export function HomeHero({ catalog }) {
             mode="single"
             variant="bar"
             label="Subject"
-            placeholder="Any subject"
+            placeholder="Mathematics Extension 1"
           />
           <div className="p-2 md:p-1.5 flex items-stretch">
             <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>Search</Button>

@@ -113,6 +113,17 @@ export function BrowseFilters({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.name]);
 
+  // Whether any filter (or search query) is active — drives the "Clear all" link.
+  const hasActiveFilters =
+    !!searchQuery ||
+    !!filters.name ||
+    (filters.subjectSlugs?.length ?? 0) > 0 ||
+    !!filters.place ||
+    (filters.modes?.length ?? 0) > 0 ||
+    filters.atarMin != null ||
+    filters.rateMax != null ||
+    (!!filters.yearLevel && filters.yearLevel !== "All");
+
   return (
     <aside className="space-y-6">
       <div>
@@ -122,12 +133,14 @@ export function BrowseFilters({
         <div className="text-[14px] text-slate-500 mt-1 tabular-nums">
           {totalCount} tutors match your filters
         </div>
-        <Link
-          href="/browse"
-          className="text-[12.5px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mt-3"
-        >
-          <Icon name="x" size={11} /> Clear all filters
-        </Link>
+        {hasActiveFilters && (
+          <Link
+            href="/browse"
+            className="text-[12.5px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mt-3"
+          >
+            <Icon name="x" size={11} /> Clear all filters
+          </Link>
+        )}
       </div>
 
       <FilterGroup title="Name">
