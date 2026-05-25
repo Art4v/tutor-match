@@ -3,16 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
-
-const LOCATION_OPTIONS = [
-  "Bondi",
-  "Parramatta",
-  "Manly",
-  "Cronulla",
-  "Penrith",
-  "Coogee",
-  "Randwick",
-];
+import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 
 const YEAR_OPTIONS = [
   "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6",
@@ -25,14 +16,18 @@ const YEAR_OPTIONS = [
  */
 export function HomeHero({ subjects }) {
   const router = useRouter();
-  const [location, setLocation] = useState("");
+  const [place, setPlace] = useState(null); // { label, lat, lng, ... } | null
   const [year, setYear] = useState("");
   const [subject, setSubject] = useState(null); // { name, slug } | null
 
   const goBrowse = () => {
     const params = new URLSearchParams();
     if (subject?.slug) params.append("subject", subject.slug);
-    if (location) params.set("city", location);
+    if (place && Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
+      params.set("lat", String(place.lat));
+      params.set("lng", String(place.lng));
+      params.set("place", place.label);
+    }
     if (year) params.set("year", year);
     const qs = params.toString();
     router.push(`/browse${qs ? `?${qs}` : ""}`);
@@ -53,13 +48,14 @@ export function HomeHero({ subjects }) {
           className="mt-10 grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.4fr_auto] items-stretch bg-white max-w-[860px]"
           style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}
         >
-          <SearchField
+          <SuburbAutocomplete
+            variant="bar"
             icon="map-pin"
             label="Location"
-            placeholder="Sydney, NSW"
-            options={LOCATION_OPTIONS.map((o) => ({ label: o, value: o }))}
-            value={location}
-            onChange={setLocation}
+            placeholder="Any AU suburb"
+            value={place?.label ?? ""}
+            onSelect={setPlace}
+            onClear={() => setPlace(null)}
           />
           <SearchField
             icon="graduation"

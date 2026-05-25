@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
+import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 
 const YEAR_OPTIONS = [
   "All", "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5",
@@ -15,16 +16,14 @@ const YEAR_OPTIONS = [
  * new query string so the server component re-runs the Supabase query.
  *
  * Props:
- *   filters       — current values: { subjectSlugs, city, mode, atarMin, rateMax, yearLevel }
+ *   filters       — current values: { subjectSlugs, place, lat, lng, mode, atarMin, rateMax, yearLevel }
  *   subjectOptions — [{ name, slug }, ...]
- *   cityOptions    — string[]
  *   totalCount     — number, rendered in the header
  *   searchQuery    — current ?q= value, for the header heading
  */
 export function BrowseFilters({
   filters,
   subjectOptions,
-  cityOptions,
   totalCount,
   searchQuery,
 }) {
@@ -76,6 +75,17 @@ export function BrowseFilters({
       next.forEach((s) => p.append("subject", s));
     });
 
+  const setLocation = (place) =>
+    pushParams((p) => {
+      if (place && Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
+        p.set("lat", String(place.lat));
+        p.set("lng", String(place.lng));
+        p.set("place", place.label);
+      } else {
+        p.delete("lat"); p.delete("lng"); p.delete("place");
+      }
+    });
+
   return (
     <aside className="space-y-6">
       <div>
@@ -93,17 +103,18 @@ export function BrowseFilters({
       </div>
 
       <FilterGroup title="Location">
-        <select
-          value={filters.city ?? "All"}
-          onChange={(e) => setSingle("city", e.target.value === "All" ? "" : e.target.value, "")}
-          className="w-full h-9 px-3 text-[13.5px] outline-none"
-          style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}
-        >
-          <option>All</option>
-          {cityOptions.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
+        <SuburbAutocomplete
+          variant="box"
+          placeholder="Any AU suburb"
+          value={filters.place ?? ""}
+          onSelect={setLocation}
+          onClear={() => setLocation(null)}
+        />
+        {filters.place && (
+          <div className="text-[12px] text-slate-500 mt-1.5">
+            Tutors who travel to {filters.place}
+          </div>
+        )}
       </FilterGroup>
 
       <FilterGroup title="Year level">
@@ -231,9 +242,12 @@ export function BrowseSortAndChips({ filters, subjectOptions }) {
             {filters.mode === "online" ? "Online" : "In-person"}
           </Chip>
         )}
-        {filters.city && (
-          <Chip onClick={() => pushParams((p) => p.delete("city"))} icon="x">
-            {filters.city}
+        {filters.place && (
+          <Chip
+            onClick={() => pushParams((p) => { p.delete("lat"); p.delete("lng"); p.delete("place"); })}
+            icon="x"
+          >
+            Near {filters.place}
           </Chip>
         )}
       </div>

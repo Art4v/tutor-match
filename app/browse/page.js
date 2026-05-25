@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getTutorsForBrowse,
-  getDistinctCities,
   getSubjects,
 } from "@/lib/supabase/tutors";
 import { Icon } from "@/components/Icon";
@@ -30,18 +29,21 @@ export default async function BrowsePage({ searchParams }) {
 
   const subjectSlugs = asArray(searchParams.subject);
   const q = (searchParams.q ?? "").toString();
-  const city = (searchParams.city ?? "").toString();
+  const lat = parseNumber(searchParams.lat);
+  const lng = parseNumber(searchParams.lng);
+  const place = (searchParams.place ?? "").toString();
   const atarMin = parseNumber(searchParams.atarMin);
   const rateMax = parseNumber(searchParams.rateMax);
   const mode = (searchParams.mode ?? "any").toString();
   const sort = (searchParams.sort ?? "relevance").toString();
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
 
-  const [{ tutors, total }, subjectOptions, cityOptions] = await Promise.all([
+  const [{ tutors, total }, subjectOptions] = await Promise.all([
     getTutorsForBrowse(supabase, {
       q: q || undefined,
       subjectSlugs,
-      city: city || undefined,
+      lat,
+      lng,
       atarMin,
       rateMax,
       mode,
@@ -50,14 +52,15 @@ export default async function BrowsePage({ searchParams }) {
       pageSize: PAGE_SIZE,
     }),
     getSubjects(supabase),
-    getDistinctCities(supabase),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const filterState = {
     subjectSlugs,
-    city: city || null,
+    place: place || null,
+    lat,
+    lng,
     mode,
     atarMin,
     rateMax,
@@ -72,7 +75,6 @@ export default async function BrowsePage({ searchParams }) {
           <BrowseFilters
             filters={filterState}
             subjectOptions={subjectOptions}
-            cityOptions={cityOptions}
             totalCount={total}
             searchQuery={q}
           />

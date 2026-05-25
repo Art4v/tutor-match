@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 
@@ -367,8 +368,14 @@ export function IdentitySection({ tutor, set }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Full name" hint="Use the name that matches your government ID."><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
         <Field label="Headline" hint="One-line role — appears as the subtitle."><TextInput value={tutor.role} onChange={(v) => set({ role: v })} placeholder="ATAR 99.85 · UNSW Med" /></Field>
-        <Field label="Suburb"><TextInput value={tutor.suburb} onChange={(v) => set({ suburb: v })} placeholder="Chatswood" /></Field>
-        <Field label="City"><TextInput value={tutor.city} onChange={(v) => set({ city: v })} placeholder="Sydney, NSW" /></Field>
+        <Field label="Location" hint="Set your suburb in Service area below — it powers location search.">
+          <div
+            className="h-9 px-3 flex items-center text-[14px] text-slate-500"
+            style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#F8FAFC" }}
+          >
+            {[tutor.suburb, tutor.city].filter(Boolean).join(" · ") || "Not set yet"}
+          </div>
+        </Field>
         <Field label="Location override" optional hint="Replaces 'Suburb · City' on cards. Use sparingly.">
           <TextInput value={tutor.locationOverride} onChange={(v) => set({ locationOverride: v })} placeholder="Greater Sydney" />
         </Field>
@@ -629,12 +636,30 @@ export function ServiceAreaSection({ tutor, set }) {
 
   const hasCoords = Number.isFinite(sa.lat) && Number.isFinite(sa.lng);
 
+  // Picking a suggestion gives us coords directly (no geocode round-trip) and
+  // is the single source of truth for the tutor's location: it also mirrors
+  // suburb/city onto the profile (used by cards + the public header).
+  const onPick = (place) =>
+    set({
+      serviceArea: { ...sa, suburb: place.suburb, lat: place.lat, lng: place.lng, geocodedSuburb: place.suburb },
+      suburb: place.suburb,
+      city: place.state || tutor.city || "",
+    });
+
+  const onClearSuburb = () =>
+    set({
+      serviceArea: { ...sa, suburb: "", lat: null, lng: null, geocodedSuburb: null },
+      suburb: "",
+    });
+
   return (
     <Card>
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5">
         <div>
-          <Field label="Base suburb"><TextInput value={sa.suburb} onChange={(v) => set({ serviceArea: { ...sa, suburb: v } })} placeholder="Chatswood" /></Field>
+          <Field label="Base suburb" hint="Start typing any Australian suburb and pick from the list.">
+            <SuburbAutocomplete variant="box" value={sa.suburb || ""} placeholder="Chatswood" onSelect={onPick} onClear={onClearSuburb} />
+          </Field>
           <div className="mt-4">
             <Field label="Travel radius" hint={`In-person lessons within ${r} km of ${sa.suburb || "your base"}.`}>
               <div className="flex items-center gap-3">
