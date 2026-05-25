@@ -14,13 +14,12 @@ This README is the high-level project overview. For day-to-day contributor guida
 | Auth (signup / login) | ✅ Wired to Supabase Auth; signup goes through a server route that validates password policy + email domain (MX lookup) |
 | Tutor settings / profile editor (`/settings`) | ✅ Implemented + persists to Supabase (incl. avatar + banner uploads) |
 | Slug-based public profile URLs (`/tutor/[slug]`) | ✅ Implemented (unique slug auto-generated on tutor signup) |
-| Browse filters with shareable URL state | ✅ Implemented (overall `q` search + name search + multi-select subjects/modes + ATAR/rate; year-level chips are multi-select but local-state only) |
+| Browse filters with shareable URL state | ✅ Implemented (overall `q` search + name search + multi-select subjects/modes + ATAR/rate + multi-select year levels) |
 | Subject catalog | ✅ Exam-scoped Australian catalog (254 subjects across HSC/VCE/IB/QCE/SACE/WACE/TCE/ACT + a `TEST` group for UCAT/GAMSAT/LAT); identified by slug, labelled via `lib/subjects.js` |
 | Location search | ✅ Geospatial — suburb autocomplete (`SuburbAutocomplete` → `/api/places`) yields `lat`/`lng`; `/browse` matches tutors whose travel radius covers the point via the `tutors_within_service_radius` SQL function |
 | Service area map | ✅ Real Leaflet + OSM map with circle overlay; Nominatim/Photon geocoders; OSM → CARTO tile fallback |
-| Supabase schema | ✅ 10 migrations defined (`0001`–`0010`); public listing gated on email confirmation (`0007`); geospatial radius columns + RPC (`0008`); exam-scoped subject catalog (`0009`/`0010`) |
+| Supabase schema | ✅ 11 migrations defined (`0001`–`0011`); public listing gated on email confirmation (`0007`); geospatial radius columns + RPC (`0008`); exam-scoped subject catalog (`0009`/`0010`); K–12 year-level range + `GENERAL` exam group (`0011`) |
 | Messaging (`/messages`) | 🟡 Stub page only ("messaging is coming soon"); full two-pane impl is in git history |
-| Saved-tutors list | 🟡 In-memory only; only the mobile sticky bar on `/tutor/[slug]` still surfaces it |
 | Booking / payments (Request a lesson) | ❌ Button is disabled with a "coming soon" caption |
 | Student dashboard | ❌ Not started (`student_profiles` table exists but has no UI) |
 | Tests | ❌ None configured |
@@ -64,6 +63,7 @@ npm install
    8. `0008_service_area_geo.sql` — lifts `service_lat`/`service_lng`/`service_radius_km` into real columns and adds the `tutors_within_service_radius(lat, lng, include_online)` SQL function that powers location search (required, or `/browse` location filtering errors on the missing RPC)
    9. `0009_subject_catalog.sql` — wipes the 17 seeded subjects and reseeds the exam-scoped Australian catalog (254 subjects + a `certificates` reference table; subjects keyed by exam-prefixed slug)
    10. `0010_rename_certificates_to_exams.sql` — pure rename: `certificates` → `exams`, `subjects.certificate_code` → `subjects.exam_code` (no data change)
+   11. `0011_year_levels_and_general.sql` — adds `tutor_profiles.year_min`/`year_max` (the K–12 range a tutor teaches; default 7–12, drives the `/browse` year filter) and a new `GENERAL` exam group (English/Mathematics/Science/History/Geography) for pre-Year-11 tutoring
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -143,11 +143,10 @@ tutor-match/
 │  ├─ tutor/[slug]/
 │  │  ├─ page.js                # server component
 │  │  ├─ RateCard.jsx           # client; pricing card
-│  │  ├─ SaveButton.jsx         # client; mobile sticky save (only consumer of SavedContext)
 │  │  └─ ServiceAreaMap.jsx     # client; dynamic-imports ServiceMapLeaflet with ssr:false
 │  ├─ globals.css
 │  ├─ icon.svg                  # favicon
-│  ├─ layout.js                 # root layout; mounts <SavedProvider> + <TopNav>
+│  ├─ layout.js                 # root layout; mounts <TopNav>
 │  └─ page.js                   # home
 ├─ components/
 │  ├─ Footer.js
@@ -155,7 +154,6 @@ tutor-match/
 │  ├─ HomeHero.jsx              # home-page search hero + dropdown picker
 │  ├─ HomeHowItWorks.jsx
 │  ├─ Icon.js                   # 40+ inline SVG icons; add new icons here
-│  ├─ SavedContext.js           # in-memory "saved tutors" provider (no persistence)
 │  ├─ ServiceMapLeaflet.jsx     # Leaflet map + circle overlay; OSM → CARTO tile fallback
 │  ├─ SubjectPicker.jsx         # exam-first subject picker (single/multi); emits slugs
 │  ├─ SuburbAutocomplete.jsx    # debounced /api/places typeahead; carries {lat,lng,state}
@@ -184,7 +182,8 @@ tutor-match/
 │  ├─ 0007_email_confirmed.sql
 │  ├─ 0008_service_area_geo.sql
 │  ├─ 0009_subject_catalog.sql
-│  └─ 0010_rename_certificates_to_exams.sql
+│  ├─ 0010_rename_certificates_to_exams.sql
+│  └─ 0011_year_levels_and_general.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -233,6 +232,7 @@ Don't refactor inline styles into a global stylesheet without good reason — th
 - `0008_service_area_geo.sql` — makes the tutor's service-area radius drive location search. Lifts `service_lat`/`service_lng`/`service_radius_km` out of the `service_area` JSONB into real columns (backfilled from the JSONB; `saveTutorProfile` writes both going forward) so SQL can filter by distance. Adds `tutors_within_service_radius(lat, lng, include_online)` — a plain-SQL haversine function (no PostGIS/earthdistance extension) returning ids of public + confirmed tutors whose travel radius covers the point, OR-ing in online-delivery tutors when asked. `getTutorsForBrowse` calls it as its "resolve ids first" location step. **Required** — `/browse` location filtering errors without the RPC.
 - `0009_subject_catalog.sql` — replaces the 17 seeded subjects with an extensive **exam-scoped** Australian catalog (254 subjects across 8 senior-secondary certificates — HSC, VCE, IB, QCE, SACE, WACE, TCE, ACT — plus a `TEST` group for admissions/aptitude tests like UCAT, GAMSAT, LAT). Adds a `certificates` reference table and a `subjects.certificate_code` FK; **drops the `subjects.name` UNIQUE constraint** (the same display name recurs across exams) while `slug` stays the unique canonical key, now exam-prefixed (e.g. `vce-biology`, `hsc-biology`; tests are bare, e.g. `ucat`). Wipe-and-reseed: existing `subjects` + their `tutor_subjects` links are cleared. Subjects are identified by **slug, not name**, throughout the data layer; display sites label them via `subjectLabel()` in `lib/subjects.js`.
 - `0010_rename_certificates_to_exams.sql` — pure rename of the 0009 concept: table `certificates` → `exams`, column `subjects.certificate_code` → `subjects.exam_code`, and the RLS policy. No data changes. The codebase uses **"exam"** terminology throughout from here on.
+- `0011_year_levels_and_general.sql` — K–12 additions. Adds `tutor_profiles.year_min`/`year_max` (int, default 7 / 12, check `0–12` + `min ≤ max`; backfilled) — the year-level range a tutor teaches, which `getTutorsForBrowse` matches against each selected year and the profile card displays. Adds a `GENERAL` exam group (position 0) with English/Mathematics/Science/History/Geography (slugs `general-*`) for pre-Year-11 tutoring; it flows through the exam-code-driven catalog automatically and is labelled bare (no prefix) like the `TEST` group. Year labels/formatters live in `lib/yearLevels.js`.
 
 **Signup flow**
 
@@ -266,9 +266,8 @@ The Service area card on `/tutor/[slug]` and the live preview in the settings ed
 
 ### State & navigation
 
-- **Filter state on `/browse` lives in the URL.** `BrowseFilters.jsx` calls `router.replace()` on every change; the server page re-runs the Supabase query. Repeated `subject=` params encode multi-select. Year-level chips are multi-select in the UI but local state only — they don't yet write to the URL or feed `getTutorsForBrowse()`.
+- **Filter state on `/browse` lives in the URL.** `BrowseFilters.jsx` calls `router.replace()` on every change; the server page re-runs the Supabase query. Repeated `subject=` params encode multi-select subjects; repeated `year=` params (integers, K=0) encode multi-select year levels, which `getTutorsForBrowse()` matches against each tutor's `[year_min, year_max]` range.
 - `components/TopNav.js` is auth-aware: logged-in users see a single avatar-chip dropdown containing Browse / Settings / Log out; logged-out users see only Log in + Sign Up (no Browse). The navbar is `z-40` to stay above the settings editor's own `z-30` sticky save bar.
-- `components/SavedContext.js` is an in-memory "saved tutors" list (no persistence). Only the mobile sticky `SaveButton` on `/tutor/[slug]` still consumes it; tutor cards and the desktop tutor banner no longer surface a save button.
 
 ### Path alias
 
@@ -278,9 +277,7 @@ The Service area card on `/tutor/[slug]` and the live preview in the settings ed
 
 ## What's next (roughly)
 
-1. Persist saved tutors against `auth.users` (or rip the feature out — only one UI surface still uses it).
-2. Wire year-level chips on `/browse` into the URL + `getTutorsForBrowse()` so the filter actually narrows results.
-3. Real booking flow behind the now-disabled "Request a lesson" button on `/tutor/[slug]`.
-4. Reintroduce real messaging (a two-pane prototype lives in git history).
-5. Student dashboard.
-6. Bookings / payments.
+1. Real booking flow behind the now-disabled "Request a lesson" button on `/tutor/[slug]`.
+2. Reintroduce real messaging (a two-pane prototype lives in git history).
+3. Student dashboard.
+4. Bookings / payments.

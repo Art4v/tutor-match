@@ -1,6 +1,5 @@
 import "./globals.css";
 import { TopNav } from "@/components/TopNav";
-import { SavedProvider } from "@/components/SavedContext";
 
 export const metadata = {
   title: "tutormatch",
@@ -16,10 +15,8 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <SavedProvider>
-          <TopNav />
-          {children}
-        </SavedProvider>
+        <TopNav />
+        {children}
       </body>
     </html>
   );

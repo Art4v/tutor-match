@@ -7,18 +7,14 @@ import { Chip } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
-
-const YEAR_OPTIONS = [
-  "All", "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5",
-  "Year 6", "Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12",
-];
+import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 
 /**
  * URL-driven sidebar for /browse. Every change calls router.replace() with a
  * new query string so the server component re-runs the Supabase query.
  *
  * Props:
- *   filters       — current values: { name, subjectSlugs, place, lat, lng, modes[], atarMin, rateMax, yearLevel }
+ *   filters       — current values: { name, subjectSlugs, place, lat, lng, modes[], atarMin, rateMax, yearLevels[] }
  *   catalog        — exam-scoped subject catalog [{ name, slug, exam, examName }, ...]
  *   totalCount     — number, rendered in the header
  *   searchQuery    — current ?q= value, for the header heading
@@ -38,20 +34,21 @@ export function BrowseFilters({
   const [rateMax, setRateMax] = useState(filters.rateMax ?? 200);
   const nameInputRef = useRef(null);
   const [nameInput, setNameInput] = useState(filters.name ?? "");
-  const [yearLevels, setYearLevels] = useState(() => {
-    const initial = filters.yearLevel;
-    if (Array.isArray(initial)) return initial.filter((y) => y && y !== "All");
-    if (!initial || initial === "All") return [];
-    return [initial];
-  });
 
-  const toggleYearLevel = (y) => {
-    if (y === "All") {
-      setYearLevels([]);
-      return;
-    }
-    setYearLevels((curr) =>
-      curr.includes(y) ? curr.filter((v) => v !== y) : [...curr, y]
+  // Year levels are URL-driven (repeated `year=` integer params), same as
+  // subjects — `filters.yearLevels` is the source of truth.
+  const yearLevels = filters.yearLevels ?? [];
+  const setYears = (next) =>
+    pushParams((p) => {
+      p.delete("year");
+      next.forEach((y) => p.append("year", String(y)));
+    });
+  const toggleYearLevel = (value) => {
+    if (value === "all") return setYears([]);
+    setYears(
+      yearLevels.includes(value)
+        ? yearLevels.filter((v) => v !== value)
+        : [...yearLevels, value]
     );
   };
 
@@ -122,7 +119,7 @@ export function BrowseFilters({
     (filters.modes?.length ?? 0) > 0 ||
     filters.atarMin != null ||
     filters.rateMax != null ||
-    (!!filters.yearLevel && filters.yearLevel !== "All");
+    (filters.yearLevels?.length ?? 0) > 0;
 
   return (
     <aside className="space-y-6">
@@ -183,13 +180,16 @@ export function BrowseFilters({
 
       <FilterGroup title="Year level">
         <div className="grid grid-cols-2 gap-1.5">
-          {YEAR_OPTIONS.map((y) => (
+          <Chip active={yearLevels.length === 0} onClick={() => toggleYearLevel("all")}>
+            All
+          </Chip>
+          {YEAR_LEVELS.map((y) => (
             <Chip
-              key={y}
-              active={y === "All" ? yearLevels.length === 0 : yearLevels.includes(y)}
-              onClick={() => toggleYearLevel(y)}
+              key={y.value}
+              active={yearLevels.includes(y.value)}
+              onClick={() => toggleYearLevel(y.value)}
             >
-              {y}
+              {y.label}
             </Chip>
           ))}
         </div>
@@ -287,6 +287,13 @@ export function BrowseSortAndChips({ filters, catalog }) {
       rest.forEach((v) => p.append("mode", v));
     });
 
+  const removeYear = (value) =>
+    pushParams((p) => {
+      const rest = p.getAll("year").filter((v) => Number(v) !== value);
+      p.delete("year");
+      rest.forEach((v) => p.append("year", v));
+    });
+
   const subjectNameFor = (slug) =>
     subjectLabel((catalog ?? []).find((s) => s.slug === slug) ?? { name: slug });
 
@@ -306,6 +313,11 @@ export function BrowseSortAndChips({ filters, catalog }) {
         {(filters.modes ?? []).map((m) => (
           <Chip key={m} onClick={() => removeMode(m)} icon="x">
             {m === "online" ? "Online" : "In-person"}
+          </Chip>
+        ))}
+        {(filters.yearLevels ?? []).map((y) => (
+          <Chip key={y} onClick={() => removeYear(y)} icon="x">
+            {yearLabel(y)}
           </Chip>
         ))}
         {filters.place && (

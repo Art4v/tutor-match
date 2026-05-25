@@ -83,7 +83,11 @@ export function SubjectPicker({
     else onChange?.(selected.filter((s) => s !== slug));
   };
 
-  const examLabel = (g) => (g.code === "TEST" ? "Tests" : g.code);
+  const examLabel = (g) => {
+    if (g.code === "TEST") return "Tests";
+    if (g.code === "GENERAL") return "General";
+    return g.code;
+  };
   const singleLabel = mode === "single" && value ? subjectLabel(bySlug.get(value) ?? { name: value }) : "";
 
   // ---- triggers ----

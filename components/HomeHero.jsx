@@ -5,11 +5,7 @@ import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
-
-const YEAR_OPTIONS = [
-  "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6",
-  "Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12",
-];
+import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 
 /**
  * catalog: exam-scoped subject catalog from getSubjects(). The picker is
@@ -19,7 +15,7 @@ const YEAR_OPTIONS = [
 export function HomeHero({ catalog }) {
   const router = useRouter();
   const [place, setPlace] = useState(null); // { label, lat, lng, ... } | null
-  const [year, setYear] = useState("");
+  const [year, setYear] = useState(""); // integer year value (K=0) | ""
   const [subject, setSubject] = useState(null); // { name, slug } | null
 
   const goBrowse = () => {
@@ -30,7 +26,7 @@ export function HomeHero({ catalog }) {
       params.set("lng", String(place.lng));
       params.set("place", place.label);
     }
-    if (year) params.set("year", year);
+    if (year !== "" && year != null) params.set("year", String(year));
     const qs = params.toString();
     router.push(`/browse${qs ? `?${qs}` : ""}`);
   };
@@ -63,8 +59,9 @@ export function HomeHero({ catalog }) {
             icon="graduation"
             label="Year"
             placeholder="Year 12"
-            options={YEAR_OPTIONS.map((o) => ({ label: o, value: o }))}
+            options={YEAR_LEVELS.map((o) => ({ label: o.label, value: o.value }))}
             value={year}
+            displayValue={year !== "" ? yearLabel(year) : ""}
             onChange={setYear}
           />
           <SubjectPicker

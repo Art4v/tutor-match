@@ -35,6 +35,9 @@ export default async function BrowsePage({ searchParams }) {
   const place = (searchParams.place ?? "").toString();
   const atarMin = parseNumber(searchParams.atarMin);
   const rateMax = parseNumber(searchParams.rateMax);
+  const yearLevels = asArray(searchParams.year)
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
   const modes = asArray(searchParams.mode);
   const sort = (searchParams.sort ?? "relevance").toString();
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
@@ -48,6 +51,7 @@ export default async function BrowsePage({ searchParams }) {
       lng,
       atarMin,
       rateMax,
+      yearLevels,
       modes,
       sort,
       page,
@@ -67,8 +71,8 @@ export default async function BrowsePage({ searchParams }) {
     modes,
     atarMin,
     rateMax,
+    yearLevels,
     sort,
-    yearLevel: (searchParams.year ?? "All").toString(),
   };
 
   return (

@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorBySlug, getFeaturedTutors } from "@/lib/supabase/tutors";
 import { subjectLabel } from "@/lib/subjects";
+import { yearRangeLabel } from "@/lib/yearLevels";
 import { Icon } from "@/components/Icon";
-import { Avatar, VerifiedTick, Chip } from "@/components/ui";
-import { SaveButton } from "./SaveButton";
+import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
 import { RateCard } from "./RateCard";
 import ServiceAreaMap from "./ServiceAreaMap";
 
@@ -41,6 +41,7 @@ export default async function ProfilePage({ params }) {
                 {tutor.verified && <VerifiedTick size={18} />}
               </div>
               {tutor.role && <div className="text-[15px] text-slate-600 mt-1">{tutor.role}</div>}
+              {tutor.bio && <div className="text-[14px] text-slate-500 mt-1">{tutor.bio}</div>}
               <div className="flex items-center gap-4 text-[13.5px] text-slate-500 mt-2 flex-wrap">
                 {(tutor.suburb || tutor.city) && (
                   <span className="flex items-center gap-1.5">
@@ -90,6 +91,12 @@ export default async function ProfilePage({ params }) {
                     <span>tutoring</span>
                   </span>
                 )}
+                {tutor.yearMin != null && tutor.yearMax != null && (
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="users" size={13} />
+                    {yearRangeLabel(tutor.yearMin, tutor.yearMax)}
+                  </span>
+                )}
                 {tutor.languages.length > 0 && (
                   <span className="flex items-center gap-1.5">
                     <Icon name="language" size={13} />
@@ -100,10 +107,6 @@ export default async function ProfilePage({ params }) {
             </div>
           </div>
         </div>
-
-        {tutor.bio && (
-          <p className="text-[15px] text-slate-600 leading-[1.6] mt-4 max-w-[760px]">{tutor.bio}</p>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8">
           <div className="space-y-8 min-w-0">
@@ -220,7 +223,7 @@ export default async function ProfilePage({ params }) {
           </div>
           <div className="text-[11.5px] text-slate-500">Online or in person</div>
         </div>
-        <SaveButton tutorId={tutor.id} variant="primary" size="lg" />
+        <Button variant="primary" size="lg" icon="calendar" disabled>Request a lesson</Button>
       </div>
     </div>
   );

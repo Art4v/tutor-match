@@ -15,6 +15,7 @@ import {
   ExperienceSection,
   EducationSection,
   SubjectsSection,
+  YearLevelsSection,
   ServiceAreaSection,
   AvailabilitySection,
   VerificationsSection,
@@ -59,6 +60,8 @@ function defaultTutor(userId, userEmail, fullName) {
     experience: [],
     education: [],
     subjects: [],
+    yearMin: 7,
+    yearMax: 12,
     serviceArea: { suburb: "", radiusKm: 5 },
     availability: buildInitialAvailability(),
     verifications: [
@@ -192,6 +195,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
             <ExperienceSection tutor={tutor} set={set} />
             <EducationSection tutor={tutor} set={set} />
             <SubjectsSection tutor={tutor} set={set} catalog={subjectCatalog} />
+            <YearLevelsSection tutor={tutor} set={set} />
             <ServiceAreaSection tutor={tutor} set={set} />
             <AvailabilitySection tutor={tutor} set={set} />
           </div>

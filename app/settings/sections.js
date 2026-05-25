@@ -8,6 +8,7 @@ import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
+import { YEAR_MIN, YEAR_MAX, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 
@@ -585,6 +586,35 @@ export function SubjectsSection({ tutor, set, catalog }) {
   );
 }
 
+export function YearLevelsSection({ tutor, set }) {
+  // Clamp so the range stays valid (min ≤ max) as either slider moves.
+  const min = Number.isFinite(tutor.yearMin) ? tutor.yearMin : 7;
+  const max = Number.isFinite(tutor.yearMax) ? tutor.yearMax : 12;
+  const setMin = (v) => { const n = Number(v); set({ yearMin: n, yearMax: Math.max(n, max) }); };
+  const setMax = (v) => { const n = Number(v); set({ yearMax: n, yearMin: Math.min(n, min) }); };
+  return (
+    <Card>
+      <SectionHeader title="Year levels" subtitle="The range of year groups you'll tutor — students filter on this." />
+      <Field label="Year range" hint={`You tutor ${yearRangeLabel(min, max)}.`}>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-slate-500 w-10 shrink-0">From</span>
+            <input type="range" min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
+              onChange={(e) => setMin(e.target.value)} className="flex-1 accent-slate-900" />
+            <span className="text-[13.5px] tabular-nums font-medium text-slate-900 w-24 text-right">{yearLabel(min)}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-slate-500 w-10 shrink-0">To</span>
+            <input type="range" min={YEAR_MIN} max={YEAR_MAX} step={1} value={max}
+              onChange={(e) => setMax(e.target.value)} className="flex-1 accent-slate-900" />
+            <span className="text-[13.5px] tabular-nums font-medium text-slate-900 w-24 text-right">{yearLabel(max)}</span>
+          </div>
+        </div>
+      </Field>
+    </Card>
+  );
+}
+
 function ServiceMapPlaceholder({ radiusKm }) {
   const radius = 18 + (Math.min(50, Math.max(1, radiusKm)) / 50) * 68;
   return (
@@ -782,6 +812,7 @@ export function calcCompletion(t) {
     { key: "Credentials",      ok: (t.credentials || []).filter((c) => c.label).length >= 2 },
     { key: "Long bio (300+)",  ok: (t.bioLong || "").length >= 300 },
     { key: "Subjects (3+)",    ok: (t.subjects || []).length >= 3 },
+    { key: "Year levels",      ok: Number.isFinite(t.yearMin) && Number.isFinite(t.yearMax) },
     { key: "Rate set",         ok: !!t.rate && t.rate > 0 },
     { key: "1+ package",       ok: (t.packages || []).filter((p) => p.price).length >= 1 },
     { key: "Experience",       ok: (t.experience || []).filter((e) => e.role).length >= 1 },
