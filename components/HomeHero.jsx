@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
+import { SubjectPicker } from "@/components/SubjectPicker";
 
 const YEAR_OPTIONS = [
   "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6",
@@ -11,10 +12,11 @@ const YEAR_OPTIONS = [
 ];
 
 /**
- * subjects: [{ name, slug }, ...] from getSubjects(). The dropdown shows names;
- * the form submits the slug as ?subject= so /browse can match the URL contract.
+ * catalog: exam-scoped subject catalog from getSubjects(). The picker is
+ * exam-first; the form submits the selected slug as ?subject= so /browse
+ * matches the URL contract.
  */
-export function HomeHero({ subjects }) {
+export function HomeHero({ catalog }) {
   const router = useRouter();
   const [place, setPlace] = useState(null); // { label, lat, lng, ... } | null
   const [year, setYear] = useState("");
@@ -65,14 +67,14 @@ export function HomeHero({ subjects }) {
             value={year}
             onChange={setYear}
           />
-          <SearchField
-            icon="search"
+          <SubjectPicker
+            catalog={catalog}
+            value={subject?.slug ?? null}
+            onChange={(slug, sub) => setSubject(slug ? { slug, name: sub?.name, exam: sub?.exam } : null)}
+            mode="single"
+            variant="bar"
             label="Subject"
-            placeholder="Mathematics Ext 2"
-            options={(subjects ?? []).map((s) => ({ label: s.name, value: s.slug }))}
-            value={subject?.slug ?? ""}
-            displayValue={subject?.name ?? ""}
-            onChange={(slug, label) => setSubject(slug ? { slug, name: label } : null)}
+            placeholder="Any subject"
           />
           <div className="p-2 md:p-1.5 flex items-stretch">
             <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>Search</Button>

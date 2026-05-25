@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getSubjectNames, saveTutorProfile } from "@/lib/supabase/tutors";
+import { getSubjects, saveTutorProfile } from "@/lib/supabase/tutors";
+import { subjectLabel } from "@/lib/subjects";
 import {
   BannerAvatarSection,
   IdentitySection,
@@ -86,12 +87,12 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const [snapshot, setSnapshot] = useState(seed);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
-  const [subjectSuggestions, setSubjectSuggestions] = useState([]);
+  const [subjectCatalog, setSubjectCatalog] = useState([]);
 
   useEffect(() => {
     let active = true;
-    getSubjectNames(supabase).then((names) => {
-      if (active) setSubjectSuggestions(names);
+    getSubjects(supabase).then((rows) => {
+      if (active) setSubjectCatalog(rows);
     });
     return () => { active = false; };
   }, [supabase]);
@@ -142,9 +143,11 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
     }
     setSnapshot(tutor);
     if (result.droppedSubjects.length > 0) {
+      const bySlug = new Map(subjectCatalog.map((s) => [s.slug, s]));
+      const labels = result.droppedSubjects.map((slug) => subjectLabel(bySlug.get(slug) ?? { name: slug }));
       showToast(
         "warn",
-        `Saved. Skipped unrecognised subjects: ${result.droppedSubjects.join(", ")}.`,
+        `Saved. Skipped unrecognised subjects: ${labels.join(", ")}.`,
         5000
       );
     } else {
@@ -188,13 +191,13 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
             <RateSection tutor={tutor} set={set} />
             <ExperienceSection tutor={tutor} set={set} />
             <EducationSection tutor={tutor} set={set} />
-            <SubjectsSection tutor={tutor} set={set} suggestions={subjectSuggestions} />
+            <SubjectsSection tutor={tutor} set={set} catalog={subjectCatalog} />
             <ServiceAreaSection tutor={tutor} set={set} />
             <AvailabilitySection tutor={tutor} set={set} />
           </div>
 
           <div className="space-y-5 lg:sticky lg:top-[88px]">
-            <Sidebar tutor={tutor} set={set} onPreview={onPreview} publicHref={publicHref} />
+            <Sidebar tutor={tutor} set={set} onPreview={onPreview} publicHref={publicHref} catalog={subjectCatalog} />
             <VerificationsSection />
           </div>
         </div>

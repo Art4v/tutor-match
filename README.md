@@ -235,7 +235,7 @@ The role chip sets `role` in user metadata. The database trigger — not the cli
 - `getTutorsForBrowse(supabase, params)` — paginated `/browse` query. Filters by `visibility = 'public'`, joins `profiles` for `full_name`. Returns `{ tutors, total }`.
 - `getFeaturedTutors(supabase, limit, excludeId)` — top-N by `rating desc nulls last, review_count desc`. Used by `/` and the "Similar tutors" sidebar.
 - `getTutorBySlug(supabase, slug)` — full detail-page shape. Returns null if no public tutor matches.
-- `getDistinctCities(supabase)`, `getSubjects(supabase)`, `getSubjectNames(supabase)` — feed the filter sidebar + hero search dropdowns.
+- `getSubjects(supabase)` — the exam-scoped subject catalog (`{ name, slug, exam, examName }[]`, sorted) that feeds the `SubjectPicker` on the filter sidebar, hero search, and settings editor.
 - `getTutorProfile(supabase, id)`, `getTutorProfileForEditor(supabase, id)`, `saveTutorProfile(supabase, id, tutor)` — used by `/settings`. The editor helper returns camelCase keys matching the editor's in-memory state; `saveTutorProfile` does scalar update + replace-all on the four child tables (subjects, packages, experience, education) — not transactional.
 
 ### Maps & geocoding

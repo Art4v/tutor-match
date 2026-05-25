@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorBySlug, getFeaturedTutors } from "@/lib/supabase/tutors";
+import { subjectLabel } from "@/lib/subjects";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip } from "@/components/ui";
 import { SaveButton } from "./SaveButton";
@@ -250,8 +251,8 @@ function SubjectsCard({ subjects }) {
     <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
       <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
       <div className="flex flex-wrap gap-1.5">
-        {subjects.map((s, i) => (
-          <Chip key={i} tone="cream" icon="graduation">{s}</Chip>
+        {subjects.map((s) => (
+          <Chip key={s.slug} tone="cream" icon="graduation">{subjectLabel(s)}</Chip>
         ))}
       </div>
     </div>
@@ -310,7 +311,7 @@ function SimilarTutorsCard({ similar }) {
                 <div className="flex items-center gap-1 text-[13.5px] font-medium text-slate-900 group-hover:underline truncate">
                   {t.name} {t.verified && <VerifiedTick size={11} />}
                 </div>
-                <div className="text-[12px] text-slate-500 truncate">{t.subjects?.slice(0, 2).join(" · ")}</div>
+                <div className="text-[12px] text-slate-500 truncate">{(t.subjects ?? []).slice(0, 2).map(subjectLabel).join(" · ")}</div>
               </div>
               <div className="text-[12.5px] font-medium text-slate-900 tabular-nums whitespace-nowrap">
                 ${t.rate}

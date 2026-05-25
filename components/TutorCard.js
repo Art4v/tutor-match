@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { Avatar, VerifiedTick, Chip } from "./ui";
+import { subjectLabel } from "@/lib/subjects";
 
 export function TutorCard({ tutor, compact }) {
   const [hover, setHover] = useState(false);
@@ -58,7 +59,7 @@ export function TutorCard({ tutor, compact }) {
         )}
 
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {visibleSubjects.map((s) => <Chip key={s}>{s}</Chip>)}
+          {visibleSubjects.map((s) => <Chip key={s.slug}>{subjectLabel(s)}</Chip>)}
           {moreCount > 0 && <Chip tone="line">+{moreCount} more</Chip>}
         </div>
 

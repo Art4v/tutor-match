@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
+import { SubjectPicker } from "@/components/SubjectPicker";
+import { subjectLabel } from "@/lib/subjects";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 
@@ -567,11 +569,18 @@ export function EducationSection({ tutor, set }) {
   );
 }
 
-export function SubjectsSection({ tutor, set, suggestions }) {
+export function SubjectsSection({ tutor, set, catalog }) {
   return (
     <Card>
-      <SectionHeader title="Subjects" subtitle="Powers your placement in browse filters. Pick from the seeded list — other names won't be saved." />
-      <TagInput values={tutor.subjects} onChange={(v) => set({ subjects: v })} suggestions={suggestions} placeholder="Add a subject" />
+      <SectionHeader title="Subjects" subtitle="Powers your placement in browse filters. Pick an exam, then choose the subjects you tutor." />
+      <SubjectPicker
+        catalog={catalog}
+        value={tutor.subjects}
+        onChange={(slugs) => set({ subjects: slugs })}
+        mode="multi"
+        variant="box"
+        placeholder="Add subjects"
+      />
     </Card>
   );
 }
@@ -785,8 +794,10 @@ export function calcCompletion(t) {
   return { checks, done, total: checks.length, pct: Math.round((done / checks.length) * 100) };
 }
 
-function MiniPreview({ tutor }) {
+function MiniPreview({ tutor, catalog = [] }) {
   const display = { ...tutor, initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial };
+  const bySlug = useMemo(() => new Map(catalog.map((s) => [s.slug, s])), [catalog]);
+  const labelFor = (slug) => subjectLabel(bySlug.get(slug) ?? { name: slug });
   return (
     <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}>
       <div style={tutor.bannerImg
@@ -803,7 +814,7 @@ function MiniPreview({ tutor }) {
           <Icon name="map-pin" size={10} />{`${tutor.suburb || "Suburb"} · ${tutor.city || "City"}`}
         </div>
         <div className="flex flex-wrap gap-1 mt-3">
-          {(tutor.subjects || []).slice(0, 3).map((s) => <Chip key={s}>{s}</Chip>)}
+          {(tutor.subjects || []).slice(0, 3).map((s) => <Chip key={s}>{labelFor(s)}</Chip>)}
           {(tutor.subjects || []).length > 3 && <Chip tone="line">+{tutor.subjects.length - 3}</Chip>}
         </div>
         <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid #F1F5F9" }}>
@@ -818,7 +829,7 @@ function MiniPreview({ tutor }) {
   );
 }
 
-export function Sidebar({ tutor, set, onPreview, publicHref }) {
+export function Sidebar({ tutor, set, onPreview, publicHref, catalog }) {
   const c = useMemo(() => calcCompletion(tutor), [tutor]);
   const visOptions = [
     { value: "public",   label: "Public", hint: "Visible to everyone." },
@@ -879,7 +890,7 @@ export function Sidebar({ tutor, set, onPreview, publicHref }) {
 
       <div>
         <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2 px-1">Live preview</div>
-        <MiniPreview tutor={tutor} />
+        <MiniPreview tutor={tutor} catalog={catalog} />
         <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — compact version of your public profile header.</div>
       </div>
     </aside>

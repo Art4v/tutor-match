@@ -5,6 +5,8 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
+import { SubjectPicker } from "@/components/SubjectPicker";
+import { subjectLabel } from "@/lib/subjects";
 
 const YEAR_OPTIONS = [
   "All", "Kindergarden", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5",
@@ -17,13 +19,13 @@ const YEAR_OPTIONS = [
  *
  * Props:
  *   filters       — current values: { name, subjectSlugs, place, lat, lng, modes[], atarMin, rateMax, yearLevel }
- *   subjectOptions — [{ name, slug }, ...]
+ *   catalog        — exam-scoped subject catalog [{ name, slug, exam, examName }, ...]
  *   totalCount     — number, rendered in the header
  *   searchQuery    — current ?q= value, for the header heading
  */
 export function BrowseFilters({
   filters,
-  subjectOptions,
+  catalog,
   totalCount,
   searchQuery,
 }) {
@@ -67,13 +69,10 @@ export function BrowseFilters({
       else p.set(key, String(value));
     });
 
-  const toggleSubject = (slug) =>
+  // The SubjectPicker emits the full next slug array; mirror it into the URL.
+  const setSubjects = (next) =>
     pushParams((p) => {
-      const current = p.getAll("subject");
       p.delete("subject");
-      const next = current.includes(slug)
-        ? current.filter((s) => s !== slug)
-        : [...current, slug];
       next.forEach((s) => p.append("subject", s));
     });
 
@@ -184,17 +183,14 @@ export function BrowseFilters({
       </FilterGroup>
 
       <FilterGroup title="Subject">
-        <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-auto pr-1">
-          {subjectOptions.map((s) => (
-            <Chip
-              key={s.slug}
-              active={filters.subjectSlugs.includes(s.slug)}
-              onClick={() => toggleSubject(s.slug)}
-            >
-              {s.name}
-            </Chip>
-          ))}
-        </div>
+        <SubjectPicker
+          catalog={catalog}
+          value={filters.subjectSlugs}
+          onChange={setSubjects}
+          mode="multi"
+          variant="box"
+          placeholder="Add subjects"
+        />
       </FilterGroup>
 
       <FilterGroup title="Mode">
@@ -251,7 +247,7 @@ export function BrowseFilters({
   );
 }
 
-export function BrowseSortAndChips({ filters, subjectOptions }) {
+export function BrowseSortAndChips({ filters, catalog }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -278,7 +274,8 @@ export function BrowseSortAndChips({ filters, subjectOptions }) {
       rest.forEach((v) => p.append("mode", v));
     });
 
-  const subjectNameFor = (slug) => subjectOptions.find((s) => s.slug === slug)?.name ?? slug;
+  const subjectNameFor = (slug) =>
+    subjectLabel((catalog ?? []).find((s) => s.slug === slug) ?? { name: slug });
 
   return (
     <div className="flex items-center justify-between mb-5">

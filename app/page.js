@@ -10,14 +10,14 @@ import { HomeCta } from "@/components/HomeCta";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [featuredTutors, subjects] = await Promise.all([
+  const [featuredTutors, subjectCatalog] = await Promise.all([
     getFeaturedTutors(supabase, 9),
     getSubjects(supabase),
   ]);
 
   return (
     <div className="bg-white">
-      <HomeHero subjects={subjects} />
+      <HomeHero catalog={subjectCatalog} />
 
       <section className="max-w-[1200px] mx-auto px-6 mt-6">
         <div className="flex items-end justify-between mb-6">

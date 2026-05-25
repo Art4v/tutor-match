@@ -39,7 +39,7 @@ export default async function BrowsePage({ searchParams }) {
   const sort = (searchParams.sort ?? "relevance").toString();
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
 
-  const [{ tutors, total }, subjectOptions] = await Promise.all([
+  const [{ tutors, total }, subjectCatalog] = await Promise.all([
     getTutorsForBrowse(supabase, {
       q: q || undefined,
       name: name || undefined,
@@ -77,7 +77,7 @@ export default async function BrowsePage({ searchParams }) {
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
           <BrowseFilters
             filters={filterState}
-            subjectOptions={subjectOptions}
+            catalog={subjectCatalog}
             totalCount={total}
             searchQuery={q}
           />
@@ -85,7 +85,7 @@ export default async function BrowsePage({ searchParams }) {
           <div className="min-w-0">
             <BrowseSortAndChips
               filters={filterState}
-              subjectOptions={subjectOptions}
+              catalog={subjectCatalog}
             />
 
             {tutors.length === 0 ? (
