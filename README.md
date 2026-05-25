@@ -65,6 +65,7 @@ npm install
    10. `0010_rename_certificates_to_exams.sql` — pure rename: `certificates` → `exams`, `subjects.certificate_code` → `subjects.exam_code` (no data change)
    11. `0011_year_levels_and_general.sql` — adds `tutor_profiles.year_min`/`year_max` (the K–12 range a tutor teaches; default 7–12, drives the `/browse` year filter) and a new `GENERAL` exam group (English/Mathematics/Science/History/Geography) for pre-Year-11 tutoring
    12. `0012_remove_headline.sql` — drops `tutor_profiles.headline` (the tagline `bio` takes over its role); backfills any headline text into an empty tagline first
+   13. `0013_slug_regen_and_race_safe.sql` — makes slug assignment race-safe (retry-on-conflict instead of compute-then-insert) and adds an `assign_tutor_slug(name)` RPC so the `/tutor/<slug>` URL regenerates when a tutor renames
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -184,7 +185,8 @@ tutor-match/
 │  ├─ 0009_subject_catalog.sql
 │  ├─ 0010_rename_certificates_to_exams.sql
 │  ├─ 0011_year_levels_and_general.sql
-│  └─ 0012_remove_headline.sql
+│  ├─ 0012_remove_headline.sql
+│  └─ 0013_slug_regen_and_race_safe.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -235,6 +237,7 @@ Don't refactor inline styles into a global stylesheet without good reason — th
 - `0010_rename_certificates_to_exams.sql` — pure rename of the 0009 concept: table `certificates` → `exams`, column `subjects.certificate_code` → `subjects.exam_code`, and the RLS policy. No data changes. The codebase uses **"exam"** terminology throughout from here on.
 - `0011_year_levels_and_general.sql` — K–12 additions. Adds `tutor_profiles.year_min`/`year_max` (int, default 7 / 12, check `0–12` + `min ≤ max`; backfilled) — the year-level range a tutor teaches, which `getTutorsForBrowse` matches against each selected year and the profile card displays. Adds a `GENERAL` exam group (position 0) with English/Mathematics/Science/History/Geography (slugs `general-*`) for pre-Year-11 tutoring; it flows through the exam-code-driven catalog automatically and is labelled bare (no prefix) like the `TEST` group. Year labels/formatters live in `lib/yearLevels.js`.
 - `0012_remove_headline.sql` — drops `tutor_profiles.headline`, which overlapped with the tagline (`bio`). The **tagline now takes over**: it's the one-line subtitle under the tutor's name on the profile and the browse card, and the field the `q` (overall) search matches. Existing headline text is backfilled into `bio` where the tagline is empty before the column is dropped.
+- `0013_slug_regen_and_race_safe.sql` — hardens the name-derived `/tutor/<slug>` URL. Replaces the racy `generate_unique_slug()` → insert path with a race-safe core `_assign_tutor_slug(id, name)` that UPDATEs the slug in a retry loop catching `unique_violation` (so concurrent same-name signups can't collide), and rewires `handle_new_user()` to use it (still mirroring `email_confirmed_at`). Adds `assign_tutor_slug(name)` — an authenticated RPC scoped to `auth.uid()` — which `saveTutorProfile` calls when the display name changes, so renaming refreshes the slug instead of leaving a stale URL. The core has execute revoked from the API roles; the old `generate_unique_slug()` stays defined but unused.
 
 **Signup flow**
 
