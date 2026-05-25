@@ -218,7 +218,7 @@ export default async function ProfilePage({ params }) {
             ${tutor.rate}
             <span className="text-[13px] text-slate-400 font-normal">/hr</span>
           </div>
-          <div className="text-[11.5px] text-slate-500">First lesson free</div>
+          <div className="text-[11.5px] text-slate-500">Online or in person</div>
         </div>
         <SaveButton tutorId={tutor.id} variant="primary" size="lg" />
       </div>

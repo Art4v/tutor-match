@@ -12,7 +12,7 @@ export function RateCard({ tutor }) {
         <span className="text-[34px] font-semibold text-slate-900 tabular-nums tracking-tight">${tutor.rate}</span>
         <span className="text-[14px] text-slate-400">/hour</span>
       </div>
-      <div className="text-[12.5px] text-slate-500 mt-1">60-minute lesson · first 20 min free</div>
+      <div className="text-[12.5px] text-slate-500 mt-1">Online or in person · flexible scheduling</div>
 
       {packages.length > 0 && (
         <div className="mt-5 space-y-2">

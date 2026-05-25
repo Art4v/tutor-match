@@ -14,9 +14,11 @@ This README is the high-level project overview. For day-to-day contributor guida
 | Auth (signup / login) | ✅ Wired to Supabase Auth; signup goes through a server route that validates password policy + email domain (MX lookup) |
 | Tutor settings / profile editor (`/settings`) | ✅ Implemented + persists to Supabase (incl. avatar + banner uploads) |
 | Slug-based public profile URLs (`/tutor/[slug]`) | ✅ Implemented (unique slug auto-generated on tutor signup) |
-| Browse filters with shareable URL state | ✅ Implemented (single-select sidebar filters; year-level chips are multi-select but local-state only) |
-| Service area map | ✅ Real Leaflet + OSM map with circle overlay; Nominatim → Photon geocoder fallback; OSM → CARTO tile fallback |
-| Supabase schema | ✅ 7 migrations defined (`0001`–`0007`); public listing gated on email confirmation (`0007`) |
+| Browse filters with shareable URL state | ✅ Implemented (overall `q` search + name search + multi-select subjects/modes + ATAR/rate; year-level chips are multi-select but local-state only) |
+| Subject catalog | ✅ Exam-scoped Australian catalog (254 subjects across HSC/VCE/IB/QCE/SACE/WACE/TCE/ACT + a `TEST` group for UCAT/GAMSAT/LAT); identified by slug, labelled via `lib/subjects.js` |
+| Location search | ✅ Geospatial — suburb autocomplete (`SuburbAutocomplete` → `/api/places`) yields `lat`/`lng`; `/browse` matches tutors whose travel radius covers the point via the `tutors_within_service_radius` SQL function |
+| Service area map | ✅ Real Leaflet + OSM map with circle overlay; Nominatim/Photon geocoders; OSM → CARTO tile fallback |
+| Supabase schema | ✅ 10 migrations defined (`0001`–`0010`); public listing gated on email confirmation (`0007`); geospatial radius columns + RPC (`0008`); exam-scoped subject catalog (`0009`/`0010`) |
 | Messaging (`/messages`) | 🟡 Stub page only ("messaging is coming soon"); full two-pane impl is in git history |
 | Saved-tutors list | 🟡 In-memory only; only the mobile sticky bar on `/tutor/[slug]` still surfaces it |
 | Booking / payments (Request a lesson) | ❌ Button is disabled with a "coming soon" caption |
@@ -59,6 +61,9 @@ npm install
    5. `0005_default_public.sql`
    6. `0006_profile_images.sql` — adds `avatar_url`/`banner_url` columns and the public `profile-images` Storage bucket (required for avatar + banner uploads)
    7. `0007_email_confirmed.sql` — mirrors `auth.users.email_confirmed_at` onto `tutor_profiles` so the public queries can hide unconfirmed signups (required, or the public pages error on the missing column)
+   8. `0008_service_area_geo.sql` — lifts `service_lat`/`service_lng`/`service_radius_km` into real columns and adds the `tutors_within_service_radius(lat, lng, include_online)` SQL function that powers location search (required, or `/browse` location filtering errors on the missing RPC)
+   9. `0009_subject_catalog.sql` — wipes the 17 seeded subjects and reseeds the exam-scoped Australian catalog (254 subjects + a `certificates` reference table; subjects keyed by exam-prefixed slug)
+   10. `0010_rename_certificates_to_exams.sql` — pure rename: `certificates` → `exams`, `subjects.certificate_code` → `subjects.exam_code` (no data change)
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -103,13 +108,14 @@ There are no tests configured.
 | Path | File | Notes |
 | --- | --- | --- |
 | `/` | `app/page.js` | Server component. Hero search, featured tutor grid, how-it-works, CTA. |
-| `/browse` | `app/browse/page.js` | Server component. Parses filter state from `searchParams` and calls `getTutorsForBrowse()`. Filter sidebar (`BrowseFilters.jsx`) is a client component — every change rewrites the URL so filters are shareable / back-button-friendly. |
+| `/browse` | `app/browse/page.js` | Server component. Parses filter state from `searchParams` (`q`, `name`, `subject[]`, `lat`/`lng`/`place`, `atarMin`, `rateMax`, `mode[]`, `sort`, `page`) and calls `getTutorsForBrowse()`. Location is geospatial — `lat`/`lng` from a `SuburbAutocomplete` selection match tutors whose travel radius covers the point. Filter sidebar (`BrowseFilters.jsx`) is a client component — every change rewrites the URL so filters are shareable / back-button-friendly. |
 | `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile. `getTutorBySlug()` → camelCase tutor object; `notFound()` if no match or `visibility ≠ 'public'`. Renders the real Leaflet service-area map when coordinates are available. |
 | `/messages` | `app/messages/page.js` | Stub: "messaging is coming soon". Not linked from the nav. |
 | `/signup`, `/login` | `app/(auth)/...` | Email + password forms sharing `app/(auth)/layout.js` (centered card). Signup posts to `/api/auth/signup` (Student role is "coming soon" — only Tutor is selectable). |
 | `/api/auth/signup` | `app/api/auth/signup/route.js` | `POST { fullName, email, password, role }`. Authoritative signup gate: re-validates the password policy + email format and verifies the email domain can receive mail (MX / A-record lookup) before calling `supabase.auth.signUp`. Returns `{ status: "session" \| "confirm" \| "exists" }`. |
 | `/settings` | `app/settings/page.js` | Server component. Redirects to `/login` if no session; otherwise loads the `SettingsEditor` client component. |
-| `/api/geocode` | `app/api/geocode/route.js` | `GET ?q=<suburb>` → `{ lat, lng }` or `{ lat: null, lng: null }`. Backed by `lib/geocode.js`. |
+| `/api/places` | `app/api/places/route.js` | `GET ?q=<text>` → up to 6 AU suburb matches `[{ label, suburb, state, postcode, lat, lng }]`. Backed by `lib/places.js` (Photon typeahead → Nominatim fallback). Powers the `SuburbAutocomplete` on `/`, `/browse`, `/settings` — the primary location path. |
+| `/api/geocode` | `app/api/geocode/route.js` | `GET ?q=<suburb>` → `{ lat, lng }` or `{ lat: null, lng: null }` (single result). Backed by `lib/geocode.js`. Now a fallback — the primary location flow goes through `/api/places`. |
 
 ---
 
@@ -124,7 +130,8 @@ tutor-match/
 │  │  └─ signup/page.js         # role chip → auth.user_metadata.{role, full_name}
 │  ├─ api/
 │  │  ├─ auth/signup/route.js   # POST signup gate: password + email-domain validation → auth.signUp
-│  │  └─ geocode/route.js       # GET /api/geocode?q=<suburb> → { lat, lng }
+│  │  ├─ geocode/route.js       # GET /api/geocode?q=<suburb> → { lat, lng } (fallback path)
+│  │  └─ places/route.js        # GET /api/places?q=<text> → up to 6 AU suburb matches (typeahead)
 │  ├─ browse/
 │  │  ├─ page.js                # server component; reads filters from searchParams
 │  │  └─ BrowseFilters.jsx      # client; URL-driven sidebar + sort chips
@@ -150,6 +157,8 @@ tutor-match/
 │  ├─ Icon.js                   # 40+ inline SVG icons; add new icons here
 │  ├─ SavedContext.js           # in-memory "saved tutors" provider (no persistence)
 │  ├─ ServiceMapLeaflet.jsx     # Leaflet map + circle overlay; OSM → CARTO tile fallback
+│  ├─ SubjectPicker.jsx         # exam-first subject picker (single/multi); emits slugs
+│  ├─ SuburbAutocomplete.jsx    # debounced /api/places typeahead; carries {lat,lng,state}
 │  ├─ TopNav.js                 # auth-aware navbar; dropdown menu when logged in
 │  ├─ TutorCard.js              # canonical hover-animated card pattern
 │  └─ ui.js                     # Avatar, VerifiedTick, OnlineDot, Chip, Button
@@ -157,12 +166,14 @@ tutor-match/
 │  ├─ availability.js           # canonical 8×7 availability-grid hour/day labels (shared editor + public)
 │  ├─ email.js                  # email format check + domain extractor (shared client + server)
 │  ├─ password.js               # password policy rules (shared signup form + server route)
-│  ├─ geocode.js                # Nominatim → Photon fallback chain; in-process cache
+│  ├─ geocode.js                # single-result geocode; Nominatim → Photon fallback; in-process cache
+│  ├─ places.js                 # suburb typeahead (list); Photon → Nominatim fallback; in-process cache
+│  ├─ subjects.js               # subjectLabel() + groupByExam() for the exam-scoped catalog
 │  └─ supabase/
 │     ├─ client.js              # createBrowserClient — for client components
 │     ├─ server.js              # createServerClient — for server components / route handlers
 │     ├─ storage.js             # avatar/banner uploads to the profile-images bucket
-│     └─ tutors.js              # browse, featured, slug, editor, save, subjects, cities
+│     └─ tutors.js              # browse, featured, slug, editor, save, subjects
 ├─ supabase/migrations/
 │  ├─ 0001_init.sql
 │  ├─ 0002_tutor_profile.sql
@@ -170,7 +181,10 @@ tutor-match/
 │  ├─ 0004_browse.sql
 │  ├─ 0005_default_public.sql
 │  ├─ 0006_profile_images.sql
-│  └─ 0007_email_confirmed.sql
+│  ├─ 0007_email_confirmed.sql
+│  ├─ 0008_service_area_geo.sql
+│  ├─ 0009_subject_catalog.sql
+│  └─ 0010_rename_certificates_to_exams.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -216,6 +230,9 @@ Don't refactor inline styles into a global stylesheet without good reason — th
 - `0005_default_public.sql` — reverses step 5 of `0004`: sets the `visibility` default back to `'public'` so new tutor signups appear on `/browse` as soon as `handle_new_user()` creates the row. Existing rows are untouched (an optional commented backfill promotes any leftover `'unlisted'` rows).
 - `0006_profile_images.sql` — adds `avatar_url`/`banner_url` text columns to `tutor_profiles` and creates the public `profile-images` Storage bucket with owner-scoped RLS (anyone can read; an authenticated user can only write/replace/delete files under their own `<uid>/...` folder). Backs the avatar + banner uploads in `lib/supabase/storage.js`.
 - `0007_email_confirmed.sql` — gates public listing on email confirmation. The anon read role can't see `auth.users`, so this mirrors `auth.users.email_confirmed_at` onto `tutor_profiles`: `handle_new_user()` copies it on insert (non-null when the project auto-confirms), and an `AFTER UPDATE` trigger on `auth.users` propagates it when the user later clicks the confirmation link. The public query helpers in `lib/supabase/tutors.js` filter `email_confirmed_at IS NOT NULL` alongside `visibility = 'public'`, so unconfirmed signups never appear on `/`, `/browse`, or `/tutor/[slug]`. **This migration is required** — the public queries reference the column, so a DB missing `0007` will error.
+- `0008_service_area_geo.sql` — makes the tutor's service-area radius drive location search. Lifts `service_lat`/`service_lng`/`service_radius_km` out of the `service_area` JSONB into real columns (backfilled from the JSONB; `saveTutorProfile` writes both going forward) so SQL can filter by distance. Adds `tutors_within_service_radius(lat, lng, include_online)` — a plain-SQL haversine function (no PostGIS/earthdistance extension) returning ids of public + confirmed tutors whose travel radius covers the point, OR-ing in online-delivery tutors when asked. `getTutorsForBrowse` calls it as its "resolve ids first" location step. **Required** — `/browse` location filtering errors without the RPC.
+- `0009_subject_catalog.sql` — replaces the 17 seeded subjects with an extensive **exam-scoped** Australian catalog (254 subjects across 8 senior-secondary certificates — HSC, VCE, IB, QCE, SACE, WACE, TCE, ACT — plus a `TEST` group for admissions/aptitude tests like UCAT, GAMSAT, LAT). Adds a `certificates` reference table and a `subjects.certificate_code` FK; **drops the `subjects.name` UNIQUE constraint** (the same display name recurs across exams) while `slug` stays the unique canonical key, now exam-prefixed (e.g. `vce-biology`, `hsc-biology`; tests are bare, e.g. `ucat`). Wipe-and-reseed: existing `subjects` + their `tutor_subjects` links are cleared. Subjects are identified by **slug, not name**, throughout the data layer; display sites label them via `subjectLabel()` in `lib/subjects.js`.
+- `0010_rename_certificates_to_exams.sql` — pure rename of the 0009 concept: table `certificates` → `exams`, column `subjects.certificate_code` → `subjects.exam_code`, and the RLS policy. No data changes. The codebase uses **"exam"** terminology throughout from here on.
 
 **Signup flow**
 
@@ -232,7 +249,7 @@ The role chip sets `role` in user metadata. The database trigger — not the cli
 
 **Query helpers (`lib/supabase/tutors.js`)** — all take a Supabase client as the first arg so they work from both server and browser contexts:
 
-- `getTutorsForBrowse(supabase, params)` — paginated `/browse` query. Filters by `visibility = 'public'`, joins `profiles` for `full_name`. Returns `{ tutors, total }`.
+- `getTutorsForBrowse(supabase, params)` — paginated `/browse` query (`{ q, name, subjectSlugs[], lat, lng, atarMin, rateMax, modes, sort, page, pageSize }`). Filters by `visibility = 'public'` + confirmed email. `q` is the overall search (headline/city/suburb OR name); `name` filters full_name only. Subject, location (the `tutors_within_service_radius` RPC), and name each resolve to a tutor-id set first, then intersect into one `.in("id", ...)` so the exact count + pagination stay correct. Returns `{ tutors, total }`.
 - `getFeaturedTutors(supabase, limit, excludeId)` — top-N by `rating desc nulls last, review_count desc`. Used by `/` and the "Similar tutors" sidebar.
 - `getTutorBySlug(supabase, slug)` — full detail-page shape. Returns null if no public tutor matches.
 - `getSubjects(supabase)` — the exam-scoped subject catalog (`{ name, slug, exam, examName }[]`, sorted) that feeds the `SubjectPicker` on the filter sidebar, hero search, and settings editor.
@@ -243,10 +260,9 @@ The role chip sets `role` in user metadata. The database trigger — not the cli
 The Service area card on `/tutor/[slug]` and the live preview in the settings editor both render a real Leaflet map of the suburb with a dashed-circle radius overlay.
 
 - **Tiles:** OpenStreetMap by default. On >3 `tileerror` events the map swaps to CARTO Voyager tiles (same coordinate scheme, no key). Implemented inside `components/ServiceMapLeaflet.jsx`.
-- **Geocoding:** `lib/geocode.js` exports `geocodeSuburb(suburb)` (server-only). Tries Nominatim first (sends an identifying `User-Agent` per OSM policy), then Photon. Returns `{ lat, lng } | null`. Results are cached in-process by lowercased suburb.
-- **Browser path:** the settings editor never calls Nominatim directly; it hits the local `/api/geocode` proxy (`app/api/geocode/route.js`).
-- **When in the editor:** the base-suburb input is debounced 600ms before geocoding. On `Save`, `SettingsEditor` re-tries the geocode if the stored coords are stale, so the saved row always has the freshest coords we can resolve.
-- **Fallback behavior:** if both Nominatim and Photon fail (typo / unknown suburb / both endpoints down), the editor shows an SVG placeholder, the row still saves (without lat/lng), and the public profile card hides the map block entirely — only the "In-person within N km of <suburb>" text line is shown.
+- **Location picker (primary path):** `components/SuburbAutocomplete.jsx` is the shared client typeahead used on `/`, `/browse`, and `/settings`. It debounces a fetch to `/api/places` (`app/api/places/route.js` → `lib/places.js`, Photon primary since it's built for autocomplete, Nominatim fallback). A selected suggestion already carries `{ lat, lng, state }`, so the home page and browse get coords with no second round-trip, and `ServiceAreaSection` writes them straight into `tutor.serviceArea`.
+- **Single-result geocode (fallback):** `lib/geocode.js` exports `geocodeSuburb(suburb)` (server-only, behind `/api/geocode`). Tries Nominatim first (sends an identifying `User-Agent` per OSM policy), then Photon. Returns `{ lat, lng } | null`, cached in-process. The settings editor only falls back to this on `Save` if the picked suburb somehow lacks coords (e.g. legacy rows).
+- **Fallback behavior:** if a suburb can't be resolved (typo / unknown / both endpoints down), the row still saves without lat/lng, and the public profile card hides the map block entirely — only the "In-person within N km of <suburb>" text line is shown (no SVG placeholder on the public page).
 
 ### State & navigation
 
