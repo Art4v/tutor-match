@@ -1,17 +1,19 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function TopNav() {
   const router = useRouter();
+  const pathname = usePathname();
   const [focused, setFocused] = useState(false);
   const [q, setQ] = useState("");
   const [user, setUser] = useState(null);
   const [tutorSlug, setTutorSlug] = useState(null);
+  const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -46,26 +48,38 @@ export function TopNav() {
     };
   }, []);
 
-  // Tutors have a public profile page; fetch their slug so the menu can link to it.
+  // Tutors have a public profile page; fetch the slug (for the menu link) plus
+  // the saved name + avatar so the nav chip reflects the live profile rather
+  // than the name captured in auth metadata at signup (which a profile edit
+  // never updates). Keyed on pathname too, so editing in /settings shows up in
+  // the chip once the tutor navigates away — the nav persists across client
+  // navigation and wouldn't otherwise refetch.
   useEffect(() => {
     if (!user || user.user_metadata?.role !== "tutor") {
       setTutorSlug(null);
+      setProfile(null);
       return;
     }
     const supabase = createSupabaseBrowserClient();
     let active = true;
     supabase
       .from("tutor_profiles")
-      .select("slug")
+      .select("slug, avatar_url, profile:profiles!inner ( full_name )")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
-        if (active) setTutorSlug(data?.slug ?? null);
+        if (!active) return;
+        setTutorSlug(data?.slug ?? null);
+        setProfile(
+          data
+            ? { name: data.profile?.full_name ?? null, avatarUrl: data.avatar_url ?? null }
+            : null
+        );
       });
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, pathname]);
 
   const onLogout = async () => {
     setLoggingOut(true);
@@ -116,7 +130,8 @@ export function TopNav() {
         <div className="flex items-center gap-1 ml-auto">
           {user ? (
             (() => {
-              const displayName = user.user_metadata?.full_name || user.email || "";
+              const displayName = profile?.name || user.user_metadata?.full_name || user.email || "";
+              const avatarUrl = profile?.avatarUrl || null;
               return (
                 <div ref={menuRef} className="relative">
                   <button
@@ -129,10 +144,10 @@ export function TopNav() {
                     title={displayName}
                   >
                     <span
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white"
-                      style={{ background: "#0F172A" }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white overflow-hidden bg-cover bg-center"
+                      style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : { background: "#0F172A" }}
                     >
-                      {(displayName || "?").slice(0, 1).toUpperCase()}
+                      {!avatarUrl && (displayName || "?").slice(0, 1).toUpperCase()}
                     </span>
                     <span className="max-w-[180px] truncate">{displayName}</span>
                     <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
