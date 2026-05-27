@@ -409,7 +409,6 @@ export function CredentialsSection({ tutor, set }) {
               <Select value={c.icon} onChange={(v) => update(i, { icon: v })} options={[
                 { value: "trophy", label: "Award" },
                 { value: "graduation", label: "Degree" },
-                { value: "shield-check", label: "Check" },
                 { value: "star", label: "Highlight" },
               ]} />
               <TextInput value={c.label} onChange={(v) => update(i, { label: v })} placeholder="All-Round Achiever 2021" />
@@ -768,7 +767,6 @@ const PLANNED_VERIFICATIONS = [
   "Phone verified",
   "Government ID",
   "ATAR transcript",
-  "Working with Children Check",
   "University enrolment",
 ];
 

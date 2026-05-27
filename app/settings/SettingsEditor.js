@@ -68,7 +68,6 @@ function defaultTutor(userId, userEmail, fullName) {
       { label: "Phone verified", done: false },
       { label: "Government ID", done: false },
       { label: "ATAR transcript", done: false },
-      { label: "Working with Children Check", done: false },
       { label: "University enrolment", done: false },
     ],
     visibility: "public",
