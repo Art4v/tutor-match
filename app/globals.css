@@ -40,3 +40,16 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: 0;
 }
+
+/* Hide the up/down spin buttons on number inputs. Typing stays numeric-only;
+   only the arrows go. Applies to every type="number" field (settings forms:
+   hourly rate, package price, years tutoring, ATAR). */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
