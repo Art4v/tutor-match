@@ -489,7 +489,7 @@ export function RateSection({ tutor, set }) {
   const update = (i, p) => set({ packages: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ packages: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ packages: move(list, i, to) });
-  const add = () => set({ packages: [...list, { label: "", duration: "60 min", save: 0, price: tutor.rate || 0 }] });
+  const add = () => set({ packages: [...list, { label: "", price: tutor.rate || 0 }] });
   return (
     <Card>
       <SectionHeader title="Rate & packages" subtitle="Base rate and the bundles students can buy."
@@ -504,10 +504,8 @@ export function RateSection({ tutor, set }) {
         <div className="mt-2">
           {list.map((p, i) => (
             <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
-              <div className="grid grid-cols-[1.4fr_1fr_0.7fr_0.9fr] gap-2">
+              <div className="grid grid-cols-[1fr_140px] gap-2">
                 <TextInput value={p.label} onChange={(v) => update(i, { label: v })} placeholder="5-lesson pack" />
-                <TextInput value={p.duration} onChange={(v) => update(i, { duration: v })} placeholder="60 min × 5" />
-                <TextInput type="number" inputMode="numeric" value={p.save} onChange={(v) => update(i, { save: Number(v) || 0 })} suffix="%" />
                 <TextInput type="number" inputMode="numeric" value={p.price} onChange={(v) => update(i, { price: Number(v) || 0 })} prefix="$" />
               </div>
             </ReorderRow>
@@ -818,10 +816,14 @@ export function calcCompletion(t) {
     { key: "Education",        ok: (t.education || []).filter((e) => e.school).length >= 1 },
     { key: "Availability set", ok: (t.availability || []).some((row) => row.some((c) => c === 1)) },
     { key: "Service area",     ok: !!t.serviceArea?.suburb },
-    { key: "ID verified",      ok: (t.verifications || []).find((v) => v.label.toLowerCase().includes("id"))?.done === true },
+    // Verification isn't wired up yet (see VerificationsSection), so this can
+    // never tick. Flag it `soon` so it's shown but excluded from the meter —
+    // otherwise 100% is unreachable.
+    { key: "Verified",         ok: (t.verifications || []).find((v) => v.label.toLowerCase().includes("id"))?.done === true, soon: true },
   ];
-  const done = checks.filter((c) => c.ok).length;
-  return { checks, done, total: checks.length, pct: Math.round((done / checks.length) * 100) };
+  const counted = checks.filter((c) => !c.soon);
+  const done = counted.filter((c) => c.ok).length;
+  return { checks, done, total: counted.length, pct: Math.round((done / counted.length) * 100) };
 }
 
 function MiniPreview({ tutor, catalog = [] }) {
@@ -883,6 +885,12 @@ export function Sidebar({ tutor, set, publicHref, catalog }) {
                 {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#94A3B8" }} />}
               </span>
               <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
+              {ch.soon && (
+                <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+                  style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", color: "#94A3B8" }}>
+                  Coming soon
+                </span>
+              )}
             </li>
           ))}
         </ul>

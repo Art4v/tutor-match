@@ -29,10 +29,6 @@ export function RateCard({ tutor }) {
             >
               <div>
                 <div className="text-[13.5px] font-medium text-slate-900">{p.label}</div>
-                <div className="text-[11.5px] text-slate-500">
-                  {p.duration}
-                  {p.save ? ` · ${p.save}` : ""}
-                </div>
               </div>
               <div className="text-[15px] font-semibold tabular-nums text-slate-900">${p.price}</div>
             </button>
