@@ -61,20 +61,6 @@ export default async function ProfilePage({ params }) {
                 )}
               </div>
 
-              {tutor.credentials.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-4">
-                  {tutor.credentials.map((c, i) => {
-                    const label = typeof c === "string" ? c : c.label;
-                    const iconHint = typeof c === "string"
-                      ? (label?.includes("ATAR") ? "graduation" : "trophy")
-                      : (c.icon || (label?.includes("ATAR") ? "graduation" : "trophy"));
-                    return (
-                      <Chip key={i} tone="cream" icon={iconHint}>{label}</Chip>
-                    );
-                  })}
-                </div>
-              )}
-
               <div className="flex items-center gap-5 mt-5 text-[13px] text-slate-500 pt-5 flex-wrap" style={{ borderTop: "1px solid #F1F5F9" }}>
                 {tutor.rating != null && (
                   <span className="flex items-center gap-1.5 tabular-nums">
@@ -117,26 +103,43 @@ export default async function ProfilePage({ params }) {
               </Section>
             )}
 
-            <Section title="Credentials" subtitle="What sets this tutor apart">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "ATAR", value: tutor.atar ? tutor.atar.toFixed(2) : "—", icon: "graduation" },
-                  { label: "Rank", value: tutor.rank || "—", icon: "trophy", sub: tutor.rankSubject || undefined },
-                  { label: "Rating", value: tutor.rating ? tutor.rating.toFixed(1) : "—", icon: "star", sub: tutor.rating ? `${tutor.reviews} reviews` : undefined },
-                  { label: "Rate", value: `$${tutor.rate}`, icon: "trending-up", sub: "/hour" },
-                ].map((c) => (
-                  <div key={c.label} className="p-4" style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}>
-                    <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium">
-                      <Icon name={c.icon} size={12} /> {c.label}
-                    </div>
-                    <div className="text-[22px] font-semibold text-slate-900 mt-1 tabular-nums">
-                      {c.value}
-                      {c.sub && <span className="text-[12.5px] text-slate-400 font-normal ml-1">{c.sub}</span>}
-                    </div>
+            {(() => {
+              const metaForIcon = (icon) => {
+                switch (icon) {
+                  case "atar":        return { caption: "ATAR",       kind: "stat" };
+                  case "graduation":  return { caption: "DEGREE",     kind: "credential" };
+                  case "check-badge": return { caption: "STATE RANK", kind: "credential" };
+                  case "star":        return { caption: "HIGHLIGHT",  kind: "credential" };
+                  case "trophy":      return { caption: "AWARD",      kind: "credential" };
+                  default:            return { caption: "CREDENTIAL", kind: "credential" };
+                }
+              };
+              const tiles = [];
+              for (const [i, c] of (tutor.credentials ?? []).entries()) {
+                const label = typeof c === "string" ? c : c.label;
+                if (!label) continue;
+                const icon = (typeof c === "string" ? null : c.icon) || "trophy";
+                const meta = metaForIcon(icon);
+                tiles.push({ key: `cred-${i}`, caption: meta.caption, value: label, icon, kind: meta.kind });
+              }
+              if (tiles.length === 0) return null;
+              return (
+                <Section title="Credentials" subtitle="What sets this tutor apart">
+                  <div className="flex flex-col gap-2.5">
+                    {tiles.map((c) => (
+                      <div key={c.key} className="px-4 py-3 flex items-center gap-4" style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}>
+                        <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium w-[120px] shrink-0">
+                          <Icon name={c.icon} size={12} /> {c.caption}
+                        </div>
+                        <div className={`text-[14px] font-semibold text-slate-900 leading-snug${c.kind === "stat" ? " tabular-nums" : ""}`}>
+                          {c.value}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </Section>
+                </Section>
+              );
+            })()}
 
             {tutor.experience.length > 0 && (
               <Section title="Experience">

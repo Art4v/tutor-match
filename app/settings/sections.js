@@ -391,35 +391,62 @@ export function IdentitySection({ tutor, set }) {
   );
 }
 
+const CREDENTIAL_TYPES = [
+  { value: "atar",        label: "ATAR",       caption: "ATAR",       kind: "stat",       placeholder: "98.05" },
+  { value: "trophy",      label: "Award",      caption: "AWARD",      kind: "credential", placeholder: "All-Round Achiever 2021" },
+  { value: "graduation",  label: "Degree",     caption: "DEGREE",     kind: "credential", placeholder: "B. Computer Science @ CMU" },
+  { value: "check-badge", label: "State rank", caption: "STATE RANK", kind: "credential", placeholder: "1st in Chemistry, 2021" },
+  { value: "star",        label: "Highlight",  caption: "HIGHLIGHT",  kind: "credential", placeholder: "Top 1% nationally" },
+];
+
+function typeForIcon(icon) {
+  return CREDENTIAL_TYPES.find((t) => t.value === icon) ?? { caption: "CREDENTIAL", kind: "credential", placeholder: "" };
+}
+
 export function CredentialsSection({ tutor, set }) {
   const list = tutor.credentials || [];
   const update = (i, p) => set({ credentials: list.map((c, idx) => idx === i ? { ...c, ...p } : c) });
   const remove = (i) => set({ credentials: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ credentials: move(list, i, to) });
   const add = () => set({ credentials: [...list, { label: "", icon: "trophy" }] });
+
   return (
     <Card>
-      <SectionHeader title="Credentials" subtitle="Small chips next to your name. 2–4 works best."
+      <SectionHeader title="Credentials" subtitle="The ATAR, awards, degrees, or state ranks that show on your profile."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add credential</Button>} />
-      {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "#FAFAFA", borderRadius: 10 }}>No credentials yet — add an award, a degree, or a rank.</div>}
+      {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "#FAFAFA", borderRadius: 10 }}>No credentials yet — add an ATAR, award, degree, or state rank.</div>}
       <div>
-        {list.map((c, i) => (
-          <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
-            <div className="grid grid-cols-[110px_1fr] gap-2">
-              <Select value={c.icon} onChange={(v) => update(i, { icon: v })} options={[
-                { value: "trophy", label: "Award" },
-                { value: "graduation", label: "Degree" },
-                { value: "star", label: "Highlight" },
-              ]} />
-              <TextInput value={c.label} onChange={(v) => update(i, { label: v })} placeholder="All-Round Achiever 2021" />
-            </div>
-          </ReorderRow>
-        ))}
+        {list.map((c, i) => {
+          const t = typeForIcon(c.icon);
+          return (
+            <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
+              <div className="grid grid-cols-[130px_1fr] gap-2">
+                <Select value={c.icon} onChange={(v) => update(i, { icon: v })} options={CREDENTIAL_TYPES.map(({ value, label }) => ({ value, label }))} />
+                <TextInput value={c.label} onChange={(v) => update(i, { label: v })} placeholder={t.placeholder} />
+              </div>
+            </ReorderRow>
+          );
+        })}
       </div>
-      {list.length > 0 && (
+      {list.some((c) => c.label) && (
         <div className="mt-5 pt-5" style={{ borderTop: "1px solid #F1F5F9" }}>
           <MetaLabel>Preview</MetaLabel>
-          <div className="flex flex-wrap gap-1.5 mt-2">{list.map((c, i) => c.label && <Chip key={i} tone="cream" icon={c.icon}>{c.label}</Chip>)}</div>
+          <div className="flex flex-col gap-2.5 mt-2">
+            {list.map((c, i) => {
+              if (!c.label) return null;
+              const t = typeForIcon(c.icon);
+              return (
+                <div key={i} className="px-4 py-3 flex items-center gap-4" style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}>
+                  <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium w-[120px] shrink-0">
+                    <Icon name={c.icon} size={12} /> {t.caption}
+                  </div>
+                  <div className={`text-[14px] font-semibold text-slate-900 leading-snug${t.kind === "stat" ? " tabular-nums" : ""}`}>
+                    {c.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </Card>
@@ -443,41 +470,6 @@ export function AboutSection({ tutor, set }) {
           <TextInput multiline rows={8} value={long} onChange={(v) => set({ bioLong: v })}
             placeholder="Tell students about your teaching approach…" />
         </Field>
-      </div>
-    </Card>
-  );
-}
-
-function ReadOnlyStat({ label, value }) {
-  return (
-    <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 10 }}>
-      <div>
-        <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium">{label}</div>
-        <div className="text-[18px] font-semibold text-slate-900 tabular-nums mt-0.5">{value}</div>
-      </div>
-      <span
-        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-        title="Auto-calculated from completed lessons. Cannot be edited."
-        style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
-      >
-        <Icon name="lock" size={10} /> Auto
-      </span>
-    </div>
-  );
-}
-
-export function StatsSection({ tutor, set }) {
-  return (
-    <Card>
-      <SectionHeader title="Stats" subtitle="Top-of-profile numbers. Rating and reviews are system-managed." />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Field label="ATAR" hint="Two decimal places."><TextInput type="number" inputMode="decimal" value={tutor.atar} onChange={(v) => set({ atar: Number(v) || 0 })} /></Field>
-        <Field label="Rank"><TextInput value={tutor.rank} onChange={(v) => set({ rank: v })} placeholder="State / 1st / Top 10" /></Field>
-        <Field label="Rank subject"><TextInput value={tutor.rankSubject} onChange={(v) => set({ rankSubject: v })} placeholder="Chemistry, 2021" /></Field>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-5" style={{ borderTop: "1px solid #F1F5F9" }}>
-        <ReadOnlyStat label="Rating" value={tutor.rating != null ? Number(tutor.rating).toFixed(2) : "—"} />
-        <ReadOnlyStat label="Reviews" value={tutor.reviews != null ? tutor.reviews.toString() : "—"} />
       </div>
     </Card>
   );
@@ -848,7 +840,12 @@ function MiniPreview({ tutor, catalog = [] }) {
           {(tutor.subjects || []).length > 3 && <Chip tone="line">+{tutor.subjects.length - 3}</Chip>}
         </div>
         <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid #F1F5F9" }}>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium text-[11.5px] tabular-nums">{(Number(tutor.atar) || 0).toFixed(2)} ATAR</span>
+          {(() => {
+            const atarCred = (tutor.credentials || []).find((c) => c?.icon === "atar" && c.label);
+            const atarNum = atarCred ? Number(atarCred.label) : NaN;
+            if (!Number.isFinite(atarNum)) return <span />;
+            return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium text-[11.5px] tabular-nums">{atarNum.toFixed(2)} ATAR</span>;
+          })()}
           <div>
             <span className="text-[14px] font-semibold text-slate-900 tabular-nums">${tutor.rate || 0}</span>
             <span className="text-[11.5px] text-slate-400">/hr</span>

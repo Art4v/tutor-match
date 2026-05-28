@@ -33,7 +33,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "shield": return <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>;
     case "shield-check": return <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>;
     case "id-card": return <svg {...props}><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M13 10h5M13 14h5M5 17a4 4 0 0 1 8 0"/></svg>;
-    case "graduation": return <svg {...props}><path d="m22 10-10-5L2 10l10 5 10-5Z"/><path d="M6 12v5a6 6 0 0 0 12 0v-5"/></svg>;
+    case "graduation":
+    case "atar": return <svg {...props}><path d="m22 10-10-5L2 10l10 5 10-5Z"/><path d="M6 12v5a6 6 0 0 0 12 0v-5"/></svg>;
     case "briefcase": return <svg {...props}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M2 13h20"/></svg>;
     case "trending-up": return <svg {...props}><path d="m22 7-9 9-4-4-7 7"/><path d="M16 7h6v6"/></svg>;
     case "sparkle": return <svg {...props}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>;

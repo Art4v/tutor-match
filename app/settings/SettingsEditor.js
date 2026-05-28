@@ -10,7 +10,6 @@ import {
   IdentitySection,
   CredentialsSection,
   AboutSection,
-  StatsSection,
   RateSection,
   ExperienceSection,
   EducationSection,
@@ -187,7 +186,6 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
             <IdentitySection tutor={tutor} set={set} />
             <CredentialsSection tutor={tutor} set={set} />
             <AboutSection tutor={tutor} set={set} />
-            <StatsSection tutor={tutor} set={set} />
             <RateSection tutor={tutor} set={set} />
             <ExperienceSection tutor={tutor} set={set} />
             <EducationSection tutor={tutor} set={set} />
