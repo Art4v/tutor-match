@@ -73,10 +73,12 @@ export async function POST(request) {
   }
 
   const supabase = createSupabaseServerClient();
+  const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
     options: {
+      emailRedirectTo: `${origin}/login`,
       // These end up in auth.users.raw_user_meta_data, where the
       // handle_new_user() trigger reads them to populate the profile rows.
       data: { full_name: fullName ?? "", role: role === "student" ? "student" : "tutor" },
