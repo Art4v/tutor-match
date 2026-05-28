@@ -12,6 +12,8 @@ import ServiceAreaMap from "./ServiceAreaMap";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { CredentialsList } from "./CredentialsList";
+import { SimilarTutorMini } from "./SimilarTutorMini";
+import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
 import { RevealChildren } from "@/components/anim/CardReveal";
@@ -29,7 +31,7 @@ export default async function ProfilePage({ params }) {
   return (
     <div className="bg-white">
       <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-24">
-        <SectionReveal className="relative bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
+        <SectionReveal hover className="relative bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
           <div
             style={{
               height: 140,
@@ -43,63 +45,7 @@ export default async function ProfilePage({ params }) {
               <Avatar tutor={tutor} size={108} ring />
             </div>
 
-            <div className="mt-5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">
-                  <TypewriterOnView text={tutor.name} speed={36} />
-                </h1>
-                {tutor.verified && <VerifiedTick size={18} />}
-              </div>
-              {tutor.bio && <div className="text-[15px] text-slate-600 mt-1">{tutor.bio}</div>}
-              <div className="flex items-center gap-4 text-[13.5px] text-slate-500 mt-2 flex-wrap">
-                {(tutor.suburb || tutor.city) && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="map-pin" size={13} />
-                    {[tutor.suburb, tutor.city].filter(Boolean).join(", ")}
-                  </span>
-                )}
-                {deliveryLabel && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="globe" size={13} /> {deliveryLabel}
-                  </span>
-                )}
-                {tutor.responsive && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#F59E0B" }} />
-                    {tutor.responsive}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-5 mt-5 text-[13px] text-slate-500 pt-5 flex-wrap" style={{ borderTop: "1px solid #F1F5F9" }}>
-                {tutor.rating != null && (
-                  <span className="flex items-center gap-1.5 tabular-nums">
-                    <Icon name="star" size={13} className="text-slate-700" />
-                    <span className="text-slate-900 font-medium">{tutor.rating.toFixed(1)}</span>
-                    · {tutor.reviews} reviews
-                  </span>
-                )}
-                {tutor.yearsTutoring != null && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="clock" size={13} />
-                    <span className="text-slate-900 font-medium">{tutor.yearsTutoring} yrs</span>
-                    <span>tutoring</span>
-                  </span>
-                )}
-                {tutor.yearMin != null && tutor.yearMax != null && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="users" size={13} />
-                    {yearRangeLabel(tutor.yearMin, tutor.yearMax)}
-                  </span>
-                )}
-                {tutor.languages.length > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="language" size={13} />
-                    {tutor.languages.join(", ")}
-                  </span>
-                )}
-              </div>
-            </div>
+            <ProfileHeaderText tutor={tutor} deliveryLabel={deliveryLabel} />
           </div>
         </SectionReveal>
 
@@ -336,51 +282,6 @@ function SimilarTutorsStack({ similar }) {
         ))}
       </div>
     </RevealChildren>
-  );
-}
-
-function SimilarTutorMini({ tutor }) {
-  return (
-    <Link
-      href={`/tutor/${tutor.slug}`}
-      className="block bg-white overflow-hidden transition-colors"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 12 }}
-    >
-      <div
-        style={tutor.bannerImg
-          ? { height: 28, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-          : { height: 28, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
-      />
-      <div className="px-3 pb-3">
-        <div style={{ marginTop: -18, marginBottom: 6 }}>
-          <Avatar tutor={tutor} size={36} ring />
-        </div>
-        <div className="flex items-center gap-1 min-w-0">
-          <span
-            className="text-[12.5px] font-semibold text-slate-900 truncate"
-            style={{ letterSpacing: "-0.01em" }}
-          >
-            {tutor.name}
-          </span>
-          {tutor.verified && <VerifiedTick size={11} />}
-        </div>
-        <div
-          className="text-[11.5px] text-slate-500 truncate mt-0.5"
-          style={{ minHeight: "1.3em" }}
-        >
-          {tutor.bio || " "}
-        </div>
-        <div
-          className="mt-2 pt-2 flex items-baseline justify-end"
-          style={{ borderTop: "1px solid #F1F5F9" }}
-        >
-          <div className="tabular-nums">
-            <span className="text-[13px] font-semibold text-slate-900">${tutor.rate}</span>
-            <span className="text-[11px] text-slate-400">/hr</span>
-          </div>
-        </div>
-      </div>
-    </Link>
   );
 }
 

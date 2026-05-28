@@ -100,7 +100,7 @@ export function HomeHowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="font-display italic text-[18px] mb-4"
+            className="font-display italic text-[18px] mb-4 accent-shine"
             style={{ color: "var(--accent)", fontWeight: 500 }}
           >
             How it works
@@ -162,6 +162,25 @@ export function HomeHowItWorks() {
   );
 }
 
+const cardShakeHover = {
+  y: -4,
+  rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
+  boxShadow: "0 18px 40px -24px rgba(30,58,138,0.28)",
+  borderColor: "var(--accent-line)",
+  backgroundColor: "var(--accent-softer)",
+  transition: {
+    y: { duration: 0.42, ease: EASE_OUT },
+    rotate: {
+      duration: 0.62,
+      ease: "easeOut",
+      times: [0, 0.18, 0.4, 0.62, 0.82, 1],
+    },
+    boxShadow: { duration: 0.42, ease: EASE_OUT },
+    borderColor: { duration: 0.3, ease: EASE_OUT },
+    backgroundColor: { duration: 0.3, ease: EASE_OUT },
+  },
+};
+
 function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
   const [hover, setHover] = useState(false);
 
@@ -172,25 +191,27 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
         hidden: { opacity: 0, y: 18 },
         show: { opacity: 1, y: 0, transition: { duration: DURATION_MED, ease: EASE_OUT } },
       }}
-      style={{ position: "relative" }}
+      whileHover={isOpen || isHidden ? undefined : cardShakeHover}
+      onHoverStart={() => !isOpen && setHover(true)}
+      onHoverEnd={() => setHover(false)}
+      style={{
+        position: "relative",
+        borderRadius: 18,
+        border: "1px solid #E5E7EB",
+        background: "#ffffff",
+        boxShadow: "0 0 0 rgba(0,0,0,0)",
+        opacity: isHidden ? 0 : 1,
+        pointerEvents: isHidden ? "none" : "auto",
+        willChange: "transform, box-shadow",
+      }}
     >
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
-        onMouseEnter={() => !isOpen && setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        className="p-8 block relative overflow-hidden text-left w-full focus:outline-none"
+        className="p-8 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
         style={{
-          border: `1px solid ${hover ? "var(--accent-line)" : "#E5E7EB"}`,
           borderRadius: 18,
-          background: hover ? "var(--accent-softer)" : "#ffffff",
-          transform: hover ? "translateY(-3px)" : "translateY(0)",
-          transition:
-            "transform 260ms cubic-bezier(0.22,1,0.36,1), border-color 260ms ease-out, background-color 260ms ease-out, box-shadow 260ms ease-out",
-          boxShadow: hover ? "0 18px 40px -24px rgba(30,58,138,0.28)" : "0 0 0 rgba(0,0,0,0)",
           cursor: isOpen ? "default" : "pointer",
-          opacity: isHidden ? 0 : 1,
-          pointerEvents: isHidden ? "none" : "auto",
         }}
       >
         <CardFrontInner step={step} hover={hover} />

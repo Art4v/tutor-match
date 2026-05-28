@@ -37,7 +37,7 @@ export function HomeHero({ catalog }) {
       className="snap-section relative overflow-hidden"
       style={{
         background:
-          "radial-gradient(70% 55% at 18% 22%, rgba(30,58,138,0.08) 0%, rgba(255,255,255,0) 60%), radial-gradient(50% 50% at 88% 90%, rgba(30,58,138,0.06) 0%, rgba(255,255,255,0) 60%), #ffffff",
+          "radial-gradient(55% 55% at 22% 28%, rgba(30,58,138,0.08) 0%, rgba(255,255,255,0) 100%), radial-gradient(35% 35% at 78% 72%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 100%), #ffffff",
       }}
     >
       {/* Faint editorial grid texture */}
@@ -101,7 +101,7 @@ export function HomeHero({ catalog }) {
               start={clause1Done}
               onDone={() => setClause2Done(true)}
               as="span"
-              className="block italic"
+              className="block italic accent-shine"
               style={{ color: "var(--accent)" }}
             />
           </h1>
@@ -197,7 +197,7 @@ function TrustPill({ children }) {
           flexShrink: 0,
         }}
       />
-      {children}
+      <span className="accent-shine" style={{ color: "var(--accent)" }}>{children}</span>
     </span>
   );
 }

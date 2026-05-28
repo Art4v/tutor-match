@@ -22,7 +22,7 @@ export function HomeFeaturedTutors({ tutors = [], totalTutors = 0 }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-15% 0px" }}
               transition={{ duration: 0.5, ease: EASE_OUT }}
-              className="font-display italic text-[18px] mb-4"
+              className="font-display italic text-[18px] mb-4 accent-shine"
               style={{ color: "var(--accent)", fontWeight: 500 }}
             >
               Featured

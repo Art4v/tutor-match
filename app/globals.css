@@ -80,6 +80,50 @@ a.accent-link::after {
 }
 a.accent-link:hover::after { transform: scaleX(1); }
 
+/* Subtle gleam + glow for accented text in landing-page headings.
+   - A short left-to-right shine runs once every ~24 seconds, then rests.
+   - A soft accent-coloured text-shadow gives the glyphs a halo. text-shadow
+     keeps rendering even when -webkit-text-fill-color is transparent because
+     it's based on the glyph silhouette, not the fill colour.
+   - Padding + matching negative margin grows the background paint box just
+     enough to cover italic descenders (g/y/p); without that growth the
+     descenders fall outside the gradient's clip region and render transparent. */
+@keyframes accent-shine {
+  0%   { background-position: 100% 50%; }
+  8%   { background-position: 0% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.accent-shine {
+  background-image: linear-gradient(
+    100deg,
+    var(--accent) 0%,
+    var(--accent) 46%,
+    #6B7BB5 50%,
+    var(--accent) 54%,
+    var(--accent) 100%
+  );
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: accent-shine 24s ease-in-out infinite;
+  padding: 0.05em 0.05em 0.22em;
+  margin: -0.05em -0.05em -0.22em;
+  text-shadow:
+    0 0 18px rgba(21, 39, 100, 0.28),
+    0 0 6px rgba(21, 39, 100, 0.22);
+}
+@media (prefers-reduced-motion: reduce) {
+  .accent-shine {
+    animation: none;
+    background-image: none;
+    color: var(--accent);
+    -webkit-text-fill-color: var(--accent);
+  }
+}
+
 /* Tutor card hover jiggle — runs once per hover-enter */
 @keyframes tutor-card-jiggle {
   0%   { transform: translateY(0)    rotate(0deg); }

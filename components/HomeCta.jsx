@@ -47,7 +47,7 @@ export function HomeCta() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-15% 0px" }}
                 transition={{ duration: 0.5, ease: EASE_OUT }}
-                className="font-display italic text-[16px] mb-5"
+                className="font-display italic text-[16px] mb-5 accent-shine"
                 style={{ color: "var(--accent)", fontWeight: 500, letterSpacing: "0.01em" }}
               >
                 For tutors.
@@ -78,7 +78,7 @@ export function HomeCta() {
                     delay={140}
                     start={c1Done}
                     as="span"
-                    className="italic"
+                    className="italic accent-shine"
                     style={{ color: "var(--accent)" }}
                   />
                   <TypewriterOnView
@@ -99,7 +99,7 @@ export function HomeCta() {
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
                 className="text-[16px] text-slate-600 mt-7 leading-[1.6] max-w-[520px]"
               >
-                Matchtutor is the cleanest way to build a private tutoring practice.
+                Matchtutor is the cleanest way to build a private tutoring network.
                 Connect with clients in a way you never have before, all completely for free.
                 No fees, no commissions, no catch.
               </motion.p>

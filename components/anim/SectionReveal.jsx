@@ -39,7 +39,26 @@ export function SectionReveal({
         },
       };
 
-  const hoverProps = hover
+  const hoverProps = hover === "shake"
+    ? {
+        whileHover: {
+          y: -4,
+          rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
+          boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22)",
+          borderColor: "#CBD5E1",
+          transition: {
+            y: { duration: 0.42, ease: EASE_OUT },
+            rotate: {
+              duration: 0.62,
+              ease: "easeOut",
+              times: [0, 0.18, 0.4, 0.62, 0.82, 1],
+            },
+            boxShadow: { duration: 0.42, ease: EASE_OUT },
+            borderColor: { duration: 0.3, ease: EASE_OUT },
+          },
+        },
+      }
+    : hover
     ? {
         whileHover: {
           y: -2,
@@ -50,6 +69,10 @@ export function SectionReveal({
       }
     : {};
 
+  const wrapperStyle = hover === "shake"
+    ? { ...style, willChange: "transform, box-shadow" }
+    : style;
+
   return (
     <Comp
       initial="hidden"
@@ -57,7 +80,7 @@ export function SectionReveal({
       viewport={{ once: true, margin: "-12% 0px -8% 0px" }}
       variants={variants}
       className={className}
-      style={style}
+      style={wrapperStyle}
       {...hoverProps}
       {...rest}
     >
