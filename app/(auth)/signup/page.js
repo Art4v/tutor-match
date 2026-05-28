@@ -102,10 +102,7 @@ export default function SignupPage() {
           <Link href="/login" className="font-medium text-slate-900 underline">
             log in
           </Link>
-          .{" "}
-          <span className="text-slate-500">
-            Can&rsquo;t find the email? Check your spam or junk folder.
-          </span>
+          .
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-5">
@@ -194,10 +191,16 @@ export default function SignupPage() {
       )}
 
       <div className="text-[13px] text-slate-500 mt-6 text-center">
-        Already have an account?{" "}
-        <Link href="/login" className="text-slate-900 hover:underline font-medium">
-          Log in
-        </Link>
+        {needsConfirm ? (
+          <>Can&rsquo;t find the email? Check your spam or junk folder.</>
+        ) : (
+          <>
+            Already have an account?{" "}
+            <Link href="/login" className="text-slate-900 hover:underline font-medium">
+              Log in
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
