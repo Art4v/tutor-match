@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
@@ -917,33 +918,6 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       </div>
 
       <Card padding={20}>
-        <div className="flex items-baseline justify-between mb-2">
-          <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Profile completion</h3>
-          <span className="text-[18px] font-semibold text-slate-900 tabular-nums tracking-tight">{c.pct}%</span>
-        </div>
-        <div style={{ height: 6, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "#10B981" : "#0F172A", transition: "width 220ms ease" }} />
-        </div>
-        <ul className="mt-4 space-y-2">
-          {c.checks.map((ch) => (
-            <li key={ch.key} className="flex items-center gap-2 text-[13px]">
-              <span className="inline-flex items-center justify-center shrink-0"
-                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "#10B981" : "#F1F5F9", color: ch.ok ? "#fff" : "#94A3B8" }}>
-                {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#94A3B8" }} />}
-              </span>
-              <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
-              {ch.soon && (
-                <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                  style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", color: "#94A3B8" }}>
-                  Coming soon
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Profile visibility</h3>
         <div className="space-y-1.5">
           {visOptions.map((o) => (
@@ -979,6 +953,33 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
           </span>
         </button>
       </Card>
+
+      <Card padding={20}>
+        <div className="flex items-baseline justify-between mb-2">
+          <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Profile completion</h3>
+          <span className="text-[18px] font-semibold text-slate-900 tabular-nums tracking-tight">{c.pct}%</span>
+        </div>
+        <div style={{ height: 6, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "#10B981" : "#0F172A", transition: "width 220ms ease" }} />
+        </div>
+        <ul className="mt-4 space-y-2">
+          {c.checks.map((ch) => (
+            <li key={ch.key} className="flex items-center gap-2 text-[13px]">
+              <span className="inline-flex items-center justify-center shrink-0"
+                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "#10B981" : "#F1F5F9", color: ch.ok ? "#fff" : "#94A3B8" }}>
+                {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#94A3B8" }} />}
+              </span>
+              <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
+              {ch.soon && (
+                <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+                  style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", color: "#94A3B8" }}>
+                  Coming soon
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Card>
     </aside>
   );
 }
@@ -999,7 +1000,9 @@ export function Breadcrumb() {
   );
 }
 
-export function SaveBar({ tutor, dirty, saving, onSave, onDiscard }) {
+export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref }) {
+  const router = useRouter();
+  const canView = !dirty && !saving && !!profileHref;
   return (
     <div className="sticky top-0 z-30 bg-white/85 backdrop-blur" style={{ borderBottom: "1px solid #E5E7EB" }}>
       <div className="max-w-[1200px] mx-auto px-6 h-[68px] flex items-center gap-4">
@@ -1016,19 +1019,29 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard }) {
         <div className="flex-1" />
         <div className="hidden md:flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
-          <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save changes"}</Button>
+          {canView ? (
+            <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
+          ) : (
+            <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save changes"}</Button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function MobileSaveBar({ dirty, saving, onSave, onDiscard }) {
+export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref }) {
+  const router = useRouter();
+  const canView = !dirty && !saving && !!profileHref;
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid #E5E7EB" }}>
       <div className="flex-1 text-[13px] text-slate-600">{dirty ? "You have unsaved changes" : "All saved"}</div>
       <Button variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
-      <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save"}</Button>
+      {canView ? (
+        <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
+      ) : (
+        <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save"}</Button>
+      )}
     </div>
   );
 }

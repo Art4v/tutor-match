@@ -6,9 +6,9 @@ import {
 } from "@/lib/supabase/tutors";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
-import { TutorCard } from "@/components/TutorCard";
 import { Footer } from "@/components/Footer";
 import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
+import { BrowseResultsGrid } from "./BrowseResultsGrid";
 
 const PAGE_SIZE = 24;
 
@@ -95,11 +95,7 @@ export default async function BrowsePage({ searchParams }) {
             {tutors.length === 0 ? (
               <EmptyState />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {tutors.map((t) => (
-                  <TutorCard key={t.id} tutor={t} />
-                ))}
-              </div>
+              <BrowseResultsGrid tutors={tutors} />
             )}
 
             {tutors.length > 0 && totalPages > 1 && (
@@ -175,11 +171,11 @@ function Pagination({ page, totalPages, searchParams }) {
         <Link
           key={p}
           href={pageHref(searchParams, p)}
-          className="w-9 h-9 text-[13px] font-medium rounded-md inline-flex items-center justify-center"
+          className="w-9 h-9 text-[13px] font-medium rounded-md inline-flex items-center justify-center transition-colors"
           style={{
-            background: p === page ? "#1F2937" : "transparent",
+            background: p === page ? "var(--accent)" : "transparent",
             color: p === page ? "#fff" : "#475569",
-            border: p === page ? "1px solid #1F2937" : "1px solid #E5E7EB",
+            border: p === page ? "1px solid var(--accent)" : "1px solid #E5E7EB",
           }}
         >
           {p}

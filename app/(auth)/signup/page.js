@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { Button, Chip } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
 import { validateEmailFormat } from "@/lib/email";
+import { EASE_OUT } from "@/lib/motion";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -78,16 +80,29 @@ export default function SignupPage() {
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.42, ease: EASE_OUT }}
       className="w-full max-w-[440px] bg-white"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 32 }}
+      style={{
+        border: "1px solid #E5E7EB",
+        borderRadius: 16,
+        padding: 32,
+        boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
+      }}
     >
       <div className="mb-6">
-        <h1 className="text-[24px] font-semibold text-slate-900 tracking-tight">
-          Create your account
+        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+          Create your account.
         </h1>
-        <p className="text-[14px] text-slate-500 mt-1">
-          Join tutormatch as a tutor or a student.
+        <p className="text-[14px] text-slate-500 mt-1.5">
+          Join{" "}
+          <span style={{ fontWeight: 500 }}>
+            <span className="text-slate-700">match</span>
+            <span style={{ color: "var(--accent)" }}>tutor</span>
+          </span>{" "}
+          as a tutor or a student.
         </p>
       </div>
 
@@ -196,13 +211,13 @@ export default function SignupPage() {
         ) : (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="text-slate-900 hover:underline font-medium">
+            <Link href="/login" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
               Log in
             </Link>
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

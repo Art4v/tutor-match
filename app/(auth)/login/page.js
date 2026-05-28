@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { EASE_OUT } from "@/lib/motion";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,16 +31,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.42, ease: EASE_OUT }}
       className="w-full max-w-[440px] bg-white"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 32 }}
+      style={{
+        border: "1px solid #E5E7EB",
+        borderRadius: 16,
+        padding: 32,
+        boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
+      }}
     >
       <div className="mb-6">
-        <h1 className="text-[24px] font-semibold text-slate-900 tracking-tight">
-          Log in
+        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+          Welcome back.
         </h1>
-        <p className="text-[14px] text-slate-500 mt-1">
-          Welcome back. Sign in to your tutormatch account.
+        <p className="text-[14px] text-slate-500 mt-1.5">
+          Sign in to your{" "}
+          <span style={{ fontWeight: 500 }}>
+            <span className="text-slate-700">match</span>
+            <span style={{ color: "var(--accent)" }}>tutor</span>
+          </span>{" "}
+          account.
         </p>
       </div>
 
@@ -81,11 +96,11 @@ export default function LoginPage() {
 
       <div className="text-[13px] text-slate-500 mt-6 text-center">
         Don&rsquo;t have an account?{" "}
-        <Link href="/signup" className="text-slate-900 hover:underline font-medium">
+        <Link href="/signup" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
           Sign up
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -104,8 +119,13 @@ function Input(props) {
   return (
     <input
       {...props}
-      className="w-full h-9 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-400"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}
+      className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
+      style={{
+        border: "1px solid #E5E7EB",
+        borderRadius: 8,
+        background: "#fff",
+        transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
+      }}
     />
   );
 }

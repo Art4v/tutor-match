@@ -1,27 +1,124 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui";
+import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 export function HomeCta() {
   const router = useRouter();
+  const [c1Done, setC1Done] = useState(false);
+  const [c2Done, setC2Done] = useState(false);
+
   return (
-    <section className="max-w-[1200px] mx-auto px-6 mt-16">
-      <div
-        className="p-10 md:p-14 flex flex-col md:flex-row md:items-center md:justify-between gap-8"
-        style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 20 }}
-      >
-        <div className="max-w-[560px]">
-          <div className="text-[12.5px] font-medium text-slate-500 uppercase tracking-wider mb-3">For tutors.</div>
-          <h3 className="text-[32px] font-semibold text-slate-900 tracking-tight leading-[1.15]">
-            You did the work. Now teach it.
-          </h3>
-          <p className="text-[15px] text-slate-600 mt-4 leading-[1.55]">
-            Tutormatch is the cleanest way to build a private tutoring practice. Connect with clients in a way you never have before, all completely for free. No fees, no commissions, no catch.
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 shrink-0">
-          <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push("/signup")}>Become a tutor</Button>
-          <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>Browse tutors</Button>
+    <section className="snap-section flex items-center">
+      <div className="max-w-[1200px] w-full mx-auto px-6 py-16">
+        <div
+          className="relative overflow-hidden p-10 md:p-20"
+          style={{
+            background:
+              "radial-gradient(80% 80% at 0% 0%, rgba(30,58,138,0.12) 0%, rgba(30,58,138,0) 60%), #FAFAFA",
+            border: "1px solid #E5E7EB",
+            borderRadius: 24,
+          }}
+        >
+          {/* Editorial decorative quote mark */}
+          <div
+            aria-hidden="true"
+            className="absolute font-display select-none pointer-events-none"
+            style={{
+              top: -40,
+              right: 24,
+              fontSize: 280,
+              lineHeight: 1,
+              color: "var(--accent)",
+              opacity: 0.07,
+              fontWeight: 500,
+            }}
+          >
+            &#8221;
+          </div>
+
+          <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-12">
+            <div className="max-w-[640px]">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-15% 0px" }}
+                transition={{ duration: 0.5, ease: EASE_OUT }}
+                className="font-display italic text-[16px] mb-5"
+                style={{ color: "var(--accent)", fontWeight: 500, letterSpacing: "0.01em" }}
+              >
+                For tutors.
+              </motion.div>
+
+              <h3
+                className="font-display text-[40px] md:text-[60px] leading-[1.05] text-slate-900"
+                style={{ fontWeight: 500 }}
+              >
+                <TypewriterOnView
+                  text="You did the work."
+                  speed={28}
+                  onDone={() => setC1Done(true)}
+                  as="span"
+                  className="block"
+                />
+                <span className="block">
+                  <TypewriterOnView
+                    text="Now "
+                    speed={28}
+                    cursor={false}
+                    start={c1Done}
+                    as="span"
+                  />
+                  <TypewriterOnView
+                    text="teach"
+                    speed={50}
+                    delay={140}
+                    start={c1Done}
+                    as="span"
+                    className="italic"
+                    style={{ color: "var(--accent)" }}
+                  />
+                  <TypewriterOnView
+                    text=" it."
+                    speed={50}
+                    delay={140 + 50 * 5}
+                    cursor={false}
+                    start={c1Done}
+                    onDone={() => setC2Done(true)}
+                    as="span"
+                  />
+                </span>
+              </h3>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={c2Done ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
+                className="text-[16px] text-slate-600 mt-7 leading-[1.6] max-w-[520px]"
+              >
+                Matchtutor is the cleanest way to build a private tutoring practice.
+                Connect with clients in a way you never have before, all completely for free.
+                No fees, no commissions, no catch.
+              </motion.p>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={c2Done ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
+              className="flex flex-col gap-3 shrink-0"
+            >
+              <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push("/signup")}>
+                Become a tutor
+              </Button>
+              <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>
+                Browse tutors
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>

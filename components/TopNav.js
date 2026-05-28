@@ -101,17 +101,21 @@ export function TopNav() {
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2 group">
           <div
-            className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-white text-[14px]"
-            style={{ background: "#0F172A", letterSpacing: "-0.04em" }}
-          >tm</div>
-          <span className="text-[16px] font-semibold text-slate-900 tracking-tight">tutormatch</span>
+            className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-white text-[14px] transition-colors"
+            style={{ background: "var(--accent)", letterSpacing: "-0.04em" }}
+          >mt</div>
+          <span className="text-[16px] font-semibold tracking-tight">
+            <span className="text-slate-900">match</span>
+            <span style={{ color: "var(--accent)" }}>tutor</span>
+          </span>
         </Link>
 
         <div
           className="flex-1 max-w-[480px] hidden md:flex items-center gap-2 px-3 h-9 rounded-lg transition-colors"
           style={{
             background: focused ? "#fff" : "#F3F4F6",
-            border: `1px solid ${focused ? "#D1D5DB" : "transparent"}`,
+            border: `1px solid ${focused ? "var(--accent)" : "transparent"}`,
+            boxShadow: focused ? "0 0 0 3px var(--accent-ring)" : "none",
           }}
         >
           <Icon name="search" size={15} className="text-slate-500" />
@@ -140,7 +144,7 @@ export function TopNav() {
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
                     className="hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
-                    style={{ background: "#F3F4F6" }}
+                    style={{ background: menuOpen ? "var(--accent-softer)" : "#F3F4F6", color: menuOpen ? "var(--accent)" : "#334155" }}
                     title={displayName}
                   >
                     <span
@@ -165,41 +169,19 @@ export function TopNav() {
                       }}
                     >
                       {tutorSlug && (
-                        <Link
-                          href={`/tutor/${tutorSlug}`}
-                          role="menuitem"
-                          onClick={() => setMenuOpen(false)}
-                          className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
-                        >
+                        <NavMenuLink href={`/tutor/${tutorSlug}`} onClick={() => setMenuOpen(false)}>
                           Profile
-                        </Link>
+                        </NavMenuLink>
                       )}
-                      <Link
-                        href="/browse"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
-                      >
+                      <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
                         Browse
-                      </Link>
-                      <Link
-                        href="/settings"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                        className="block w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100 rounded-md"
-                      >
+                      </NavMenuLink>
+                      <NavMenuLink href="/settings" onClick={() => setMenuOpen(false)}>
                         Settings
-                      </Link>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={onLogout}
-                        disabled={loggingOut}
-                        className="block w-full text-left px-3 py-2 text-[13.5px] hover:bg-slate-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ color: "#DC2626" }}
-                      >
+                      </NavMenuLink>
+                      <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
                         {loggingOut ? "Logging out…" : "Log out"}
-                      </button>
+                      </NavMenuButton>
                     </div>
                   )}
                 </div>
@@ -218,5 +200,46 @@ export function TopNav() {
         </div>
       </div>
     </div>
+  );
+}
+
+function NavMenuLink({ href, onClick, children }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <Link
+      href={href}
+      role="menuitem"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="block w-full text-left px-3 py-2 text-[13.5px] rounded-md transition-colors"
+      style={{
+        background: hover ? "var(--accent-softer)" : "transparent",
+        color: hover ? "var(--accent)" : "#334155",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function NavMenuButton({ onClick, disabled, danger, children }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="block w-full text-left px-3 py-2 text-[13.5px] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      style={{
+        color: danger ? "#DC2626" : "#334155",
+        background: hover && !disabled ? (danger ? "#FEF2F2" : "var(--accent-softer)") : "transparent",
+      }}
+    >
+      {children}
+    </button>
   );
 }

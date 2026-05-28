@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --accent: #152764;
+  --accent-hover: #0C1840;
+  --accent-soft: #DBEAFE;
+  --accent-softer: #EFF6FF;
+  --accent-line: #BFDBFE;
+  --accent-ring: rgba(21, 39, 100, 0.22);
+  --ink: #0F172A;
+  --ink-muted: #475569;
+  --line: #E5E7EB;
+  --line-strong: #D1D5DB;
+  --bg: #FFFFFF;
+  --bg-soft: #FAFAFA;
+  --nav-h: 60px;
+}
+
 html, body {
   background: #fff;
   color: #0F172A;
@@ -11,7 +27,94 @@ html, body {
   letter-spacing: -0.003em;
 }
 
+.font-display {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.03em;
+}
+
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Snap-scroll utilities used by the landing page.
+   Each section is *at least* the visible viewport height (between the sticky
+   nav and the bottom edge). It's a min-height (not a fixed height) so content
+   that's taller — e.g. the featured-tutor grid on a short laptop — can grow
+   the section instead of overflowing into the next snap target. */
+.snap-scroll {
+  scroll-snap-type: y mandatory;
+}
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-height: calc(100vh - var(--nav-h));
+  min-height: calc(100svh - var(--nav-h));
+}
+@media (max-width: 768px), (pointer: coarse) {
+  .snap-scroll { scroll-snap-type: none; }
+  .snap-section { scroll-snap-stop: normal; }
+}
+
+/* Global focus-visible ring in the accent color — biggest "blue everywhere" win. */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  border-color: var(--accent);
+  transition: box-shadow 160ms ease-out, border-color 160ms ease-out;
+}
+
+/* Anchor accent (skipped inside .no-accent regions like tutor cards) */
+a.accent-link {
+  color: var(--accent);
+  position: relative;
+  text-decoration: none;
+}
+a.accent-link::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+a.accent-link:hover::after { transform: scaleX(1); }
+
+/* Tutor card hover jiggle — runs once per hover-enter */
+@keyframes tutor-card-jiggle {
+  0%   { transform: translateY(0)    rotate(0deg); }
+  18%  { transform: translateY(-3px) rotate(-0.9deg); }
+  38%  { transform: translateY(-3px) rotate(0.9deg); }
+  58%  { transform: translateY(-3px) rotate(-0.5deg); }
+  78%  { transform: translateY(-3px) rotate(0.25deg); }
+  100% { transform: translateY(-3px) rotate(0deg); }
+}
+
+/* Caret used by the typewriter component */
+.typewriter-caret {
+  display: inline-block;
+  width: 0.5ch;
+  margin-left: 0.06em;
+  background: var(--accent);
+  animation: caret-blink 900ms steps(2, start) infinite;
+  vertical-align: -0.08em;
+  height: 0.95em;
+  border-radius: 1px;
+}
+@keyframes caret-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Reduced motion: kill all custom animations */
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-caret { animation: none; opacity: 0; }
+  .snap-scroll { scroll-snap-type: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 999px; border: 2px solid #fff; }
