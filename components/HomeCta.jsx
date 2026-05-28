@@ -1,15 +1,28 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 export function HomeCta() {
   const router = useRouter();
   const [c1Done, setC1Done] = useState(false);
   const [c2Done, setC2Done] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setSignedIn(!!data?.user);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(!!session?.user);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   return (
     <section className="snap-section flex items-center">
@@ -111,7 +124,7 @@ export function HomeCta() {
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
               className="flex flex-col gap-3 shrink-0"
             >
-              <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push("/signup")}>
+              <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")}>
                 Become a tutor
               </Button>
               <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>

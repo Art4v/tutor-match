@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
@@ -841,41 +842,29 @@ export function calcCompletion(t) {
 }
 
 function MiniPreview({ tutor, catalog = [] }) {
-  const display = { ...tutor, initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial };
   const bySlug = useMemo(() => new Map(catalog.map((s) => [s.slug, s])), [catalog]);
-  const labelFor = (slug) => subjectLabel(bySlug.get(slug) ?? { name: slug });
+  // Reshape the editor's tutor state into the camelCase, subject-object shape
+  // TutorCard expects. Subjects in editor state are slug strings; map them
+  // through the catalog so subjectLabel() returns the proper exam-prefixed
+  // label. Placeholders fill name/bio/location so empty profiles still look
+  // like a card instead of a blank.
+  const display = useMemo(() => ({
+    ...tutor,
+    name: tutor.name || "Your name",
+    initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial,
+    bio: tutor.bio || "Your tagline",
+    suburb: tutor.suburb || "Suburb",
+    city: tutor.city || "",
+    subjects: (tutor.subjects || []).map((slug) => bySlug.get(slug) ?? { name: slug, slug }),
+    credentials: (tutor.credentials || []).filter((c) => c?.label),
+    rate: tutor.rate || 0,
+    slug: tutor.slug || "preview",
+  }), [tutor, bySlug]);
+  // pointer-events disabled so clicking the preview doesn't navigate; the
+  // hover animation also pauses, which is the right call for a preview.
   return (
-    <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}>
-      <div style={tutor.bannerImg
-        ? { height: 56, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-        : { height: 56, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.85 }} />
-      <div className="px-4 pb-4">
-        <div style={{ marginTop: -28, marginBottom: 10 }}><Avatar tutor={display} size={56} ring /></div>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[15px] font-semibold text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your name"}</span>
-          {tutor.verified && <VerifiedTick size={13} />}
-        </div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{tutor.bio || "Your tagline"}</div>
-        <div className="text-[11.5px] text-slate-400 mt-0.5 flex items-center gap-1">
-          <Icon name="map-pin" size={10} />{`${tutor.suburb || "Suburb"} · ${tutor.city || "City"}`}
-        </div>
-        <div className="flex flex-wrap gap-1 mt-3">
-          {(tutor.subjects || []).slice(0, 3).map((s) => <Chip key={s}>{labelFor(s)}</Chip>)}
-          {(tutor.subjects || []).length > 3 && <Chip tone="line">+{tutor.subjects.length - 3}</Chip>}
-        </div>
-        <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid #F1F5F9" }}>
-          {(() => {
-            const atarCred = (tutor.credentials || []).find((c) => c?.icon === "atar" && c.label);
-            const atarNum = atarCred ? Number(atarCred.label) : NaN;
-            if (!Number.isFinite(atarNum)) return <span />;
-            return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium text-[11.5px] tabular-nums">{atarNum.toFixed(2)} ATAR</span>;
-          })()}
-          <div>
-            <span className="text-[14px] font-semibold text-slate-900 tabular-nums">${tutor.rate || 0}</span>
-            <span className="text-[11.5px] text-slate-400">/hr</span>
-          </div>
-        </div>
-      </div>
+    <div style={{ pointerEvents: "none" }}>
+      <TutorCard tutor={display} />
     </div>
   );
 }
@@ -914,7 +903,7 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       <div>
         <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2 px-1">Live preview</div>
         <MiniPreview tutor={tutor} catalog={catalog} />
-        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — compact version of your public profile header.</div>
+        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — exactly how your card appears on browse and the home page.</div>
       </div>
 
       <Card padding={20}>

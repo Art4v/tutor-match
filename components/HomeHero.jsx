@@ -121,11 +121,10 @@ export function HomeHero({ catalog }) {
             initial={{ opacity: 0, y: 20 }}
             animate={subtitleDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.15 }}
-            className="mt-10 grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-white max-w-[760px]"
+            className="mt-10 grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-white max-w-[760px] hero-search-glow"
             style={{
               border: "1px solid #E5E7EB",
               borderRadius: 16,
-              boxShadow: "0 20px 60px -30px rgba(15, 23, 42, 0.18)",
             }}
           >
             <SearchField

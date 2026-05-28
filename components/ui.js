@@ -38,7 +38,7 @@ export function VerifiedTick({ size = 14 }) {
   );
 }
 
-export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled }) {
+export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled, radius = 999 }) {
   const tones = {
     grey: { bg: active ? "var(--accent)" : "#F3F4F6", color: active ? "#fff" : "#374151", border: active ? "var(--accent)" : "transparent" },
     line: { bg: "#fff", color: "#374151", border: "#E5E7EB" },
@@ -66,7 +66,7 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
         background: bg,
         color,
         border: `1px solid ${border}`,
-        borderRadius: 999,
+        borderRadius: radius,
         lineHeight: 1.2,
         opacity: disabled ? 0.5 : 1,
         cursor: disabled ? "not-allowed" : clickable ? "pointer" : undefined,

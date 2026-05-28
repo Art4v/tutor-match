@@ -92,7 +92,13 @@ export function HomeHowItWorks() {
   }, [openIndex]);
 
   return (
-    <section className="snap-section flex items-center">
+    <section
+      className="snap-section flex items-center"
+      style={{
+        background:
+          "radial-gradient(45% 50% at 14% 78%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 60%)",
+      }}
+    >
       <div className="max-w-[1200px] w-full mx-auto px-6 py-24">
         <div className="max-w-[820px] mb-14">
           <motion.div
@@ -165,7 +171,7 @@ export function HomeHowItWorks() {
 const cardShakeHover = {
   y: -4,
   rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-  boxShadow: "0 18px 40px -24px rgba(30,58,138,0.28)",
+  boxShadow: "0 18px 40px -24px rgba(30,58,138,0.28), 0 0 28px rgba(21,39,100,0.22), 0 0 10px rgba(21,39,100,0.16)",
   borderColor: "var(--accent-line)",
   backgroundColor: "var(--accent-softer)",
   transition: {
@@ -199,7 +205,7 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
         borderRadius: 18,
         border: "1px solid #E5E7EB",
         background: "#ffffff",
-        boxShadow: "0 0 0 rgba(0,0,0,0)",
+        boxShadow: "0 0 18px rgba(21,39,100,0.10), 0 0 6px rgba(21,39,100,0.07)",
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
         willChange: "transform, box-shadow",

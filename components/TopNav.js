@@ -106,7 +106,7 @@ export function TopNav() {
           >mt</div>
           <span className="text-[16px] font-semibold tracking-tight">
             <span className="text-slate-900">match</span>
-            <span style={{ color: "var(--accent)" }}>tutor</span>
+            <span className="accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
           </span>
         </Link>
 

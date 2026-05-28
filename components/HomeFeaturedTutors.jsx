@@ -13,7 +13,13 @@ export function HomeFeaturedTutors({ tutors = [], totalTutors = 0 }) {
   const seeAllLabel = totalTutors > 0 ? `See all ${totalTutors} tutors` : "See all tutors";
 
   return (
-    <section className="snap-section">
+    <section
+      className="snap-section"
+      style={{
+        background:
+          "radial-gradient(40% 45% at 82% 28%, rgba(30,58,138,0.06) 0%, rgba(255,255,255,0) 60%)",
+      }}
+    >
       <div className="max-w-[1200px] w-full mx-auto px-6 pt-10 pb-6">
         <div className="flex items-end justify-between mb-4 gap-6">
           <div className="max-w-[720px]">

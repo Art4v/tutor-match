@@ -124,6 +124,31 @@ a.accent-link:hover::after { transform: scaleX(1); }
   }
 }
 
+/* Static glow halo (no gleam). Use on accent text that's always-visible
+   (e.g. the navbar logo) where a recurring sweep would be distracting. */
+.accent-glow {
+  text-shadow:
+    0 0 14px rgba(21, 39, 100, 0.32),
+    0 0 5px rgba(21, 39, 100, 0.22);
+}
+
+/* Hero search bar: accent halo at rest, amplified when a field/button inside
+   has focus. Matches the .accent-shine text-shadow language but scaled for a
+   larger surface. */
+.hero-search-glow {
+  box-shadow:
+    0 20px 60px -30px rgba(15, 23, 42, 0.18),
+    0 0 18px rgba(21, 39, 100, 0.10),
+    0 0 6px  rgba(21, 39, 100, 0.07);
+  transition: box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-search-glow:focus-within {
+  box-shadow:
+    0 20px 60px -30px rgba(15, 23, 42, 0.22),
+    0 0 28px rgba(21, 39, 100, 0.22),
+    0 0 10px rgba(21, 39, 100, 0.16);
+}
+
 /* Tutor card hover jiggle — runs once per hover-enter */
 @keyframes tutor-card-jiggle {
   0%   { transform: translateY(0)    rotate(0deg); }

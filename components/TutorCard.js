@@ -62,7 +62,7 @@ function SubjectChipsRow({ subjects }) {
       >
         {subjects.map((s, i) => (
           <span data-kind="chip" key={i}>
-            <Chip tone="line">{subjectLabel(s)}</Chip>
+            <Chip tone="line" radius={6}>{subjectLabel(s)}</Chip>
           </span>
         ))}
         <span data-kind="more">
@@ -166,7 +166,7 @@ const cardVariants = {
   rest: {
     y: 0,
     rotate: 0,
-    boxShadow: "0 0 0 0 rgba(15,23,42,0)",
+    boxShadow: "0 0 18px rgba(21,39,100,0.10), 0 0 6px rgba(21,39,100,0.07)",
     borderColor: "#E5E7EB",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
@@ -178,7 +178,7 @@ const cardVariants = {
   hover: {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22)",
+    boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22), 0 0 28px rgba(21,39,100,0.22), 0 0 10px rgba(21,39,100,0.16)",
     borderColor: "#CBD5E1",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
@@ -219,8 +219,8 @@ export function TutorCard({ tutor }) {
         <div
           className="shrink-0"
           style={tutor.bannerImg
-            ? { height: 48, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-            : { height: 48, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
+            ? { height: 62, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
+            : { height: 62, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
         />
 
         <div className="px-5 pb-5 flex flex-col flex-1 min-h-0">
@@ -257,27 +257,33 @@ export function TutorCard({ tutor }) {
             )}
           </div>
 
-          {/* Long bio (always 2 lines reserved) */}
+          {/* Long bio — takes its natural content height, capped at 6 lines
+              with ellipsis. Sizing is handled by maxHeight + line-clamp; the
+              bottom group's mt-auto absorbs the remaining whitespace. */}
           <div
-            className="text-[13px] text-slate-500 mt-3 leading-[1.55] shrink-0"
+            className="text-[13px] text-slate-500 mt-3 shrink-0 leading-[1.55]"
             style={{
+              maxHeight: "calc(6 * 1.55 * 13px)",
               display: "-webkit-box",
-              WebkitLineClamp: 2,
+              WebkitLineClamp: 6,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
-              minHeight: `calc(2 * 1.55 * 13px)`,
-              height: `calc(2 * 1.55 * 13px)`,
             }}
           >
             {tutor.bioLong || " "}
           </div>
 
-          {/* Bottom group pinned to the card's lower edge: the credentials/rate
-              footer sits above the subject-chips row, so the footer reads as
-              "down a bit" relative to the bio above. */}
-          <div className="mt-auto shrink-0" style={{ marginTop: 28 }}>
+          {/* Bottom group: subject chips sit above the horizontal divider;
+              credentials + rate sit below it. mt-auto pins it to the card's
+              lower edge so the leftover whitespace lands above this block. */}
+          <div className="mt-auto shrink-0">
+            {subjects.length > 0 && (
+              <div className="mb-3">
+                <SubjectChipsRow subjects={subjects} />
+              </div>
+            )}
             <div
-              className="pt-6 flex items-center gap-3 border-t"
+              className="pt-4 flex items-center gap-3 border-t"
               style={{ borderColor: "#F1F5F9" }}
             >
               <CredentialChipsRow credentials={credentials} />
@@ -286,11 +292,6 @@ export function TutorCard({ tutor }) {
                 <span className="text-[12.5px] text-slate-400">/hr</span>
               </div>
             </div>
-            {subjects.length > 0 && (
-              <div className="mt-3">
-                <SubjectChipsRow subjects={subjects} />
-              </div>
-            )}
           </div>
         </div>
       </Link>
