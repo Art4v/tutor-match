@@ -98,7 +98,14 @@ export default function SignupPage() {
         >
           Almost there — we&rsquo;ve sent a confirmation link to{" "}
           <span className="font-medium text-slate-900">{email}</span>. Open it
-          to finish setting up your account, then come back and log in.
+          to finish setting up your account, then come back and{" "}
+          <Link href="/login" className="font-medium text-slate-900 underline">
+            log in
+          </Link>
+          .{" "}
+          <span className="text-slate-500">
+            Can&rsquo;t find the email? Check your spam or junk folder.
+          </span>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-5">
