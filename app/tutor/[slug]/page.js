@@ -27,7 +27,7 @@ export default async function ProfilePage({ params }) {
               height: 140,
               background: tutor.bannerImg
                 ? `url(${tutor.bannerImg}) center / cover no-repeat`
-                : `linear-gradient(135deg, ${tutor.avatarBg}, oklch(0.96 0.01 250))`,
+                : `linear-gradient(135deg, ${tutor.bannerBg ?? tutor.avatarBg}, oklch(0.96 0.01 250))`,
             }}
           />
           <div className="px-7 pb-7" style={{ marginTop: -54 }}>

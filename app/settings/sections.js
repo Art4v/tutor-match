@@ -353,24 +353,27 @@ export function BannerAvatarSection({ tutor, set, supabase }) {
         <div style={{ opacity: swatchesDisabled ? 0.5 : 1 }}>
           <MetaLabel>Banner colour</MetaLabel>
           <div className="flex flex-wrap gap-2 mt-2">
-            {AVATAR_SWATCHES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => set({ avatarBg: c })}
-                disabled={swatchesDisabled}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 999,
-                  background: c,
-                  border: `2px solid ${tutor.avatarBg === c ? "#0F172A" : "transparent"}`,
-                  boxShadow: "inset 0 0 0 1px #E5E7EB",
-                  cursor: swatchesDisabled ? "not-allowed" : "pointer",
-                }}
-                aria-label="Pick swatch"
-              />
-            ))}
+            {AVATAR_SWATCHES.map((c) => {
+              const selectedBanner = tutor.bannerBg ?? tutor.avatarBg;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => set({ bannerBg: c })}
+                  disabled={swatchesDisabled}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    background: c,
+                    border: `2px solid ${selectedBanner === c ? "#0F172A" : "transparent"}`,
+                    boxShadow: "inset 0 0 0 1px #E5E7EB",
+                    cursor: swatchesDisabled ? "not-allowed" : "pointer",
+                  }}
+                  aria-label="Pick swatch"
+                />
+              );
+            })}
           </div>
           {swatchesDisabled && (
             <div className="text-[12px] text-slate-400 mt-2">
@@ -844,7 +847,7 @@ function MiniPreview({ tutor, catalog = [] }) {
     <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}>
       <div style={tutor.bannerImg
         ? { height: 56, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-        : { height: 56, background: tutor.avatarBg, opacity: 0.85 }} />
+        : { height: 56, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.85 }} />
       <div className="px-4 pb-4">
         <div style={{ marginTop: -28, marginBottom: 10 }}><Avatar tutor={display} size={56} ring /></div>
         <div className="flex items-center gap-1.5 min-w-0">

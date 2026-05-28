@@ -37,6 +37,7 @@ function defaultTutor(userId, userEmail, fullName) {
     city: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
     avatarBg: "oklch(0.92 0.04 80)",
+    bannerBg: null,
     avatarImg: null,
     bannerImg: null,
     verified: false,

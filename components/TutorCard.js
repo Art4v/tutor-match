@@ -102,7 +102,7 @@ export function TutorCard({ tutor, compact }) {
     >
       <div style={tutor.bannerImg
         ? { height: 48, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-        : { height: 48, background: tutor.avatarBg, opacity: 0.55 }} />
+        : { height: 48, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }} />
 
       <div className="px-5 pb-5 flex flex-col flex-1">
         <div style={{ marginTop: -32, marginBottom: 12 }}>
