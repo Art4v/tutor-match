@@ -163,7 +163,9 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  const publicHref = `tutormatch.com.au/tutor/${userId}`;
+  const profileSlug = tutor.slug || userId;
+  const publicHref = `matchtutor.com.au/tutor/${profileSlug}`;
+  const publicUrl = `https://${publicHref}`;
 
   return (
     <div className="bg-white min-h-screen pb-32 md:pb-12">
@@ -196,7 +198,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
           </div>
 
           <div className="space-y-5 lg:sticky lg:top-[88px]">
-            <Sidebar tutor={tutor} set={set} publicHref={publicHref} catalog={subjectCatalog} />
+            <Sidebar tutor={tutor} set={set} publicHref={publicHref} publicUrl={publicUrl} catalog={subjectCatalog} />
             <VerificationsSection />
           </div>
         </div>

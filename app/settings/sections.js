@@ -11,6 +11,7 @@ import { subjectLabel } from "@/lib/subjects";
 import { YEAR_MIN, YEAR_MAX, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
+import { ImageCropModal } from "@/components/ImageCropModal";
 
 const ServiceMapLeaflet = dynamic(() => import("@/components/ServiceMapLeaflet"), { ssr: false });
 
@@ -268,19 +269,26 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
    Sections
    ============================================================ */
 
-function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint }) {
+function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
 
-  const onPick = async (e) => {
+  const onPick = (e) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // let the same file be re-picked after a remove
     if (!file) return;
     if (!supabase || !userId) { setErr("Sign in again to upload."); return; }
+    if (!file.type?.startsWith("image/")) { setErr("Please choose an image file."); return; }
     setErr(null);
+    setPendingFile(file);
+  };
+
+  const onCropConfirm = async (croppedFile) => {
+    setPendingFile(null);
     setBusy(true);
-    const res = await uploadProfileImage(supabase, userId, kind, file);
+    const res = await uploadProfileImage(supabase, userId, kind, croppedFile);
     setBusy(false);
     if (!res.ok) { setErr(res.error); return; }
     onChange(res.url);
@@ -301,54 +309,74 @@ function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hi
       {err
         ? <div className="text-[12px] text-rose-600 mt-1.5">{err}</div>
         : hint && <div className="text-[12px] text-slate-400 mt-1.5">{hint}</div>}
+      <ImageCropModal
+        open={!!pendingFile}
+        file={pendingFile}
+        aspect={aspect ?? 1}
+        cropShape={cropShape ?? "rect"}
+        title={`Crop ${label.toLowerCase()}`}
+        onCancel={() => setPendingFile(null)}
+        onConfirm={onCropConfirm}
+      />
     </div>
   );
 }
 
 export function BannerAvatarSection({ tutor, set, supabase }) {
-  const bannerStyle = tutor.bannerImg
-    ? { background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-    : { background: tutor.avatarBg, opacity: 0.85 };
+  const swatchesDisabled = !!tutor.bannerImg;
   return (
     <Card>
       <SectionHeader title="Banner & avatar" subtitle="The banner, your photo and badges visible at the top of your profile." />
-      <div className="flex items-stretch gap-5">
-        <div className="relative shrink-0 overflow-hidden" style={{ width: 220, height: 96, border: "1px solid #E5E7EB", borderRadius: 12, ...bannerStyle }}>
-          <div className="absolute left-4 -bottom-6"><Avatar tutor={tutor} size={64} ring /></div>
-        </div>
-        <div className="flex-1 min-w-0 space-y-4">
-          <ImageUploadControl
-            label="Avatar image"
-            value={tutor.avatarImg}
-            kind="avatar"
-            supabase={supabase}
-            userId={tutor.id}
-            onChange={(url) => set({ avatarImg: url })}
-            hint="Square works best. Falls back to your initial when empty."
-          />
-          <ImageUploadControl
-            label="Banner image"
-            value={tutor.bannerImg}
-            kind="banner"
-            supabase={supabase}
-            userId={tutor.id}
-            onChange={(url) => set({ bannerImg: url })}
-            hint="Wide image, ~1200×320. Falls back to the colour below."
-          />
-          <div>
-            <MetaLabel>Banner colour</MetaLabel>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {AVATAR_SWATCHES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => set({ avatarBg: c })}
-                  style={{ width: 32, height: 32, borderRadius: 999, background: c, border: `2px solid ${tutor.avatarBg === c ? "#0F172A" : "transparent"}`, boxShadow: "inset 0 0 0 1px #E5E7EB" }}
-                  aria-label="Pick swatch"
-                />
-              ))}
-            </div>
+      <div className="space-y-4">
+        <ImageUploadControl
+          label="Avatar image"
+          value={tutor.avatarImg}
+          kind="avatar"
+          supabase={supabase}
+          userId={tutor.id}
+          onChange={(url) => set({ avatarImg: url })}
+          hint="Square works best. Falls back to your initial when empty."
+          aspect={1}
+          cropShape="round"
+        />
+        <ImageUploadControl
+          label="Banner image"
+          value={tutor.bannerImg}
+          kind="banner"
+          supabase={supabase}
+          userId={tutor.id}
+          onChange={(url) => set({ bannerImg: url })}
+          hint="Wide image, ~1200×320. Falls back to the colour below."
+          aspect={1200 / 320}
+          cropShape="rect"
+        />
+        <div style={{ opacity: swatchesDisabled ? 0.5 : 1 }}>
+          <MetaLabel>Banner colour</MetaLabel>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {AVATAR_SWATCHES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => set({ avatarBg: c })}
+                disabled={swatchesDisabled}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  background: c,
+                  border: `2px solid ${tutor.avatarBg === c ? "#0F172A" : "transparent"}`,
+                  boxShadow: "inset 0 0 0 1px #E5E7EB",
+                  cursor: swatchesDisabled ? "not-allowed" : "pointer",
+                }}
+                aria-label="Pick swatch"
+              />
+            ))}
           </div>
+          {swatchesDisabled && (
+            <div className="text-[12px] text-slate-400 mt-2">
+              Used only when no banner image is set.
+            </div>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-7 pt-5" style={{ borderTop: "1px solid #F1F5F9" }}>
@@ -370,16 +398,8 @@ export function IdentitySection({ tutor, set }) {
       <SectionHeader title="Identity" subtitle="Shown directly under your avatar on the public profile." />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Full name" hint="Use the name that matches your government ID."><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
-        <Field label="Location" hint="Set your suburb in Service area below — it powers location search.">
-          <div
-            className="h-9 px-3 flex items-center text-[14px] text-slate-500"
-            style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#F8FAFC" }}
-          >
-            {[tutor.suburb, tutor.city].filter(Boolean).join(" · ") || "Not set yet"}
-          </div>
-        </Field>
         <Field label="Years tutoring">
-          <TextInput type="number" inputMode="numeric" value={tutor.yearsTutoring} onChange={(v) => set({ yearsTutoring: Number(v) || 0 })} suffix="yrs" />
+          <TextInput value={tutor.yearsTutoring} onChange={(v) => set({ yearsTutoring: Number(v.replace(/\D/g, "")) || 0 })} suffix="yrs" />
         </Field>
       </div>
       <div className="mt-4">
@@ -487,7 +507,7 @@ export function RateSection({ tutor, set }) {
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add package</Button>} />
       <Field label="Hourly rate">
         <div className="max-w-[200px]">
-          <TextInput type="number" inputMode="numeric" value={tutor.rate} onChange={(v) => set({ rate: Number(v) || 0 })} prefix="$" suffix="/ hr" />
+          <TextInput value={tutor.rate} onChange={(v) => set({ rate: Number(v.replace(/\D/g, "")) || 0 })} prefix="$" suffix="/ hr" />
         </div>
       </Field>
       <div className="mt-5">
@@ -497,7 +517,7 @@ export function RateSection({ tutor, set }) {
             <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
               <div className="grid grid-cols-[1fr_140px] gap-2">
                 <TextInput value={p.label} onChange={(v) => update(i, { label: v })} placeholder="5-lesson pack" />
-                <TextInput type="number" inputMode="numeric" value={p.price} onChange={(v) => update(i, { price: Number(v) || 0 })} prefix="$" />
+                <TextInput value={p.price} onChange={(v) => update(i, { price: Number(v.replace(/\D/g, "")) || 0 })} prefix="$" />
               </div>
             </ReorderRow>
           ))}
@@ -856,14 +876,43 @@ function MiniPreview({ tutor, catalog = [] }) {
   );
 }
 
-export function Sidebar({ tutor, set, publicHref, catalog }) {
+export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
   const c = useMemo(() => calcCompletion(tutor), [tutor]);
   const visOptions = [
     { value: "public",   label: "Public", hint: "Visible to everyone." },
     { value: "hidden",   label: "Hidden", hint: "Profile is offline." },
   ];
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef(null);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
+  const copyPublicHref = async () => {
+    const toCopy = publicUrl || publicHref;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(toCopy);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = toCopy;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
   return (
     <aside className="space-y-5">
+      <div>
+        <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2 px-1">Live preview</div>
+        <MiniPreview tutor={tutor} catalog={catalog} />
+        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — compact version of your public profile header.</div>
+      </div>
+
       <Card padding={20}>
         <div className="flex items-baseline justify-between mb-2">
           <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Profile completion</h3>
@@ -913,17 +962,20 @@ export function Sidebar({ tutor, set, publicHref, catalog }) {
 
       <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Public profile link</h3>
-        <div className="flex items-center gap-2 px-3 py-2" style={{ background: "#FAFAFA", borderRadius: 10 }}>
-          <Icon name="globe" size={14} className="text-slate-400 shrink-0" />
-          <code className="text-[12.5px] text-slate-700 truncate">{publicHref}</code>
-        </div>
+        <button
+          type="button"
+          onClick={copyPublicHref}
+          title={copied ? "Copied!" : "Click to copy"}
+          className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-100"
+          style={{ background: "#FAFAFA", borderRadius: 10 }}
+        >
+          <Icon name={copied ? "check" : "globe"} size={14} className={(copied ? "text-emerald-500" : "text-slate-400") + " shrink-0"} />
+          <code className="text-[12.5px] text-slate-700 truncate flex-1 min-w-0">{publicHref}</code>
+          <span className={"text-[11px] font-medium shrink-0 " + (copied ? "text-emerald-600" : "text-slate-400")}>
+            {copied ? "Copied" : "Copy"}
+          </span>
+        </button>
       </Card>
-
-      <div>
-        <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2 px-1">Live preview</div>
-        <MiniPreview tutor={tutor} catalog={catalog} />
-        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — compact version of your public profile header.</div>
-      </div>
     </aside>
   );
 }
