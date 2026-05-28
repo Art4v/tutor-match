@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
@@ -840,41 +842,29 @@ export function calcCompletion(t) {
 }
 
 function MiniPreview({ tutor, catalog = [] }) {
-  const display = { ...tutor, initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial };
   const bySlug = useMemo(() => new Map(catalog.map((s) => [s.slug, s])), [catalog]);
-  const labelFor = (slug) => subjectLabel(bySlug.get(slug) ?? { name: slug });
+  // Reshape the editor's tutor state into the camelCase, subject-object shape
+  // TutorCard expects. Subjects in editor state are slug strings; map them
+  // through the catalog so subjectLabel() returns the proper exam-prefixed
+  // label. Placeholders fill name/bio/location so empty profiles still look
+  // like a card instead of a blank.
+  const display = useMemo(() => ({
+    ...tutor,
+    name: tutor.name || "Your name",
+    initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial,
+    bio: tutor.bio || "Your tagline",
+    suburb: tutor.suburb || "Suburb",
+    city: tutor.city || "",
+    subjects: (tutor.subjects || []).map((slug) => bySlug.get(slug) ?? { name: slug, slug }),
+    credentials: (tutor.credentials || []).filter((c) => c?.label),
+    rate: tutor.rate || 0,
+    slug: tutor.slug || "preview",
+  }), [tutor, bySlug]);
+  // pointer-events disabled so clicking the preview doesn't navigate; the
+  // hover animation also pauses, which is the right call for a preview.
   return (
-    <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 14 }}>
-      <div style={tutor.bannerImg
-        ? { height: 56, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-        : { height: 56, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.85 }} />
-      <div className="px-4 pb-4">
-        <div style={{ marginTop: -28, marginBottom: 10 }}><Avatar tutor={display} size={56} ring /></div>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[15px] font-semibold text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your name"}</span>
-          {tutor.verified && <VerifiedTick size={13} />}
-        </div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{tutor.bio || "Your tagline"}</div>
-        <div className="text-[11.5px] text-slate-400 mt-0.5 flex items-center gap-1">
-          <Icon name="map-pin" size={10} />{`${tutor.suburb || "Suburb"} · ${tutor.city || "City"}`}
-        </div>
-        <div className="flex flex-wrap gap-1 mt-3">
-          {(tutor.subjects || []).slice(0, 3).map((s) => <Chip key={s}>{labelFor(s)}</Chip>)}
-          {(tutor.subjects || []).length > 3 && <Chip tone="line">+{tutor.subjects.length - 3}</Chip>}
-        </div>
-        <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid #F1F5F9" }}>
-          {(() => {
-            const atarCred = (tutor.credentials || []).find((c) => c?.icon === "atar" && c.label);
-            const atarNum = atarCred ? Number(atarCred.label) : NaN;
-            if (!Number.isFinite(atarNum)) return <span />;
-            return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium text-[11.5px] tabular-nums">{atarNum.toFixed(2)} ATAR</span>;
-          })()}
-          <div>
-            <span className="text-[14px] font-semibold text-slate-900 tabular-nums">${tutor.rate || 0}</span>
-            <span className="text-[11.5px] text-slate-400">/hr</span>
-          </div>
-        </div>
-      </div>
+    <div style={{ pointerEvents: "none" }}>
+      <TutorCard tutor={display} />
     </div>
   );
 }
@@ -913,35 +903,8 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       <div>
         <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2 px-1">Live preview</div>
         <MiniPreview tutor={tutor} catalog={catalog} />
-        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — compact version of your public profile header.</div>
+        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — exactly how your card appears on browse and the home page.</div>
       </div>
-
-      <Card padding={20}>
-        <div className="flex items-baseline justify-between mb-2">
-          <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Profile completion</h3>
-          <span className="text-[18px] font-semibold text-slate-900 tabular-nums tracking-tight">{c.pct}%</span>
-        </div>
-        <div style={{ height: 6, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "#10B981" : "#0F172A", transition: "width 220ms ease" }} />
-        </div>
-        <ul className="mt-4 space-y-2">
-          {c.checks.map((ch) => (
-            <li key={ch.key} className="flex items-center gap-2 text-[13px]">
-              <span className="inline-flex items-center justify-center shrink-0"
-                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "#10B981" : "#F1F5F9", color: ch.ok ? "#fff" : "#94A3B8" }}>
-                {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#94A3B8" }} />}
-              </span>
-              <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
-              {ch.soon && (
-                <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                  style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", color: "#94A3B8" }}>
-                  Coming soon
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </Card>
 
       <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Profile visibility</h3>
@@ -979,6 +942,33 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
           </span>
         </button>
       </Card>
+
+      <Card padding={20}>
+        <div className="flex items-baseline justify-between mb-2">
+          <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Profile completion</h3>
+          <span className="text-[18px] font-semibold text-slate-900 tabular-nums tracking-tight">{c.pct}%</span>
+        </div>
+        <div style={{ height: 6, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "#10B981" : "#0F172A", transition: "width 220ms ease" }} />
+        </div>
+        <ul className="mt-4 space-y-2">
+          {c.checks.map((ch) => (
+            <li key={ch.key} className="flex items-center gap-2 text-[13px]">
+              <span className="inline-flex items-center justify-center shrink-0"
+                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "#10B981" : "#F1F5F9", color: ch.ok ? "#fff" : "#94A3B8" }}>
+                {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#94A3B8" }} />}
+              </span>
+              <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
+              {ch.soon && (
+                <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+                  style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", color: "#94A3B8" }}>
+                  Coming soon
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Card>
     </aside>
   );
 }
@@ -999,7 +989,9 @@ export function Breadcrumb() {
   );
 }
 
-export function SaveBar({ tutor, dirty, saving, onSave, onDiscard }) {
+export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref }) {
+  const router = useRouter();
+  const canView = !dirty && !saving && !!profileHref;
   return (
     <div className="sticky top-0 z-30 bg-white/85 backdrop-blur" style={{ borderBottom: "1px solid #E5E7EB" }}>
       <div className="max-w-[1200px] mx-auto px-6 h-[68px] flex items-center gap-4">
@@ -1016,19 +1008,29 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard }) {
         <div className="flex-1" />
         <div className="hidden md:flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
-          <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save changes"}</Button>
+          {canView ? (
+            <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
+          ) : (
+            <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save changes"}</Button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function MobileSaveBar({ dirty, saving, onSave, onDiscard }) {
+export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref }) {
+  const router = useRouter();
+  const canView = !dirty && !saving && !!profileHref;
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid #E5E7EB" }}>
       <div className="flex-1 text-[13px] text-slate-600">{dirty ? "You have unsaved changes" : "All saved"}</div>
       <Button variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
-      <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save"}</Button>
+      {canView ? (
+        <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
+      ) : (
+        <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save"}</Button>
+      )}
     </div>
   );
 }

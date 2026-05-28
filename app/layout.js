@@ -1,8 +1,9 @@
 import "./globals.css";
 import { TopNav } from "@/components/TopNav";
+import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
 export const metadata = {
-  title: "tutormatch",
+  title: "matchtutor",
   description: "A directory for high school students looking for serious, verified tutors across Australia.",
 };
 
@@ -12,11 +13,13 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <TopNav />
-        {children}
+        <SmoothScrollProvider>
+          <TopNav />
+          {children}
+        </SmoothScrollProvider>
       </body>
     </html>
   );

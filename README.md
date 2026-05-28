@@ -1,4 +1,4 @@
-# tutormatch
+# matchtutor
 
 A marketplace web app for finding and booking academic tutors (HSC, UCAT, LAT, SAT). Built with Next.js 14 (App Router), Tailwind CSS, and Supabase.
 
@@ -79,7 +79,7 @@ arrive; routing through Resend fixes both.
 1. Create a [Resend](https://resend.com) account → **API Keys** → create a key (`re_...`).
 2. Supabase Dashboard → **Project Settings → Authentication → SMTP Settings** → enable Custom SMTP:
    - Host `smtp.resend.com`, Port `465` (or `587`), Username `resend`, Password = your `re_...` key.
-   - Sender name `TutorMatch`. Sender email `onboarding@resend.dev` until you verify a domain (see below).
+   - Sender name `MatchTutor`. Sender email `onboarding@resend.dev` until you verify a domain (see below).
 3. Supabase Dashboard → **Authentication → Emails → Confirm signup** → paste
    `supabase/email-templates/confirm-signup.html` (the source-of-truth for this template).
 4. Supabase Dashboard → **Authentication → Rate Limits** → raise "emails sent per hour" above 2.
@@ -159,7 +159,7 @@ tutor-match/
 │  ├─ SubjectPicker.jsx         # exam-first subject picker (single/multi); emits slugs
 │  ├─ SuburbAutocomplete.jsx    # debounced /api/places typeahead; carries {lat,lng,state}
 │  ├─ TopNav.js                 # auth-aware navbar; dropdown menu when logged in
-│  ├─ TutorCard.js              # canonical hover-animated card pattern
+│  ├─ TutorCard.js              # canonical hover-animated card (motion/react variants); chip rows fit to one line with a "+N more" pill
 │  └─ ui.js                     # Avatar, VerifiedTick, OnlineDot, Chip, Button
 ├─ lib/
 │  ├─ availability.js           # canonical 8×7 availability-grid hour/day labels (shared editor + public)

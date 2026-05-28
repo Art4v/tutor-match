@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorProfileForEditor } from "@/lib/supabase/tutors";
 import { SettingsEditor } from "./SettingsEditor";
 
-export const metadata = { title: "Settings — tutormatch" };
+export const metadata = { title: "Settings — matchtutor" };
 
 export default async function SettingsPage() {
   const supabase = createSupabaseServerClient();

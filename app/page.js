@@ -1,54 +1,41 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getFeaturedTutors, getSubjects } from "@/lib/supabase/tutors";
-import { Icon } from "@/components/Icon";
-import { TutorCard } from "@/components/TutorCard";
+import { getFeaturedTutors, getSubjects, getPublicTutorCount } from "@/lib/supabase/tutors";
 import { Footer } from "@/components/Footer";
 import { HomeHero } from "@/components/HomeHero";
+import { HomeFeaturedTutors } from "@/components/HomeFeaturedTutors";
 import { HomeHowItWorks } from "@/components/HomeHowItWorks";
 import { HomeCta } from "@/components/HomeCta";
 
+const FEATURED_SLOTS = 6;
+const PINNED_TUTOR_NAME = "Aarav Bhatt";
+
+function pinAndShuffleFeatured(pool) {
+  const pinned = pool.find((t) => t.name === PINNED_TUTOR_NAME) ?? null;
+  const rest = pool.filter((t) => t !== pinned);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  const picks = pinned ? [pinned, ...rest.slice(0, FEATURED_SLOTS - 1)] : rest.slice(0, FEATURED_SLOTS);
+  return picks;
+}
+
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [featuredTutors, subjectCatalog] = await Promise.all([
-    getFeaturedTutors(supabase, 9),
+  const [featuredPool, subjectCatalog, totalTutors] = await Promise.all([
+    getFeaturedTutors(supabase, 50),
     getSubjects(supabase),
+    getPublicTutorCount(supabase),
   ]);
+  const featuredTutors = pinAndShuffleFeatured(featuredPool);
 
   return (
-    <div className="bg-white">
+    <main className="bg-white snap-scroll">
       <HomeHero catalog={subjectCatalog} />
-
-      <section className="max-w-[1200px] mx-auto px-6 mt-6">
-        <div className="flex items-end justify-between mb-6">
-          <div>
-            <h2 className="text-[24px] font-semibold text-slate-900 tracking-tight">Browse our Tutors</h2>
-            <p className="text-[14px] text-slate-500 mt-1">
-              {featuredTutors.length > 0
-                ? "Have a look at all the tutors currently listed."
-                : "No tutors have published their profiles yet — check back soon."}
-            </p>
-          </div>
-          <Link
-            href="/browse"
-            className="text-[13.5px] text-slate-700 hover:text-slate-900 hidden md:inline-flex items-center gap-1"
-          >
-            See all<Icon name="arrow-right" size={13} />
-          </Link>
-        </div>
-
-        {featuredTutors.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featuredTutors.map((t) => (
-              <TutorCard key={t.id} tutor={t} />
-            ))}
-          </div>
-        )}
-      </section>
-
+      <HomeFeaturedTutors tutors={featuredTutors} totalTutors={totalTutors} />
       <HomeHowItWorks />
       <HomeCta />
       <Footer />
-    </div>
+    </main>
   );
 }

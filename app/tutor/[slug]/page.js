@@ -6,22 +6,32 @@ import { subjectLabel } from "@/lib/subjects";
 import { yearRangeLabel } from "@/lib/yearLevels";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { SectionReveal } from "@/components/anim/SectionReveal";
 import { RateCard } from "./RateCard";
 import ServiceAreaMap from "./ServiceAreaMap";
+import { ExperienceTimeline } from "./ExperienceTimeline";
+import { EducationTimeline } from "./EducationTimeline";
+import { CredentialsList } from "./CredentialsList";
+import { SimilarTutorMini } from "./SimilarTutorMini";
+import { ProfileHeaderText } from "./ProfileHeaderText";
+import { AvailabilityGrid } from "./AvailabilityGrid";
+import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { RevealChildren } from "@/components/anim/CardReveal";
 
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
   const tutor = await getTutorBySlug(supabase, params.slug);
   if (!tutor) return notFound();
 
-  const similar = await getFeaturedTutors(supabase, 3, tutor.id);
+  const similarPool = await getFeaturedTutors(supabase, 10, tutor.id);
+  const similar = pickRandom(similarPool, 2);
 
   const deliveryLabel = formatDelivery(tutor);
 
   return (
     <div className="bg-white">
       <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-24">
-        <div className="relative bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
+        <SectionReveal hover className="relative bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
           <div
             style={{
               height: 140,
@@ -35,63 +45,9 @@ export default async function ProfilePage({ params }) {
               <Avatar tutor={tutor} size={108} ring />
             </div>
 
-            <div className="mt-5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">{tutor.name}</h1>
-                {tutor.verified && <VerifiedTick size={18} />}
-              </div>
-              {tutor.bio && <div className="text-[15px] text-slate-600 mt-1">{tutor.bio}</div>}
-              <div className="flex items-center gap-4 text-[13.5px] text-slate-500 mt-2 flex-wrap">
-                {(tutor.suburb || tutor.city) && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="map-pin" size={13} />
-                    {[tutor.suburb, tutor.city].filter(Boolean).join(", ")}
-                  </span>
-                )}
-                {deliveryLabel && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="globe" size={13} /> {deliveryLabel}
-                  </span>
-                )}
-                {tutor.responsive && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#F59E0B" }} />
-                    {tutor.responsive}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-5 mt-5 text-[13px] text-slate-500 pt-5 flex-wrap" style={{ borderTop: "1px solid #F1F5F9" }}>
-                {tutor.rating != null && (
-                  <span className="flex items-center gap-1.5 tabular-nums">
-                    <Icon name="star" size={13} className="text-slate-700" />
-                    <span className="text-slate-900 font-medium">{tutor.rating.toFixed(1)}</span>
-                    · {tutor.reviews} reviews
-                  </span>
-                )}
-                {tutor.yearsTutoring != null && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="clock" size={13} />
-                    <span className="text-slate-900 font-medium">{tutor.yearsTutoring} yrs</span>
-                    <span>tutoring</span>
-                  </span>
-                )}
-                {tutor.yearMin != null && tutor.yearMax != null && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="users" size={13} />
-                    {yearRangeLabel(tutor.yearMin, tutor.yearMax)}
-                  </span>
-                )}
-                {tutor.languages.length > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="language" size={13} />
-                    {tutor.languages.join(", ")}
-                  </span>
-                )}
-              </div>
-            </div>
+            <ProfileHeaderText tutor={tutor} deliveryLabel={deliveryLabel} />
           </div>
-        </div>
+        </SectionReveal>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8">
           <div className="space-y-8 min-w-0">
@@ -125,60 +81,20 @@ export default async function ProfilePage({ params }) {
               if (tiles.length === 0) return null;
               return (
                 <Section title="Credentials" subtitle="What sets this tutor apart">
-                  <div className="flex flex-col gap-2.5">
-                    {tiles.map((c) => (
-                      <div key={c.key} className="px-4 py-3 flex items-center gap-4" style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}>
-                        <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium w-[120px] shrink-0">
-                          <Icon name={c.icon} size={12} /> {c.caption}
-                        </div>
-                        <div className={`text-[14px] font-semibold text-slate-900 leading-snug${c.kind === "stat" ? " tabular-nums" : ""}`}>
-                          {c.value}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <CredentialsList tiles={tiles} />
                 </Section>
               );
             })()}
 
             {tutor.experience.length > 0 && (
               <Section title="Experience">
-                <ol className="space-y-5">
-                  {tutor.experience.map((e, i) => (
-                    <li key={i} className="flex gap-4">
-                      <div className="flex flex-col items-center" style={{ width: 32 }}>
-                        <div className="w-8 h-8 rounded-md inline-flex items-center justify-center text-slate-600" style={{ background: "#F3F4F6" }}>
-                          <Icon name="briefcase" size={14} />
-                        </div>
-                        {i < tutor.experience.length - 1 && <div style={{ width: 1, flex: 1, background: "#E5E7EB", marginTop: 4 }} />}
-                      </div>
-                      <div className="pb-1 flex-1">
-                        <div className="text-[14.5px] font-semibold text-slate-900">{e.role}</div>
-                        <div className="text-[13.5px] text-slate-600">{e.org}</div>
-                        <div className="text-[12.5px] text-slate-400 mt-0.5">{e.period}</div>
-                        <div className="text-[13.5px] text-slate-600 mt-2 leading-[1.55]">{e.note}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                <ExperienceTimeline experience={tutor.experience} />
               </Section>
             )}
 
             {tutor.education.length > 0 && (
               <Section title="Education">
-                <ul className="space-y-4">
-                  {tutor.education.map((e, i) => (
-                    <li key={i} className="flex gap-4 items-start">
-                      <div className="w-8 h-8 rounded-md inline-flex items-center justify-center text-slate-600 shrink-0" style={{ background: "#F3F4F6" }}>
-                        <Icon name="graduation" size={14} />
-                      </div>
-                      <div>
-                        <div className="text-[14.5px] font-semibold text-slate-900">{e.school}</div>
-                        <div className="text-[13.5px] text-slate-500 mt-0.5">{e.detail}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <EducationTimeline education={tutor.education} />
               </Section>
             )}
 
@@ -240,47 +156,81 @@ function formatDelivery(tutor) {
 }
 
 function Section({ title, subtitle, children, id }) {
+  // Card appears first (SectionReveal). The title types in after a short
+  // delay; subtitle types after the title; children fade in last so the
+  // sequence reads top-to-bottom.
+  const isStringTitle = typeof title === "string";
+  const titleDuration = isStringTitle ? (title.length * 22) / 1000 : 0;
+  const subtitleStart = 0.35 + titleDuration + 0.12;
+  const childrenStart = subtitleStart + (subtitle ? 0.35 : 0) + 0.15;
   return (
-    <section id={id} className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 24 }}>
+    <SectionReveal
+      as="section"
+      id={id}
+      hover
+      className="bg-white"
+      style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 24 }}
+    >
       <div className="mb-5">
-        <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">{title}</h2>
-        {subtitle && <div className="text-[13px] text-slate-500 mt-0.5">{subtitle}</div>}
+        <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">
+          {isStringTitle ? (
+            <TypewriterOnView text={title} speed={22} delay={350} />
+          ) : (
+            title
+          )}
+        </h2>
+        {subtitle && (
+          <div className="text-[13px] text-slate-500 mt-0.5">
+            <TypewriterOnView
+              text={subtitle}
+              speed={10}
+              cursor={false}
+              delay={subtitleStart * 1000}
+            />
+          </div>
+        )}
       </div>
-      {children}
-    </section>
+      <RevealChildren delay={childrenStart}>{children}</RevealChildren>
+    </SectionReveal>
   );
 }
 
 function SubjectsCard({ subjects }) {
   return (
-    <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
-      <div className="flex flex-wrap gap-1.5">
+    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+      <div className="text-[14px] font-semibold text-slate-900 mb-4">
+        <TypewriterOnView text="Subjects" speed={22} delay={350} />
+      </div>
+      <RevealChildren delay={0.75} className="flex flex-wrap gap-1.5">
         {subjects.map((s) => (
           <Chip key={s.slug} tone="cream" icon="graduation">{subjectLabel(s)}</Chip>
         ))}
-      </div>
-    </div>
+      </RevealChildren>
+    </SectionReveal>
   );
 }
 
 function VerificationCard() {
   return (
-    <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="text-[14px] font-semibold text-slate-900">Verification</div>
-        <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-          style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
-        >
-          Coming soon
-        </span>
+        <div className="text-[14px] font-semibold text-slate-900">
+          <TypewriterOnView text="Verification" speed={22} delay={350} />
+        </div>
+        <RevealChildren delay={0.85}>
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+            style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+          >
+            Coming soon
+          </span>
+        </RevealChildren>
       </div>
-      <div className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
+      <RevealChildren delay={0.95} className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
         <Icon name="shield" size={14} className="text-slate-400 shrink-0" />
         Identity &amp; credential checks are coming soon.
-      </div>
-    </div>
+      </RevealChildren>
+    </SectionReveal>
   );
 }
 
@@ -289,102 +239,59 @@ function ServiceAreaCard({ tutor }) {
   const radiusKm = sa?.radiusKm ?? 10;
   const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
   return (
-    <div className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
+    <SectionReveal hover className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
       <div className="px-5 pt-5 pb-5">
-        <div className="text-[14px] font-semibold text-slate-900">Service area</div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5">In-person within {radiusKm} km of {sa?.suburb || tutor.suburb}</div>
+        <div className="text-[14px] font-semibold text-slate-900">
+          <TypewriterOnView text="Service area" speed={22} delay={350} />
+        </div>
+        <div className="text-[12.5px] text-slate-500 mt-0.5">
+          <TypewriterOnView
+            text={`In-person within ${radiusKm} km of ${sa?.suburb || tutor.suburb}`}
+            speed={10}
+            cursor={false}
+            delay={650}
+          />
+        </div>
       </div>
       {hasCoords && (
-        <div className="px-5 pb-5">
+        <RevealChildren delay={1.1} className="px-5 pb-5">
           <ServiceAreaMap lat={sa.lat} lng={sa.lng} radiusKm={radiusKm} />
-        </div>
+        </RevealChildren>
       )}
-    </div>
+    </SectionReveal>
   );
 }
 
 function SimilarTutorsCard({ similar }) {
   return (
-    <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4">Similar tutors</div>
-      <ul className="space-y-4">
-        {similar.map((t) => (
-          <li key={t.id}>
-            <Link href={`/tutor/${t.slug}`} className="flex items-center gap-3 cursor-pointer group">
-              <Avatar tutor={t} size={40} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1 text-[13.5px] font-medium text-slate-900 group-hover:underline truncate">
-                  {t.name} {t.verified && <VerifiedTick size={11} />}
-                </div>
-                <div className="text-[12px] text-slate-500 truncate">{(t.subjects ?? []).slice(0, 2).map(subjectLabel).join(" · ")}</div>
-              </div>
-              <div className="text-[12.5px] font-medium text-slate-900 tabular-nums whitespace-nowrap">
-                ${t.rate}
-                <span className="text-slate-400 font-normal">/hr</span>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <SectionReveal className="bg-transparent" style={{ borderRadius: 0 }}>
+      <div className="text-[14px] font-semibold text-slate-900 mb-4 px-1">
+        <TypewriterOnView text="Similar tutors" speed={22} delay={350} />
+      </div>
+      <SimilarTutorsStack similar={similar} />
+    </SectionReveal>
   );
 }
 
-function AvailabilityGrid({ availability }) {
-  const { hours, days, grid } = availability;
-  const colorFor = (v) => {
-    if (v === 0) return { bg: "#F8FAFC", color: "#CBD5E1", label: "—" };
-    if (v === 1) return { bg: "#F0FDF4", color: "#10B981", label: "Free" };
-    return { bg: "#F3F4F6", color: "#94A3B8", label: "Booked" };
-  };
+function SimilarTutorsStack({ similar }) {
   return (
-    <div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[12px]" style={{ borderCollapse: "separate", borderSpacing: 4 }}>
-          <thead>
-            <tr>
-              <th className="text-left text-slate-400 font-normal" style={{ width: 50 }}></th>
-              {days.map((d) => (
-                <th key={d} className="text-center text-slate-500 font-medium">{d}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {hours.map((h, hi) => (
-              <tr key={h}>
-                <td className="text-slate-400 tabular-nums pr-2 text-right">{h}</td>
-                {days.map((_, di) => {
-                  const v = grid[hi]?.[di] ?? 0;
-                  const c = colorFor(v);
-                  return (
-                    <td key={di}>
-                      <div
-                        className="h-8 rounded-md flex items-center justify-center font-medium"
-                        style={{ background: c.bg, color: c.color }}
-                        title={c.label}
-                      >
-                        {v === 1 && <Icon name="check" size={12} strokeWidth={2.5} />}
-                        {v === 2 && <Icon name="x" size={11} strokeWidth={2.5} />}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <RevealChildren delay={0.75}>
+      <div className="grid grid-cols-2 gap-3">
+        {similar.map((t) => (
+          <SimilarTutorMini key={t.id} tutor={t} />
+        ))}
       </div>
-      <div className="flex items-center gap-4 mt-4 text-[12px] text-slate-500">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded" style={{ background: "#F0FDF4", border: "1px solid #D1FAE5" }} /> Free
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded" style={{ background: "#F3F4F6" }} /> Booked
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded" style={{ background: "#F8FAFC" }} /> Unavailable
-        </span>
-      </div>
-    </div>
+    </RevealChildren>
   );
 }
+
+function pickRandom(arr, n) {
+  if (!arr || arr.length === 0) return [];
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+

@@ -38,27 +38,39 @@ export function VerifiedTick({ size = 14 }) {
   );
 }
 
-export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled }) {
+export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled, radius = 999 }) {
   const tones = {
-    grey: { bg: active ? "#1F2937" : "#F3F4F6", color: active ? "#fff" : "#374151", border: active ? "#1F2937" : "transparent" },
+    grey: { bg: active ? "var(--accent)" : "#F3F4F6", color: active ? "#fff" : "#374151", border: active ? "var(--accent)" : "transparent" },
     line: { bg: "#fff", color: "#374151", border: "#E5E7EB" },
     cream: { bg: "#FAFAFA", color: "#475569", border: "#E5E7EB" },
+    accent: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
   };
   const t = tones[tone];
   const clickable = !!onClick && !disabled;
   const Tag = clickable ? "button" : "span";
+  const [hover, setHover] = useState(false);
+
+  // Subtle accent hover on neutral line/cream chips that are clickable
+  const accentHover = clickable && (tone === "line" || tone === "cream");
+  const bg = accentHover && hover ? "var(--accent-softer)" : t.bg;
+  const color = accentHover && hover ? "var(--accent)" : t.color;
+  const border = accentHover && hover ? "var(--accent-line)" : t.border;
+
   return (
     <Tag
       onClick={clickable ? onClick : undefined}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12.5px] font-medium transition-colors"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12.5px] font-medium"
       style={{
-        background: t.bg,
-        color: t.color,
-        border: `1px solid ${t.border}`,
-        borderRadius: 999,
+        background: bg,
+        color,
+        border: `1px solid ${border}`,
+        borderRadius: radius,
         lineHeight: 1.2,
         opacity: disabled ? 0.5 : 1,
         cursor: disabled ? "not-allowed" : clickable ? "pointer" : undefined,
+        transition: "background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out",
       }}
     >
       {icon && <Icon name={icon} size={12} />}
@@ -69,8 +81,14 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
           aria-label="Remove"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           onMouseDown={(e) => e.preventDefault()}
-          className="inline-flex items-center justify-center -mr-1 ml-0.5 text-slate-500 hover:text-slate-900"
-          style={{ width: 16, height: 16, borderRadius: 999, cursor: "pointer" }}
+          className="inline-flex items-center justify-center -mr-1 ml-0.5 hover:text-slate-900"
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 999,
+            cursor: "pointer",
+            color: tone === "accent" || (accentHover && hover) ? "var(--accent)" : "#64748B",
+          }}
         >
           <Icon name="x" size={10} strokeWidth={2.5} />
         </span>
@@ -81,31 +99,37 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
 
 export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled }) {
   const variants = {
-    primary: { bg: "#1F2937", color: "#fff", border: "#1F2937", hover: "#111827" },
-    outline: { bg: "#fff", color: "#1F2937", border: "#D1D5DB", hover: "#F9FAFB" },
-    ghost:   { bg: "transparent", color: "#1F2937", border: "transparent", hover: "#F3F4F6" },
-    soft:    { bg: "#F3F4F6", color: "#1F2937", border: "transparent", hover: "#E5E7EB" },
+    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#fff" },
+    outline: { bg: "#fff", color: "#1F2937", border: "#D1D5DB", hoverBg: "#fff", hoverBorder: "var(--accent)", hoverColor: "var(--accent)" },
+    ghost:   { bg: "transparent", color: "#1F2937", border: "transparent", hoverBg: "var(--accent-softer)", hoverBorder: "transparent", hoverColor: "var(--accent)" },
+    soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)", hoverBg: "var(--accent-soft)", hoverBorder: "var(--accent-line)", hoverColor: "var(--accent)" },
+    dark:    { bg: "#1F2937", color: "#fff", border: "#1F2937", hoverBg: "#111827", hoverBorder: "#111827", hoverColor: "#fff" },
   };
   const sizes = {
     sm: { pad: "6px 12px", fs: 13, h: 32, r: 8 },
     md: { pad: "8px 16px", fs: 14, h: 38, r: 9 },
     lg: { pad: "11px 20px", fs: 15, h: 44, r: 10 },
   };
-  const v = variants[variant];
+  const v = variants[variant] || variants.primary;
   const s = sizes[size];
   const [hover, setHover] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const isHover = hover && !disabled;
+
   return (
     <button
       type={type || "button"}
       onClick={onClick}
       disabled={disabled}
       onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className="inline-flex items-center justify-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      onMouseLeave={() => { setHover(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       style={{
-        background: hover && !disabled ? v.hover : v.bg,
-        color: v.color,
-        border: `1px solid ${v.border}`,
+        background: isHover ? v.hoverBg : v.bg,
+        color: isHover ? v.hoverColor : v.color,
+        border: `1px solid ${isHover ? v.hoverBorder : v.border}`,
         padding: s.pad,
         fontSize: s.fs,
         height: s.h,
@@ -113,11 +137,26 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         width: full ? "100%" : "auto",
         cursor: disabled ? "not-allowed" : "pointer",
         letterSpacing: "-0.005em",
+        transform: pressed && !disabled ? "scale(0.98)" : "scale(1)",
+        boxShadow: isHover && (variant === "primary" || variant === "dark") ? "0 0 0 4px var(--accent-ring)" : "none",
+        transition: "background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, transform 120ms ease-out",
       }}
     >
       {icon && <Icon name={icon} size={s.fs + 2} />}
-      {children}
-      {iconRight && <Icon name={iconRight} size={s.fs + 2} />}
+      <span className="inline-flex items-center gap-1.5">
+        {children}
+      </span>
+      {iconRight && (
+        <span
+          style={{
+            display: "inline-flex",
+            transition: "transform 220ms cubic-bezier(0.22,1,0.36,1)",
+            transform: isHover ? "translateX(3px)" : "translateX(0)",
+          }}
+        >
+          <Icon name={iconRight} size={s.fs + 2} />
+        </span>
+      )}
     </button>
   );
 }

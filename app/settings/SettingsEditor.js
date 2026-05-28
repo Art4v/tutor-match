@@ -167,10 +167,11 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const profileSlug = tutor.slug || userId;
   const publicHref = `matchtutor.com.au/tutor/${profileSlug}`;
   const publicUrl = `https://${publicHref}`;
+  const profileHref = tutor.slug ? `/tutor/${tutor.slug}` : null;
 
   return (
     <div className="bg-white min-h-screen pb-32 md:pb-12">
-      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} />
+      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
 
       <div className="max-w-[1200px] mx-auto px-6 pt-6">
         <div className="flex items-end justify-between gap-4 mb-7">
@@ -205,7 +206,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
         </div>
       </div>
 
-      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} />
+      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
 
       {toast && (
         <div
