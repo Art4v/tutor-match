@@ -11,7 +11,7 @@ import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
 import { YEAR_MIN, YEAR_MAX, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
-import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, normalizeGrid } from "@/lib/availability";
+import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, gridToBlocks, blocksToGrid, hourLabel } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 import { ImageCropModal } from "@/components/ImageCropModal";
 
@@ -889,129 +889,156 @@ export function ServiceAreaSection({ tutor, set }) {
   );
 }
 
-const AVAIL_STYLES = [
-  { bg: "#F8FAFC", border: "#F1F5F9" }, // 0 unavailable
-  { bg: "#ECFDF5", border: "#A7F3D0" }, // 1 free
-  { bg: "#FEF3C7", border: "#FCD34D" }, // 2 booked
+// Day-column indices into AVAILABILITY_DAYS (Mon=0 … Sun=6).
+const WEEKDAY_COLS = [0, 1, 2, 3, 4];
+
+// One-click starting points. Each adds its { start, end } hour range (end
+// exclusive) to the listed day columns; applying a preset merges into whatever
+// the tutor already has rather than replacing it.
+const AVAILABILITY_PRESETS = [
+  { label: "Weekday afternoons", cols: WEEKDAY_COLS, start: 15, end: 18 },
+  { label: "Weekday evenings", cols: WEEKDAY_COLS, start: 17, end: 20 },
+  { label: "Weekend mornings", cols: [5, 6], start: 9, end: 12 },
+  { label: "Weekends", cols: [5, 6], start: 10, end: 16 },
 ];
 
-// Height of one hour cell.
-const HOUR_CELL_H = 26;
-
-// Weekday evenings = 5pm–8pm. One row per hour (5pm → 17, 8pm → 20).
-// Mon–Fri are columns 0–4.
-const EVENING_START_ROW = 17;
-const EVENING_END_ROW = 20;
+// A single start/end hour dropdown. Options run [min, max] inclusive over hour
+// boundaries 0–24 (24 renders as "12 am" = midnight, a valid range end).
+function HourSelect({ value, min = 0, max = 24, onChange }) {
+  const opts = [];
+  for (let h = min; h <= max; h++) opts.push(h);
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="text-[13px] text-slate-700 bg-white rounded-md px-1.5 py-1 tabular-nums focus:outline-none cursor-pointer"
+      style={{ border: "1px solid #E5E7EB" }}
+    >
+      {opts.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
+    </select>
+  );
+}
 
 export function AvailabilitySection({ tutor, set }) {
-  // Coerce whatever is stored to the canonical 48×7 shape so the editor renders
-  // a full-day, 30-minute grid even for legacy/short data.
-  const grid = useMemo(() => normalizeGrid(tutor.availability), [tutor.availability]);
+  // Block-based editor. The local `blocks` map ({ Mon: [{start,end}], … }) is
+  // initialized once from the stored grid and is the editor's working source of
+  // truth; every edit compiles it back to the 24×7 grid (tutor.availability) so
+  // storage, the public profile, and saveTutorProfile stay unchanged.
+  const [blocks, setBlocks] = useState(() => gridToBlocks(tutor.availability));
 
-  // Keep a live mirror so rapid drag events compound correctly even when they
-  // fire faster than React re-renders.
-  const gridRef = useRef(grid);
-  useEffect(() => { gridRef.current = grid; }, [grid]);
-
-  const draggingRef = useRef(false);
-  const dragValueRef = useRef(0);
-  const lastCellRef = useRef(null); // "r,c" — skip repaint while hovering same cell
-
-  // End the drag no matter where the pointer is released.
-  useEffect(() => {
-    const up = () => { draggingRef.current = false; lastCellRef.current = null; };
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
-    return () => {
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-    };
-  }, []);
-
-  const paint = (r, c, val) => {
-    const cur = gridRef.current;
-    if ((cur[r]?.[c] ?? 0) === val) return;
-    const next = cur.map((row, ri) => (ri === r ? row.map((cell, ci) => (ci === c ? val : cell)) : row));
-    gridRef.current = next;
-    set({ availability: next });
+  // setBlocks + mirror the compiled grid into tutor state (marks the form dirty
+  // and feeds the save path). Only ever called from a user action.
+  const update = (next) => {
+    setBlocks(next);
+    set({ availability: blocksToGrid(next) });
   };
 
-  const onCellDown = (r, c) => {
-    const val = ((gridRef.current[r]?.[c] ?? 0) + 1) % 3; // cycle the first cell
-    dragValueRef.current = val;
-    draggingRef.current = true;
-    lastCellRef.current = `${r},${c}`;
-    paint(r, c, val);
+  const addBlock = (day) => {
+    const cur = blocks[day] || [];
+    const lastEnd = cur.length ? cur[cur.length - 1].end : 16; // default 4 pm
+    const start = Math.min(23, lastEnd);
+    update({ ...blocks, [day]: [...cur, { start, end: Math.min(24, start + 1) }] });
   };
 
-  // Pointer-move on the container resolves the cell under the pointer via
-  // elementFromPoint, so drag-painting works for both mouse and touch.
-  const onPointerMove = (e) => {
-    if (!draggingRef.current) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const cell = el?.closest?.("[data-avail-cell]");
-    if (!cell) return;
-    const r = Number(cell.getAttribute("data-r"));
-    const c = Number(cell.getAttribute("data-c"));
-    if (!Number.isInteger(r) || !Number.isInteger(c)) return;
-    const key = `${r},${c}`;
-    if (lastCellRef.current === key) return;
-    lastCellRef.current = key;
-    paint(r, c, dragValueRef.current);
+  const removeBlock = (day, i) =>
+    update({ ...blocks, [day]: (blocks[day] || []).filter((_, j) => j !== i) });
+
+  const editBlock = (day, i, patch) =>
+    update({ ...blocks, [day]: (blocks[day] || []).map((b, j) => (j === i ? { ...b, ...patch } : b)) });
+
+  const setStart = (day, i, start) => {
+    const cur = blocks[day][i];
+    editBlock(day, i, { start, end: cur.end <= start ? Math.min(24, start + 1) : cur.end });
   };
 
-  const bulkFreeEvenings = () =>
-    set({ availability: grid.map((row, ri) => row.map((cell, ci) => (ri >= EVENING_START_ROW && ri <= EVENING_END_ROW && ci <= 4 && cell === 0) ? 1 : cell)) });
-  const clearAll = () => set({ availability: buildEmptyGrid() });
+  const copyToDays = (day, cols) => {
+    const src = (blocks[day] || []).map((b) => ({ ...b }));
+    const next = { ...blocks };
+    cols.forEach((c) => { next[DAYS[c]] = src.map((b) => ({ ...b })); });
+    update(next);
+  };
+
+  const applyPreset = (p) => {
+    const next = { ...blocks };
+    p.cols.forEach((c) => {
+      const d = DAYS[c];
+      next[d] = [...(next[d] || []), { start: p.start, end: p.end }];
+    });
+    // Round-trip through the grid so any overlaps collapse into clean ranges.
+    update(gridToBlocks(blocksToGrid(next)));
+  };
+
+  const clearAll = () => update({});
+
+  const totalBlocks = DAYS.reduce((n, d) => n + (blocks[d]?.length || 0), 0);
 
   return (
     <Card padding={20}>
-      <SectionHeader title="Availability" subtitle="One cell per hour. Click to cycle empty → free → booked, or click and drag to paint a range."
+      <SectionHeader title="Availability" subtitle="Add the times you're free to tutor each day. Students see these on your profile."
         right={
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" icon="sparkle" onClick={bulkFreeEvenings} title="Mark weekday evenings free">Mark weekday evenings free</Button>
-            <Button variant="ghost" size="sm" onClick={clearAll}>Clear all</Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={clearAll} disabled={totalBlocks === 0}>Clear all</Button>
         } />
-      <div className="overflow-x-auto" style={{ marginInline: -4 }}>
-        <div className="min-w-[480px] px-1" onPointerMove={onPointerMove}>
-          <div className="grid" style={{ gridTemplateColumns: "44px repeat(7, 1fr)", gap: 3 }}>
-            <div />
-            {DAYS.map((d) => (
-              <div key={d} className="text-[11px] text-slate-500 uppercase tracking-wider font-medium text-center pb-1">{d}</div>
-            ))}
-            {AVAILABILITY_HOURS.map((h, r) => (
-              <Fragment key={h}>
-                <div className="text-[10px] text-slate-400 tabular-nums flex items-center pr-1 justify-end" style={{ height: HOUR_CELL_H }}>
-                  {h}
-                </div>
-                {DAYS.map((d, c) => {
-                  const v = grid[r]?.[c] ?? 0;
-                  const s = AVAIL_STYLES[v];
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      data-avail-cell
-                      data-r={r}
-                      data-c={c}
-                      onPointerDown={(e) => { e.preventDefault(); onCellDown(r, c); }}
-                      title={`${d} ${h} — ${v === 1 ? "Free" : v === 2 ? "Booked" : "Unavailable"}`}
-                      aria-label={`${d} ${h} ${v === 1 ? "free" : v === 2 ? "booked" : "unavailable"}`}
-                      className="transition-[filter] hover:brightness-95"
-                      style={{ height: HOUR_CELL_H, borderRadius: 5, background: s.bg, border: `1px solid ${s.border}`, touchAction: "none" }}
-                    />
-                  );
-                })}
-              </Fragment>
-            ))}
-          </div>
-        </div>
+
+      {/* Presets — merge a common pattern in with one click. */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <span className="text-[11.5px] text-slate-400 uppercase tracking-wider font-medium mr-1">Quick add</span>
+        {AVAILABILITY_PRESETS.map((p) => (
+          <Button key={p.label} variant="ghost" size="sm" icon="sparkle" onClick={() => applyPreset(p)}>{p.label}</Button>
+        ))}
       </div>
-      <div className="flex items-center gap-4 mt-4 text-[12.5px] text-slate-500">
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-[3px]" style={{ background: "#F8FAFC", border: "1px solid #F1F5F9" }}/> unavailable</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-[3px]" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}/> free</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-[3px]" style={{ background: "#FEF3C7", border: "1px solid #FCD34D" }}/> booked</span>
+
+      <div className="divide-y" style={{ borderColor: "#F1F5F9" }}>
+        {DAYS.map((d, c) => {
+          const dayBlocks = blocks[d] || [];
+          return (
+            <div key={d} className="flex flex-wrap items-center gap-2 py-2.5">
+              <div className="w-10 shrink-0 text-[12px] font-semibold text-slate-700 uppercase tracking-wider">{d}</div>
+
+              {dayBlocks.length === 0 && (
+                <span className="text-[13px] text-slate-400">Not available</span>
+              )}
+
+              {dayBlocks.map((b, i) => (
+                <span key={i} className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1" style={{ background: "#F8FAFC", border: "1px solid #EEF2F6" }}>
+                  <HourSelect value={b.start} min={0} max={23} onChange={(v) => setStart(d, i, v)} />
+                  <span className="text-[12px] text-slate-400">to</span>
+                  <HourSelect value={b.end} min={b.start + 1} max={24} onChange={(v) => editBlock(d, i, { end: v })} />
+                  <button
+                    type="button"
+                    onClick={() => removeBlock(d, i)}
+                    aria-label={`Remove ${d} ${hourLabel(b.start)}–${hourLabel(b.end)}`}
+                    className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  >
+                    <Icon name="x" size={13} />
+                  </button>
+                </span>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => addBlock(d)}
+                className="inline-flex items-center gap-1 text-[13px] font-medium text-emerald-700 hover:text-emerald-800 px-1.5 py-1 rounded hover:bg-emerald-50 transition-colors"
+              >
+                <Icon name="plus" size={13} /> Add
+              </button>
+
+              {dayBlocks.length > 0 && (
+                <div className="flex items-center gap-1 ml-auto">
+                  {c < 5 && (
+                    <button type="button" onClick={() => copyToDays(d, WEEKDAY_COLS)}
+                      className="text-[12px] text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-50 transition-colors">
+                      Copy to weekdays
+                    </button>
+                  )}
+                  <button type="button" onClick={() => copyToDays(d, [0, 1, 2, 3, 4, 5, 6])}
+                    className="text-[12px] text-slate-400 hover:text-slate-700 px-1.5 py-1 rounded hover:bg-slate-50 transition-colors">
+                    Copy to all
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </Card>
   );

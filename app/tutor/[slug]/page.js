@@ -97,24 +97,6 @@ export default async function ProfilePage({ params }) {
               </Section>
             )}
 
-            <Section
-              title={
-                <span className="flex items-center gap-2">
-                  Ratings &amp; reviews
-                  <span
-                    className="text-[11px] font-medium uppercase tracking-wider text-slate-500 px-2 py-0.5"
-                    style={{ border: "1px solid #E5E7EB", borderRadius: 999, background: "#FAFAFA" }}
-                  >
-                    Coming soon
-                  </span>
-                </span>
-              }
-            >
-              <div className="text-[14px] text-slate-500">
-                Ratings and reviews are coming soon — we&apos;re working on a way for verified students to leave them.
-              </div>
-            </Section>
-
             {tutor.availability && (
               <Section title="Availability" subtitle="This week — times shown in your timezone">
                 <AvailabilityGrid availability={tutor.availability} />
@@ -126,6 +108,7 @@ export default async function ProfilePage({ params }) {
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             <VerificationCard />
+            <RatingsCard />
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
           </aside>
@@ -228,6 +211,38 @@ function VerificationCard() {
       <RevealChildren delay={0.95} className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
         <Icon name="shield" size={14} className="text-slate-400 shrink-0" />
         Identity &amp; credential checks are coming soon.
+      </RevealChildren>
+    </SectionReveal>
+  );
+}
+
+function RatingsCard() {
+  return (
+    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="text-[14px] font-semibold text-slate-900">
+          <TypewriterOnView text="Ratings & reviews" speed={22} delay={350} />
+        </div>
+        <RevealChildren delay={0.85}>
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+            style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+          >
+            Coming soon
+          </span>
+        </RevealChildren>
+      </div>
+      <RevealChildren delay={0.95}>
+        <div className="flex flex-col items-center text-center py-6">
+          <div className="flex items-center gap-1.5 mb-3">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Icon key={i} name="star" size={22} className="text-slate-200" />
+            ))}
+          </div>
+          <div className="text-[13px] text-slate-500 leading-[1.55] max-w-[260px]">
+            Ratings and reviews are coming soon — we&apos;re working on a way for verified students to leave them.
+          </div>
+        </div>
       </RevealChildren>
     </SectionReveal>
   );
