@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, saveTutorProfile } from "@/lib/supabase/tutors";
@@ -172,6 +173,28 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   return (
     <div className="bg-white min-h-screen pb-32 md:pb-12">
       <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
+
+      <AnimatePresence>
+        {dirty && (
+          <motion.div
+            key="unsaved-alert"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="sticky top-[68px] z-20 overflow-hidden"
+            style={{ background: "#FFFBEB", borderBottom: "1px solid #FDE68A" }}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="max-w-[1200px] mx-auto px-6 py-2.5 flex items-center gap-2.5 text-[13px]" style={{ color: "#92400E" }}>
+              <Icon name="alert-triangle" size={15} strokeWidth={2} className="shrink-0" />
+              <span className="font-medium">Unsaved changes</span>
+              <span className="hidden sm:inline" style={{ color: "#B45309" }}>— your edits won’t appear on your public profile until you save.</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="max-w-[1200px] mx-auto px-6 pt-6">
         <div className="flex items-end justify-between gap-4 mb-7">
