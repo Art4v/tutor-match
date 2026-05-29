@@ -132,38 +132,55 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
     return () => document.removeEventListener("mousedown", onDown);
   }, [emojiOpen]);
 
-  // Run a transform over the current selection and restore focus/caret after.
+  // Apply an edit by replacing the range [from, to) with `text`, then selecting
+  // [selStart, selEnd]. We use document.execCommand("insertText") rather than
+  // rewriting the whole value through React, because that:
+  //   (a) only touches the targeted range — it can never drop the rest of the
+  //       field (the old whole-value replacement could, if React's `value` prop
+  //       lagged the DOM after typing), and
+  //   (b) joins the browser's native undo stack, so Ctrl+Z reverts a bold/italic
+  //       just like it reverts typing.
+  // The transform reads the live textarea value + selection (always mutually
+  // consistent) and returns the range + replacement text + final selection.
   const applyEdit = (fn) => {
     const ta = taRef.current;
-    const current = value ?? "";
-    const start = ta ? ta.selectionStart : current.length;
-    const end = ta ? ta.selectionEnd : current.length;
-    const next = fn({ value: current, start, end });
-    if (!next) return;
-    if (maxLength && next.value.length > maxLength) return; // would overflow — no-op
-    onChange(next.value);
+    if (!ta) return;
+    const res = fn({ value: ta.value, start: ta.selectionStart, end: ta.selectionEnd });
+    if (!res) return;
+    const { from, to, text, selStart, selEnd } = res;
+    if (maxLength && ta.value.length - (to - from) + text.length > maxLength) return; // would overflow — no-op
+    ta.focus();
+    ta.setSelectionRange(from, to);
+    // insertText replaces the selection in place and fires a native `input`
+    // event, which our textarea onChange picks up to sync React state.
+    const ok = typeof document !== "undefined" && document.execCommand
+      && document.execCommand("insertText", false, text);
+    if (!ok) {
+      // Fallback (rare — execCommand unsupported): controlled replacement.
+      // Correct text, but no native undo.
+      onChange(ta.value.slice(0, from) + text + ta.value.slice(to));
+    }
     requestAnimationFrame(() => {
-      if (!ta) return;
-      ta.focus();
-      ta.setSelectionRange(next.start, next.end);
+      const node = taRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(selStart, selEnd);
     });
   };
 
   // Wrap the selection in `marker` (toggling off if already wrapped). With no
   // selection, drop the markers and place the caret between them.
   const wrap = (marker) => applyEdit(({ value, start, end }) => {
-    const before = value.slice(0, start);
     const sel = value.slice(start, end);
-    const after = value.slice(end);
     const len = marker.length;
     if (sel) {
       if (sel.startsWith(marker) && sel.endsWith(marker) && sel.length >= len * 2) {
         const inner = sel.slice(len, sel.length - len);
-        return { value: before + inner + after, start, end: start + inner.length };
+        return { from: start, to: end, text: inner, selStart: start, selEnd: start + inner.length };
       }
-      return { value: before + marker + sel + marker, start: start + len, end: end + len };
+      return { from: start, to: end, text: marker + sel + marker, selStart: start + len, selEnd: end + len };
     }
-    return { value: before + marker + marker + after, start: start + len, end: start + len };
+    return { from: start, to: end, text: marker + marker, selStart: start + len, selEnd: start + len };
   });
 
   // Prefix each line of the selection with a list marker (toggling off if set).
@@ -181,17 +198,12 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
       ? lines.map(bare)
       : lines.map((l, i) => (ordered ? `${i + 1}. ` : "- ") + bare(l));
     const block = out.join("\n");
-    return {
-      value: value.slice(0, lineStart) + block + value.slice(lineEnd),
-      start: lineStart,
-      end: lineStart + block.length,
-    };
+    return { from: lineStart, to: lineEnd, text: block, selStart: lineStart, selEnd: lineStart + block.length };
   });
 
-  const insert = (text) => applyEdit(({ value, start, end }) => {
-    const out = value.slice(0, start) + text + value.slice(end);
-    return { value: out, start: start + text.length, end: start + text.length };
-  });
+  const insert = (text) => applyEdit(({ start, end }) => (
+    { from: start, to: end, text, selStart: start + text.length, selEnd: start + text.length }
+  ));
 
   const ToolbarBtn = ({ icon, label, onClick, active }) => (
     <button

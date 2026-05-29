@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button, Chip } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import OAuthButtons from "@/components/OAuthButtons";
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
 import { validateEmailFormat } from "@/lib/email";
 import { EASE_OUT } from "@/lib/motion";
@@ -120,7 +121,8 @@ export default function SignupPage() {
           .
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="space-y-5">
+        <>
+          <form onSubmit={onSubmit} className="space-y-5">
           <Field label="I am a">
             <div className="flex gap-1.5">
               <Chip active={role === "tutor"} onClick={() => setRole("tutor")}>
@@ -203,6 +205,10 @@ export default function SignupPage() {
             {submitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
+          <div className="mt-5">
+            <OAuthButtons divider="top" />
+          </div>
+        </>
       )}
 
       <div className="text-[13px] text-slate-500 mt-6 text-center">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
+import OAuthButtons from "@/components/OAuthButtons";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -93,6 +94,10 @@ export default function LoginPage() {
           {submitting ? "Logging in…" : "Log in"}
         </Button>
       </form>
+
+      <div className="mt-5">
+        <OAuthButtons divider="top" />
+      </div>
 
       <div className="text-[13px] text-slate-500 mt-6 text-center">
         Don&rsquo;t have an account?{" "}

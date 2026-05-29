@@ -72,7 +72,7 @@ export function AvailabilityGrid({ availability }) {
       >
         <table
           className="w-full text-[12px]"
-          style={{ borderCollapse: "separate", borderSpacing: 4 }}
+          style={{ borderCollapse: "separate", borderSpacing: 4, tableLayout: "fixed" }}
         >
           <thead>
             <tr>
@@ -109,13 +109,6 @@ export function AvailabilityGrid({ availability }) {
           icon="check"
           iconColor="#10B981"
           delay={maxCellDelay + 0.15}
-        />
-        <LegendSwatch
-          label="Booked"
-          bg="#F3F4F6"
-          icon="x"
-          iconColor="#94A3B8"
-          delay={maxCellDelay + 0.30}
         />
         <LegendSwatch
           label="Unavailable"
