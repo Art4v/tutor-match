@@ -40,10 +40,27 @@ export function SubjectPicker({
   const [activeExam, setActiveExam] = useState(null);
   const [search, setSearch] = useState("");
   const wrapRef = useRef(null);
+  const dragIndexRef = useRef(null);
+  const [dragging, setDragging] = useState(null); // slug being dragged
 
   const selected = mode === "multi"
     ? (Array.isArray(value) ? value : [])
     : (value ? [value] : []);
+
+  const labelOf = (slug) => subjectLabel(bySlug.get(slug) ?? { name: slug });
+
+  // Live drag-and-drop reorder of the selected chips (multi/box only). Reorders
+  // as the dragged chip passes over its neighbours; the array order is the order
+  // shown on the browse card + public profile (persisted as position in 0014).
+  const reorder = (toIndex) => {
+    const from = dragIndexRef.current;
+    if (from === null || from === toIndex) return;
+    const next = [...selected];
+    const [moved] = next.splice(from, 1);
+    next.splice(toIndex, 0, moved);
+    dragIndexRef.current = toIndex;
+    onChange?.(next);
+  };
 
   // Pick a sensible exam when the panel opens.
   useEffect(() => {
@@ -134,15 +151,33 @@ export function SubjectPicker({
     >
       {trigger}
 
-      {/* Selected chips (multi only) live under the field. */}
+      {/* Selected chips (multi only) live under the field. Drag to reorder —
+          the order is what shows on the browse card + public profile. */}
       {mode === "multi" && variant === "box" && selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {selected.map((slug) => (
-            <Chip key={slug} tone="grey" onRemove={() => remove(slug)}>
-              {subjectLabel(bySlug.get(slug) ?? { name: slug })}
-            </Chip>
-          ))}
-        </div>
+        <>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {selected.map((slug, i) => (
+              <div
+                key={slug}
+                draggable
+                onDragStart={(e) => { dragIndexRef.current = i; e.dataTransfer.effectAllowed = "move"; setDragging(slug); }}
+                onDragEnter={() => reorder(i)}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnd={() => { dragIndexRef.current = null; setDragging(null); }}
+                className="cursor-grab active:cursor-grabbing"
+                style={{ opacity: dragging === slug ? 0.4 : 1, transition: "opacity 120ms ease-out" }}
+                title="Drag to reorder"
+              >
+                <Chip tone="grey" onRemove={() => remove(slug)}>
+                  {labelOf(slug)}
+                </Chip>
+              </div>
+            ))}
+          </div>
+          {selected.length > 1 && (
+            <p className="text-[11.5px] text-slate-400 mt-1.5">Drag to reorder — this is how subjects appear on your card and profile.</p>
+          )}
+        </>
       )}
 
       {open && groups.length > 0 && (

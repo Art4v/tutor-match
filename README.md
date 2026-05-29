@@ -66,6 +66,7 @@ npm install
    11. `0011_year_levels_and_general.sql` — adds `tutor_profiles.year_min`/`year_max` (the K–12 range a tutor teaches; default 7–12, drives the `/browse` year filter) and a new `GENERAL` exam group (English/Mathematics/Science/History/Geography) for pre-Year-11 tutoring
    12. `0012_remove_headline.sql` — drops `tutor_profiles.headline` (the tagline `bio` takes over its role); backfills any headline text into an empty tagline first
    13. `0013_slug_regen_and_race_safe.sql` — makes slug assignment race-safe (retry-on-conflict instead of compute-then-insert) and adds an `assign_tutor_slug(name)` RPC so the `/tutor/<slug>` URL regenerates when a tutor renames
+   14. `0014_tutor_subjects_order.sql` — adds `tutor_subjects.position` so a tutor can drag-and-drop their subjects into a custom order (shown on the browse card + profile); backfills existing links to alphabetical order, the new default
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -186,7 +187,8 @@ tutor-match/
 │  ├─ 0010_rename_certificates_to_exams.sql
 │  ├─ 0011_year_levels_and_general.sql
 │  ├─ 0012_remove_headline.sql
-│  └─ 0013_slug_regen_and_race_safe.sql
+│  ├─ 0013_slug_regen_and_race_safe.sql
+│  └─ 0014_tutor_subjects_order.sql
 ├─ middleware.js                # refreshes the Supabase session cookie on every request
 ├─ jsconfig.json                # path alias: "@/*" → project root
 ├─ tailwind.config.js
@@ -238,6 +240,7 @@ Don't refactor inline styles into a global stylesheet without good reason — th
 - `0011_year_levels_and_general.sql` — K–12 additions. Adds `tutor_profiles.year_min`/`year_max` (int, default 7 / 12, check `0–12` + `min ≤ max`; backfilled) — the year-level range a tutor teaches, which `getTutorsForBrowse` matches against each selected year and the profile card displays. Adds a `GENERAL` exam group (position 0) with English/Mathematics/Science/History/Geography (slugs `general-*`) for pre-Year-11 tutoring; it flows through the exam-code-driven catalog automatically and is labelled bare (no prefix) like the `TEST` group. Year labels/formatters live in `lib/yearLevels.js`.
 - `0012_remove_headline.sql` — drops `tutor_profiles.headline`, which overlapped with the tagline (`bio`). The **tagline now takes over**: it's the one-line subtitle under the tutor's name on the profile and the browse card, and the field the `q` (overall) search matches. Existing headline text is backfilled into `bio` where the tagline is empty before the column is dropped.
 - `0013_slug_regen_and_race_safe.sql` — hardens the name-derived `/tutor/<slug>` URL. Replaces the racy `generate_unique_slug()` → insert path with a race-safe core `_assign_tutor_slug(id, name)` that UPDATEs the slug in a retry loop catching `unique_violation` (so concurrent same-name signups can't collide), and rewires `handle_new_user()` to use it (still mirroring `email_confirmed_at`). Adds `assign_tutor_slug(name)` — an authenticated RPC scoped to `auth.uid()` — which `saveTutorProfile` calls when the display name changes, so renaming refreshes the slug instead of leaving a stale URL. The core has execute revoked from the API roles; the old `generate_unique_slug()` stays defined but unused.
+- `0014_tutor_subjects_order.sql` — adds `tutor_subjects.position` so subjects carry a tutor-defined order. The settings editor's `SubjectPicker` renders the selected chips as a drag-and-drop list; reordering rewrites the slug array, which `saveTutorProfile` persists as `position`, and every read orders by it — so the browse card and public profile mirror the editor. Existing tutors default to **alphabetical**: the migration backfills their links A–Z by display label. New picks append to the end; the tutor drags to reorder.
 
 **Signup flow**
 
