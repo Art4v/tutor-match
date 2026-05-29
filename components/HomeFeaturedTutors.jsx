@@ -10,7 +10,7 @@ import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 export function HomeFeaturedTutors({ tutors = [], totalTutors = 0 }) {
   const [headlineDone, setHeadlineDone] = useState(false);
   const empty = tutors.length === 0;
-  const seeAllLabel = totalTutors > 0 ? `See all ${totalTutors} tutors` : "See all tutors";
+  const seeAllLabel = "See all tutors";
 
   return (
     <section
