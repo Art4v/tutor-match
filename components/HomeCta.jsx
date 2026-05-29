@@ -4,8 +4,19 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { CrossfadeSlideshow } from "@/components/anim/CrossfadeSlideshow";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
+
+// "You did the work" (graduation) → "now teach it" (the handshake / reaching
+// out). Openly-licensed Pexels photos; see public/images/CREDITS.md.
+const CTA_IMAGES = [
+  { src: "/images/cta/cta-1.jpg", alt: "Graduates celebrating with confetti" },
+  { src: "/images/cta/cta-2.jpg", alt: "Graduates throwing their caps in the air" },
+  { src: "/images/cta/cta-3.jpg", alt: "A person reaching out a hand to shake" },
+  { src: "/images/cta/cta-4.jpg", alt: "Two people shaking hands on an agreement" },
+  { src: "/images/cta/cta-5.jpg", alt: "A warm handshake across a cafe table" },
+];
 
 export function HomeCta() {
   const router = useRouter();
@@ -53,7 +64,7 @@ export function HomeCta() {
             &#8221;
           </div>
 
-          <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-12">
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-12">
             <div className="max-w-[640px]">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -122,14 +133,48 @@ export function HomeCta() {
               initial={{ opacity: 0, y: 14 }}
               animate={c2Done ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
-              className="flex flex-col gap-3 shrink-0"
+              className="flex flex-col gap-5 shrink-0 w-full md:w-[330px]"
             >
-              <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")}>
-                Become a tutor
-              </Button>
-              <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>
-                Browse tutors
-              </Button>
+              {/* Archival, public-domain teaching image — the "you did the work" payoff. */}
+              <div
+                className="relative overflow-hidden"
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid var(--accent-line)",
+                  boxShadow:
+                    "0 24px 64px -32px rgba(15,23,42,0.30), 0 0 24px rgba(21,39,100,0.10)",
+                }}
+              >
+                <CrossfadeSlideshow
+                  images={CTA_IMAGES}
+                  interval={3800}
+                  fade={0.9}
+                  className="w-full"
+                  style={{ height: 196 }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(12,24,64,0) 55%, rgba(12,24,64,0.20) 100%)",
+                  }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ borderRadius: 18, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.16)" }}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")}>
+                  Become a tutor
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>
+                  Browse tutors
+                </Button>
+              </div>
             </motion.div>
           </div>
         </div>

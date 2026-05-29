@@ -11,6 +11,7 @@ const STEPS = [
   {
     n: "01",
     icon: "search",
+    image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
     t: "Browse verified profiles",
     b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
     backTitle: "Browse, the way you'd want to",
@@ -26,6 +27,7 @@ const STEPS = [
   {
     n: "02",
     icon: "user",
+    image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
     t: "Pick a tutor that fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
     backTitle: "Reach out directly — no agency in the middle",
@@ -41,6 +43,7 @@ const STEPS = [
   {
     n: "03",
     icon: "globe",
+    image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
     t: "Lessons, reviews, switching",
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
     backTitle: "Lessons on your terms",
@@ -240,6 +243,38 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
 function CardFrontInner({ step, hover = true }) {
   return (
     <>
+      {step.image && (
+        <div
+          className="relative mb-7 overflow-hidden"
+          style={{ borderRadius: 12, height: 118, border: "1px solid var(--accent-line)" }}
+        >
+          <img
+            src={step.image.src}
+            alt={step.image.alt}
+            loading="lazy"
+            draggable={false}
+            className="w-full h-full object-cover"
+            style={{
+              // Lightly muted at rest, lifting to full colour on hover — same
+              // hover language as the icon tile below.
+              filter: hover ? "grayscale(0) saturate(1.05)" : "grayscale(0.32) saturate(0.92)",
+              transform: hover ? "scale(1.04)" : "scale(1)",
+              transition:
+                "filter 360ms ease-out, transform 600ms cubic-bezier(0.22,1,0.36,1)",
+            }}
+          />
+          {/* keep a faint accent wash at rest so it reads as part of the card */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "linear-gradient(180deg, rgba(21,39,100,0.05) 0%, rgba(21,39,100,0.12) 100%)",
+              opacity: hover ? 0 : 1,
+              transition: "opacity 360ms ease-out",
+            }}
+          />
+        </div>
+      )}
       <div className="flex items-start justify-between mb-8">
         <div
           className="font-display tabular-nums"
@@ -458,6 +493,20 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                 <Icon name={step.icon} size={16} />
               </div>
             </div>
+
+            {step.image && (
+              <div
+                className="relative mb-6 overflow-hidden"
+                style={{ borderRadius: 12, height: 132, border: "1px solid var(--accent-line)" }}
+              >
+                <img
+                  src={step.image.src}
+                  alt={step.image.alt}
+                  draggable={false}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
 
             <h3
               className="font-display text-[26px] sm:text-[30px] text-slate-900 leading-[1.15] mb-3"
