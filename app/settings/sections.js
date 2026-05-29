@@ -480,7 +480,7 @@ export function CredentialsSection({ tutor, set }) {
 
 export function AboutSection({ tutor, set }) {
   const long = tutor.bioLong || "";
-  const SOFT_LIMIT = 600;
+  const SOFT_LIMIT = 3000;
   const over = long.length > SOFT_LIMIT;
   return (
     <Card>

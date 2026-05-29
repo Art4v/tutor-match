@@ -9,6 +9,34 @@ import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
+// Search button hover: same jiggle wobble + accent halo language as TutorCard.
+// rest → hover settles rotate on 0 and amplifies the glow; on leave both
+// properties ease back to rest with no snap.
+const searchButtonVariants = {
+  rest: {
+    rotate: 0,
+    boxShadow:
+      "0 0 0px rgba(21,39,100,0), 0 0 0px rgba(21,39,100,0)",
+    transition: {
+      rotate: { duration: 0.4, ease: EASE_OUT },
+      boxShadow: { duration: 0.3, ease: EASE_OUT },
+    },
+  },
+  hover: {
+    rotate: [0, -1.6, 1.6, -0.8, 0.3, 0],
+    boxShadow:
+      "0 0 28px rgba(21,39,100,0.38), 0 0 10px rgba(21,39,100,0.24)",
+    transition: {
+      rotate: {
+        duration: 0.62,
+        ease: "easeOut",
+        times: [0, 0.18, 0.4, 0.62, 0.82, 1],
+      },
+      boxShadow: { duration: 0.4, ease: EASE_OUT },
+    },
+  },
+};
+
 /**
  * catalog: exam-scoped subject catalog from getSubjects(). The picker is
  * exam-first; the form submits the selected slug as ?subject= so /browse
@@ -146,7 +174,16 @@ export function HomeHero({ catalog }) {
               placeholder="Mathematics Extension 1"
             />
             <div className="px-2 md:px-1.5 flex items-center">
-              <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>Search</Button>
+              <motion.div
+                initial="rest"
+                animate="rest"
+                whileHover="hover"
+                variants={searchButtonVariants}
+                className="w-full"
+                style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
+              >
+                <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>Search</Button>
+              </motion.div>
             </div>
           </motion.div>
 
