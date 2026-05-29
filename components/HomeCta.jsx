@@ -7,6 +7,42 @@ import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
+// Button hover: same jiggle wobble + halo language as the HomeHero search
+// button. rest → hover settles rotate on 0 and amplifies the glow; on leave
+// both properties ease back to rest with no snap. `glow` lets the outline
+// button use a softer shadow than the navy primary.
+function makeJiggleVariants(glow) {
+  return {
+    rest: {
+      rotate: 0,
+      boxShadow: "0 0 0px rgba(21,39,100,0), 0 0 0px rgba(21,39,100,0)",
+      transition: {
+        rotate: { duration: 0.4, ease: EASE_OUT },
+        boxShadow: { duration: 0.3, ease: EASE_OUT },
+      },
+    },
+    hover: {
+      rotate: [0, -1.6, 1.6, -0.8, 0.3, 0],
+      boxShadow: glow,
+      transition: {
+        rotate: {
+          duration: 0.62,
+          ease: "easeOut",
+          times: [0, 0.18, 0.4, 0.62, 0.82, 1],
+        },
+        boxShadow: { duration: 0.4, ease: EASE_OUT },
+      },
+    },
+  };
+}
+
+const primaryJiggle = makeJiggleVariants(
+  "0 0 28px rgba(21,39,100,0.38), 0 0 10px rgba(21,39,100,0.24)"
+);
+const outlineJiggle = makeJiggleVariants(
+  "0 0 22px rgba(21,39,100,0.14), 0 0 8px rgba(21,39,100,0.08)"
+);
+
 export function HomeCta() {
   const router = useRouter();
   const [c1Done, setC1Done] = useState(false);
@@ -124,12 +160,28 @@ export function HomeCta() {
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
               className="flex flex-col gap-3 shrink-0"
             >
-              <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")}>
-                Become a tutor
-              </Button>
-              <Button variant="outline" size="lg" onClick={() => router.push("/browse")}>
-                Browse tutors
-              </Button>
+              <motion.div
+                initial="rest"
+                animate="rest"
+                whileHover="hover"
+                variants={primaryJiggle}
+                style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
+              >
+                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")} full>
+                  Become a tutor
+                </Button>
+              </motion.div>
+              <motion.div
+                initial="rest"
+                animate="rest"
+                whileHover="hover"
+                variants={outlineJiggle}
+                style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
+              >
+                <Button variant="outline" size="lg" onClick={() => router.push("/browse")} full>
+                  Browse tutors
+                </Button>
+              </motion.div>
             </motion.div>
           </div>
         </div>
