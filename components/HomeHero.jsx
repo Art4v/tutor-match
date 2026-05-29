@@ -62,7 +62,7 @@ export function HomeHero({ catalog }) {
 
   return (
     <section
-      className="snap-section relative overflow-hidden"
+      className="snap-section relative overflow-x-clip"
       style={{
         background:
           "radial-gradient(55% 55% at 22% 28%, rgba(30,58,138,0.08) 0%, rgba(255,255,255,0) 100%), radial-gradient(35% 35% at 78% 72%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 100%), #ffffff",

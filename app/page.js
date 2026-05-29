@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getFeaturedTutors, getSubjects, getPublicTutorCount } from "@/lib/supabase/tutors";
+import { getFeaturedTutors, getSubjects } from "@/lib/supabase/tutors";
 import { Footer } from "@/components/Footer";
 import { HomeHero } from "@/components/HomeHero";
 import { HomeFeaturedTutors } from "@/components/HomeFeaturedTutors";
@@ -22,17 +22,16 @@ function pinAndShuffleFeatured(pool) {
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [featuredPool, subjectCatalog, totalTutors] = await Promise.all([
+  const [featuredPool, subjectCatalog] = await Promise.all([
     getFeaturedTutors(supabase, 50),
     getSubjects(supabase),
-    getPublicTutorCount(supabase),
   ]);
   const featuredTutors = pinAndShuffleFeatured(featuredPool);
 
   return (
     <main className="bg-white snap-scroll">
       <HomeHero catalog={subjectCatalog} />
-      <HomeFeaturedTutors tutors={featuredTutors} totalTutors={totalTutors} />
+      <HomeFeaturedTutors tutors={featuredTutors} />
       <HomeHowItWorks />
       <HomeCta />
       <Footer />
