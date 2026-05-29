@@ -25,7 +25,7 @@ export default async function ProfilePage({ params }) {
   if (!tutor) return notFound();
 
   const similarPool = await getFeaturedTutors(supabase, 10, tutor.id);
-  const similar = pickRandom(similarPool, 2);
+  const similar = pickRandom(similarPool, 4);
 
   const deliveryLabel = formatDelivery(tutor);
 
@@ -98,7 +98,7 @@ export default async function ProfilePage({ params }) {
             )}
 
             {tutor.availability && (
-              <Section title="Availability" subtitle="This week — times shown in your timezone">
+              <Section title="Availability" subtitle="When you can book a session each week">
                 <AvailabilityGrid availability={tutor.availability} />
               </Section>
             )}
