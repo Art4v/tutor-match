@@ -6,6 +6,7 @@ import { Icon } from "./Icon";
 import { Avatar, VerifiedTick, Chip } from "./ui";
 import { EASE_OUT } from "@/lib/motion";
 import { subjectLabel } from "@/lib/subjects";
+import { stripMarkdown } from "@/lib/richText";
 
 function credentialChipLabel(c) {
   if (c.icon === "atar") return `${c.label} ATAR`;
@@ -240,7 +241,7 @@ export function TutorCard({ tutor }) {
 
           {/* Tagline (one line, reserved) */}
           <div className="text-[13.5px] text-slate-500 mt-0.5 truncate shrink-0" style={{ minHeight: "1.35em" }}>
-            {tutor.bio || " "}
+            {stripMarkdown(tutor.bio) || " "}
           </div>
 
           {/* Location (one line, reserved) */}
@@ -270,7 +271,7 @@ export function TutorCard({ tutor }) {
               overflow: "hidden",
             }}
           >
-            {tutor.bioLong || " "}
+            {stripMarkdown(tutor.bioLong) || " "}
           </div>
 
           {/* Bottom group: subject chips sit above the horizontal divider;

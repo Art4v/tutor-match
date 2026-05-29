@@ -17,6 +17,7 @@ import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
 import { RevealChildren } from "@/components/anim/CardReveal";
+import { RichText } from "@/components/RichText";
 
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
@@ -53,9 +54,7 @@ export default async function ProfilePage({ params }) {
           <div className="space-y-8 min-w-0">
             {tutor.bioLong && (
               <Section id="about" title="About">
-                <div className="text-[15px] text-slate-600 leading-[1.6] whitespace-pre-line">
-                  {tutor.bioLong}
-                </div>
+                <RichText text={tutor.bioLong} className="text-[15px] text-slate-600 leading-[1.6]" />
               </Section>
             )}
 

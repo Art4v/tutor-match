@@ -10,6 +10,7 @@
   "dependencies": {
     "@supabase/ssr": "0.5.2",
     "@supabase/supabase-js": "2.45.4",
+    "emoji-picker-react": "^4.19.1",
     "leaflet": "^1.9.4",
     "lenis": "^1.1.13",
     "motion": "^11.11.17",

@@ -55,8 +55,11 @@ export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false 
   const r = Math.max(0.5, Number(radiusKm) || 1);
   const center = useMemo(() => [lat, lng], [lat, lng]);
 
+  // The wrapper's position+zIndex isolate Leaflet's internal high z-indexes
+  // (panes 400, controls 1000) into their own stacking context, so the map can't
+  // paint over the page's sticky nav / save bar / unsaved-changes banner.
   return (
-    <div style={{ height: 200, borderRadius: 12, overflow: "hidden", border: "1px solid #F1F5F9" }}>
+    <div style={{ position: "relative", zIndex: 0, height: 200, borderRadius: 12, overflow: "hidden", border: "1px solid #F1F5F9" }}>
       <MapContainer
         center={center}
         zoom={11}

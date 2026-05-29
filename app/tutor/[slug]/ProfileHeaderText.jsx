@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { VerifiedTick } from "@/components/ui";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { InlineMarkdown } from "@/components/RichText";
+import { stripMarkdown } from "@/lib/richText";
 import { EASE_OUT } from "@/lib/motion";
 import { yearRangeLabel } from "@/lib/yearLevels";
 
@@ -11,6 +13,9 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
   const [nameDone, setNameDone] = useState(false);
   const [bioDone, setBioDone] = useState(false);
   const hasBio = !!tutor.bio;
+  // The typewriter animates the plain text (markers would type out literally);
+  // once it finishes we swap in the bold/italic-rendered version in place.
+  const plainBio = stripMarkdown(tutor.bio);
 
   // If there's no bio, treat it as already done so the meta fades in after the name.
   const metaReady = hasBio ? bioDone : nameDone;
@@ -36,12 +41,16 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
 
       {hasBio && (
         <div className="text-[15px] text-slate-600 mt-1">
-          <TypewriterOnView
-            text={tutor.bio}
-            speed={18}
-            start={nameDone}
-            onDone={() => setBioDone(true)}
-          />
+          {bioDone ? (
+            <InlineMarkdown text={tutor.bio} />
+          ) : (
+            <TypewriterOnView
+              text={plainBio}
+              speed={18}
+              start={nameDone}
+              onDone={() => setBioDone(true)}
+            />
+          )}
         </div>
       )}
 

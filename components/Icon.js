@@ -56,6 +56,11 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "lock": return <svg {...props}><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
     case "eye": return <svg {...props}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>;
     case "upload": return <svg {...props}><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>;
+    case "bold": return <svg {...props}><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/></svg>;
+    case "italic": return <svg {...props}><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg>;
+    case "list": return <svg {...props}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>;
+    case "list-ordered": return <svg {...props}><path d="M10 6h11M10 12h11M10 18h11M4 6V4l-1 .5M4 10H3h2M6 18H4c0-1 2-1.5 2-2.5S5 14 4 14.5"/></svg>;
+    case "smile": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>;
     default: return null;
   }
 }

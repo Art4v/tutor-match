@@ -6,6 +6,11 @@ import { EASE_OUT } from "@/lib/motion";
 /**
  * Animated availability grid.
  *
+ * The editor grid spans the full 24h, one row per hour (24 rows). On the
+ * public profile we clip to the tutor's marked range — the first through last
+ * row that has any Free/Booked cell — so an early-morning-to-evening tutor isn't
+ * shown a wall of empty midnight rows.
+ *
  * Phase 1 — the blank table fades in (every cell renders in its "unavailable"
  * baseline appearance: pale slate background, no glyph).
  * Phase 2 — cells that are Free / Booked transition into their coloured
@@ -17,24 +22,44 @@ import { EASE_OUT } from "@/lib/motion";
 export function AvailabilityGrid({ availability }) {
   const { hours, days, grid } = availability;
 
+  // Find the marked range so we only render rows the tutor actually uses.
+  let firstRow = -1;
+  let lastRow = -1;
+  for (let hi = 0; hi < hours.length; hi++) {
+    const marked = (grid[hi] ?? []).some((v) => v !== 0);
+    if (marked) {
+      if (firstRow === -1) firstRow = hi;
+      lastRow = hi;
+    }
+  }
+
+  if (firstRow === -1) {
+    return <p className="text-[13px] text-slate-400">No availability set yet.</p>;
+  }
+
+  // Inclusive [firstRow, lastRow], keeping the absolute index for hour labels.
+  const rows = [];
+  for (let hi = firstRow; hi <= lastRow; hi++) rows.push({ hi, label: hours[hi] });
+
   // Phase timing (seconds)
   const TABLE_FADE_DURATION = 0.4;
   const PHASE_2_START = TABLE_FADE_DURATION + 0.1;
-  const ROW_STEP = 0.06;
+  // Step per row scales down as the range grows so the wave never drags on.
+  const ROW_STEP = Math.min(0.06, 1.4 / Math.max(rows.length, 1));
   const COL_STEP = 0.03;
 
   // Compute the maximum cell delay so the legend can land right after the
   // last coloured cell pops.
   let maxCellDelay = PHASE_2_START;
-  for (let hi = 0; hi < hours.length; hi++) {
+  rows.forEach(({ hi }, ri) => {
     for (let di = 0; di < days.length; di++) {
       const v = grid[hi]?.[di] ?? 0;
       if (v !== 0) {
-        const d = PHASE_2_START + hi * ROW_STEP + di * COL_STEP;
+        const d = PHASE_2_START + ri * ROW_STEP + di * COL_STEP;
         if (d > maxCellDelay) maxCellDelay = d;
       }
     }
-  }
+  });
 
   return (
     <div>
@@ -58,12 +83,12 @@ export function AvailabilityGrid({ availability }) {
             </tr>
           </thead>
           <tbody>
-            {hours.map((h, hi) => (
-              <tr key={h}>
-                <td className="text-slate-400 tabular-nums pr-2 text-right">{h}</td>
+            {rows.map(({ hi, label }, ri) => (
+              <tr key={hi}>
+                <td className="text-slate-400 tabular-nums pr-2 text-right">{label}</td>
                 {days.map((_, di) => {
                   const v = grid[hi]?.[di] ?? 0;
-                  const cellDelay = PHASE_2_START + hi * ROW_STEP + di * COL_STEP;
+                  const cellDelay = PHASE_2_START + ri * ROW_STEP + di * COL_STEP;
                   return (
                     <td key={di}>
                       <Cell v={v} delay={cellDelay} />

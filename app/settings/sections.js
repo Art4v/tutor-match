@@ -11,11 +11,14 @@ import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
 import { YEAR_MIN, YEAR_MAX, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
-import { AVAILABILITY_DAYS, AVAILABILITY_HOURS } from "@/lib/availability";
+import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, normalizeGrid } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 import { ImageCropModal } from "@/components/ImageCropModal";
 
 const ServiceMapLeaflet = dynamic(() => import("@/components/ServiceMapLeaflet"), { ssr: false });
+// Full emoji picker (search + categories + skin tones). Client-only & lazy so it
+// doesn't weigh down the settings bundle until a tutor opens the picker.
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 /* ============================================================
    Tutor settings sections — ported from the claude.ai/design
@@ -46,7 +49,7 @@ export const DAYS = AVAILABILITY_DAYS;
 export const HOUR_LABELS = AVAILABILITY_HOURS;
 
 export function buildInitialAvailability() {
-  return Array.from({ length: 8 }, () => Array(7).fill(0));
+  return buildEmptyGrid();
 }
 
 /* ============================================================
@@ -106,6 +109,165 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         }}
       />
       {suffix && <span className="flex items-center pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
+    </div>
+  );
+}
+
+/**
+ * Textarea with a formatting toolbar (emoji / bold / italic, plus optional
+ * bulleted + numbered lists). Writes the tiny markdown subset documented in
+ * lib/richText.js; the public profile renders it via <RichText>.
+ */
+function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false }) {
+  const taRef = useRef(null);
+  const [focus, setFocus] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  // Close the emoji popover on outside click.
+  useEffect(() => {
+    if (!emojiOpen) return;
+    const onDown = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setEmojiOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [emojiOpen]);
+
+  // Run a transform over the current selection and restore focus/caret after.
+  const applyEdit = (fn) => {
+    const ta = taRef.current;
+    const current = value ?? "";
+    const start = ta ? ta.selectionStart : current.length;
+    const end = ta ? ta.selectionEnd : current.length;
+    const next = fn({ value: current, start, end });
+    if (!next) return;
+    if (maxLength && next.value.length > maxLength) return; // would overflow — no-op
+    onChange(next.value);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      ta.focus();
+      ta.setSelectionRange(next.start, next.end);
+    });
+  };
+
+  // Wrap the selection in `marker` (toggling off if already wrapped). With no
+  // selection, drop the markers and place the caret between them.
+  const wrap = (marker) => applyEdit(({ value, start, end }) => {
+    const before = value.slice(0, start);
+    const sel = value.slice(start, end);
+    const after = value.slice(end);
+    const len = marker.length;
+    if (sel) {
+      if (sel.startsWith(marker) && sel.endsWith(marker) && sel.length >= len * 2) {
+        const inner = sel.slice(len, sel.length - len);
+        return { value: before + inner + after, start, end: start + inner.length };
+      }
+      return { value: before + marker + sel + marker, start: start + len, end: end + len };
+    }
+    return { value: before + marker + marker + after, start: start + len, end: start + len };
+  });
+
+  // Prefix each line of the selection with a list marker (toggling off if set).
+  const toggleList = (kind) => applyEdit(({ value, start, end }) => {
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    let lineEnd = value.indexOf("\n", end);
+    if (lineEnd === -1) lineEnd = value.length;
+    const lines = value.slice(lineStart, lineEnd).split("\n");
+    const bulletRe = /^\s*[-*]\s+/;
+    const numRe = /^\s*\d+\.\s+/;
+    const ordered = kind === "ol";
+    const allMarked = lines.every((l) => (ordered ? numRe : bulletRe).test(l));
+    const bare = (l) => l.replace(bulletRe, "").replace(numRe, "");
+    const out = allMarked
+      ? lines.map(bare)
+      : lines.map((l, i) => (ordered ? `${i + 1}. ` : "- ") + bare(l));
+    const block = out.join("\n");
+    return {
+      value: value.slice(0, lineStart) + block + value.slice(lineEnd),
+      start: lineStart,
+      end: lineStart + block.length,
+    };
+  });
+
+  const insert = (text) => applyEdit(({ value, start, end }) => {
+    const out = value.slice(0, start) + text + value.slice(end);
+    return { value: out, start: start + text.length, end: start + text.length };
+  });
+
+  const ToolbarBtn = ({ icon, label, onClick, active }) => (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onMouseDown={(e) => e.preventDefault()} // keep textarea selection
+      onClick={onClick}
+      className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors"
+      style={active ? { background: "rgba(15,23,42,0.08)", color: "#0F172A" } : undefined}
+    >
+      <Icon name={icon} size={15} strokeWidth={2} />
+    </button>
+  );
+
+  return (
+    <div
+      ref={wrapRef}
+      className="relative"
+      style={{
+        background: "#FAFAFA",
+        borderRadius: 10,
+        border: `1px solid ${focus ? "#0F172A" : "transparent"}`,
+        transition: "border-color 120ms ease",
+      }}
+    >
+      <div className="flex items-center gap-0.5 px-2 pt-1.5 pb-1 border-b border-slate-200/70">
+        <div className="relative">
+          <ToolbarBtn icon="smile" label="Insert emoji" active={emojiOpen} onClick={() => setEmojiOpen((o) => !o)} />
+          {emojiOpen && (
+            <div
+              className="absolute left-0 top-9 z-30"
+              style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.18)", borderRadius: 12 }}
+            >
+              <EmojiPicker
+                onEmojiClick={(data) => { insert(data.emoji); setEmojiOpen(false); }}
+                emojiStyle="native"
+                lazyLoadEmojis
+                width={320}
+                height={380}
+                previewConfig={{ showPreview: false }}
+                skinTonesDisabled
+                searchPlaceHolder="Search emoji"
+              />
+            </div>
+          )}
+        </div>
+        <span className="w-px h-4 bg-slate-200 mx-1" />
+        <ToolbarBtn icon="bold" label="Bold" onClick={() => wrap("**")} />
+        <ToolbarBtn icon="italic" label="Italic" onClick={() => wrap("*")} />
+        {lists && (
+          <>
+            <span className="w-px h-4 bg-slate-200 mx-1" />
+            <ToolbarBtn icon="list" label="Bulleted list" onClick={() => toggleList("ul")} />
+            <ToolbarBtn icon="list-ordered" label="Numbered list" onClick={() => toggleList("ol")} />
+          </>
+        )}
+      </div>
+      <textarea
+        ref={taRef}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocus(true)}
+        onBlur={() => setFocus(false)}
+        placeholder={placeholder}
+        rows={rows}
+        maxLength={maxLength}
+        className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
+        style={{
+          padding: "10px 12px",
+          resize: "vertical",
+          lineHeight: 1.55,
+          fontFamily: "inherit",
+          letterSpacing: "-0.003em",
+        }}
+      />
     </div>
   );
 }
@@ -486,13 +648,13 @@ export function AboutSection({ tutor, set }) {
     <Card>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
       <Field label="Tagline" hint="One line shown on your browse cards and under your profile header.">
-        <TextInput multiline rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180} placeholder="Patient, structured tutor who writes clear notes…" />
+        <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180} placeholder="Patient, structured tutor who writes clear notes…" />
       </Field>
       <div className="mt-5">
         <Field label="Long bio"
           error={over ? `${long.length - SOFT_LIMIT} characters over the soft limit — consider trimming.` : null}
           hint={!over ? `${long.length} / ${SOFT_LIMIT} characters` : null}>
-          <TextInput multiline rows={8} value={long} onChange={(v) => set({ bioLong: v })}
+          <RichTextField rows={8} value={long} onChange={(v) => set({ bioLong: v })} lists
             placeholder="Tell students about your teaching approach…" />
         </Field>
       </div>
@@ -727,14 +889,84 @@ export function ServiceAreaSection({ tutor, set }) {
   );
 }
 
+const AVAIL_STYLES = [
+  { bg: "#F8FAFC", border: "#F1F5F9" }, // 0 unavailable
+  { bg: "#ECFDF5", border: "#A7F3D0" }, // 1 free
+  { bg: "#FEF3C7", border: "#FCD34D" }, // 2 booked
+];
+
+// Height of one hour cell.
+const HOUR_CELL_H = 26;
+
+// Weekday evenings = 5pm–8pm. One row per hour (5pm → 17, 8pm → 20).
+// Mon–Fri are columns 0–4.
+const EVENING_START_ROW = 17;
+const EVENING_END_ROW = 20;
+
 export function AvailabilitySection({ tutor, set }) {
-  const grid = tutor.availability || [];
-  const cycle = (r, c) => set({ availability: grid.map((row, ri) => row.map((cell, ci) => ri === r && ci === c ? (cell + 1) % 3 : cell)) });
-  const bulkFreeEvenings = () => set({ availability: grid.map((row, ri) => row.map((cell, ci) => (ri >= 5 && ri <= 7 && ci <= 4 && cell === 0) ? 1 : cell)) });
-  const clearAll = () => set({ availability: grid.map((row) => row.map(() => 0)) });
+  // Coerce whatever is stored to the canonical 48×7 shape so the editor renders
+  // a full-day, 30-minute grid even for legacy/short data.
+  const grid = useMemo(() => normalizeGrid(tutor.availability), [tutor.availability]);
+
+  // Keep a live mirror so rapid drag events compound correctly even when they
+  // fire faster than React re-renders.
+  const gridRef = useRef(grid);
+  useEffect(() => { gridRef.current = grid; }, [grid]);
+
+  const draggingRef = useRef(false);
+  const dragValueRef = useRef(0);
+  const lastCellRef = useRef(null); // "r,c" — skip repaint while hovering same cell
+
+  // End the drag no matter where the pointer is released.
+  useEffect(() => {
+    const up = () => { draggingRef.current = false; lastCellRef.current = null; };
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, []);
+
+  const paint = (r, c, val) => {
+    const cur = gridRef.current;
+    if ((cur[r]?.[c] ?? 0) === val) return;
+    const next = cur.map((row, ri) => (ri === r ? row.map((cell, ci) => (ci === c ? val : cell)) : row));
+    gridRef.current = next;
+    set({ availability: next });
+  };
+
+  const onCellDown = (r, c) => {
+    const val = ((gridRef.current[r]?.[c] ?? 0) + 1) % 3; // cycle the first cell
+    dragValueRef.current = val;
+    draggingRef.current = true;
+    lastCellRef.current = `${r},${c}`;
+    paint(r, c, val);
+  };
+
+  // Pointer-move on the container resolves the cell under the pointer via
+  // elementFromPoint, so drag-painting works for both mouse and touch.
+  const onPointerMove = (e) => {
+    if (!draggingRef.current) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = el?.closest?.("[data-avail-cell]");
+    if (!cell) return;
+    const r = Number(cell.getAttribute("data-r"));
+    const c = Number(cell.getAttribute("data-c"));
+    if (!Number.isInteger(r) || !Number.isInteger(c)) return;
+    const key = `${r},${c}`;
+    if (lastCellRef.current === key) return;
+    lastCellRef.current = key;
+    paint(r, c, dragValueRef.current);
+  };
+
+  const bulkFreeEvenings = () =>
+    set({ availability: grid.map((row, ri) => row.map((cell, ci) => (ri >= EVENING_START_ROW && ri <= EVENING_END_ROW && ci <= 4 && cell === 0) ? 1 : cell)) });
+  const clearAll = () => set({ availability: buildEmptyGrid() });
+
   return (
     <Card padding={20}>
-      <SectionHeader title="Availability" subtitle="Click a cell to cycle: empty → free → booked → empty."
+      <SectionHeader title="Availability" subtitle="One cell per hour. Click to cycle empty → free → booked, or click and drag to paint a range."
         right={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" icon="sparkle" onClick={bulkFreeEvenings} title="Mark weekday evenings free">Mark weekday evenings free</Button>
@@ -742,24 +974,33 @@ export function AvailabilitySection({ tutor, set }) {
           </div>
         } />
       <div className="overflow-x-auto" style={{ marginInline: -4 }}>
-        <div className="min-w-[520px] px-1">
-          <div className="grid" style={{ gridTemplateColumns: "56px repeat(7, 1fr)", gap: 4 }}>
-            <div></div>
-            {DAYS.map((d) => <div key={d} className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium text-center pb-1">{d}</div>)}
-            {HOUR_LABELS.map((h, r) => (
+        <div className="min-w-[480px] px-1" onPointerMove={onPointerMove}>
+          <div className="grid" style={{ gridTemplateColumns: "44px repeat(7, 1fr)", gap: 3 }}>
+            <div />
+            {DAYS.map((d) => (
+              <div key={d} className="text-[11px] text-slate-500 uppercase tracking-wider font-medium text-center pb-1">{d}</div>
+            ))}
+            {AVAILABILITY_HOURS.map((h, r) => (
               <Fragment key={h}>
-                <div className="text-[11px] text-slate-400 tabular-nums flex items-center pr-1 justify-end">{h}</div>
-                {DAYS.map((_, c) => {
+                <div className="text-[10px] text-slate-400 tabular-nums flex items-center pr-1 justify-end" style={{ height: HOUR_CELL_H }}>
+                  {h}
+                </div>
+                {DAYS.map((d, c) => {
                   const v = grid[r]?.[c] ?? 0;
-                  const styles = [
-                    { bg: "#F8FAFC", border: "#F1F5F9", color: "transparent", label: "" },
-                    { bg: "#ECFDF5", border: "#A7F3D0", color: "#047857", label: "Free" },
-                    { bg: "#FEF3C7", border: "#FCD34D", color: "#92400E", label: "Booked" },
-                  ];
-                  const s = styles[v];
+                  const s = AVAIL_STYLES[v];
                   return (
-                    <button key={c} type="button" onClick={() => cycle(r, c)} className="text-[10.5px] font-medium transition-colors"
-                      style={{ height: 32, borderRadius: 6, background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{s.label}</button>
+                    <button
+                      key={c}
+                      type="button"
+                      data-avail-cell
+                      data-r={r}
+                      data-c={c}
+                      onPointerDown={(e) => { e.preventDefault(); onCellDown(r, c); }}
+                      title={`${d} ${h} — ${v === 1 ? "Free" : v === 2 ? "Booked" : "Unavailable"}`}
+                      aria-label={`${d} ${h} ${v === 1 ? "free" : v === 2 ? "booked" : "unavailable"}`}
+                      className="transition-[filter] hover:brightness-95"
+                      style={{ height: HOUR_CELL_H, borderRadius: 5, background: s.bg, border: `1px solid ${s.border}`, touchAction: "none" }}
+                    />
                   );
                 })}
               </Fragment>

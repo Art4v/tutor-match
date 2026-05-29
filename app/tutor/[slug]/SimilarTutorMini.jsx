@@ -3,6 +3,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { Avatar, VerifiedTick } from "@/components/ui";
 import { EASE_OUT } from "@/lib/motion";
+import { stripMarkdown } from "@/lib/richText";
 
 // Same hover choreography as TutorCard: small lift + shake wobble + shadow.
 const miniVariants = {
@@ -77,7 +78,7 @@ export function SimilarTutorMini({ tutor }) {
             className="text-[11.5px] text-slate-500 truncate mt-0.5"
             style={{ minHeight: "1.3em" }}
           >
-            {tutor.bio || " "}
+            {stripMarkdown(tutor.bio) || " "}
           </div>
           <div
             className="mt-2 pt-2 flex items-baseline justify-end"

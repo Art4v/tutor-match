@@ -163,7 +163,7 @@ tutor-match/
 │  ├─ TutorCard.js              # canonical hover-animated card (motion/react variants); chip rows fit to one line with a "+N more" pill
 │  └─ ui.js                     # Avatar, VerifiedTick, OnlineDot, Chip, Button
 ├─ lib/
-│  ├─ availability.js           # canonical 8×7 availability-grid hour/day labels (shared editor + public)
+│  ├─ availability.js           # canonical 24×7 availability grid (one row per hour, full 24h) — labels + helpers shared editor + public
 │  ├─ email.js                  # email format check + domain extractor (shared client + server)
 │  ├─ password.js               # password policy rules (shared signup form + server route)
 │  ├─ geocode.js                # single-result geocode; Nominatim → Photon fallback; in-process cache
