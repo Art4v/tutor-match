@@ -1,19 +1,22 @@
 // ============================================================================
 // Auth callback — the landing route for Supabase email-link redirects.
 // ----------------------------------------------------------------------------
-// The password-recovery email uses {{ .ConfirmationURL }}, which sends the user
-// through Supabase's /verify endpoint and then redirects here with a `?code=`
-// (the redirect target is the redirect_to the app passed to
-// resetPasswordForEmail: `<origin>/auth/callback?next=/reset-password`). We trade
-// that code for a session with exchangeCodeForSession(), writing the session
-// cookies via the server client, then forward to `next` (default `/`).
+// Two link shapes land here; both mint a session, then forward to `next`:
 //
-// On failure (missing / expired / already-used code) we send the user to the
+//   1. token_hash + type — what the password-recovery email uses. The template
+//      builds the link from {{ .RedirectTo }} (= `<origin>/auth/callback?next=…`)
+//      and appends `&token_hash=…&type=recovery`, so the link points straight at
+//      this route. verifyOtp() confirms the token and writes the session — no
+//      Supabase /verify hop and no PKCE code exchange, so it works even when the
+//      link is opened in a different browser. (For RedirectTo to render the right
+//      origin, `<origin>/auth/callback**` must be a WILDCARD Redirect-URLs entry —
+//      the `?next=` query string won't match a bare entry.)
+//
+//   2. code — the PKCE grant (exchangeCodeForSession), kept for OAuth / any
+//      provider that sends the user back with `?code=`.
+//
+// On failure (missing / expired / already-used token) we send the user to the
 // reset page in its invalid-link state so they can request a fresh link.
-//
-// NOTE: for the redirect to be honored, the redirect_to must match a WILDCARDED
-// Redirect-URLs entry (`<origin>/auth/callback**`) because it carries a `?next=`
-// query string — otherwise Supabase falls back to the bare Site URL.
 // ============================================================================
 
 import { NextResponse } from "next/server";
@@ -22,40 +25,20 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 export async function GET(request) {
-  const url = new URL(request.url);
-  const { searchParams, origin } = url;
-  const code = searchParams.get("code");
+  const { searchParams, origin } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
+  const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
-
-  // --- TEMP DIAGNOSTICS (remove after debugging) ---
-  console.log("[auth/callback] incoming URL:", request.url);
-  console.log("[auth/callback] params:", { code, tokenHash, type, next });
-  const verifierCookie = request.cookies
-    .getAll()
-    .find((c) => c.name.includes("code-verifier"));
-  console.log(
-    "[auth/callback] code-verifier cookie present:",
-    Boolean(verifierCookie),
-    verifierCookie?.name
-  );
-  console.log(
-    "[auth/callback] all cookie names:",
-    request.cookies.getAll().map((c) => c.name)
-  );
-  // --- END DIAGNOSTICS ---
 
   const supabase = createSupabaseServerClient();
   let ok = false;
 
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    console.log("[auth/callback] verifyOtp error:", error);
     ok = !error;
   } else if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    console.log("[auth/callback] exchangeCodeForSession error:", error);
     ok = !error;
   }
 

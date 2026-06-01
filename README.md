@@ -98,16 +98,20 @@ arrive; routing through Resend fixes both.
 
 `/forgot-password` collects the email and POSTs to `/api/auth/forgot-password`, which validates the
 address (format + that the domain can receive mail) and calls `resetPasswordForEmail`. The
-**Reset Password** email template links to `{{ .ConfirmationURL }}`, which routes through Supabase's
-`/verify` endpoint and then redirects to `<origin>/auth/callback?next=/reset-password&code=…` (the
-`redirect_to` the app passed to `resetPasswordForEmail`). `/auth/callback` trades the `code` for a
-session with `supabase.auth.exchangeCodeForSession`, then forwards to `/reset-password`, where the
-user sets a new password (`updateUser`). On success they're signed out and sent to `/login?reset=1`.
-For the redirect to be honored, `<origin>/auth/callback` must be in the **Redirect URLs** allow-list
-**as a wildcard** (`<origin>/auth/callback**`) — the `?next=` query string won't match a bare entry,
-and a failed match falls back to the bare Site URL (the original "link goes to the domain and does
-nothing" bug). The send step never reveals whether an account exists (no enumeration) — any
-well-formed request shows the same neutral confirmation.
+**Reset Password** email template builds its link from `{{ .RedirectTo }}` (= the
+`<origin>/auth/callback?next=/reset-password` the app passed to `resetPasswordForEmail`) and appends
+`&token_hash=…&type=recovery`, so the link points **straight at `/auth/callback`** — no Supabase
+`/verify` hop. `/auth/callback` verifies it with `supabase.auth.verifyOtp({ type: "recovery",
+token_hash })`, which mints the session directly (no PKCE code exchange, so it works even in a
+different browser), then forwards to `/reset-password`, where the user sets a new password
+(`updateUser`). On success they're signed out and sent to `/login?reset=1`. Using `{{ .RedirectTo }}`
+(not the global `{{ .SiteURL }}`) makes the link self-select environment — a localhost request emails
+a localhost link, production emails a production link — so Site URL stays on the live domain. For
+`RedirectTo` to render, `<origin>/auth/callback` must be in the **Redirect URLs** allow-list **as a
+wildcard** (`<origin>/auth/callback**`) — the `?next=` query string won't match a bare entry, and a
+failed match falls back to the bare Site URL (the "link goes to the domain and does nothing" symptom).
+The send step never reveals whether an account exists (no enumeration) — any well-formed request shows
+the same neutral confirmation.
 
 > **Note:** the link is rendered by Supabase from the email template, so after editing
 > `reset-password.html` you must re-paste it into **Authentication → Emails → Reset Password** for
