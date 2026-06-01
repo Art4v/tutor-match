@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
-import { Icon } from "@/components/Icon";
-import { PASSWORD_RULES, validatePassword } from "@/lib/password";
+import { validatePassword } from "@/lib/password";
+import { PasswordChecklist } from "@/components/PasswordChecklist";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -131,23 +131,7 @@ function ResetPasswordInner() {
               autoComplete="new-password"
               aria-invalid={pwTouched && !pw.valid}
             />
-            {(pwTouched || password.length > 0) && (
-              <ul className="mt-2.5 space-y-1.5">
-                {PASSWORD_RULES.map((rule) => {
-                  const ok = rule.test(password);
-                  return (
-                    <li
-                      key={rule.id}
-                      className="flex items-center gap-1.5 text-[12.5px] leading-none transition-colors"
-                      style={{ color: ok ? "#16A34A" : "#94A3B8" }}
-                    >
-                      <Icon name={ok ? "check" : "x"} size={13} strokeWidth={2.25} />
-                      {rule.label}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <PasswordChecklist password={password} show={pwTouched || password.length > 0} />
           </Field>
 
           <Field label="Confirm new password">

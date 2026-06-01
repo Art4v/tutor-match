@@ -168,16 +168,19 @@ export function TopNav() {
                         padding: 4,
                       }}
                     >
+                      <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
+                        Browse
+                      </NavMenuLink>
                       {tutorSlug && (
                         <NavMenuLink href={`/tutor/${tutorSlug}`} onClick={() => setMenuOpen(false)}>
                           Profile
                         </NavMenuLink>
                       )}
-                      <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
-                        Browse
-                      </NavMenuLink>
                       <NavMenuLink href="/settings" onClick={() => setMenuOpen(false)}>
                         Settings
+                      </NavMenuLink>
+                      <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
+                        Account
                       </NavMenuLink>
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
                         {loggingOut ? "Logging out…" : "Log out"}

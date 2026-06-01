@@ -654,8 +654,9 @@ export function CredentialsSection({ tutor, set }) {
 
 export function AboutSection({ tutor, set }) {
   const long = tutor.bioLong || "";
-  const SOFT_LIMIT = 3000;
-  const over = long.length > SOFT_LIMIT;
+  const SOFT_LIMIT = 5000; // words
+  const wordCount = long.trim() ? long.trim().split(/\s+/).length : 0;
+  const over = wordCount > SOFT_LIMIT;
   return (
     <Card>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
@@ -664,8 +665,8 @@ export function AboutSection({ tutor, set }) {
       </Field>
       <div className="mt-5">
         <Field label="Long bio"
-          error={over ? `${long.length - SOFT_LIMIT} characters over the soft limit — consider trimming.` : null}
-          hint={!over ? `${long.length} / ${SOFT_LIMIT} characters` : null}>
+          error={over ? `${wordCount - SOFT_LIMIT} words over the soft limit — consider trimming.` : null}
+          hint={!over ? `${wordCount} / ${SOFT_LIMIT} words` : null}>
           <RichTextField rows={8} value={long} onChange={(v) => set({ bioLong: v })} lists
             placeholder="Tell students about your teaching approach…" />
         </Field>
