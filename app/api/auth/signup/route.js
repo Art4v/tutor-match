@@ -1,29 +1,10 @@
 import { NextResponse } from "next/server";
-import dns from "node:dns/promises";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { validatePassword } from "@/lib/password";
 import { validateEmailFormat, getEmailDomain } from "@/lib/email";
+import { domainCanReceiveMail } from "@/lib/mailDomain";
 
 export const runtime = "nodejs";
-
-// Does the domain actually exist and accept mail? A deliverable domain has MX
-// records; some smaller domains accept mail via an implicit MX (their A/AAAA
-// record), so we fall back to that. A typo'd domain ("gmial.con") resolves to
-// neither and is rejected. Returns false on any lookup failure.
-async function domainCanReceiveMail(domain) {
-  try {
-    const mx = await dns.resolveMx(domain);
-    if (mx.length > 0) return true;
-  } catch {
-    // No MX records (or NXDOMAIN) — fall through to the A/AAAA check.
-  }
-  try {
-    await dns.lookup(domain);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // Server-side signup gate. The browser form validates the password too, but
 // this route is the authoritative check: it re-runs the policy and only then
