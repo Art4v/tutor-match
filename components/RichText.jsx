@@ -34,10 +34,11 @@ export function InlineMarkdown({ text }) {
 }
 
 /**
- * Block rendering: paragraphs (blank-line separated, single newlines → <br/>),
- * "- " bulleted lists, and "1. " numbered lists, with inline bold/italic inside.
+ * Parse the markdown subset into blocks: paragraphs (blank-line separated,
+ * single newlines → <br/>), "- " bulleted lists, and "1. " numbered lists.
+ * Exposed so callers (e.g. a cascading reveal) can render blocks one at a time.
  */
-export function RichText({ text, className = "" }) {
+export function parseRichTextBlocks(text) {
   const lines = String(text ?? "").split("\n");
   const blocks = [];
   let para = [];
@@ -76,34 +77,49 @@ export function RichText({ text, className = "" }) {
   }
   flushPara();
   flushList();
+  return blocks;
+}
 
+/**
+ * Render a single block (no outer margin — the caller owns block spacing,
+ * e.g. RichText's wrapper or a per-block reveal wrapper).
+ */
+export function RichTextBlock({ block, idx = 0 }) {
+  if (block.type === "p") {
+    return (
+      <p>
+        {block.lines.map((ln, j) => (
+          <Fragment key={j}>
+            {j > 0 && <br />}
+            {renderInline(ln, `${idx}-${j}-`)}
+          </Fragment>
+        ))}
+      </p>
+    );
+  }
+  const ListTag = block.type === "ol" ? "ol" : "ul";
+  return (
+    <ListTag className={(block.type === "ol" ? "list-decimal" : "list-disc") + " pl-5 space-y-1"}>
+      {block.items.map((it, j) => (
+        <li key={j}>{renderInline(it, `${idx}-${j}-`)}</li>
+      ))}
+    </ListTag>
+  );
+}
+
+/**
+ * Block rendering: paragraphs (blank-line separated, single newlines → <br/>),
+ * "- " bulleted lists, and "1. " numbered lists, with inline bold/italic inside.
+ */
+export function RichText({ text, className = "" }) {
+  const blocks = parseRichTextBlocks(text);
   return (
     <div className={className}>
-      {blocks.map((b, idx) => {
-        if (b.type === "p") {
-          return (
-            <p key={idx} className="mb-3 last:mb-0">
-              {b.lines.map((ln, j) => (
-                <Fragment key={j}>
-                  {j > 0 && <br />}
-                  {renderInline(ln, `${idx}-${j}-`)}
-                </Fragment>
-              ))}
-            </p>
-          );
-        }
-        const ListTag = b.type === "ol" ? "ol" : "ul";
-        return (
-          <ListTag
-            key={idx}
-            className={(b.type === "ol" ? "list-decimal" : "list-disc") + " pl-5 mb-3 last:mb-0 space-y-1"}
-          >
-            {b.items.map((it, j) => (
-              <li key={j}>{renderInline(it, `${idx}-${j}-`)}</li>
-            ))}
-          </ListTag>
-        );
-      })}
+      {blocks.map((b, idx) => (
+        <div key={idx} className="mb-3 last:mb-0">
+          <RichTextBlock block={b} idx={idx} />
+        </div>
+      ))}
     </div>
   );
 }
