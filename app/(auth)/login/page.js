@@ -23,13 +23,14 @@ function LoginInner() {
     setError(null);
     setSubmitting(true);
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (error) {
       setError(error.message);
       return;
     }
-    router.push("/");
+    const role = data?.user?.user_metadata?.role;
+    router.push(role === "tutor" ? "/settings" : "/");
     router.refresh();
   };
 
