@@ -68,6 +68,7 @@ npm install
    13. `0013_slug_regen_and_race_safe.sql` — makes slug assignment race-safe (retry-on-conflict instead of compute-then-insert) and adds an `assign_tutor_slug(name)` RPC so the `/tutor/<slug>` URL regenerates when a tutor renames
    14. `0014_tutor_subjects_order.sql` — adds `tutor_subjects.position` so a tutor can drag-and-drop their subjects into a custom order (shown on the browse card + profile); backfills existing links to alphabetical order, the new default
    15. `0015_oauth_default_role.sql` — makes the signup trigger OAuth-safe: defaults `role` to `tutor` and falls back to the `name` claim when a provider (e.g. Google) doesn't send our `role`/`full_name` metadata (required before Google sign-in works — without it OAuth signups fail on the `NOT NULL` role column)
+   16. `0016_full_name_not_blank.sql` — adds a CHECK constraint so `profiles.full_name` can't be saved blank/whitespace (the settings editor writes it directly via the browser client, so this is the authoritative server-side guard); NULL stays allowed for OAuth signups whose provider sent no name
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
