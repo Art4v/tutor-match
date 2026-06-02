@@ -1,62 +1,98 @@
 "use client";
 
-// Placeholder for social sign-in. The buttons are visible but disabled and
-// labelled "Coming soon" — the actual OAuth wiring (Supabase providers,
-// callback route, and trigger update) was removed and will be re-added when
-// we're ready to enable it.
+// Social sign-in. Google is wired to Supabase OAuth (PKCE): the button kicks
+// off signInWithOAuth, Supabase bounces through Google and back to
+// /auth/callback, which exchanges the code for a session. Microsoft is
+// still a disabled placeholder ("Soon") until we enable that provider.
 
-export default function OAuthButtons({ divider = "bottom" }) {
+import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+export default function OAuthButtons({ divider = "bottom", next = "/settings" }) {
+  const [loading, setLoading] = useState(false);
+
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+    // On success the browser is already navigating to Google; only reset on error.
+    if (error) setLoading(false);
+  };
+
   return (
     <div className="space-y-2.5">
       {divider === "top" && <Divider label="or use a social account" />}
-      <ProviderButton label="Continue with Google" glyph={<GoogleGlyph />} />
-      <ProviderButton label="Continue with Microsoft" glyph={<MicrosoftGlyph />} />
+      <ProviderButton
+        label={loading ? "Redirecting…" : "Continue with Google"}
+        glyph={<GoogleGlyph />}
+        onClick={signInWithGoogle}
+        loading={loading}
+      />
+      <ProviderButton label="Continue with Microsoft" glyph={<MicrosoftGlyph />} disabled />
       {divider === "bottom" && <Divider label="or continue with email" />}
     </div>
   );
 }
 
-function ProviderButton({ label, glyph }) {
+function ProviderButton({ label, glyph, onClick, disabled = false, loading = false }) {
+  const inactive = disabled || loading;
   return (
-    <div
-      className="relative w-full inline-flex items-center justify-center font-medium"
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={inactive}
+      className="relative w-full inline-flex items-center justify-center font-medium transition-colors"
       style={{
         height: 42,
         background: "#fff",
-        color: "#94A3B8",
+        color: disabled ? "#94A3B8" : "#334155",
         border: "1px solid #E5E7EB",
         borderRadius: 8,
         fontSize: 14,
         letterSpacing: "-0.005em",
-        cursor: "not-allowed",
-        opacity: 0.75,
+        cursor: inactive ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.75 : loading ? 0.85 : 1,
       }}
-      title="Coming soon"
-      aria-disabled="true"
+      title={disabled ? "Coming soon" : undefined}
+      aria-disabled={inactive}
     >
-      <span style={{ position: "absolute", left: 14, display: "inline-flex", filter: "grayscale(0.35)" }}>
-        {glyph}
-      </span>
-      <span>{label}</span>
       <span
         style={{
           position: "absolute",
-          right: 12,
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: "#94A3B8",
-          background: "#F1F5F9",
-          border: "1px solid #E2E8F0",
-          borderRadius: 999,
-          padding: "2px 7px",
-          lineHeight: 1.2,
+          left: 14,
+          display: "inline-flex",
+          filter: disabled ? "grayscale(0.35)" : "none",
         }}
       >
-        Soon
+        {glyph}
       </span>
-    </div>
+      <span>{label}</span>
+      {disabled && (
+        <span
+          style={{
+            position: "absolute",
+            right: 12,
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            color: "#94A3B8",
+            background: "#F1F5F9",
+            border: "1px solid #E2E8F0",
+            borderRadius: 999,
+            padding: "2px 7px",
+            lineHeight: 1.2,
+          }}
+        >
+          Soon
+        </span>
+      )}
+    </button>
   );
 }
 

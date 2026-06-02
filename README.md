@@ -67,6 +67,7 @@ npm install
    12. `0012_remove_headline.sql` — drops `tutor_profiles.headline` (the tagline `bio` takes over its role); backfills any headline text into an empty tagline first
    13. `0013_slug_regen_and_race_safe.sql` — makes slug assignment race-safe (retry-on-conflict instead of compute-then-insert) and adds an `assign_tutor_slug(name)` RPC so the `/tutor/<slug>` URL regenerates when a tutor renames
    14. `0014_tutor_subjects_order.sql` — adds `tutor_subjects.position` so a tutor can drag-and-drop their subjects into a custom order (shown on the browse card + profile); backfills existing links to alphabetical order, the new default
+   15. `0015_oauth_default_role.sql` — makes the signup trigger OAuth-safe: defaults `role` to `tutor` and falls back to the `name` claim when a provider (e.g. Google) doesn't send our `role`/`full_name` metadata (required before Google sign-in works — without it OAuth signups fail on the `NOT NULL` role column)
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -93,7 +94,37 @@ registered your Resend account with — sign up with that address when testing l
 **Going live:** add a domain in Resend (Dashboard → Domains), create the SPF/DKIM/DMARC DNS records
 it shows, wait for "Verified", then change the Supabase Sender email to e.g. `noreply@yourdomain.com`.
 
-### 4. Run
+### 4. Configure Google OAuth
+
+The "Continue with Google" button on `/login` and `/signup` uses Supabase OAuth (PKCE). The Google
+**Client ID/secret live in the Supabase dashboard**, not in `.env.local` — the app never sees them.
+Microsoft stays a disabled placeholder.
+
+**A. Google Cloud Console** (<https://console.cloud.google.com>)
+
+1. Create/select a project.
+2. **APIs & Services → OAuth consent screen**: choose *External*, fill app name + support email, and
+   add your own email under *Test users* (so you can sign in while the app is unpublished).
+3. **APIs & Services → Credentials → Create Credentials → OAuth client ID → Web application**.
+4. Under **Authorized redirect URIs** add your Supabase callback — this is the stable *Supabase* URL,
+   **not** localhost: `https://<your-project-ref>.supabase.co/auth/v1/callback`
+   (`<your-project-ref>` is the subdomain in `NEXT_PUBLIC_SUPABASE_URL`).
+5. Copy the generated **Client ID** and **Client secret**.
+
+**B. Supabase dashboard**
+
+1. **Authentication → Providers → Google** → enable, paste the Client ID + secret, Save.
+2. **Authentication → URL Configuration**:
+   - **Site URL**: `http://localhost:3000` in dev (your prod URL when you deploy).
+   - **Redirect URLs** allow-list: add `http://localhost:3000/**` (and `https://yourdomain.com/**`
+     for prod). This is what lets Supabase redirect back to the app's `/auth/callback`.
+3. Make sure migration `0015_oauth_default_role.sql` has been run (see step 2).
+
+New Google users are created as **tutors** and land on `/settings` after sign-in. Because Google only
+trusts the stable Supabase callback URL (and Supabase is allowed to redirect to `localhost`), the whole
+flow is testable on the dev server — no tunneling needed.
+
+### 5. Run
 
 ```bash
 npm run dev      # http://localhost:3000
