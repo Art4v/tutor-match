@@ -85,9 +85,39 @@ arrive; routing through Resend fixes both.
    - Sender name `MatchTutor`. Sender email `onboarding@resend.dev` until you verify a domain (see below).
 3. Supabase Dashboard → **Authentication → Emails → Confirm signup** → paste
    `supabase/email-templates/confirm-signup.html` (the source-of-truth for this template).
-4. Supabase Dashboard → **Authentication → Rate Limits** → raise "emails sent per hour" above 2.
-5. Supabase Dashboard → **Authentication → URL Configuration** → set Site URL (`http://localhost:3000`
-   in dev) so the confirmation link redirects back correctly.
+4. Supabase Dashboard → **Authentication → Emails → Reset Password** → paste
+   `supabase/email-templates/reset-password.html` (powers the forgot-password flow).
+5. Supabase Dashboard → **Authentication → Rate Limits** → raise "emails sent per hour" above 2.
+6. Supabase Dashboard → **Authentication → URL Configuration** → set **Site URL** (your live domain).
+   Under **Redirect URLs**, add a **wildcard** entry for every origin you reset from —
+   `https://www.yourdomain.com/auth/callback**` **and** `http://localhost:3000/auth/callback**` for
+   dev. The `**` is required: the recovery link redirects to `<origin>/auth/callback?next=/reset-password`,
+   and that `?next=…` query string only matches a wildcarded entry. Without it the redirect fails the
+   allow-list check and Supabase silently falls back to the bare Site URL (you land on the homepage with
+   a stray `?code=` and nothing happens).
+
+#### Password reset flow
+
+`/forgot-password` collects the email and POSTs to `/api/auth/forgot-password`, which validates the
+address (format + that the domain can receive mail) and calls `resetPasswordForEmail`. The
+**Reset Password** email template builds its link from `{{ .RedirectTo }}` (= the
+`<origin>/auth/callback?next=/reset-password` the app passed to `resetPasswordForEmail`) and appends
+`&token_hash=…&type=recovery`, so the link points **straight at `/auth/callback`** — no Supabase
+`/verify` hop. `/auth/callback` verifies it with `supabase.auth.verifyOtp({ type: "recovery",
+token_hash })`, which mints the session directly (no PKCE code exchange, so it works even in a
+different browser), then forwards to `/reset-password`, where the user sets a new password
+(`updateUser`). On success they're signed out and sent to `/login?reset=1`. Using `{{ .RedirectTo }}`
+(not the global `{{ .SiteURL }}`) makes the link self-select environment — a localhost request emails
+a localhost link, production emails a production link — so Site URL stays on the live domain. For
+`RedirectTo` to render, `<origin>/auth/callback` must be in the **Redirect URLs** allow-list **as a
+wildcard** (`<origin>/auth/callback**`) — the `?next=` query string won't match a bare entry, and a
+failed match falls back to the bare Site URL (the "link goes to the domain and does nothing" symptom).
+The send step never reveals whether an account exists (no enumeration) — any well-formed request shows
+the same neutral confirmation.
+
+> **Note:** the link is rendered by Supabase from the email template, so after editing
+> `reset-password.html` you must re-paste it into **Authentication → Emails → Reset Password** for
+> changes to take effect.
 
 **Test mode:** with no verified domain, `onboarding@resend.dev` only delivers to the email you
 registered your Resend account with — sign up with that address when testing locally.
