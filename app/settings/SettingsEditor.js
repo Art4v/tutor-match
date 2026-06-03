@@ -106,6 +106,8 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
 
   const set = (patch) => setTutor((t) => ({ ...t, ...patch }));
 
+  const nameValid = !!(tutor.name && tutor.name.trim());
+
   const showToast = (kind, text, ms = 2400) => {
     setToast({ kind, text });
     window.clearTimeout(showToast._timer);
@@ -113,6 +115,10 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   };
 
   const onSave = async () => {
+    if (!nameValid) {
+      showToast("error", "Please enter your full name before saving.", 3500);
+      return;
+    }
     setSaving(true);
     // Last-chance geocode: if the user hit Save before the debounced editor
     // geocode fired, resolve coords now so the public profile has a map.
@@ -172,7 +178,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
 
   return (
     <div className="bg-white min-h-screen pb-32 md:pb-12">
-      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
+      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       <AnimatePresence>
         {dirty && (
@@ -229,7 +235,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
         </div>
       </div>
 
-      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
+      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       {toast && (
         <div

@@ -67,6 +67,9 @@ npm install
    12. `0012_remove_headline.sql` — drops `tutor_profiles.headline` (the tagline `bio` takes over its role); backfills any headline text into an empty tagline first
    13. `0013_slug_regen_and_race_safe.sql` — makes slug assignment race-safe (retry-on-conflict instead of compute-then-insert) and adds an `assign_tutor_slug(name)` RPC so the `/tutor/<slug>` URL regenerates when a tutor renames
    14. `0014_tutor_subjects_order.sql` — adds `tutor_subjects.position` so a tutor can drag-and-drop their subjects into a custom order (shown on the browse card + profile); backfills existing links to alphabetical order, the new default
+   15. `0015_delete_own_account.sql` — adds the `delete_own_account()` RPC (`SECURITY DEFINER`, scoped to `auth.uid()`) that powers the **Delete account** card on `/account`
+   16. `0016_oauth_default_role.sql` — replaces `handle_new_user()` so Google (OAuth) signups work: defaults `role` to `tutor` (they carry no role metadata, and `profiles.role` is `NOT NULL`) and falls back to Google's `name` claim for `full_name`
+   17. `0017_full_name_not_blank.sql` — normalizes blank `profiles.full_name` to `NULL`, then adds the `profiles_full_name_not_blank` CHECK so a whitespace-only name can't be saved (NULL stays allowed for OAuth signups with no name claim)
 
 Without Supabase set up, the public pages (`/`, `/browse`, `/tutor/[slug]`) render empty states because they query real data at request time; signup/login also fail.
 
@@ -123,7 +126,34 @@ registered your Resend account with — sign up with that address when testing l
 **Going live:** add a domain in Resend (Dashboard → Domains), create the SPF/DKIM/DMARC DNS records
 it shows, wait for "Verified", then change the Supabase Sender email to e.g. `noreply@yourdomain.com`.
 
-### 4. Run
+### 4. Configure Google OAuth
+
+"Continue with Google" on `/login` and `/signup` uses Supabase's Google provider (PKCE). The OAuth
+client secret lives **in the Supabase dashboard, not in `.env.local`** — the app only ever calls
+`supabase.auth.signInWithOAuth`.
+
+1. **Google Cloud Console** → create (or pick) a project → **APIs & Services → Credentials → Create
+   credentials → OAuth client ID** → type **Web application**.
+   - **Authorized redirect URI**: your Supabase callback —
+     `https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback` (shown in step 2). This is Supabase's
+     URL, *not* the app's `/auth/callback`.
+   - Copy the **Client ID** and **Client secret**.
+2. **Supabase Dashboard** → **Authentication → Providers → Google** → enable it and paste the Client
+   ID + Client secret. The page shows the callback URL to register in step 1.
+3. **Supabase Dashboard** → **Authentication → URL Configuration → Redirect URLs** → ensure a wildcard
+   entry covers the app's own callback for each origin: `http://localhost:3000/**` (dev) and
+   `https://www.yourdomain.com/**` (prod). The OAuth button redirects to
+   `<origin>/auth/callback?next=/settings`, and the `?next=` query string only matches a wildcarded
+   entry (same requirement as the password-recovery callback above).
+
+How it flows: the button calls `signInWithOAuth({ provider: "google", options: { redirectTo:
+"<origin>/auth/callback?next=/settings" } })` → Google consent → Supabase redirects back with a
+`?code=` → `/auth/callback` runs `exchangeCodeForSession` and forwards to `next` (default `/settings`).
+A first-time Google user has no `role` metadata, so the `handle_new_user()` trigger (migration `0016`)
+defaults them to a tutor account and takes their name from Google's `name` claim. On failure the
+callback redirects to `/login?error=oauth`, which shows an inline banner.
+
+### 5. Run
 
 ```bash
 npm run dev      # http://localhost:3000

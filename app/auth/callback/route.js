@@ -33,11 +33,15 @@ export async function GET(request) {
 
   const supabase = createSupabaseServerClient();
   let ok = false;
+  let isOAuth = false;
 
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     ok = !error;
   } else if (code) {
+    // PKCE grant — used by OAuth (Google). exchangeCodeForSession mints the
+    // session from the code Supabase appended to the redirect.
+    isOAuth = true;
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     ok = !error;
   }
@@ -46,5 +50,11 @@ export async function GET(request) {
     return NextResponse.redirect(`${origin}${next}`);
   }
 
-  return NextResponse.redirect(`${origin}/reset-password?error=link_invalid`);
+  // Send each failure to the page that requested the flow: OAuth failures back
+  // to /login, recovery (token_hash) failures to the reset page's invalid state.
+  return NextResponse.redirect(
+    isOAuth
+      ? `${origin}/login?error=oauth`
+      : `${origin}/reset-password?error=link_invalid`
+  );
 }

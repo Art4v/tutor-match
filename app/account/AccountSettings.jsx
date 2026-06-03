@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
@@ -84,15 +84,20 @@ export function AccountSettings({ userEmail }) {
 
   // --- Delete account -------------------------------------------------------
   const [confirmText, setConfirmText] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const canDelete = confirmText.trim() === DELETE_WORD && !deleting;
+  const typedConfirm = confirmText.trim() === DELETE_WORD;
+  const canDelete = typedConfirm && !deleting;
 
+  // The "Delete my account" button no longer deletes directly — it opens a final
+  // confirmation modal, and onDeleteAccount only runs from that modal's confirm.
   const onDeleteAccount = async () => {
     if (!canDelete) return;
     setDeleting(true);
     const { error } = await supabase.rpc("delete_own_account");
     if (error) {
       setDeleting(false);
+      setConfirmOpen(false);
       showToast("error", error.message || "Couldn't delete your account — please try again.", 4000);
       return;
     }
@@ -217,8 +222,8 @@ export function AccountSettings({ userEmail }) {
             <div className="mt-5">
               <button
                 type="button"
-                onClick={onDeleteAccount}
-                disabled={!canDelete}
+                onClick={() => setConfirmOpen(true)}
+                disabled={!typedConfirm}
                 className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: "#DC2626",
@@ -228,17 +233,25 @@ export function AccountSettings({ userEmail }) {
                   fontSize: 15,
                   height: 44,
                   borderRadius: 10,
-                  cursor: canDelete ? "pointer" : "not-allowed",
+                  cursor: typedConfirm ? "pointer" : "not-allowed",
                   letterSpacing: "-0.005em",
                 }}
               >
                 <Icon name="trash" size={15} />
-                {deleting ? "Deleting…" : "Delete my account"}
+                Delete my account
               </button>
             </div>
           </section>
         </div>
       </div>
+
+      {confirmOpen && (
+        <DeleteConfirmModal
+          deleting={deleting}
+          onCancel={() => { if (!deleting) setConfirmOpen(false); }}
+          onConfirm={onDeleteAccount}
+        />
+      )}
 
       {toast && (
         <div
@@ -304,5 +317,85 @@ function Input(props) {
         transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
       }}
     />
+  );
+}
+
+// Final "are you absolutely sure?" gate, shown after the user has typed DELETE
+// and clicked the red button. Backdrop click + Escape cancel (unless mid-delete).
+function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape" && !deleting) onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [deleting, onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(15,23,42,0.5)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-confirm-title"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white w-full"
+        style={{
+          maxWidth: 420,
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: "0 24px 60px rgba(15,23,42,0.28)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className="inline-flex items-center justify-center shrink-0"
+            style={{ width: 36, height: 36, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}
+          >
+            <Icon name="alert-triangle" size={18} />
+          </span>
+          <div>
+            <h2
+              id="delete-confirm-title"
+              className="text-[17px] font-semibold tracking-tight"
+              style={{ color: "#B91C1C" }}
+            >
+              Delete your account?
+            </h2>
+            <p className="text-[13.5px] text-slate-600 mt-1.5">
+              This is permanent. Your account, profile, and all associated data will be
+              erased immediately and cannot be recovered.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 mt-6">
+          <Button variant="outline" size="md" onClick={onCancel} disabled={deleting}>
+            Cancel
+          </Button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{
+              background: "#DC2626",
+              color: "#fff",
+              border: "1px solid #DC2626",
+              padding: "9px 16px",
+              fontSize: 14,
+              height: 40,
+              borderRadius: 10,
+              cursor: deleting ? "not-allowed" : "pointer",
+              letterSpacing: "-0.005em",
+            }}
+          >
+            <Icon name="trash" size={14} />
+            {deleting ? "Deleting…" : "Yes, delete my account"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
