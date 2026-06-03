@@ -572,11 +572,12 @@ export function BannerAvatarSection({ tutor, set, supabase }) {
 }
 
 export function IdentitySection({ tutor, set }) {
+  const nameError = (tutor.name || "").trim() ? undefined : "Your full name is required.";
   return (
     <Card>
       <SectionHeader title="Identity" subtitle="Shown directly under your avatar on the public profile." />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Full name" hint="Use the name that matches your government ID."><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
+        <Field label="Full name" hint="Use the name that matches your government ID." error={nameError}><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
         <Field label="Years tutoring">
           <TextInput value={tutor.yearsTutoring} onChange={(v) => set({ yearsTutoring: Number(v.replace(/\D/g, "")) || 0 })} suffix="yrs" />
         </Field>
@@ -1270,7 +1271,7 @@ export function Breadcrumb() {
   );
 }
 
-export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref }) {
+export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, nameValid = true }) {
   const router = useRouter();
   const canView = !dirty && !saving && !!profileHref;
   return (
@@ -1292,7 +1293,7 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref }
           {canView ? (
             <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
           ) : (
-            <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save changes"}</Button>
+            <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving || !nameValid}>{saving ? "Saving…" : "Save changes"}</Button>
           )}
         </div>
       </div>
@@ -1300,7 +1301,7 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref }
   );
 }
 
-export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref }) {
+export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref, nameValid = true }) {
   const router = useRouter();
   const canView = !dirty && !saving && !!profileHref;
   return (
@@ -1310,7 +1311,7 @@ export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref })
       {canView ? (
         <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
       ) : (
-        <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving}>{saving ? "Saving…" : "Save"}</Button>
+        <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving || !nameValid}>{saving ? "Saving…" : "Save"}</Button>
       )}
     </div>
   );

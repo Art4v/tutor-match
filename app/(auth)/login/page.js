@@ -13,6 +13,7 @@ function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justReset = searchParams.get("reset") === "1";
+  const oauthError = searchParams.get("error") === "oauth";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +68,15 @@ function LoginInner() {
           style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, color: "#15803D" }}
         >
           Password updated — sign in with your new password.
+        </div>
+      )}
+
+      {oauthError && (
+        <div
+          className="px-3 py-2 mb-5 text-[13px] text-red-700"
+          style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
+        >
+          Couldn&rsquo;t sign in with Google — please try again.
         </div>
       )}
 
