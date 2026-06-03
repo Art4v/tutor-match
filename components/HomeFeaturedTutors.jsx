@@ -17,7 +17,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
       className="snap-section"
       style={{
         background:
-          "radial-gradient(40% 45% at 82% 28%, rgba(30,58,138,0.06) 0%, rgba(255,255,255,0) 60%)",
+          "radial-gradient(45% 50% at 85% 25%, rgba(30,58,138,0.10) 0%, rgba(255,255,255,0) 60%), linear-gradient(180deg, #EEF4FF 0%, #E0EAFC 100%)",
       }}
     >
       <div className="max-w-[1200px] w-full mx-auto px-6 pt-10 pb-6">

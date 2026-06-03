@@ -96,7 +96,7 @@ export function HomeHowItWorks() {
       className="snap-section flex items-center"
       style={{
         background:
-          "radial-gradient(45% 50% at 14% 78%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 60%)",
+          "radial-gradient(48% 52% at 12% 80%, rgba(30,58,138,0.11) 0%, rgba(255,255,255,0) 60%), linear-gradient(180deg, #E0EAFC 0%, #D2E0FA 100%)",
       }}
     >
       <div className="max-w-[1200px] w-full mx-auto px-6 py-24">

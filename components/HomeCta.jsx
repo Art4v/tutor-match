@@ -61,14 +61,22 @@ export function HomeCta() {
   }, []);
 
   return (
-    <section className="snap-section flex items-center">
+    <section
+      className="snap-section flex items-center"
+      style={{
+        background:
+          "radial-gradient(60% 60% at 90% 20%, rgba(30,58,138,0.12) 0%, rgba(255,255,255,0) 60%), linear-gradient(180deg, #D2E0FA 0%, #C3D6F6 100%)",
+      }}
+    >
       <div className="max-w-[1200px] w-full mx-auto px-6 py-16">
         <div
           className="relative overflow-hidden p-10 md:p-20"
           style={{
             background:
-              "radial-gradient(80% 80% at 0% 0%, rgba(30,58,138,0.12) 0%, rgba(30,58,138,0) 60%), #FAFAFA",
-            border: "1px solid #E5E7EB",
+              "radial-gradient(80% 80% at 0% 0%, rgba(30,58,138,0.12) 0%, rgba(30,58,138,0) 60%), rgba(255,255,255,0.62)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            border: "1px solid var(--accent-line)",
             borderRadius: 24,
           }}
         >

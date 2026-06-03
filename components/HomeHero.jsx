@@ -65,7 +65,7 @@ export function HomeHero({ catalog }) {
       className="snap-section relative overflow-x-clip"
       style={{
         background:
-          "radial-gradient(55% 55% at 22% 28%, rgba(30,58,138,0.08) 0%, rgba(255,255,255,0) 100%), radial-gradient(35% 35% at 78% 72%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 100%), #ffffff",
+          "radial-gradient(55% 55% at 22% 28%, rgba(30,58,138,0.10) 0%, rgba(255,255,255,0) 100%), radial-gradient(40% 40% at 80% 70%, rgba(21,39,100,0.07) 0%, rgba(255,255,255,0) 100%), linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
       }}
     >
       {/* Faint editorial grid texture */}
