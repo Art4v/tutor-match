@@ -76,7 +76,7 @@ function LoginInner() {
           className="px-3 py-2 mb-5 text-[13px] text-red-700"
           style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
         >
-          Couldn&rsquo;t sign in with Google — please try again.
+          Couldn&rsquo;t sign in — please try again.
         </div>
       )}
 
