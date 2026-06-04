@@ -10,6 +10,7 @@ import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
+import { completionScore } from "@/lib/ranking";
 import { YEAR_MIN, YEAR_MAX, YEAR_LEVELS, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, gridToBlocks, blocksToGrid, hourLabel } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
@@ -1268,31 +1269,11 @@ export function VerificationsSection() {
    Sidebar (completion meter, visibility, public link, mini preview)
    ============================================================ */
 
-export function calcCompletion(t) {
-  const checks = [
-    { key: "Avatar uploaded", ok: !!t.avatarImg },
-    { key: "Name & tagline",   ok: !!t.name && !!t.bio },
-    { key: "Location",         ok: !!t.suburb && !!t.city },
-    { key: "Languages",        ok: (t.languages || []).length > 0 },
-    { key: "Credentials",      ok: (t.credentials || []).filter((c) => c.label).length >= 2 },
-    { key: "Long bio (300+)",  ok: (t.bioLong || "").length >= 300 },
-    { key: "Subjects (3+)",    ok: (t.subjects || []).length >= 3 },
-    { key: "Year levels",      ok: Number.isFinite(t.yearMin) && Number.isFinite(t.yearMax) },
-    { key: "Rate set",         ok: !!t.rate && t.rate > 0 },
-    { key: "1+ package",       ok: (t.packages || []).filter((p) => p.price).length >= 1 },
-    { key: "Experience",       ok: (t.experience || []).filter((e) => e.role).length >= 1 },
-    { key: "Education",        ok: (t.education || []).filter((e) => e.school).length >= 1 },
-    { key: "Availability set", ok: (t.availability || []).some((row) => row.some((c) => c === 1)) },
-    { key: "Service area",     ok: !!t.serviceArea?.suburb },
-    // Verification isn't wired up yet (see VerificationsSection), so this can
-    // never tick. Flag it `soon` so it's shown but excluded from the meter —
-    // otherwise 100% is unreachable.
-    { key: "Verified",         ok: (t.verifications || []).find((v) => v.label.toLowerCase().includes("id"))?.done === true, soon: true },
-  ];
-  const counted = checks.filter((c) => !c.soon);
-  const done = counted.filter((c) => c.ok).length;
-  return { checks, done, total: counted.length, pct: Math.round((done / counted.length) * 100) };
-}
+// The completion meter and the tutor-ordering algorithm share one definition of
+// "complete" — see lib/ranking.js (RANKING_CONFIG). `completionScore` returns the
+// same { checks, done, total, pct } shape this sidebar has always rendered, so a
+// tutor's % here is exactly what drives their rank on / and /browse.
+export const calcCompletion = completionScore;
 
 function MiniPreview({ tutor, catalog = [] }) {
   const bySlug = useMemo(() => new Map(catalog.map((s) => [s.slug, s])), [catalog]);
