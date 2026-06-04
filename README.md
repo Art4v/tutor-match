@@ -165,6 +165,7 @@ graph TD
 | `/api/auth/forgot-password` | route | `POST { email }` → `resetPasswordForEmail`. Always neutral response. |
 | `/api/places` | route | `GET ?q` → up to 6 AU suburb matches `{ label, suburb, state, postcode, lat, lng }` (Photon → Nominatim). Primary location path. |
 | `/api/geocode` | route | `GET ?q` → `{ lat, lng }` single result (Nominatim → Photon). Fallback path. |
+| `/api/ai/generate-bio` | route | `POST { kind, profile }` → AI tagline/long-bio copy via Groq. Auth-gated, 10/day per user (`consume_ai_credit` RPC). |
 | `/messages` | `app/messages/page.js` | Stub ("coming soon"); not linked from nav. |
 
 ---
@@ -183,7 +184,7 @@ npm install
 2. Copy `.env.example` → `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL` — Project Settings → API → Project URL.
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the `anon public` key. **Not** the `service_role` key (it bypasses RLS).
-3. Run every file in `supabase/migrations/` (`0001`–`0017`) **in numeric order** in the SQL Editor — they build the schema below incrementally.
+3. Run every file in `supabase/migrations/` (`0001`–`0020`) **in numeric order** in the SQL Editor — they build the schema below incrementally.
 
 Without Supabase configured, public pages render empty states and signup/login fail.
 
@@ -209,7 +210,17 @@ The OAuth client secret lives in the Supabase dashboard, not `.env.local` — th
 
 A first-time Google user carries no `role` metadata, so the `handle_new_user()` trigger (`0016`) defaults them to a confirmed tutor and takes their name from Google's `name` claim.
 
-### 5. Run
+### 5. Configure AI profile copy (Groq) — optional
+
+`/settings → About` can AI-generate a tutor's **tagline** and **long bio** from their own profile data. It runs **server-side only** through [Groq Cloud](https://console.groq.com).
+
+1. Create a Groq API key at **console.groq.com → API Keys**.
+2. Set `GROQ_API_KEY` in `.env.local` (a server secret — **no** `NEXT_PUBLIC_` prefix, never shipped to the browser). Optionally override `GROQ_MODEL` (defaults to `llama-3.3-70b-versatile`).
+3. Each tutor is capped at **10 generations/day**, enforced by the `consume_ai_credit` RPC in migration `0020` (so the limit holds across serverless instances). A failed Groq call refunds the credit.
+
+Leaving `GROQ_API_KEY` unset simply disables the feature — the button surfaces an error instead of generating.
+
+### 6. Run
 
 ```bash
 npm run dev      # http://localhost:3000

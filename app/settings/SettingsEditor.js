@@ -37,7 +37,7 @@ export function defaultTutor(userId, userEmail, fullName) {
     suburb: "",
     city: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
-    avatarBg: "oklch(0.92 0.04 80)",
+    avatarBg: "oklch(0.9 0.05 220)",
     bannerBg: null,
     avatarImg: null,
     bannerImg: null,

@@ -123,7 +123,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
  * bulleted + numbered lists). Writes the tiny markdown subset documented in
  * lib/richText.js; the public profile renders it via <RichText>.
  */
-function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false }) {
+function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false, ai }) {
   const taRef = useRef(null);
   const [focus, setFocus] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -210,6 +210,35 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
     { from: start, to: end, text, selStart: start + text.length, selEnd: start + text.length }
   ));
 
+  // ── AI generation (preview-then-accept) ───────────────────────────────────
+  // Active only when an `ai` config is passed (the About section's tagline +
+  // long-bio fields). genState: idle | loading | preview | error.
+  const [genState, setGenState] = useState("idle");
+  const [preview, setPreview] = useState("");
+  const [genError, setGenError] = useState("");
+
+  const runGenerate = async () => {
+    if (genState === "loading" || !ai) return;
+    setGenState("loading");
+    setGenError("");
+    try {
+      const text = await ai.onGenerate();
+      setPreview(maxLength ? String(text).slice(0, maxLength) : String(text));
+      setGenState("preview");
+    } catch (e) {
+      setGenError(e?.message || "Generation failed. Please try again.");
+      setGenState("error");
+    }
+  };
+  const acceptPreview = () => {
+    // Replace the whole field via execCommand so Ctrl+Z still restores the
+    // previous text (preview is pre-clamped to maxLength, so the guard passes).
+    applyEdit(({ value: v }) => ({ from: 0, to: v.length, text: preview, selStart: preview.length, selEnd: preview.length }));
+    setGenState("idle");
+    setPreview("");
+  };
+  const dismissPreview = () => { setGenState("idle"); setPreview(""); setGenError(""); };
+
   const ToolbarBtn = ({ icon, label, onClick, active }) => (
     <button
       type="button"
@@ -266,6 +295,34 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
             <ToolbarBtn icon="list-ordered" label="Numbered list" onClick={() => toggleList("ol")} />
           </>
         )}
+        {ai && (
+          <div className="ml-auto flex items-center gap-2">
+            {ai.usage && typeof ai.usage.remaining === "number" && (
+              <span className="text-[12px] text-slate-400 tabular-nums whitespace-nowrap">
+                {ai.usage.remaining}/{ai.usage.limit} left
+                {ai.usage.resetsAt && (
+                  <span className="hidden sm:inline">
+                    {" · resets "}
+                    {new Date(ai.usage.resetsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                )}
+              </span>
+            )}
+            <button
+              type="button"
+              aria-label={ai.label || "Generate with AI"}
+              title={ai.label || "Generate with AI"}
+              onMouseDown={(e) => e.preventDefault()} // keep textarea selection
+              onClick={runGenerate}
+              disabled={genState === "loading" || ai.usage?.remaining === 0}
+              className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-md text-[12.5px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors disabled:opacity-60 disabled:cursor-default"
+              style={genState === "loading" || genState === "preview" ? { background: "rgba(15,23,42,0.08)", color: "#0F172A" } : undefined}
+            >
+              <Icon name="sparkle" size={15} strokeWidth={2} />
+              {genState === "loading" ? "Generating…" : "Generate with AI"}
+            </button>
+          </div>
+        )}
       </div>
       <textarea
         ref={taRef}
@@ -285,6 +342,41 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
           letterSpacing: "-0.003em",
         }}
       />
+      {ai && genState !== "idle" && (
+        <div className="border-t border-slate-200/70 px-3 py-2.5">
+          {genState === "loading" && (
+            <div className="flex items-center gap-2 text-[13px] text-slate-500">
+              <Icon name="sparkle" size={14} strokeWidth={2} />
+              Generating…
+            </div>
+          )}
+          {genState === "error" && (
+            <div>
+              <p className="text-[13px] text-rose-600">{genError}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <Button size="sm" variant="soft" icon="sparkle" onClick={runGenerate}>Try again</Button>
+                <Button size="sm" variant="ghost" onClick={dismissPreview}>Dismiss</Button>
+              </div>
+            </div>
+          )}
+          {genState === "preview" && (
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400 mb-1.5">AI draft — preview</div>
+              <div
+                className="text-[14px] text-slate-800 whitespace-pre-wrap rounded-lg bg-white border border-slate-200 px-3 py-2"
+                style={{ lineHeight: 1.55 }}
+              >
+                {preview}
+              </div>
+              <div className="mt-2.5 flex items-center gap-2">
+                <Button size="sm" variant="dark" icon="check" onClick={acceptPreview}>Accept</Button>
+                <Button size="sm" variant="outline" icon="sparkle" onClick={runGenerate}>Regenerate</Button>
+                <Button size="sm" variant="ghost" icon="x" onClick={dismissPreview}>Dismiss</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -658,22 +750,78 @@ export function CredentialsSection({ tutor, set }) {
   );
 }
 
+// Allowlisted profile fields sent to /api/ai/generate-bio as prompt context.
+// The route re-sanitizes and resolves subject slugs to labels, so this is just
+// "send what's relevant" — anything else is dropped server-side.
+function aiProfileContext(t) {
+  return {
+    name: t.name,
+    subjects: t.subjects,
+    yearMin: t.yearMin,
+    yearMax: t.yearMax,
+    rate: t.rate,
+    yearsTutoring: t.yearsTutoring,
+    languages: t.languages,
+    credentials: t.credentials,
+    experience: t.experience,
+    education: t.education,
+    deliversInPerson: t.deliversInPerson,
+    deliversOnline: t.deliversOnline,
+    suburb: t.suburb || t.serviceArea?.suburb,
+    bio: t.bio,
+    bioLong: t.bioLong,
+  };
+}
+
 export function AboutSection({ tutor, set }) {
   const long = tutor.bioLong || "";
   const SOFT_LIMIT = 5000; // words
   const wordCount = long.trim() ? long.trim().split(/\s+/).length : 0;
   const over = wordCount > SOFT_LIMIT;
+
+  // Shared daily-generation budget (taglines + bios draw from the same 10/day).
+  const [usage, setUsage] = useState(null); // { used, limit, remaining, resetsAt }
+  useEffect(() => {
+    let active = true;
+    fetch("/api/ai/generate-bio")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active && d && typeof d.limit === "number") setUsage(d); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  // Returns the generated text (RichTextField shows it as a preview). Throwing
+  // surfaces the message in the field's preview panel.
+  const generate = async (kind) => {
+    const res = await fetch("/api/ai/generate-bio", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind, profile: aiProfileContext(tutor) }),
+    });
+    let data = {};
+    try { data = await res.json(); } catch { /* non-JSON error body */ }
+    // Both success and 429 echo the latest usage — keep the counter fresh.
+    if (typeof data.limit === "number") {
+      setUsage({ used: data.used, limit: data.limit, remaining: data.remaining, resetsAt: data.resetsAt });
+    }
+    if (!res.ok) throw new Error(data.error || "Generation failed. Please try again.");
+    return data.text || "";
+  };
+
   return (
     <Card>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
       <Field label="Tagline" hint="One line shown on your browse cards and under your profile header.">
-        <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180} placeholder="Patient, structured tutor who writes clear notes…" />
+        <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180}
+          ai={{ onGenerate: () => generate("tagline"), label: "Generate tagline with AI", usage }}
+          placeholder="Patient, structured tutor who writes clear notes…" />
       </Field>
       <div className="mt-5">
         <Field label="Long bio"
           error={over ? `${wordCount - SOFT_LIMIT} words over the soft limit — consider trimming.` : null}
           hint={!over ? `${wordCount} / ${SOFT_LIMIT} words` : null}>
           <RichTextField rows={8} value={long} onChange={(v) => set({ bioLong: v })} lists
+            ai={{ onGenerate: () => generate("bio"), label: "Generate bio with AI", usage }}
             placeholder="Tell students about your teaching approach…" />
         </Field>
       </div>
