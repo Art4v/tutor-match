@@ -202,7 +202,7 @@ export function TopNav() {
                 <Button variant="ghost" size="sm">Log in</Button>
               </Link>
               <Link href="/signup">
-                <Button variant="primary" size="sm">Sign Up</Button>
+                <Button variant="primary" size="sm" glow>Sign Up</Button>
               </Link>
             </>
           )}

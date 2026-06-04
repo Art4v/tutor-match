@@ -275,3 +275,27 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Attention-grabbing glow for the landing-page Sign Up CTA. A continuously
+   pulsing accent halo so the button stands out strongly against the white nav.
+   Opt-in via the Button `glow` prop. */
+@keyframes cta-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px 1px rgba(21, 39, 100, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 16px 3px rgba(21, 39, 100, 0.38);
+  }
+}
+.cta-glow {
+  animation: cta-glow-pulse 3.4s ease-in-out infinite;
+}
+.cta-glow:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow {
+    animation: none;
+    box-shadow: 0 0 12px 2px rgba(21, 39, 100, 0.3);
+  }
+}
