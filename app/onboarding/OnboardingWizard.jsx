@@ -54,22 +54,22 @@ const STEPS = [
     key: "identity",
     requireName: true,
     isAnswered: (t) => hasText(t.name),
-    render: ({ tutor, set }) => <IdentitySection tutor={tutor} set={set} />,
+    render: ({ tutor, set }) => (
+      <div className="space-y-5">
+        <IdentitySection tutor={tutor} set={set} />
+        <RateSection tutor={tutor} set={set} />
+      </div>
+    ),
   },
   {
     key: "subjects",
-    isAnswered: (t) => (t.subjects?.length ?? 0) > 0,
-    render: ({ tutor, set, catalog }) => <SubjectsSection tutor={tutor} set={set} catalog={catalog} />,
-  },
-  {
-    key: "years",
-    isAnswered: (t) => t.yearMin !== 7 || t.yearMax !== 12,
-    render: ({ tutor, set }) => <YearLevelsSection tutor={tutor} set={set} />,
-  },
-  {
-    key: "rate",
-    isAnswered: (t) => Number(t.rate) > 0 || (t.packages?.length ?? 0) > 0,
-    render: ({ tutor, set }) => <RateSection tutor={tutor} set={set} />,
+    isAnswered: (t) => (t.subjects?.length ?? 0) > 0 || t.yearMin !== 7 || t.yearMax !== 12,
+    render: ({ tutor, set, catalog }) => (
+      <div className="space-y-5">
+        <SubjectsSection tutor={tutor} set={set} catalog={catalog} />
+        <YearLevelsSection tutor={tutor} set={set} />
+      </div>
+    ),
   },
   {
     key: "about",
@@ -88,13 +88,15 @@ const STEPS = [
   },
   {
     key: "credentials",
-    isAnswered: (t) => (t.credentials ?? []).some((c) => hasText(c?.label)),
-    render: ({ tutor, set }) => <CredentialsSection tutor={tutor} set={set} />,
-  },
-  {
-    key: "experience",
-    isAnswered: (t) => (t.experience ?? []).some((e) => hasText(e?.role) || hasText(e?.org) || hasText(e?.note)),
-    render: ({ tutor, set }) => <ExperienceSection tutor={tutor} set={set} />,
+    isAnswered: (t) =>
+      (t.credentials ?? []).some((c) => hasText(c?.label)) ||
+      (t.experience ?? []).some((e) => hasText(e?.role) || hasText(e?.org) || hasText(e?.note)),
+    render: ({ tutor, set }) => (
+      <div className="space-y-5">
+        <CredentialsSection tutor={tutor} set={set} />
+        <ExperienceSection tutor={tutor} set={set} />
+      </div>
+    ),
   },
   {
     key: "education",
