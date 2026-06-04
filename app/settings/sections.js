@@ -32,8 +32,13 @@ export const AVATAR_SWATCHES = [
 ];
 
 export const LANGUAGE_SUGGESTIONS = [
-  "English", "Vietnamese", "Mandarin", "Cantonese", "Korean", "Japanese",
-  "Spanish", "French", "Hindi", "Arabic",
+  "English", "Hindi", "Mandarin", "Vietnamese", "Japanese", "Tamil",
+  "Cantonese", "Korean", "Punjabi", "Urdu", "Bengali", "Nepali",
+  "Telugu", "Malayalam", "Kannada", "Gujarati", "Marathi", "Sinhala",
+  "Arabic", "Spanish", "French", "German", "Italian", "Greek",
+  "Portuguese", "Russian", "Indonesian", "Thai", "Filipino (Tagalog)",
+  "Turkish", "Persian (Farsi)", "Malay", "Dutch", "Polish",
+  "Auslan",
 ];
 
 export const RESPONSE_OPTIONS = [
@@ -108,7 +113,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
           letterSpacing: "-0.003em",
         }}
       />
-      {suffix && <span className="flex items-center pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
+      {suffix && <span className="flex items-center whitespace-nowrap pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
     </div>
   );
 }
@@ -579,7 +584,7 @@ export function IdentitySection({ tutor, set }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Full name" hint="Use the name that matches your government ID." error={nameError}><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
         <Field label="Years tutoring">
-          <TextInput value={tutor.yearsTutoring} onChange={(v) => set({ yearsTutoring: Number(v.replace(/\D/g, "")) || 0 })} suffix="yrs" />
+          <TextInput value={tutor.yearsTutoring || ""} onChange={(v) => set({ yearsTutoring: Number(v.replace(/\D/g, "")) || 0 })} suffix="yrs" placeholder="3" inputMode="numeric" />
         </Field>
       </div>
       <div className="mt-4">
@@ -688,7 +693,7 @@ export function RateSection({ tutor, set }) {
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add package</Button>} />
       <Field label="Hourly rate">
         <div className="max-w-[200px]">
-          <TextInput value={tutor.rate} onChange={(v) => set({ rate: Number(v.replace(/\D/g, "")) || 0 })} prefix="$" suffix="/ hr" />
+          <TextInput value={tutor.rate || ""} onChange={(v) => set({ rate: Number(v.replace(/\D/g, "")) || 0 })} prefix="$" suffix="/ hr" placeholder="40" inputMode="numeric" />
         </div>
       </Field>
       <div className="mt-5">
@@ -776,27 +781,33 @@ export function SubjectsSection({ tutor, set, catalog }) {
 }
 
 export function YearLevelsSection({ tutor, set }) {
-  // Clamp so the range stays valid (min ≤ max) as either slider moves.
+  // Single dual-handle slider. Clamp each handle against the other so the range
+  // stays valid (min ≤ max) without one handle pushing the other.
   const min = Number.isFinite(tutor.yearMin) ? tutor.yearMin : 7;
   const max = Number.isFinite(tutor.yearMax) ? tutor.yearMax : 12;
-  const setMin = (v) => { const n = Number(v); set({ yearMin: n, yearMax: Math.max(n, max) }); };
-  const setMax = (v) => { const n = Number(v); set({ yearMax: n, yearMin: Math.min(n, min) }); };
+  const setMin = (v) => set({ yearMin: Math.min(Number(v), max) });
+  const setMax = (v) => set({ yearMax: Math.max(Number(v), min) });
+  const span = (YEAR_MAX - YEAR_MIN) || 1;
+  const minPct = ((min - YEAR_MIN) / span) * 100;
+  const maxPct = ((max - YEAR_MIN) / span) * 100;
   return (
     <Card>
       <SectionHeader title="Year levels" subtitle="The range of year groups you'll tutor — students filter on this." />
       <Field label="Year range" hint={`You tutor ${yearRangeLabel(min, max)}.`}>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="text-[12px] text-slate-500 w-10 shrink-0">From</span>
-            <input type="range" min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
-              onChange={(e) => setMin(e.target.value)} className="flex-1 accent-slate-900" />
-            <span className="text-[13.5px] tabular-nums font-medium text-slate-900 w-24 text-right">{yearLabel(min)}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[12px] text-slate-500 w-10 shrink-0">To</span>
-            <input type="range" min={YEAR_MIN} max={YEAR_MAX} step={1} value={max}
-              onChange={(e) => setMax(e.target.value)} className="flex-1 accent-slate-900" />
-            <span className="text-[13.5px] tabular-nums font-medium text-slate-900 w-24 text-right">{yearLabel(max)}</span>
+        <div className="relative pt-8 pb-1">
+          {/* Floating value labels that track each handle (clamped in-bounds via
+              the translateX(-pct%) trick so the ends don't overflow the card). */}
+          <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
+            style={{ left: `${minPct}%`, transform: `translateX(-${minPct}%)` }}>{yearLabel(min)}</span>
+          <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
+            style={{ left: `${maxPct}%`, transform: `translateX(-${maxPct}%)` }}>{yearLabel(max)}</span>
+          <div className="relative h-4">
+            <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 5, borderRadius: 999, background: "#E5E7EB", zIndex: 1 }} />
+            <div className="absolute" style={{ top: "50%", transform: "translateY(-50%)", height: 5, borderRadius: 999, background: "var(--accent)", left: `${minPct}%`, right: `${100 - maxPct}%`, zIndex: 2 }} />
+            <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
+              onChange={(e) => setMin(e.target.value)} aria-label="Lowest year level" />
+            <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={max}
+              onChange={(e) => setMax(e.target.value)} aria-label="Highest year level" />
           </div>
         </div>
       </Field>
@@ -882,7 +893,7 @@ export function ServiceAreaSection({ tutor, set }) {
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5">
         <div>
-          <Field label="Base suburb" hint="Start typing any Australian suburb and pick from the list.">
+          <Field label="Base suburb" hint="Type the full suburb name, then wait a couple of seconds for the list to load — the lookup can be slow — and pick your suburb.">
             <SuburbAutocomplete variant="box" value={sa.suburb || ""} placeholder="Chatswood" onSelect={onPick} onClear={onClearSuburb} />
           </Field>
           <div className="mt-4">
