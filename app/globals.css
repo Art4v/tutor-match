@@ -281,10 +281,10 @@ input[type="number"] {
    Opt-in via the Button `glow` prop. */
 @keyframes cta-glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 8px 1px rgba(21, 39, 100, 0.22);
+    box-shadow: 0 0 9px 1px rgba(21, 39, 100, 0.28);
   }
   50% {
-    box-shadow: 0 0 16px 3px rgba(21, 39, 100, 0.38);
+    box-shadow: 0 0 20px 4px rgba(21, 39, 100, 0.5);
   }
 }
 .cta-glow {

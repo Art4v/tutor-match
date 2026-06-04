@@ -39,7 +39,6 @@ export default async function BrowsePage({ searchParams }) {
     .map(Number)
     .filter((n) => Number.isFinite(n));
   const modes = asArray(searchParams.mode);
-  const sort = (searchParams.sort ?? "relevance").toString();
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
 
   const [{ tutors, total }, subjectCatalog] = await Promise.all([
@@ -53,7 +52,6 @@ export default async function BrowsePage({ searchParams }) {
       rateMax,
       yearLevels,
       modes,
-      sort,
       page,
       pageSize: PAGE_SIZE,
     }),
@@ -72,7 +70,6 @@ export default async function BrowsePage({ searchParams }) {
     atarMin,
     rateMax,
     yearLevels,
-    sort,
   };
 
   return (

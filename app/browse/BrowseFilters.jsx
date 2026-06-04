@@ -298,7 +298,7 @@ export function BrowseSortAndChips({ filters, catalog }) {
     subjectLabel((catalog ?? []).find((s) => s.slug === slug) ?? { name: slug });
 
   return (
-    <div className="flex items-center justify-between mb-5">
+    <div className="mb-5">
       <div className="flex flex-wrap gap-1.5">
         {filters.name && (
           <Chip onClick={() => pushParams((p) => p.delete("name"))} icon="x">
@@ -329,23 +329,6 @@ export function BrowseSortAndChips({ filters, catalog }) {
           </Chip>
         )}
       </div>
-      <label className="flex items-center gap-2 text-[13px] text-slate-500">
-        Sort:
-        <select
-          value={filters.sort ?? "relevance"}
-          onChange={(e) => pushParams((p) => {
-            if (!e.target.value || e.target.value === "relevance") p.delete("sort");
-            else p.set("sort", e.target.value);
-          })}
-          className="h-8 px-2.5 outline-none text-[13px] text-slate-900"
-          style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}
-        >
-          <option value="relevance">Most relevant</option>
-          <option value="rating">Highest rated</option>
-          <option value="rate-asc">Lowest rate</option>
-          <option value="newest">Most reviewed</option>
-        </select>
-      </label>
     </div>
   );
 }
