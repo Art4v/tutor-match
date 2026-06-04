@@ -10,7 +10,7 @@ import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
-import { YEAR_MIN, YEAR_MAX, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
+import { YEAR_MIN, YEAR_MAX, YEAR_LEVELS, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, gridToBlocks, blocksToGrid, hourLabel } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 import { ImageCropModal } from "@/components/ImageCropModal";
@@ -802,12 +802,24 @@ export function YearLevelsSection({ tutor, set }) {
           <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
             style={{ left: `${maxPct}%`, transform: `translateX(-${maxPct}%)` }}>{yearLabel(max)}</span>
           <div className="relative h-4">
-            <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 5, borderRadius: 999, background: "#E5E7EB", zIndex: 1 }} />
-            <div className="absolute" style={{ top: "50%", transform: "translateY(-50%)", height: 5, borderRadius: 999, background: "var(--accent)", left: `${minPct}%`, right: `${100 - maxPct}%`, zIndex: 2 }} />
+            <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "#E5E7EB", zIndex: 1 }} />
+            <div className="absolute" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "var(--accent)", left: `${minPct}%`, right: `${100 - maxPct}%`, zIndex: 2 }} />
             <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
               onChange={(e) => setMin(e.target.value)} aria-label="Lowest year level" />
             <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={max}
               onChange={(e) => setMax(e.target.value)} aria-label="Highest year level" />
+          </div>
+          {/* K–12 reference scale; ticks inside the selected range light up. */}
+          <div className="flex justify-between mt-2.5">
+            {YEAR_LEVELS.map((y) => {
+              const inRange = y.value >= min && y.value <= max;
+              return (
+                <span key={y.value} className="text-[11px] tabular-nums"
+                  style={{ color: inRange ? "var(--accent)" : "#94A3B8", fontWeight: inRange ? 600 : 400 }}>
+                  {y.short}
+                </span>
+              );
+            })}
           </div>
         </div>
       </Field>
@@ -1152,6 +1164,10 @@ function MiniPreview({ tutor, catalog = [] }) {
     credentials: (tutor.credentials || []).filter((c) => c?.label),
     rate: tutor.rate || 0,
     slug: tutor.slug || "preview",
+    // Match tutorRowToCard: the card shows the first school by position.
+    school: (tutor.education || [])
+      .slice()
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0]?.school || "",
   }), [tutor, bySlug]);
   // pointer-events disabled so clicking the preview doesn't navigate; the
   // hover animation also pauses, which is the right call for a preview.

@@ -79,9 +79,14 @@ export function SubjectPicker({
   }, []);
 
   const activeGroup = groups.find((g) => g.code === activeExam) ?? groups[0] ?? null;
-  const filtered = (activeGroup?.subjects ?? []).filter(
-    (s) => !search || s.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // When there's a query, search the ENTIRE catalog (across every exam), not
+  // just the active exam tab. With no query we fall back to the active tab's
+  // subjects so the exam chips still drive browsing.
+  const q = search.trim().toLowerCase();
+  const searching = q.length > 0;
+  const filtered = searching
+    ? catalog.filter((s) => subjectLabel(s).toLowerCase().includes(q))
+    : (activeGroup?.subjects ?? []);
 
   const isSelected = (slug) => selected.includes(slug);
 
@@ -190,6 +195,19 @@ export function SubjectPicker({
             boxShadow: "0 10px 24px -8px rgba(15,23,42,0.18)",
           }}
         >
+          {/* Search */}
+          <div className="p-2.5" style={{ borderBottom: "1px solid #F1F5F9" }}>
+            <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "#FAFAFA", borderRadius: 8 }}>
+              <Icon name="search" size={13} className="text-slate-400 shrink-0" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search all subjects"
+                className="w-full bg-transparent outline-none text-[13px] text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
           {/* Exam selector */}
           <div className="flex flex-wrap gap-1.5 p-2.5" style={{ borderBottom: "1px solid #F1F5F9" }}>
             {groups.map((g) => {
@@ -213,21 +231,8 @@ export function SubjectPicker({
             })}
           </div>
 
-          {/* Search */}
-          <div className="p-2.5" style={{ borderBottom: "1px solid #F1F5F9" }}>
-            <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "#FAFAFA", borderRadius: 8 }}>
-              <Icon name="search" size={13} className="text-slate-400 shrink-0" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activeGroup ? examLabel(activeGroup) : ""} subjects`}
-                className="w-full bg-transparent outline-none text-[13px] text-slate-900 placeholder:text-slate-400"
-              />
-            </div>
-          </div>
-
           {/* Subject list */}
-          <div className="max-h-[240px] overflow-y-auto py-1">
+          <div className="max-h-[240px] overflow-y-auto overscroll-contain py-1" data-lenis-prevent>
             {filtered.length === 0 ? (
               <div className="px-3 py-4 text-[13px] text-slate-400">No matching subjects</div>
             ) : (
@@ -253,7 +258,7 @@ export function SubjectPicker({
                         {sel && <Icon name="check" size={11} strokeWidth={3} className="text-white" />}
                       </span>
                     )}
-                    <span className="truncate">{s.name}</span>
+                    <span className="truncate">{searching ? subjectLabel(s) : s.name}</span>
                   </button>
                 );
               })

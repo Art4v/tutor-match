@@ -217,28 +217,39 @@ input[type="range"]::-moz-range-thumb {
    year-level range). The inputs are transparent and non-interactive except for
    their thumbs, so both handles stay grabbable; the visual track + accent fill
    are drawn by sibling divs in the component. */
-.dual-range {
+/* NOTE: selectors are qualified with input[type="range"] so they outweigh the
+   generic `input[type="range"]` rule above (an attribute selector beats a bare
+   class). Without this the native track keeps its #E5E7EB background and paints
+   a second grey bar on top of the component's track/fill divs. */
+input[type="range"].dual-range {
   position: absolute;
   left: 0;
   top: 50%;
   transform: translateY(-50%);
   width: 100%;
-  height: 4px;
+  height: 16px;
   margin: 0;
   background: transparent;
   pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
-.dual-range::-webkit-slider-runnable-track { background: transparent; border: none; }
-.dual-range::-moz-range-track { background: transparent; border: none; }
+input[type="range"].dual-range::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+}
+input[type="range"].dual-range::-moz-range-track { background: transparent; border: none; }
+input[type="range"].dual-range::-moz-range-progress { background: transparent; }
 /* White-ringed accent handles — legible on both the grey rail and the navy
    fill. Higher specificity than the generic range-thumb rule above so the
    colour + ring win. */
 input[type="range"].dual-range::-webkit-slider-thumb {
   pointer-events: auto;
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   background: var(--accent);
   border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
   transition: box-shadow 140ms ease;
 }
 input[type="range"].dual-range::-webkit-slider-thumb:hover {
@@ -246,10 +257,10 @@ input[type="range"].dual-range::-webkit-slider-thumb:hover {
 }
 input[type="range"].dual-range::-moz-range-thumb {
   pointer-events: auto;
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   background: var(--accent);
   border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
 }
 
 /* Hide the up/down spin buttons on number inputs. Typing stays numeric-only;

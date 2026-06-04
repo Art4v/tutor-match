@@ -60,7 +60,7 @@ export function defaultTutor(userId, userEmail, fullName) {
     experience: [],
     education: [],
     subjects: [],
-    yearMin: 7,
+    yearMin: 0,
     yearMax: 12,
     serviceArea: { suburb: "", radiusKm: 5 },
     availability: buildInitialAvailability(),
