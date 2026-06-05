@@ -31,10 +31,10 @@ function DeliveryCard({ tutor, set }) {
       <h3 className="text-[16px] font-semibold text-slate-900">How do you teach?</h3>
       <p className="text-[13.5px] text-slate-500 mt-1 mb-4">Pick the lesson formats you offer — you can change these later.</p>
       <div className="flex flex-wrap gap-2.5">
-        <Chip tone="line" icon="map-pin" active={inPerson} onClick={() => set({ deliversInPerson: !inPerson })}>
+        <Chip tone="grey" icon="map-pin" active={inPerson} onClick={() => set({ deliversInPerson: !inPerson })}>
           In person
         </Chip>
-        <Chip tone="line" icon="globe" active={online} onClick={() => set({ deliversOnline: !online })}>
+        <Chip tone="grey" icon="globe" active={online} onClick={() => set({ deliversOnline: !online })}>
           Online
         </Chip>
       </div>

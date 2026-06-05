@@ -1054,7 +1054,7 @@ export function ServiceAreaSection({ tutor, set }) {
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5">
         <div>
-          <Field label="Base suburb" hint="Type the full suburb name, then wait a couple of seconds for the list to load — the lookup can be slow — and pick your suburb.">
+          <Field label="Base suburb" hint="Type the full suburb name, then wait a couple of seconds for the list to load (the lookup can be slow) and pick your suburb.">
             <SuburbAutocomplete variant="box" value={sa.suburb || ""} placeholder="Chatswood" onSelect={onPick} onClear={onClearSuburb} />
           </Field>
           <div className="mt-4">
