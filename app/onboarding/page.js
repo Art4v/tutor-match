@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorProfileForEditor } from "@/lib/supabase/tutors";
-import { SettingsEditor } from "./SettingsEditor";
+import { OnboardingWizard } from "./OnboardingWizard";
 
-export const metadata = { title: "Settings — matchtutor" };
+export const metadata = { title: "Welcome — matchtutor" };
 
-export default async function SettingsPage() {
+export default async function OnboardingPage() {
   const supabase = createSupabaseServerClient();
   const {
     data: { user },
@@ -15,13 +15,11 @@ export default async function SettingsPage() {
 
   const initialTutor = await getTutorProfileForEditor(supabase, user.id);
 
-  // First-time tutors are greeted by the onboarding questionnaire before they
-  // see the full editor. Both auth flows funnel here (OAuth lands on /settings;
-  // email signup → /login → /settings), so this is the single interception point.
-  if (initialTutor && !initialTutor.onboarded) redirect("/onboarding");
+  // Already onboarded (or an existing/backfilled tutor) — skip the questionnaire.
+  if (initialTutor?.onboarded) redirect("/settings");
 
   return (
-    <SettingsEditor
+    <OnboardingWizard
       initialTutor={initialTutor}
       userId={user.id}
       userEmail={user.email}

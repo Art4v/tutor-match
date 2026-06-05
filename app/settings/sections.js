@@ -10,7 +10,8 @@ import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { subjectLabel } from "@/lib/subjects";
-import { YEAR_MIN, YEAR_MAX, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
+import { completionScore } from "@/lib/ranking";
+import { YEAR_MIN, YEAR_MAX, YEAR_LEVELS, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
 import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, gridToBlocks, blocksToGrid, hourLabel } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 import { ImageCropModal } from "@/components/ImageCropModal";
@@ -32,8 +33,13 @@ export const AVATAR_SWATCHES = [
 ];
 
 export const LANGUAGE_SUGGESTIONS = [
-  "English", "Vietnamese", "Mandarin", "Cantonese", "Korean", "Japanese",
-  "Spanish", "French", "Hindi", "Arabic",
+  "English", "Hindi", "Mandarin", "Vietnamese", "Japanese", "Tamil",
+  "Cantonese", "Korean", "Punjabi", "Urdu", "Bengali", "Nepali",
+  "Telugu", "Malayalam", "Kannada", "Gujarati", "Marathi", "Sinhala",
+  "Arabic", "Spanish", "French", "German", "Italian", "Greek",
+  "Portuguese", "Russian", "Indonesian", "Thai", "Filipino (Tagalog)",
+  "Turkish", "Persian (Farsi)", "Malay", "Dutch", "Polish",
+  "Auslan",
 ];
 
 export const RESPONSE_OPTIONS = [
@@ -108,7 +114,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
           letterSpacing: "-0.003em",
         }}
       />
-      {suffix && <span className="flex items-center pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
+      {suffix && <span className="flex items-center whitespace-nowrap pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
     </div>
   );
 }
@@ -118,7 +124,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
  * bulleted + numbered lists). Writes the tiny markdown subset documented in
  * lib/richText.js; the public profile renders it via <RichText>.
  */
-function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false }) {
+function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false, ai }) {
   const taRef = useRef(null);
   const [focus, setFocus] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -205,6 +211,35 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
     { from: start, to: end, text, selStart: start + text.length, selEnd: start + text.length }
   ));
 
+  // ── AI generation (preview-then-accept) ───────────────────────────────────
+  // Active only when an `ai` config is passed (the About section's tagline +
+  // long-bio fields). genState: idle | loading | preview | error.
+  const [genState, setGenState] = useState("idle");
+  const [preview, setPreview] = useState("");
+  const [genError, setGenError] = useState("");
+
+  const runGenerate = async () => {
+    if (genState === "loading" || !ai) return;
+    setGenState("loading");
+    setGenError("");
+    try {
+      const text = await ai.onGenerate();
+      setPreview(maxLength ? String(text).slice(0, maxLength) : String(text));
+      setGenState("preview");
+    } catch (e) {
+      setGenError(e?.message || "Generation failed. Please try again.");
+      setGenState("error");
+    }
+  };
+  const acceptPreview = () => {
+    // Replace the whole field via execCommand so Ctrl+Z still restores the
+    // previous text (preview is pre-clamped to maxLength, so the guard passes).
+    applyEdit(({ value: v }) => ({ from: 0, to: v.length, text: preview, selStart: preview.length, selEnd: preview.length }));
+    setGenState("idle");
+    setPreview("");
+  };
+  const dismissPreview = () => { setGenState("idle"); setPreview(""); setGenError(""); };
+
   const ToolbarBtn = ({ icon, label, onClick, active }) => (
     <button
       type="button"
@@ -261,6 +296,34 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
             <ToolbarBtn icon="list-ordered" label="Numbered list" onClick={() => toggleList("ol")} />
           </>
         )}
+        {ai && (
+          <div className="ml-auto flex items-center gap-2">
+            {ai.usage && typeof ai.usage.remaining === "number" && (
+              <span className="text-[12px] text-slate-400 tabular-nums whitespace-nowrap">
+                {ai.usage.remaining}/{ai.usage.limit} left
+                {ai.usage.resetsAt && (
+                  <span className="hidden sm:inline">
+                    {" · resets "}
+                    {new Date(ai.usage.resetsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                )}
+              </span>
+            )}
+            <button
+              type="button"
+              aria-label={ai.label || "Generate with AI"}
+              title={ai.label || "Generate with AI"}
+              onMouseDown={(e) => e.preventDefault()} // keep textarea selection
+              onClick={runGenerate}
+              disabled={genState === "loading" || ai.usage?.remaining === 0}
+              className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-md text-[12.5px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors disabled:opacity-60 disabled:cursor-default"
+              style={genState === "loading" || genState === "preview" ? { background: "rgba(15,23,42,0.08)", color: "#0F172A" } : undefined}
+            >
+              <Icon name="sparkle" size={15} strokeWidth={2} />
+              {genState === "loading" ? "Generating…" : "Generate with AI"}
+            </button>
+          </div>
+        )}
       </div>
       <textarea
         ref={taRef}
@@ -280,6 +343,41 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
           letterSpacing: "-0.003em",
         }}
       />
+      {ai && genState !== "idle" && (
+        <div className="border-t border-slate-200/70 px-3 py-2.5">
+          {genState === "loading" && (
+            <div className="flex items-center gap-2 text-[13px] text-slate-500">
+              <Icon name="sparkle" size={14} strokeWidth={2} />
+              Generating…
+            </div>
+          )}
+          {genState === "error" && (
+            <div>
+              <p className="text-[13px] text-rose-600">{genError}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <Button size="sm" variant="soft" icon="sparkle" onClick={runGenerate}>Try again</Button>
+                <Button size="sm" variant="ghost" onClick={dismissPreview}>Dismiss</Button>
+              </div>
+            </div>
+          )}
+          {genState === "preview" && (
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400 mb-1.5">AI draft — preview</div>
+              <div
+                className="text-[14px] text-slate-800 whitespace-pre-wrap rounded-lg bg-white border border-slate-200 px-3 py-2"
+                style={{ lineHeight: 1.55 }}
+              >
+                {preview}
+              </div>
+              <div className="mt-2.5 flex items-center gap-2">
+                <Button size="sm" variant="dark" icon="check" onClick={acceptPreview}>Accept</Button>
+                <Button size="sm" variant="outline" icon="sparkle" onClick={runGenerate}>Regenerate</Button>
+                <Button size="sm" variant="ghost" icon="x" onClick={dismissPreview}>Dismiss</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -579,7 +677,7 @@ export function IdentitySection({ tutor, set }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Full name" hint="Use the name that matches your government ID." error={nameError}><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
         <Field label="Years tutoring">
-          <TextInput value={tutor.yearsTutoring} onChange={(v) => set({ yearsTutoring: Number(v.replace(/\D/g, "")) || 0 })} suffix="yrs" />
+          <TextInput value={tutor.yearsTutoring || ""} onChange={(v) => set({ yearsTutoring: Number(v.replace(/\D/g, "")) || 0 })} suffix="yrs" placeholder="3" inputMode="numeric" />
         </Field>
       </div>
       <div className="mt-4">
@@ -653,22 +751,78 @@ export function CredentialsSection({ tutor, set }) {
   );
 }
 
+// Allowlisted profile fields sent to /api/ai/generate-bio as prompt context.
+// The route re-sanitizes and resolves subject slugs to labels, so this is just
+// "send what's relevant" — anything else is dropped server-side.
+function aiProfileContext(t) {
+  return {
+    name: t.name,
+    subjects: t.subjects,
+    yearMin: t.yearMin,
+    yearMax: t.yearMax,
+    rate: t.rate,
+    yearsTutoring: t.yearsTutoring,
+    languages: t.languages,
+    credentials: t.credentials,
+    experience: t.experience,
+    education: t.education,
+    deliversInPerson: t.deliversInPerson,
+    deliversOnline: t.deliversOnline,
+    suburb: t.suburb || t.serviceArea?.suburb,
+    bio: t.bio,
+    bioLong: t.bioLong,
+  };
+}
+
 export function AboutSection({ tutor, set }) {
   const long = tutor.bioLong || "";
   const SOFT_LIMIT = 5000; // words
   const wordCount = long.trim() ? long.trim().split(/\s+/).length : 0;
   const over = wordCount > SOFT_LIMIT;
+
+  // Shared daily-generation budget (taglines + bios draw from the same 10/day).
+  const [usage, setUsage] = useState(null); // { used, limit, remaining, resetsAt }
+  useEffect(() => {
+    let active = true;
+    fetch("/api/ai/generate-bio")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active && d && typeof d.limit === "number") setUsage(d); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  // Returns the generated text (RichTextField shows it as a preview). Throwing
+  // surfaces the message in the field's preview panel.
+  const generate = async (kind) => {
+    const res = await fetch("/api/ai/generate-bio", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind, profile: aiProfileContext(tutor) }),
+    });
+    let data = {};
+    try { data = await res.json(); } catch { /* non-JSON error body */ }
+    // Both success and 429 echo the latest usage — keep the counter fresh.
+    if (typeof data.limit === "number") {
+      setUsage({ used: data.used, limit: data.limit, remaining: data.remaining, resetsAt: data.resetsAt });
+    }
+    if (!res.ok) throw new Error(data.error || "Generation failed. Please try again.");
+    return data.text || "";
+  };
+
   return (
     <Card>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
       <Field label="Tagline" hint="One line shown on your browse cards and under your profile header.">
-        <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180} placeholder="Patient, structured tutor who writes clear notes…" />
+        <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180}
+          ai={{ onGenerate: () => generate("tagline"), label: "Generate tagline with AI", usage }}
+          placeholder="Patient, structured tutor who writes clear notes…" />
       </Field>
       <div className="mt-5">
         <Field label="Long bio"
           error={over ? `${wordCount - SOFT_LIMIT} words over the soft limit — consider trimming.` : null}
           hint={!over ? `${wordCount} / ${SOFT_LIMIT} words` : null}>
           <RichTextField rows={8} value={long} onChange={(v) => set({ bioLong: v })} lists
+            ai={{ onGenerate: () => generate("bio"), label: "Generate bio with AI", usage }}
             placeholder="Tell students about your teaching approach…" />
         </Field>
       </div>
@@ -688,7 +842,7 @@ export function RateSection({ tutor, set }) {
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add package</Button>} />
       <Field label="Hourly rate">
         <div className="max-w-[200px]">
-          <TextInput value={tutor.rate} onChange={(v) => set({ rate: Number(v.replace(/\D/g, "")) || 0 })} prefix="$" suffix="/ hr" />
+          <TextInput value={tutor.rate || ""} onChange={(v) => set({ rate: Number(v.replace(/\D/g, "")) || 0 })} prefix="$" suffix="/ hr" placeholder="40" inputMode="numeric" />
         </div>
       </Field>
       <div className="mt-5">
@@ -776,27 +930,45 @@ export function SubjectsSection({ tutor, set, catalog }) {
 }
 
 export function YearLevelsSection({ tutor, set }) {
-  // Clamp so the range stays valid (min ≤ max) as either slider moves.
+  // Single dual-handle slider. Clamp each handle against the other so the range
+  // stays valid (min ≤ max) without one handle pushing the other.
   const min = Number.isFinite(tutor.yearMin) ? tutor.yearMin : 7;
   const max = Number.isFinite(tutor.yearMax) ? tutor.yearMax : 12;
-  const setMin = (v) => { const n = Number(v); set({ yearMin: n, yearMax: Math.max(n, max) }); };
-  const setMax = (v) => { const n = Number(v); set({ yearMax: n, yearMin: Math.min(n, min) }); };
+  const setMin = (v) => set({ yearMin: Math.min(Number(v), max) });
+  const setMax = (v) => set({ yearMax: Math.max(Number(v), min) });
+  const span = (YEAR_MAX - YEAR_MIN) || 1;
+  const minPct = ((min - YEAR_MIN) / span) * 100;
+  const maxPct = ((max - YEAR_MIN) / span) * 100;
   return (
     <Card>
       <SectionHeader title="Year levels" subtitle="The range of year groups you'll tutor — students filter on this." />
       <Field label="Year range" hint={`You tutor ${yearRangeLabel(min, max)}.`}>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="text-[12px] text-slate-500 w-10 shrink-0">From</span>
-            <input type="range" min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
-              onChange={(e) => setMin(e.target.value)} className="flex-1 accent-slate-900" />
-            <span className="text-[13.5px] tabular-nums font-medium text-slate-900 w-24 text-right">{yearLabel(min)}</span>
+        <div className="relative pt-8 pb-1">
+          {/* Floating value labels that track each handle (clamped in-bounds via
+              the translateX(-pct%) trick so the ends don't overflow the card). */}
+          <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
+            style={{ left: `${minPct}%`, transform: `translateX(-${minPct}%)` }}>{yearLabel(min)}</span>
+          <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
+            style={{ left: `${maxPct}%`, transform: `translateX(-${maxPct}%)` }}>{yearLabel(max)}</span>
+          <div className="relative h-4">
+            <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "#E5E7EB", zIndex: 1 }} />
+            <div className="absolute" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "var(--accent)", left: `${minPct}%`, right: `${100 - maxPct}%`, zIndex: 2 }} />
+            <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
+              onChange={(e) => setMin(e.target.value)} aria-label="Lowest year level" />
+            <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={max}
+              onChange={(e) => setMax(e.target.value)} aria-label="Highest year level" />
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[12px] text-slate-500 w-10 shrink-0">To</span>
-            <input type="range" min={YEAR_MIN} max={YEAR_MAX} step={1} value={max}
-              onChange={(e) => setMax(e.target.value)} className="flex-1 accent-slate-900" />
-            <span className="text-[13.5px] tabular-nums font-medium text-slate-900 w-24 text-right">{yearLabel(max)}</span>
+          {/* K–12 reference scale; ticks inside the selected range light up. */}
+          <div className="flex justify-between mt-2.5">
+            {YEAR_LEVELS.map((y) => {
+              const inRange = y.value >= min && y.value <= max;
+              return (
+                <span key={y.value} className="text-[11px] tabular-nums"
+                  style={{ color: inRange ? "var(--accent)" : "#94A3B8", fontWeight: inRange ? 600 : 400 }}>
+                  {y.short}
+                </span>
+              );
+            })}
           </div>
         </div>
       </Field>
@@ -882,7 +1054,7 @@ export function ServiceAreaSection({ tutor, set }) {
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5">
         <div>
-          <Field label="Base suburb" hint="Start typing any Australian suburb and pick from the list.">
+          <Field label="Base suburb" hint="Type the full suburb name, then wait a couple of seconds for the list to load — the lookup can be slow — and pick your suburb.">
             <SuburbAutocomplete variant="box" value={sa.suburb || ""} placeholder="Chatswood" onSelect={onPick} onClear={onClearSuburb} />
           </Field>
           <div className="mt-4">
@@ -1097,31 +1269,11 @@ export function VerificationsSection() {
    Sidebar (completion meter, visibility, public link, mini preview)
    ============================================================ */
 
-export function calcCompletion(t) {
-  const checks = [
-    { key: "Avatar uploaded", ok: !!t.avatarImg },
-    { key: "Name & tagline",   ok: !!t.name && !!t.bio },
-    { key: "Location",         ok: !!t.suburb && !!t.city },
-    { key: "Languages",        ok: (t.languages || []).length > 0 },
-    { key: "Credentials",      ok: (t.credentials || []).filter((c) => c.label).length >= 2 },
-    { key: "Long bio (300+)",  ok: (t.bioLong || "").length >= 300 },
-    { key: "Subjects (3+)",    ok: (t.subjects || []).length >= 3 },
-    { key: "Year levels",      ok: Number.isFinite(t.yearMin) && Number.isFinite(t.yearMax) },
-    { key: "Rate set",         ok: !!t.rate && t.rate > 0 },
-    { key: "1+ package",       ok: (t.packages || []).filter((p) => p.price).length >= 1 },
-    { key: "Experience",       ok: (t.experience || []).filter((e) => e.role).length >= 1 },
-    { key: "Education",        ok: (t.education || []).filter((e) => e.school).length >= 1 },
-    { key: "Availability set", ok: (t.availability || []).some((row) => row.some((c) => c === 1)) },
-    { key: "Service area",     ok: !!t.serviceArea?.suburb },
-    // Verification isn't wired up yet (see VerificationsSection), so this can
-    // never tick. Flag it `soon` so it's shown but excluded from the meter —
-    // otherwise 100% is unreachable.
-    { key: "Verified",         ok: (t.verifications || []).find((v) => v.label.toLowerCase().includes("id"))?.done === true, soon: true },
-  ];
-  const counted = checks.filter((c) => !c.soon);
-  const done = counted.filter((c) => c.ok).length;
-  return { checks, done, total: counted.length, pct: Math.round((done / counted.length) * 100) };
-}
+// The completion meter and the tutor-ordering algorithm share one definition of
+// "complete" — see lib/ranking.js (RANKING_CONFIG). `completionScore` returns the
+// same { checks, done, total, pct } shape this sidebar has always rendered, so a
+// tutor's % here is exactly what drives their rank on / and /browse.
+export const calcCompletion = completionScore;
 
 function MiniPreview({ tutor, catalog = [] }) {
   const bySlug = useMemo(() => new Map(catalog.map((s) => [s.slug, s])), [catalog]);
@@ -1141,6 +1293,10 @@ function MiniPreview({ tutor, catalog = [] }) {
     credentials: (tutor.credentials || []).filter((c) => c?.label),
     rate: tutor.rate || 0,
     slug: tutor.slug || "preview",
+    // Match tutorRowToCard: the card shows the first school by position.
+    school: (tutor.education || [])
+      .slice()
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0]?.school || "",
   }), [tutor, bySlug]);
   // pointer-events disabled so clicking the preview doesn't navigate; the
   // hover animation also pauses, which is the right call for a preview.

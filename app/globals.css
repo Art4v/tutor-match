@@ -213,6 +213,56 @@ input[type="range"]::-moz-range-thumb {
   border: 0;
 }
 
+/* Dual-handle range: two native range inputs stacked on one track (used by the
+   year-level range). The inputs are transparent and non-interactive except for
+   their thumbs, so both handles stay grabbable; the visual track + accent fill
+   are drawn by sibling divs in the component. */
+/* NOTE: selectors are qualified with input[type="range"] so they outweigh the
+   generic `input[type="range"]` rule above (an attribute selector beats a bare
+   class). Without this the native track keeps its #E5E7EB background and paints
+   a second grey bar on top of the component's track/fill divs. */
+input[type="range"].dual-range {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="range"].dual-range::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+}
+input[type="range"].dual-range::-moz-range-track { background: transparent; border: none; }
+input[type="range"].dual-range::-moz-range-progress { background: transparent; }
+/* White-ringed accent handles — legible on both the grey rail and the navy
+   fill. Higher specificity than the generic range-thumb rule above so the
+   colour + ring win. */
+input[type="range"].dual-range::-webkit-slider-thumb {
+  pointer-events: auto;
+  width: 16px; height: 16px;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
+  transition: box-shadow 140ms ease;
+}
+input[type="range"].dual-range::-webkit-slider-thumb:hover {
+  box-shadow: 0 2px 8px rgba(21, 39, 100, 0.3), 0 0 0 4px var(--accent-ring);
+}
+input[type="range"].dual-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px; height: 16px;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
+}
+
 /* Hide the up/down spin buttons on number inputs. Typing stays numeric-only;
    only the arrows go. Applies to every type="number" field (settings forms:
    hourly rate, package price, years tutoring, ATAR). */
@@ -224,4 +274,28 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Attention-grabbing glow for the landing-page Sign Up CTA. A continuously
+   pulsing accent halo so the button stands out strongly against the white nav.
+   Opt-in via the Button `glow` prop. */
+@keyframes cta-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 9px 1px rgba(21, 39, 100, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(21, 39, 100, 0.5);
+  }
+}
+.cta-glow {
+  animation: cta-glow-pulse 3.4s ease-in-out infinite;
+}
+.cta-glow:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow {
+    animation: none;
+    box-shadow: 0 0 12px 2px rgba(21, 39, 100, 0.3);
+  }
 }

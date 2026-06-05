@@ -167,7 +167,7 @@ export function HomeCta() {
                 variants={primaryJiggle}
                 style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
               >
-                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")} full>
+                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")} full glow>
                   Become a tutor
                 </Button>
               </motion.div>

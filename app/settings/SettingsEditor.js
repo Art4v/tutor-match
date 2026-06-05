@@ -30,14 +30,14 @@ import {
  * signup). The handle_new_user() trigger creates an empty tutor_profiles
  * row, so these mostly cover null columns.
  */
-function defaultTutor(userId, userEmail, fullName) {
+export function defaultTutor(userId, userEmail, fullName) {
   return {
     id: userId,
     name: fullName || "",
     suburb: "",
     city: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
-    avatarBg: "oklch(0.92 0.04 80)",
+    avatarBg: "oklch(0.9 0.05 220)",
     bannerBg: null,
     avatarImg: null,
     bannerImg: null,
@@ -60,7 +60,7 @@ function defaultTutor(userId, userEmail, fullName) {
     experience: [],
     education: [],
     subjects: [],
-    yearMin: 7,
+    yearMin: 0,
     yearMax: 12,
     serviceArea: { suburb: "", radiusKm: 5 },
     availability: buildInitialAvailability(),
