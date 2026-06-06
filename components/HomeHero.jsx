@@ -116,7 +116,7 @@ export function HomeHero({ catalog }) {
             style={{ fontWeight: 500 }}
           >
             <TypewriterOnView
-              text="Find a tutor who's"
+              text="Find a tutor"
               speed={26}
               start={true}
               onDone={() => setClause1Done(true)}
@@ -124,7 +124,7 @@ export function HomeHero({ catalog }) {
               className="block"
             />
             <TypewriterOnView
-              text="been where you're going."
+              text="you can trust."
               speed={28}
               start={clause1Done}
               onDone={() => setClause2Done(true)}
@@ -134,16 +134,15 @@ export function HomeHero({ catalog }) {
             />
           </h1>
 
-          <p className="text-[16.5px] md:text-[18px] text-slate-600 mt-7 leading-[1.55] max-w-[600px]">
-            <TypewriterOnView
-              text="High school students across Australia are using matchtutor to work with the country's strongest recent graduates — verified ATARs, real reviews, no agency markup."
-              speed={10}
-              delay={250}
-              cursor={false}
-              start={clause2Done}
-              onDone={() => setSubtitleDone(true)}
-            />
-          </p>
+          <motion.p
+            className="text-[16.5px] md:text-[18px] text-slate-600 mt-7 leading-[1.55] max-w-[600px]"
+            initial={{ opacity: 0, y: 8 }}
+            animate={clause2Done ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+            transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
+            onAnimationComplete={() => clause2Done && setSubtitleDone(true)}
+          >
+            High school students across Australia are using matchtutor to work with the country&apos;s strongest recent graduates — verified ATARs, real reviews, no agency markup.
+          </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
