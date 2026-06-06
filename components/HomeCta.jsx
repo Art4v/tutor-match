@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { CrossfadeSlideshow } from "@/components/anim/CrossfadeSlideshow";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
@@ -89,7 +90,7 @@ export function HomeCta() {
             &#8221;
           </div>
 
-          <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-12">
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-12">
             <div className="max-w-[640px]">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -158,7 +159,7 @@ export function HomeCta() {
               initial={{ opacity: 0, y: 14 }}
               animate={c2Done ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
-              className="flex flex-col gap-3 shrink-0"
+              className="flex flex-col gap-5 shrink-0 w-full md:w-[330px]"
             >
               <motion.div
                 initial="rest"

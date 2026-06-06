@@ -2,6 +2,8 @@
   Supabase "Confirm signup" email template.
   Paste into: Supabase Dashboard → Authentication → Emails → Confirm signup.
   Template variables: {{ .ConfirmationURL }} is rendered by Supabase.
+  Colors mirror the app's accent theme (app/globals.css): accent #152764,
+  softer #EFF6FF, line #BFDBFE, ink #0F172A / muted #475569.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -17,6 +19,7 @@
         <td align="center" style="padding:40px 16px;">
           <!-- Card -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background:#ffffff; border:1px solid #E5E7EB; border-radius:16px; overflow:hidden;">
+            <!-- Accent top bar -->
             <tr>
               <td style="padding:36px 36px 8px 36px;">
                 <!-- Brand (mark + wordmark, matching the site navbar) -->

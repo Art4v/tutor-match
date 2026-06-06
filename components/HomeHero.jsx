@@ -3,11 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
-import { Button } from "@/components/ui";
+import { Button, VerifiedTick } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { CrossfadeSlideshow } from "@/components/anim/CrossfadeSlideshow";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
+
+// Modern, openly-licensed study/classroom photography for the hero panel.
+// Credits + licenses live in public/images/CREDITS.md.
+const HERO_IMAGES = [
+  { src: "/images/hero/hero-1.jpg", alt: "A laptop and notebook on a library study desk" },
+  { src: "/images/hero/hero-2.jpg", alt: "A student writing notes in a modern library" },
+  { src: "/images/hero/hero-3.jpg", alt: "A student studying with a laptop and an open book" },
+  { src: "/images/hero/hero-4.jpg", alt: "A smiling student at their desk in class" },
+  { src: "/images/hero/hero-5.jpg", alt: "Two students studying together with notebooks" },
+];
 
 // Search button hover: same jiggle wobble + accent halo language as TutorCard.
 // rest → hover settles rotate on 0 and amplifies the glow; on leave both
@@ -83,7 +94,8 @@ export function HomeHero({ catalog }) {
           jitter when fonts/text reflow. The padding pushes it visually toward
           the optical center. */}
       <div className="relative max-w-[1200px] w-full mx-auto px-6 pt-[12vh] pb-24">
-        <div className="max-w-[880px]">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-12 lg:items-center">
+          <div className="max-w-[880px] lg:max-w-none">
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -197,6 +209,9 @@ export function HomeHero({ catalog }) {
             <TrustPill>No agency markup</TrustPill>
             <TrustPill>No messaging fee</TrustPill>
           </motion.div>
+          </div>
+
+          <HeroPanel show={subtitleDone} />
         </div>
       </div>
 
@@ -217,6 +232,68 @@ export function HomeHero({ catalog }) {
         </motion.div>
       </motion.div>
     </section>
+  );
+}
+
+// Right-hand hero slideshow. Hidden below lg so phones/tablets keep the clean
+// single-column hero. Reveal is gated on `subtitleDone` so it joins the same
+// entrance choreography as the search bar rather than popping in early.
+function HeroPanel({ show }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.3 }}
+      className="hidden lg:block relative"
+    >
+      <div
+        className="relative"
+        style={{
+          borderRadius: 20,
+          border: "1px solid var(--accent-line)",
+          overflow: "hidden",
+          boxShadow:
+            "0 24px 64px -32px rgba(15,23,42,0.30), 0 0 28px rgba(21,39,100,0.12), 0 0 8px rgba(21,39,100,0.08)",
+        }}
+      >
+        <CrossfadeSlideshow images={HERO_IMAGES} priorityFirst className="aspect-[4/5] w-full" />
+
+        {/* Soft navy scrim along the base so the floating chip and lower edge read. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(12,24,64,0.30) 0%, rgba(12,24,64,0) 40%)",
+          }}
+        />
+        {/* Inner hairline ring for a framed, editorial feel over the photo. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{ borderRadius: 20, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)" }}
+        />
+      </div>
+
+      {/* Floating verification chip, overlapping the lower-left corner. */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={show ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.92 }}
+        transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
+        className="absolute -bottom-4 -left-4 flex items-center gap-2.5 bg-white px-3.5 py-2.5"
+        style={{
+          borderRadius: 14,
+          border: "1px solid var(--accent-line)",
+          boxShadow: "0 12px 30px -14px rgba(15,23,42,0.30)",
+        }}
+      >
+        <VerifiedTick size={18} />
+        <div className="leading-none">
+          <div className="text-[13px] font-semibold text-slate-900">Verified ATARs</div>
+          <div className="text-[11px] text-slate-500 mt-1">every tutor, checked by hand</div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
