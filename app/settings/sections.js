@@ -62,9 +62,9 @@ export function buildInitialAvailability() {
    Form primitives
    ============================================================ */
 
-function Field({ label, hint, error, children, optional, full = true }) {
+function Field({ label, hint, error, children, optional, full = true, as: Tag = "label" }) {
   return (
-    <label className={"block " + (full ? "w-full" : "")}>
+    <Tag className={"block " + (full ? "w-full" : "")}>
       {label && (
         <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-1.5 flex items-center gap-2">
           <span>{label}</span>
@@ -75,7 +75,7 @@ function Field({ label, hint, error, children, optional, full = true }) {
       {(hint || error) && (
         <div className={"text-[12px] mt-1.5 " + (error ? "text-rose-600" : "text-slate-500")}>{error || hint}</div>
       )}
-    </label>
+    </Tag>
   );
 }
 
@@ -812,13 +812,13 @@ export function AboutSection({ tutor, set }) {
   return (
     <Card>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
-      <Field label="Tagline" hint="One line shown on your browse cards and under your profile header.">
+      <Field as="div" label="Tagline" hint="One line shown on your browse cards and under your profile header.">
         <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180}
           ai={{ onGenerate: () => generate("tagline"), label: "Generate tagline with AI", usage }}
           placeholder="Patient, structured tutor who writes clear notes…" />
       </Field>
       <div className="mt-5">
-        <Field label="Long bio"
+        <Field as="div" label="Long bio"
           error={over ? `${wordCount - SOFT_LIMIT} words over the soft limit — consider trimming.` : null}
           hint={!over ? `${wordCount} / ${SOFT_LIMIT} words` : null}>
           <RichTextField rows={8} value={long} onChange={(v) => set({ bioLong: v })} lists
