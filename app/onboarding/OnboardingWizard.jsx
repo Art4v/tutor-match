@@ -53,7 +53,14 @@ const STEPS = [
   {
     key: "identity",
     requireName: true,
-    isAnswered: (t) => hasText(t.name),
+    // Name is required to advance (see `requireName`), but it doesn't by itself
+    // count as "answered": the button stays Skip until something *other* than the
+    // name is filled in, then flips to Next.
+    isAnswered: (t) =>
+      (t.yearsTutoring ?? 0) > 0 ||
+      (t.languages?.length ?? 0) > 0 ||
+      (t.rate ?? 0) > 0 ||
+      (t.packages?.length ?? 0) > 0,
     render: ({ tutor, set }) => (
       <div className="space-y-5">
         <IdentitySection tutor={tutor} set={set} />
@@ -78,7 +85,7 @@ const STEPS = [
   },
   {
     key: "location",
-    isAnswered: (t) => hasText(t.serviceArea?.suburb),
+    isAnswered: (t) => hasText(t.serviceArea?.suburb) || !!t.deliversInPerson || !!t.deliversOnline,
     render: ({ tutor, set }) => (
       <div className="space-y-5">
         <ServiceAreaSection tutor={tutor} set={set} />
@@ -117,8 +124,15 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
   const supabase = supabaseRef.current;
   const router = useRouter();
 
+  // Start the delivery-format question with neither option pre-selected, so the
+  // tutor actively picks (the DB columns default to true, and defaultTutor
+  // mirrors that — we override just for the onboarding question).
   const seed = useMemo(
-    () => initialTutor ?? defaultTutor(userId, userEmail),
+    () => ({
+      ...(initialTutor ?? defaultTutor(userId, userEmail)),
+      deliversInPerson: false,
+      deliversOnline: false,
+    }),
     [initialTutor, userId, userEmail]
   );
 
@@ -147,10 +161,12 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === STEPS.length - 1;
   const nameValid = !!(tutor.name && tutor.name.trim());
+  // Step 1 can't be advanced (Skip or Next) until a name is entered.
   const advanceDisabled = !!step.requireName && !nameValid;
-  // Show Next once the step has content (or it's a required step); Skip while empty.
+  // Show Next once the step has content other than the name; Skip while it's
+  // still empty/default (the name alone doesn't flip Skip → Next).
   const answered = step.isAnswered ? step.isAnswered(tutor) : false;
-  const showNext = answered || !!step.requireName;
+  const showNext = answered;
 
   const goBack = () => {
     if (isFirst) return;
