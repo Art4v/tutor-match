@@ -7,7 +7,7 @@ import { TutorCard } from "@/components/TutorCard";
 import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
-export function HomeFeaturedTutors({ tutors = [], totalTutors = 0 }) {
+export function HomeFeaturedTutors({ tutors = [] }) {
   const [headlineDone, setHeadlineDone] = useState(false);
   const empty = tutors.length === 0;
   const seeAllLabel = "See all tutors";

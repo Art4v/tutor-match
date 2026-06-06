@@ -54,8 +54,14 @@ export function TopNav() {
   // never updates). Keyed on pathname too, so editing in /settings shows up in
   // the chip once the tutor navigates away — the nav persists across client
   // navigation and wouldn't otherwise refetch.
+  //
+  // We resolve the row by id (the PK) rather than gating on
+  // `user_metadata.role === "tutor"`: OAuth (Google) signups never get a role
+  // written to auth metadata — the DB trigger sets it — so that gate would hide
+  // the Profile link (and the live name/avatar) for every OAuth tutor. A
+  // non-tutor (e.g. student) simply has no matching row and gets null.
   useEffect(() => {
-    if (!user || user.user_metadata?.role !== "tutor") {
+    if (!user) {
       setTutorSlug(null);
       setProfile(null);
       return;
@@ -66,7 +72,7 @@ export function TopNav() {
       .from("tutor_profiles")
       .select("slug, avatar_url, profile:profiles!inner ( full_name )")
       .eq("id", user.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (!active) return;
         setTutorSlug(data?.slug ?? null);
@@ -168,16 +174,19 @@ export function TopNav() {
                         padding: 4,
                       }}
                     >
+                      <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
+                        Browse
+                      </NavMenuLink>
                       {tutorSlug && (
                         <NavMenuLink href={`/tutor/${tutorSlug}`} onClick={() => setMenuOpen(false)}>
                           Profile
                         </NavMenuLink>
                       )}
-                      <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
-                        Browse
-                      </NavMenuLink>
                       <NavMenuLink href="/settings" onClick={() => setMenuOpen(false)}>
                         Settings
+                      </NavMenuLink>
+                      <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
+                        Account
                       </NavMenuLink>
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
                         {loggingOut ? "Logging out…" : "Log out"}
@@ -193,7 +202,7 @@ export function TopNav() {
                 <Button variant="ghost" size="sm">Log in</Button>
               </Link>
               <Link href="/signup">
-                <Button variant="primary" size="sm">Sign Up</Button>
+                <Button variant="primary" size="sm" glow>Sign Up</Button>
               </Link>
             </>
           )}

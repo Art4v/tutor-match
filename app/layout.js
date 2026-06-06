@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { TopNav } from "@/components/TopNav";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
           <TopNav />
           {children}
         </SmoothScrollProvider>
+        <Analytics />
       </body>
     </html>
   );

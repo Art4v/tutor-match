@@ -15,9 +15,7 @@ import { CredentialsList } from "./CredentialsList";
 import { SimilarTutorMini } from "./SimilarTutorMini";
 import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
-import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
-import { RevealChildren } from "@/components/anim/CardReveal";
-import { RichText } from "@/components/RichText";
+import { AboutCard } from "./AboutCard";
 
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
@@ -52,11 +50,7 @@ export default async function ProfilePage({ params }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8">
           <div className="space-y-8 min-w-0">
-            {tutor.bioLong && (
-              <Section id="about" title="About">
-                <RichText text={tutor.bioLong} className="text-[15px] text-slate-600 leading-[1.6]" />
-              </Section>
-            )}
+            {tutor.bioLong && <AboutCard text={tutor.bioLong} />}
 
             {(() => {
               const metaForIcon = (icon) => {
@@ -138,13 +132,7 @@ function formatDelivery(tutor) {
 }
 
 function Section({ title, subtitle, children, id }) {
-  // Card appears first (SectionReveal). The title types in after a short
-  // delay; subtitle types after the title; children fade in last so the
-  // sequence reads top-to-bottom.
-  const isStringTitle = typeof title === "string";
-  const titleDuration = isStringTitle ? (title.length * 22) / 1000 : 0;
-  const subtitleStart = 0.35 + titleDuration + 0.12;
-  const childrenStart = subtitleStart + (subtitle ? 0.35 : 0) + 0.15;
+  // The whole card fades in together via SectionReveal — no per-element typing.
   return (
     <SectionReveal
       as="section"
@@ -155,24 +143,13 @@ function Section({ title, subtitle, children, id }) {
     >
       <div className="mb-5">
         <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">
-          {isStringTitle ? (
-            <TypewriterOnView text={title} speed={22} delay={350} />
-          ) : (
-            title
-          )}
+          {title}
         </h2>
         {subtitle && (
-          <div className="text-[13px] text-slate-500 mt-0.5">
-            <TypewriterOnView
-              text={subtitle}
-              speed={10}
-              cursor={false}
-              delay={subtitleStart * 1000}
-            />
-          </div>
+          <div className="text-[13px] text-slate-500 mt-0.5">{subtitle}</div>
         )}
       </div>
-      <RevealChildren delay={childrenStart}>{children}</RevealChildren>
+      {children}
     </SectionReveal>
   );
 }
@@ -180,14 +157,12 @@ function Section({ title, subtitle, children, id }) {
 function SubjectsCard({ subjects }) {
   return (
     <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4">
-        <TypewriterOnView text="Subjects" speed={22} delay={350} />
-      </div>
-      <RevealChildren delay={0.75} className="flex flex-wrap gap-1.5">
+      <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
+      <div className="flex flex-wrap gap-1.5">
         {subjects.map((s) => (
           <Chip key={s.slug} tone="cream" icon="graduation">{subjectLabel(s)}</Chip>
         ))}
-      </RevealChildren>
+      </div>
     </SectionReveal>
   );
 }
@@ -196,22 +171,18 @@ function VerificationCard() {
   return (
     <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="text-[14px] font-semibold text-slate-900">
-          <TypewriterOnView text="Verification" speed={22} delay={350} />
-        </div>
-        <RevealChildren delay={0.85}>
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-            style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
-          >
-            Coming soon
-          </span>
-        </RevealChildren>
+        <div className="text-[14px] font-semibold text-slate-900">Verification</div>
+        <span
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+          style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+        >
+          Coming soon
+        </span>
       </div>
-      <RevealChildren delay={0.95} className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
+      <div className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
         <Icon name="shield" size={14} className="text-slate-400 shrink-0" />
         Identity &amp; credential checks are coming soon.
-      </RevealChildren>
+      </div>
     </SectionReveal>
   );
 }
@@ -220,30 +191,24 @@ function RatingsCard() {
   return (
     <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="text-[14px] font-semibold text-slate-900">
-          <TypewriterOnView text="Ratings & reviews" speed={22} delay={350} />
-        </div>
-        <RevealChildren delay={0.85}>
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-            style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
-          >
-            Coming soon
-          </span>
-        </RevealChildren>
+        <div className="text-[14px] font-semibold text-slate-900">Ratings &amp; reviews</div>
+        <span
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+          style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+        >
+          Coming soon
+        </span>
       </div>
-      <RevealChildren delay={0.95}>
-        <div className="flex flex-col items-center text-center py-6">
-          <div className="flex items-center gap-1.5 mb-3">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Icon key={i} name="star" size={22} className="text-slate-200" />
-            ))}
-          </div>
-          <div className="text-[13px] text-slate-500 leading-[1.55] max-w-[260px]">
-            Ratings and reviews are coming soon — we&apos;re working on a way for verified students to leave them.
-          </div>
+      <div className="flex flex-col items-center text-center py-6">
+        <div className="flex items-center gap-1.5 mb-3">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Icon key={i} name="star" size={22} className="text-slate-200" />
+          ))}
         </div>
-      </RevealChildren>
+        <div className="text-[13px] text-slate-500 leading-[1.55] max-w-[260px]">
+          Ratings and reviews are coming soon — we&apos;re working on a way for verified students to leave them.
+        </div>
+      </div>
     </SectionReveal>
   );
 }
@@ -255,22 +220,15 @@ function ServiceAreaCard({ tutor }) {
   return (
     <SectionReveal hover className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
       <div className="px-5 pt-5 pb-5">
-        <div className="text-[14px] font-semibold text-slate-900">
-          <TypewriterOnView text="Service area" speed={22} delay={350} />
-        </div>
+        <div className="text-[14px] font-semibold text-slate-900">Service area</div>
         <div className="text-[12.5px] text-slate-500 mt-0.5">
-          <TypewriterOnView
-            text={`In-person within ${radiusKm} km of ${sa?.suburb || tutor.suburb}`}
-            speed={10}
-            cursor={false}
-            delay={650}
-          />
+          In-person within {radiusKm} km of {sa?.suburb || tutor.suburb}
         </div>
       </div>
       {hasCoords && (
-        <RevealChildren delay={1.1} className="px-5 pb-5">
+        <div className="px-5 pb-5">
           <ServiceAreaMap lat={sa.lat} lng={sa.lng} radiusKm={radiusKm} />
-        </RevealChildren>
+        </div>
       )}
     </SectionReveal>
   );
@@ -279,9 +237,7 @@ function ServiceAreaCard({ tutor }) {
 function SimilarTutorsCard({ similar }) {
   return (
     <SectionReveal className="bg-transparent" style={{ borderRadius: 0 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4 px-1">
-        <TypewriterOnView text="Similar tutors" speed={22} delay={350} />
-      </div>
+      <div className="text-[14px] font-semibold text-slate-900 mb-4 px-1">Similar tutors</div>
       <SimilarTutorsStack similar={similar} />
     </SectionReveal>
   );
@@ -289,13 +245,11 @@ function SimilarTutorsCard({ similar }) {
 
 function SimilarTutorsStack({ similar }) {
   return (
-    <RevealChildren delay={0.75}>
-      <div className="grid grid-cols-2 gap-3">
-        {similar.map((t) => (
-          <SimilarTutorMini key={t.id} tutor={t} />
-        ))}
-      </div>
-    </RevealChildren>
+    <div className="grid grid-cols-2 gap-3">
+      {similar.map((t) => (
+        <SimilarTutorMini key={t.id} tutor={t} />
+      ))}
+    </div>
   );
 }
 

@@ -30,14 +30,14 @@ import {
  * signup). The handle_new_user() trigger creates an empty tutor_profiles
  * row, so these mostly cover null columns.
  */
-function defaultTutor(userId, userEmail, fullName) {
+export function defaultTutor(userId, userEmail, fullName) {
   return {
     id: userId,
     name: fullName || "",
     suburb: "",
     city: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
-    avatarBg: "oklch(0.92 0.04 80)",
+    avatarBg: "oklch(0.9 0.05 220)",
     bannerBg: null,
     avatarImg: null,
     bannerImg: null,
@@ -60,7 +60,7 @@ function defaultTutor(userId, userEmail, fullName) {
     experience: [],
     education: [],
     subjects: [],
-    yearMin: 7,
+    yearMin: 0,
     yearMax: 12,
     serviceArea: { suburb: "", radiusKm: 5 },
     availability: buildInitialAvailability(),
@@ -106,6 +106,8 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
 
   const set = (patch) => setTutor((t) => ({ ...t, ...patch }));
 
+  const nameValid = !!(tutor.name && tutor.name.trim());
+
   const showToast = (kind, text, ms = 2400) => {
     setToast({ kind, text });
     window.clearTimeout(showToast._timer);
@@ -113,6 +115,10 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   };
 
   const onSave = async () => {
+    if (!nameValid) {
+      showToast("error", "Please enter your full name before saving.", 3500);
+      return;
+    }
     setSaving(true);
     // Last-chance geocode: if the user hit Save before the debounced editor
     // geocode fired, resolve coords now so the public profile has a map.
@@ -172,7 +178,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
 
   return (
     <div className="bg-white min-h-screen pb-32 md:pb-12">
-      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
+      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       <AnimatePresence>
         {dirty && (
@@ -229,7 +235,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
         </div>
       </div>
 
-      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} />
+      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       {toast && (
         <div

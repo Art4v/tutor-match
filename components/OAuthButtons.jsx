@@ -1,62 +1,110 @@
 "use client";
 
-// Placeholder for social sign-in. The buttons are visible but disabled and
-// labelled "Coming soon" — the actual OAuth wiring (Supabase providers,
-// callback route, and trigger update) was removed and will be re-added when
-// we're ready to enable it.
+// Social sign-in. Google is wired to Supabase OAuth (PKCE): the button kicks
+// off signInWithOAuth and Supabase redirects back to /auth/callback?next=…,
+// where exchangeCodeForSession mints the session.
 
-export default function OAuthButtons({ divider = "bottom" }) {
+import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+export default function OAuthButtons({ divider = "bottom", next = "/settings" }) {
+  // Holds the provider currently redirecting ("google"), so only the clicked
+  // button shows its loading state.
+  const [loadingProvider, setLoadingProvider] = useState(null);
+
+  const signInWithProvider = async (provider) => {
+    setLoadingProvider(provider);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+    // On success the browser navigates to the provider, so we only land here on error.
+    if (error) setLoadingProvider(null);
+  };
+
   return (
     <div className="space-y-2.5">
       {divider === "top" && <Divider label="or use a social account" />}
-      <ProviderButton label="Continue with Google" glyph={<GoogleGlyph />} />
-      <ProviderButton label="Continue with Microsoft" glyph={<MicrosoftGlyph />} />
+      <ProviderButton
+        label={loadingProvider === "google" ? "Redirecting…" : "Continue with Google"}
+        glyph={<GoogleGlyph />}
+        onClick={() => signInWithProvider("google")}
+        loading={loadingProvider === "google"}
+      />
       {divider === "bottom" && <Divider label="or continue with email" />}
     </div>
   );
 }
 
-function ProviderButton({ label, glyph }) {
+function ProviderButton({ label, glyph, onClick, disabled = false, loading = false }) {
+  if (disabled) {
+    return (
+      <div
+        className="relative w-full inline-flex items-center justify-center font-medium"
+        style={{
+          height: 42,
+          background: "#fff",
+          color: "#94A3B8",
+          border: "1px solid #E5E7EB",
+          borderRadius: 8,
+          fontSize: 14,
+          letterSpacing: "-0.005em",
+          cursor: "not-allowed",
+          opacity: 0.75,
+        }}
+        title="Coming soon"
+        aria-disabled="true"
+      >
+        <span style={{ position: "absolute", left: 14, display: "inline-flex", filter: "grayscale(0.35)" }}>
+          {glyph}
+        </span>
+        <span>{label}</span>
+        <span
+          style={{
+            position: "absolute",
+            right: 12,
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            color: "#94A3B8",
+            background: "#F1F5F9",
+            border: "1px solid #E2E8F0",
+            borderRadius: 999,
+            padding: "2px 7px",
+            lineHeight: 1.2,
+          }}
+        >
+          Soon
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="relative w-full inline-flex items-center justify-center font-medium"
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className="relative w-full inline-flex items-center justify-center font-medium transition-colors"
       style={{
         height: 42,
         background: "#fff",
-        color: "#94A3B8",
+        color: "#334155",
         border: "1px solid #E5E7EB",
         borderRadius: 8,
         fontSize: 14,
         letterSpacing: "-0.005em",
-        cursor: "not-allowed",
-        opacity: 0.75,
+        cursor: loading ? "wait" : "pointer",
+        opacity: loading ? 0.8 : 1,
       }}
-      title="Coming soon"
-      aria-disabled="true"
     >
-      <span style={{ position: "absolute", left: 14, display: "inline-flex", filter: "grayscale(0.35)" }}>
-        {glyph}
-      </span>
+      <span style={{ position: "absolute", left: 14, display: "inline-flex" }}>{glyph}</span>
       <span>{label}</span>
-      <span
-        style={{
-          position: "absolute",
-          right: 12,
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: "#94A3B8",
-          background: "#F1F5F9",
-          border: "1px solid #E2E8F0",
-          borderRadius: 999,
-          padding: "2px 7px",
-          lineHeight: 1.2,
-        }}
-      >
-        Soon
-      </span>
-    </div>
+    </button>
   );
 }
 
@@ -89,17 +137,6 @@ function GoogleGlyph() {
         d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4632.8918 11.4259 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.9641 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"
         fill="#EA4335"
       />
-    </svg>
-  );
-}
-
-function MicrosoftGlyph() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="8.5" height="8.5" fill="#F25022" />
-      <rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00" />
-      <rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF" />
-      <rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900" />
     </svg>
   );
 }
