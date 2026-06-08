@@ -702,6 +702,11 @@ function typeForIcon(icon) {
   return CREDENTIAL_TYPES.find((t) => t.value === icon) ?? { caption: "CREDENTIAL", kind: "credential", placeholder: "" };
 }
 
+const EDUCATION_LEVELS = [
+  { value: "high_school", label: "High School" },
+  { value: "university",  label: "University" },
+];
+
 export function CredentialsSection({ tutor, set }) {
   const list = tutor.credentials || [];
   const update = (i, p) => set({ credentials: list.map((c, idx) => idx === i ? { ...c, ...p } : c) });
@@ -896,14 +901,15 @@ export function EducationSection({ tutor, set }) {
   const update = (i, p) => set({ education: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ education: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ education: move(list, i, to) });
-  const add = () => set({ education: [...list, { school: "", detail: "" }] });
+  const add = () => set({ education: [...list, { school: "", detail: "", level: "high_school" }] });
   return (
     <Card>
       <SectionHeader title="Education" right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add school</Button>} />
       <div>
         {list.map((e, i) => (
           <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1.4fr] gap-2">
+              <Select value={e.level ?? "high_school"} onChange={(v) => update(i, { level: v })} options={EDUCATION_LEVELS} />
               <TextInput value={e.school} onChange={(v) => update(i, { school: v })} placeholder="UNSW Sydney" />
               <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder="B. Medical Studies — Year 3" />
             </div>
@@ -1260,10 +1266,17 @@ function MiniPreview({ tutor, catalog = [] }) {
     credentials: (tutor.credentials || []).filter((c) => c?.label),
     rate: tutor.rate || 0,
     slug: tutor.slug || "preview",
-    // Match tutorRowToCard: the card shows the first school by position.
-    school: (tutor.education || [])
-      .slice()
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0]?.school || "",
+    // Match tutorRowToCard: surface the first high school + first university (by
+    // position) so the preview stacks them the same way the live card does.
+    ...(() => {
+      const sortedEdu = (tutor.education || [])
+        .slice()
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      return {
+        highSchool: sortedEdu.find((e) => (e.level ?? "high_school") === "high_school")?.school || "",
+        university: sortedEdu.find((e) => e.level === "university")?.school || "",
+      };
+    })(),
   }), [tutor, bySlug]);
   // pointer-events disabled so clicking the preview doesn't navigate; the
   // hover animation also pauses, which is the right call for a preview.

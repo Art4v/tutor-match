@@ -285,14 +285,17 @@ export function TutorCard({ tutor }) {
 
           {/* Footer: featured school line + headline credential / rate. */}
           <div className="shrink-0">
-            {/* Featured school (first-listed education entry) */}
+            {/* Education: show the high school only; fall back to the university
+                when no high school is listed. */}
             <div
               className="flex items-center gap-1.5 text-[13px] text-slate-500 mb-3"
               style={{ minHeight: "1.3em" }}
             >
               <Icon name="graduation" size={14} />
               <span className="truncate">
-                {tutor.school || <span className="text-slate-400 italic">School not listed</span>}
+                {tutor.highSchool || tutor.university || (
+                  <span className="text-slate-400 italic">School not listed</span>
+                )}
               </span>
             </div>
 

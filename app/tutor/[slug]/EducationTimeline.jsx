@@ -64,7 +64,15 @@ export function EducationTimeline({ education }) {
           </div>
 
           <div className="pb-1 flex-1">
-            <div className="text-[14.5px] font-semibold text-slate-900">{e.school}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-[14.5px] font-semibold text-slate-900">{e.school}</div>
+              <span
+                className="text-[11px] font-medium px-2 py-0.5 rounded-full text-slate-600"
+                style={{ background: "#F3F4F6" }}
+              >
+                {e.level === "university" ? "University" : "High School"}
+              </span>
+            </div>
             <div className="text-[13.5px] text-slate-500 mt-0.5">{e.detail}</div>
           </div>
         </motion.li>
