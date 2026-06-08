@@ -58,7 +58,7 @@ export function HandwrittenHeading({
     <Tag
       ref={wrapRef}
       className={`font-hand ${className}`}
-      style={{ color, lineHeight: 1.04, fontWeight: 700, ...style }}
+      style={{ color, lineHeight: 1.15, fontWeight: 700, ...style }}
       aria-label={label}
     >
       {rows.map((line, i) => (

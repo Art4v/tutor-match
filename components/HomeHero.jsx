@@ -6,7 +6,7 @@ import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
-import { BookBrainMorphClient } from "@/components/BookBrainMorphClient";
+import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
@@ -31,14 +31,12 @@ const searchButtonVariants = {
 };
 
 /**
- * Scroll-driven book→network particle hero. The section is tall (300vh); an
- * inner sticky panel pins for the whole scroll while the particles morph behind
- * the centered headline + search. The search wiring (`goBrowse`) is unchanged —
- * this is a pure restyle of the previous hero.
+ * Single-viewport hero: an animated "neural network" constellation fills the
+ * whole hero behind the centered headline + search. The search wiring
+ * (`goBrowse`) is unchanged.
  */
 export function HomeHero({ catalog }) {
   const router = useRouter();
-  const sectionRef = useRef(null);
   const [year, setYear] = useState("");
   const [subject, setSubject] = useState(null);
 
@@ -51,33 +49,33 @@ export function HomeHero({ catalog }) {
   };
 
   return (
-    <section ref={sectionRef} className="relative" style={{ height: "300vh", background: "var(--paper)" }}>
-      {/* Pinned panel — stays for the whole 300vh scroll while particles morph. */}
-      <div className="sticky top-0 h-screen overflow-hidden">
-        {/* Particle book→network backdrop (SSR-safe, reads the section rect). */}
-        <div className="absolute inset-0 z-0">
-          <BookBrainMorphClient sectionRef={sectionRef} />
-        </div>
+    <section
+      className="relative overflow-hidden flex flex-col items-center justify-center text-center px-6"
+      style={{ minHeight: "calc(100vh - 60px)", background: "var(--paper)" }}
+    >
+      {/* Neural-network constellation backdrop — fills the whole hero. */}
+      <div className="absolute inset-0 z-0">
+        <ParticleNetwork />
+      </div>
 
-        {/* Faint paper grain over the canvas for a sketched-page feel. */}
-        <div aria-hidden="true" className="absolute inset-0 z-[1] pointer-events-none paper-grain opacity-[0.5]" />
+      {/* Faint paper grain for a sketched-page feel. */}
+      <div aria-hidden="true" className="absolute inset-0 z-[1] pointer-events-none paper-grain opacity-[0.5]" />
 
-        {/* Centered overlay — headline + search + trust pills. */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6">
+      {/* Centered overlay — headline + search + trust pills. */}
+      <div className="relative z-10 w-full flex flex-col items-center py-20">
           <div className="w-full max-w-[860px] mx-auto flex flex-col items-center">
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="inline-flex items-center gap-2 mb-6 px-3 py-1.5"
+              className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 text-[13px]"
               style={{
                 borderRadius: 999,
                 border: "1px solid var(--accent-line)",
                 background: "var(--accent-softer)",
                 color: "var(--accent)",
-                fontSize: 12.5,
-                fontWeight: 500,
-                letterSpacing: "0.02em",
+                fontWeight: 400,
+                letterSpacing: "0.01em",
               }}
             >
               <span
@@ -155,7 +153,8 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.9 }}
-              className="mt-6 flex items-center justify-center gap-x-5 gap-y-2 flex-wrap text-[12.5px] text-slate-500"
+              className="mt-6 flex items-center justify-center gap-x-6 gap-y-2 flex-wrap text-[13px]"
+              style={{ color: "#737680", letterSpacing: "0.01em" }}
             >
               <TrustPill>ATAR-verified tutors</TrustPill>
               <TrustPill>In-person &amp; online</TrustPill>
@@ -165,30 +164,24 @@ export function HomeHero({ catalog }) {
           </div>
         </div>
 
-        {/* Scroll indicator — invites the morph. */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-slate-400 pointer-events-none"
-        >
-          <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
-          <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
-            <Icon name="chevron-down" size={16} />
-          </motion.div>
+      {/* Scroll indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-slate-400 pointer-events-none"
+      >
+        <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
+        <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
+          <Icon name="chevron-down" size={16} />
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }
 
 function TrustPill({ children }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--accent)", flexShrink: 0 }} />
-      <span className="accent-shine" style={{ color: "var(--accent)" }}>{children}</span>
-    </span>
-  );
+  return <span className="whitespace-nowrap">{children}</span>;
 }
 
 function SearchField({ icon, label, placeholder, value, onChange, options = [], displayValue }) {
