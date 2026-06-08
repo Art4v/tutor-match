@@ -22,7 +22,7 @@ export default async function NotificationsPage() {
     <div className="bg-white min-h-screen pb-24">
       <div className="max-w-[640px] mx-auto px-6 pt-10">
         <div className="mb-7">
-          <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Notifications</h1>
+          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Notifications</h1>
           <p className="text-[14px] text-slate-500 mt-1">Updates about your account and verification.</p>
         </div>
         <NotificationsList initial={notifications ?? []} />

@@ -9,19 +9,20 @@ module.exports = {
       fontFamily: {
         sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
         display: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        hand: ["Caveat", "Inter", "cursive"],
       },
       colors: {
         accent: {
-          DEFAULT: "#152764",
-          hover: "#0C1840",
-          soft: "#DBEAFE",
-          softer: "#EFF6FF",
-          line: "#BFDBFE",
+          DEFAULT: "#6E7A55",
+          hover: "#565F41",
+          soft: "#DCE3CB",
+          softer: "#EEF1E7",
+          line: "#CDD5BC",
         },
       },
       boxShadow: {
-        "ring-accent": "0 0 0 3px rgba(21, 39, 100, 0.22)",
-        "glow-accent": "0 0 0 4px rgba(21, 39, 100, 0.22)",
+        "ring-accent": "0 0 0 3px rgba(110, 122, 85, 0.25)",
+        "glow-accent": "0 0 0 4px rgba(110, 122, 85, 0.25)",
       },
     },
   },

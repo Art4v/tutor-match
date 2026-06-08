@@ -236,7 +236,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
             style={{ background: "var(--accent-softer)", color: "var(--accent)", border: "1px solid var(--accent-line)", borderRadius: 999 }}>
             <Icon name="sparkle" size={13} /> Welcome to matchtutor
           </div>
-          <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Let’s set up your profile</h1>
+          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Let’s set up your profile</h1>
           <p className="text-[14.5px] text-slate-500 mt-1.5">
             A few quick questions to get you listed. Skip anything you’re not ready for — you can edit it all later in Settings.
           </p>

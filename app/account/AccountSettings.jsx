@@ -118,7 +118,7 @@ export function AccountSettings({ userEmail }) {
     <div className="bg-white min-h-screen pb-32 md:pb-12">
       <div className="max-w-[760px] mx-auto px-6 pt-10">
         <div className="mb-7">
-          <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Account</h1>
+          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Account</h1>
           <p className="text-[14px] text-slate-500 mt-1">
             Manage your sign-in password and account.
           </p>

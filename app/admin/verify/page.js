@@ -81,7 +81,7 @@ export default async function AdminVerifyPage({ searchParams }) {
             <Icon name="shield-check" size={20} />
           </span>
           <div>
-            <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">Approve verification</h1>
+            <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Approve verification</h1>
             <p className="text-[13.5px] text-slate-500 mt-1">Confirm you've reviewed this tutor's profile.</p>
           </div>
         </div>
@@ -124,7 +124,7 @@ function StateCard({ tone, icon, title, body, profileHref }) {
       <span className="inline-flex items-center justify-center mb-4" style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}>
         <Icon name={icon} size={22} />
       </span>
-      <h1 className="text-[19px] font-semibold text-slate-900 tracking-tight">{title}</h1>
+      <h1 className="font-hand text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>{title}</h1>
       <p className="text-[14px] text-slate-500 mt-1.5 leading-[1.55]">{body}</p>
       {profileHref && (
         <a href={profileHref} className="inline-flex items-center gap-1.5 text-[13.5px] mt-4" style={{ color: "var(--accent)" }}>

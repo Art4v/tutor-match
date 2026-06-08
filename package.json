@@ -9,6 +9,7 @@
     "sync:audience": "node scripts/sync-tutors-audience.mjs"
   },
   "dependencies": {
+    "@react-three/fiber": "^8.18.0",
     "@supabase/ssr": "0.5.2",
     "@supabase/supabase-js": "2.45.4",
     "@vercel/analytics": "^2.0.1",
@@ -17,10 +18,12 @@
     "lenis": "^1.1.13",
     "motion": "^11.11.17",
     "next": "14.2.5",
+    "opentype.js": "^2.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-easy-crop": "^5.5.7",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "autoprefixer": "10.4.20",

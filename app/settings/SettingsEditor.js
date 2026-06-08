@@ -233,7 +233,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
       <div className="max-w-[1200px] mx-auto px-6 pt-6">
         <div className="flex items-end justify-between gap-4 mb-7">
           <div>
-            <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Edit your profile</h1>
+            <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Edit your profile</h1>
             <p className="text-[14px] text-slate-500 mt-1">Changes appear immediately on your public profile once saved.</p>
           </div>
           <div className="hidden lg:block text-[12.5px] text-slate-400 tabular-nums">

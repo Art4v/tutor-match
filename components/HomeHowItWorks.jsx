@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@/components/Icon";
-import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
 
 const STEPS = [
@@ -59,7 +59,6 @@ const STEPS = [
 ];
 
 export function HomeHowItWorks() {
-  const [headlineDone, setHeadlineDone] = useState(false);
   const [openIndex, setOpenIndex] = useState(null);
   const [hiddenIndex, setHiddenIndex] = useState(null);
   const [sourceRect, setSourceRect] = useState(null);
@@ -96,37 +95,34 @@ export function HomeHowItWorks() {
 
   return (
     <section
-      className="snap-section flex items-center"
+      className="flex items-center"
       style={{
         background:
-          "radial-gradient(45% 50% at 14% 78%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 60%)",
+          "radial-gradient(45% 50% at 14% 78%, rgba(110,122,85,0.07) 0%, rgba(255,255,255,0) 60%)",
       }}
     >
       <div className="max-w-[1200px] w-full mx-auto px-6 py-24">
-        <div className="max-w-[820px] mb-14">
+        <div className="max-w-[820px] mb-14 mx-auto text-center flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="font-display italic text-[18px] mb-4 accent-shine"
-            style={{ color: "var(--accent)", fontWeight: 500 }}
+            className="font-hand text-[24px] mb-2"
+            style={{ color: "var(--accent)", fontWeight: 600 }}
           >
             How it works
           </motion.div>
-          <h2
-            className="font-display text-[44px] md:text-[56px] leading-[1.05] text-slate-900"
-            style={{ fontWeight: 500 }}
-          >
-            <TypewriterOnView
-              text="Three steps. No agency in the middle."
-              speed={24}
-              onDone={() => setHeadlineDone(true)}
-            />
-          </h2>
+          <HandwrittenHeading
+            as="h2"
+            lines={["Three steps.", "No agency in the middle."]}
+            size={68}
+            className="flex flex-col items-center"
+          />
           <motion.p
             initial={{ opacity: 0, y: 10 }}
-            animate={headlineDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
             className="text-[17px] text-slate-600 mt-6 leading-[1.55] max-w-[560px]"
           >
@@ -174,7 +170,7 @@ export function HomeHowItWorks() {
 const cardShakeHover = {
   y: -4,
   rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-  boxShadow: "0 18px 40px -24px rgba(30,58,138,0.28), 0 0 28px rgba(21,39,100,0.22), 0 0 10px rgba(21,39,100,0.16)",
+  boxShadow: "0 18px 40px -24px rgba(60,55,45,0.28), 0 0 28px rgba(110,122,85,0.22), 0 0 10px rgba(110,122,85,0.16)",
   borderColor: "var(--accent-line)",
   backgroundColor: "var(--accent-softer)",
   transition: {
@@ -205,10 +201,9 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
       onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
-        borderRadius: 18,
-        border: "1px solid #E5E7EB",
-        background: "#ffffff",
-        boxShadow: "0 0 18px rgba(21,39,100,0.10), 0 0 6px rgba(21,39,100,0.07)",
+        border: "1px solid var(--paper-line)",
+        background: "var(--paper-card)",
+        boxShadow: "var(--card-shadow)",
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
         willChange: "transform, box-shadow",
@@ -268,7 +263,7 @@ function CardFrontInner({ step, hover = true }) {
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(180deg, rgba(21,39,100,0.05) 0%, rgba(21,39,100,0.12) 100%)",
+              background: "linear-gradient(180deg, rgba(110,122,85,0.05) 0%, rgba(110,122,85,0.12) 100%)",
               opacity: hover ? 0 : 1,
               transition: "opacity 360ms ease-out",
             }}
@@ -330,7 +325,7 @@ function ExpandedOverlay({ openIndex, sourceRect, onRequestClose, onClose, onExi
         >
           <motion.div
             className="absolute inset-0"
-            style={{ background: "rgba(7, 14, 38, 0.55)", backdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(40, 38, 34, 0.55)", backdropFilter: "blur(2px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -400,10 +395,9 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
     inset: 0,
     backfaceVisibility: "hidden",
     WebkitBackfaceVisibility: "hidden",
-    borderRadius: 18,
-    background: "#ffffff",
-    border: "1px solid var(--accent-line)",
-    boxShadow: "0 40px 80px -30px rgba(7,14,38,0.45)",
+    background: "var(--paper-card)",
+    border: "1px solid var(--paper-line)",
+    boxShadow: "0 40px 80px -30px rgba(40,38,34,0.45)",
     overflow: "hidden",
   };
 

@@ -160,8 +160,10 @@ const cardVariants = {
   rest: {
     y: 0,
     rotate: 0,
-    boxShadow: "0 0 18px rgba(21,39,100,0.10), 0 0 6px rgba(21,39,100,0.07)",
-    borderColor: "#E5E7EB",
+    // Cream sheet: soft drop shadow + a faint offset "sheet beneath" so the card
+    // reads like a page in a small stack.
+    boxShadow: "0 1px 2px rgba(60,55,45,0.05), 0 10px 26px -16px rgba(60,55,45,0.22), 5px 7px 0 -3px rgba(120,114,98,0.12)",
+    borderColor: "#E7E3D8",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
       rotate: { duration: 0.4, ease: EASE_OUT },
@@ -172,8 +174,8 @@ const cardVariants = {
   hover: {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22), 0 0 28px rgba(21,39,100,0.22), 0 0 10px rgba(21,39,100,0.16)",
-    borderColor: "#CBD5E1",
+    boxShadow: "0 18px 36px -20px rgba(40,38,34,0.26), 7px 9px 0 -3px rgba(120,114,98,0.16), 0 0 22px rgba(110,122,85,0.18)",
+    borderColor: "#D8D2C4",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
       rotate: {
@@ -204,18 +206,17 @@ export function TutorCard({ tutor }) {
       animate="rest"
       whileHover="hover"
       variants={cardVariants}
+      className="paper-grain"
       style={{
         height: CARD_HEIGHT,
-        borderRadius: 14,
-        background: "#fff",
-        border: "1px solid #E5E7EB",
+        backgroundColor: "var(--paper-card)",
+        border: "1px solid #E7E3D8",
         willChange: "transform, box-shadow",
       }}
     >
       <Link
         href={`/tutor/${tutor.slug}`}
         className="relative cursor-pointer flex flex-col h-full overflow-hidden"
-        style={{ borderRadius: 14 }}
       >
         <div
           className="shrink-0"
@@ -301,7 +302,7 @@ export function TutorCard({ tutor }) {
 
             <div
               className="pt-4 flex items-end gap-3 border-t"
-              style={{ borderColor: "#F1F5F9" }}
+              style={{ borderColor: "var(--paper-line)" }}
             >
               <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
                 {atar ? (

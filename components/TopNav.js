@@ -118,11 +118,11 @@ export function TopNav() {
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2 group">
           <div
-            className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-white text-[14px] transition-colors"
-            style={{ background: "var(--accent)", letterSpacing: "-0.04em" }}
+            className="w-7 h-7 flex items-center justify-center text-white font-hand transition-colors"
+            style={{ background: "var(--accent)", fontSize: 21, fontWeight: 700, lineHeight: 1, paddingBottom: 2 }}
           >mt</div>
-          <span className="text-[16px] font-semibold tracking-tight">
-            <span className="text-slate-900">match</span>
+          <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
+            <span style={{ color: "var(--ink-graphite)" }}>match</span>
             <span className="accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
           </span>
         </Link>

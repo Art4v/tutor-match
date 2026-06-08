@@ -94,7 +94,7 @@ export default function SignupPage() {
       }}
     >
       <div className="mb-6">
-        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+        <h1 className="font-hand text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
           Create your account.
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">

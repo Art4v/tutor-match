@@ -16,7 +16,7 @@ export default function MessagesDisabledPage() {
   return (
     <div className="bg-white">
       <div className="max-w-[720px] mx-auto px-6 py-24 text-center">
-        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+        <h1 className="font-hand text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
           Messaging is coming soon
         </h1>
         <p className="text-[15px] text-slate-600 mt-3 leading-[1.55]">

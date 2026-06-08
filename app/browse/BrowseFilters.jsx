@@ -124,7 +124,7 @@ export function BrowseFilters({
   return (
     <aside className="space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+        <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
           {searchQuery ? <>Results for &ldquo;{searchQuery}&rdquo;</> : "All tutors"}
         </h1>
         <div className="text-[14px] text-slate-500 mt-1 tabular-nums">
