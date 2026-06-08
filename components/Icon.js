@@ -21,6 +21,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "map-pin": return <svg {...props}><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
     case "globe": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></svg>;
     case "message": return <svg {...props}><path d="M21 12c0 4.4-4 8-9 8a10 10 0 0 1-4-.8L3 21l1.3-4A7.5 7.5 0 0 1 3 12c0-4.4 4-8 9-8s9 3.6 9 8Z"/></svg>;
+    case "bell": return <svg {...props}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>;
     case "send": return <svg {...props}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>;
     case "bookmark": return <svg {...props}><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l7-4 7 4Z"/></svg>;
     case "bookmark-fill": return <svg {...props} fill="currentColor"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l7-4 7 4Z"/></svg>;

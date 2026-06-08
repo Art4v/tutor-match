@@ -9,6 +9,7 @@ import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
 import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
+import { RequestVerification } from "@/components/RequestVerification";
 import { subjectLabel } from "@/lib/subjects";
 import { completionScore } from "@/lib/ranking";
 import { YEAR_MIN, YEAR_MAX, YEAR_LEVELS, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
@@ -1230,40 +1231,6 @@ export function AvailabilitySection({ tutor, set }) {
   );
 }
 
-// Verification is parked for a later release. We keep the planned steps visible
-// as a muted, non-interactive preview so tutors know what's coming, but nothing
-// here is wired up yet (the `verifications` data stays dormant).
-const PLANNED_VERIFICATIONS = [
-  "Email verified",
-  "Phone verified",
-  "Government ID",
-  "ATAR transcript",
-  "University enrolment",
-];
-
-export function VerificationsSection() {
-  return (
-    <Card padding={20}>
-      <div className="flex items-center justify-between gap-3 mb-1">
-        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Verifications</h3>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider" style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}>Coming soon</span>
-      </div>
-      <p className="text-[12.5px] text-slate-500 leading-[1.5] mb-3">
-        Confirm these to unlock the verified badge — coming in a later release.
-      </p>
-      <ul className="-my-0.5">
-        {PLANNED_VERIFICATIONS.map((label, i) => (
-          <li key={label} className="flex items-center gap-2.5 py-2" style={{ borderTop: i === 0 ? "none" : "1px solid #F1F5F9", opacity: 0.7 }}>
-            <span className="inline-flex items-center justify-center shrink-0" style={{ width: 26, height: 26, borderRadius: "50%", background: "#F3F4F6", color: "#94A3B8" }}>
-              <Icon name="shield" size={13} />
-            </span>
-            <div className="flex-1 min-w-0 text-[13px] font-medium text-slate-700">{label}</div>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
 
 /* ============================================================
    Sidebar (completion meter, visibility, public link, mini preview)
@@ -1344,6 +1311,8 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
         <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — exactly how your card appears on browse and the home page.</div>
       </div>
 
+      <RequestVerification status={tutor.verificationStatus} completionPct={c.pct} />
+
       <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Profile visibility</h3>
         <div className="space-y-1.5">
@@ -1382,10 +1351,7 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       </Card>
 
       <Card padding={20}>
-        <div className="flex items-baseline justify-between mb-2">
-          <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Profile completion</h3>
-          <span className="text-[18px] font-semibold text-slate-900 tabular-nums tracking-tight">{c.pct}%</span>
-        </div>
+        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-2">Profile completion</h3>
         <div style={{ height: 6, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
           <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "#10B981" : "#0F172A", transition: "width 220ms ease" }} />
         </div>
