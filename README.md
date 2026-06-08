@@ -158,6 +158,8 @@ graph TD
 | `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile via `getTutorBySlug()`; `notFound()` unless `visibility = 'public'`. Leaflet service-area map when coords exist. |
 | `/settings` | `app/settings/page.js` | Tutor profile editor. Redirects to `/login` if unauthenticated. Avatar + banner uploads, drag-to-order subjects, live map preview. |
 | `/account` | `app/account/page.js` | Change password (re-verifies current) + delete account (`delete_own_account` RPC). |
+| `/notifications` | `app/notifications/page.js` | The user's notifications (verification request sent / approved). Marks unread rows read on view. |
+| `/admin/verify` | `app/admin/verify/page.js` | Approve-link landing page (no login — a signed `?token=` is the authorization). Shows the tutor + an Approve button. |
 | `/signup`, `/login` | `app/(auth)/…` | Email + password forms + Google OAuth. Tutor-only (Student "coming soon"). |
 | `/forgot-password`, `/reset-password` | `app/(auth)/…` | Password recovery (no email enumeration). |
 | `/auth/callback` | `app/auth/callback/route.js` | Landing for OAuth (`?code=` → `exchangeCodeForSession`) and recovery (`token_hash` → `verifyOtp`). |
@@ -166,6 +168,8 @@ graph TD
 | `/api/places` | route | `GET ?q` → up to 6 AU suburb matches `{ label, suburb, state, postcode, lat, lng }` (Photon → Nominatim). Primary location path. |
 | `/api/geocode` | route | `GET ?q` → `{ lat, lng }` single result (Nominatim → Photon). Fallback path. |
 | `/api/ai/generate-bio` | route | `POST { kind, profile }` → AI tagline/long-bio copy via Groq. Auth-gated, 10/day per user (`consume_ai_credit` RPC). |
+| `/api/verification/request` | route | `POST` — auth-gated. Flips the tutor to `pending` (`request_tutor_verification` RPC), emails the admin an approve link + notifies the tutor. Idempotent. |
+| `/api/verification/approve` | route | `POST { token }` — no session; the signed token is the gate. Sets `verified`, notifies the tutor. |
 | `/messages` | `app/messages/page.js` | Stub ("coming soon"); not linked from nav. |
 
 ---
@@ -220,7 +224,21 @@ A first-time Google user carries no `role` metadata, so the `handle_new_user()` 
 
 Leaving `GROQ_API_KEY` unset simply disables the feature — the button surfaces an error instead of generating.
 
-### 6. Run
+### 6. Configure tutor verification — optional
+
+Tutors can request a **verified badge** from `/settings` (sidebar) or the final `/onboarding` step. The request emails the admin a one-click approve link; approving flips the badge on and ranks that tutor above unverified ones. Both "request sent" and "approved" appear on `/notifications` and are emailed to the tutor.
+
+This is the one place the **app itself** sends mail (separate from the Supabase auth SMTP above). Set these **server-only** vars in `.env.local`:
+
+1. `RESEND_API_KEY` — a [Resend](https://resend.com) API key (`re_…`). The app calls Resend's HTTP API directly. **Leaving it unset disables sending** — emails are logged to the server console instead, so the flow still works end-to-end locally.
+2. `EMAIL_FROM` — the From address (e.g. `matchtutor <noreply@yourdomain.com>`). Must be on a **verified Resend domain** or Resend only delivers to your own account email.
+3. `ADMIN_EMAIL` — where verification requests land (defaults to `matchtutoraustralia@gmail.com`).
+4. `SUPABASE_SERVICE_ROLE_KEY` — **Project Settings → API → service_role key**. Bypasses RLS; used server-side only to write notifications and to approve (the admin has no session when clicking the email link). **Never expose it.**
+5. `VERIFICATION_APPROVE_SECRET` — any long random string (`openssl rand -hex 32`). Signs the approve link's HMAC token.
+
+Apply migration `0021_verification_and_notifications.sql`. Dev shortcut: `supabase/utilities/verify_user.sql` flips one tutor verified by id without the email round-trip.
+
+### 7. Run
 
 ```bash
 npm run dev      # http://localhost:3000

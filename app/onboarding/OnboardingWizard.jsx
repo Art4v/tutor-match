@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button, Chip } from "@/components/ui";
+import { RequestVerification } from "@/components/RequestVerification";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, saveTutorProfile, markOnboarded } from "@/lib/supabase/tutors";
+import { completionScore } from "@/lib/ranking";
 import { defaultTutor } from "../settings/SettingsEditor";
 import {
   IdentitySection,
@@ -110,7 +112,35 @@ const STEPS = [
     isAnswered: (t) => (t.education ?? []).some((e) => hasText(e?.school) || hasText(e?.detail)),
     render: ({ tutor, set }) => <EducationSection tutor={tutor} set={set} />,
   },
+  {
+    key: "verify",
+    // Always "answered" so the final step shows Finish (it's optional anyway).
+    isAnswered: () => true,
+    render: ({ tutor, saveProfile }) => <VerifyStep tutor={tutor} saveProfile={saveProfile} />,
+  },
 ];
+
+// Final onboarding step: offer verification. Requesting saves the profile first
+// (so the admin reviews real data) via the shared `saveProfile` handler, then
+// the shared RequestVerification card POSTs the request. Finish still completes
+// onboarding regardless of whether they requested.
+function VerifyStep({ tutor, saveProfile }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-[20px] font-semibold text-slate-900 tracking-tight">Get verified (optional)</h2>
+        <p className="text-[14px] text-slate-500 mt-1">
+          Verified tutors get a badge next to their name and rank higher in search. You can also do this later from Settings.
+        </p>
+      </div>
+      <RequestVerification
+        status={tutor.verificationStatus || "none"}
+        completionPct={completionScore(tutor).pct}
+        beforeRequest={saveProfile}
+      />
+    </div>
+  );
+}
 
 const stepVariants = {
   enter: (dir) => ({ x: dir > 0 ? 28 : -28, opacity: 0 }),
@@ -181,38 +211,52 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
     setStepIndex((i) => i + 1);
   };
 
-  // Finish or "Skip everything": persist whatever's been entered (when a name
-  // exists — saveTutorProfile rejects a blank name), flip the onboarded flag so
-  // the wizard never reappears, then land the tutor in their settings editor.
+  // Persist whatever's been entered (when a name exists — saveTutorProfile
+  // rejects a blank name). Returns true if there was nothing to save or the save
+  // succeeded, false on error (after toasting). Shared by Finish and the Verify
+  // step's "Request verification" (which saves the profile before requesting, so
+  // the admin reviews real data).
+  const saveProfile = async () => {
+    if (!nameValid) return true; // nothing to persist yet — let the caller proceed
+    // Last-chance geocode, mirroring SettingsEditor.onSave: if the picked
+    // suburb never resolved to coords, fetch them now so the map renders.
+    let toSave = tutor;
+    const sa = tutor.serviceArea;
+    const suburb = (sa?.suburb || "").trim();
+    const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
+      || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
+    if (stale) {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
+        if (res.ok) {
+          const body = await res.json();
+          if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
+            toSave = { ...tutor, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
+          } else {
+            toSave = { ...tutor, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
+          }
+        }
+      } catch { /* save with whatever's there */ }
+    }
+    const result = await saveTutorProfile(supabase, userId, toSave);
+    if (!result.ok) {
+      showToast("error", result.error?.message || "Couldn't save — please try again.");
+      return false;
+    }
+    return true;
+  };
+
+  // Finish or "Skip everything": persist whatever's been entered, flip the
+  // onboarded flag so the wizard never reappears, then land the tutor in their
+  // settings editor.
   const complete = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
       if (nameValid) {
-        // Last-chance geocode, mirroring SettingsEditor.onSave: if the picked
-        // suburb never resolved to coords, fetch them now so the map renders.
-        let toSave = tutor;
-        const sa = tutor.serviceArea;
-        const suburb = (sa?.suburb || "").trim();
-        const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
-          || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
-        if (stale) {
-          try {
-            const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
-            if (res.ok) {
-              const body = await res.json();
-              if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
-                toSave = { ...tutor, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
-              } else {
-                toSave = { ...tutor, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
-              }
-            }
-          } catch { /* save with whatever's there */ }
-        }
-        const result = await saveTutorProfile(supabase, userId, toSave);
-        if (!result.ok) {
+        const ok = await saveProfile();
+        if (!ok) {
           setSubmitting(false);
-          showToast("error", result.error?.message || "Couldn't save — please try again.");
           return;
         }
       }
@@ -270,7 +314,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
               exit="exit"
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              {step.render({ tutor, set, catalog })}
+              {step.render({ tutor, set, catalog, saveProfile })}
             </motion.div>
           </AnimatePresence>
         </div>

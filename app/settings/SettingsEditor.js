@@ -18,7 +18,6 @@ import {
   YearLevelsSection,
   ServiceAreaSection,
   AvailabilitySection,
-  VerificationsSection,
   Sidebar,
   SaveBar,
   MobileSaveBar,
@@ -42,6 +41,7 @@ export function defaultTutor(userId, userEmail, fullName) {
     avatarImg: null,
     bannerImg: null,
     verified: false,
+    verificationStatus: "none",
     deliversInPerson: true,
     deliversOnline: true,
     responsiveText: "Usually responds in <1 hr",
@@ -230,7 +230,6 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
 
           <div className="space-y-5 lg:sticky lg:top-[88px]">
             <Sidebar tutor={tutor} set={set} publicHref={publicHref} publicUrl={publicUrl} catalog={subjectCatalog} />
-            <VerificationsSection />
           </div>
         </div>
       </div>

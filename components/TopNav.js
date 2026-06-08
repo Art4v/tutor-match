@@ -14,6 +14,7 @@ export function TopNav() {
   const [user, setUser] = useState(null);
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
+  const [unread, setUnread] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -64,6 +65,7 @@ export function TopNav() {
     if (!user) {
       setTutorSlug(null);
       setProfile(null);
+      setUnread(0);
       return;
     }
     const supabase = createSupabaseBrowserClient();
@@ -81,6 +83,15 @@ export function TopNav() {
             ? { name: data.profile?.full_name ?? null, avatarUrl: data.avatar_url ?? null }
             : null
         );
+      });
+    // Unread notifications drive the dot on the avatar chip + menu item. Keyed on
+    // pathname too, so visiting /notifications (which marks them read) clears it.
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("read", false)
+      .then(({ count }) => {
+        if (active) setUnread(count ?? 0);
       });
     return () => {
       active = false;
@@ -149,7 +160,7 @@ export function TopNav() {
                     onClick={() => setMenuOpen((o) => !o)}
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
-                    className="hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
+                    className="relative hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
                     style={{ background: menuOpen ? "var(--accent-softer)" : "#F3F4F6", color: menuOpen ? "var(--accent)" : "#334155" }}
                     title={displayName}
                   >
@@ -161,6 +172,13 @@ export function TopNav() {
                     </span>
                     <span className="max-w-[180px] truncate">{displayName}</span>
                     <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+                    {unread > 0 && !menuOpen && (
+                      <span
+                        className="absolute"
+                        style={{ top: 5, left: 26, width: 9, height: 9, borderRadius: 999, background: "var(--accent)", border: "2px solid #fff" }}
+                        aria-label={`${unread} unread notifications`}
+                      />
+                    )}
                   </button>
                   {menuOpen && (
                     <div
@@ -182,6 +200,19 @@ export function TopNav() {
                           Profile
                         </NavMenuLink>
                       )}
+                      <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
+                        <span className="flex items-center justify-between gap-2">
+                          Notifications
+                          {unread > 0 && (
+                            <span
+                              className="inline-flex items-center justify-center text-[11px] font-semibold text-white tabular-nums"
+                              style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
+                            >
+                              {unread > 9 ? "9+" : unread}
+                            </span>
+                          )}
+                        </span>
+                      </NavMenuLink>
                       <NavMenuLink href="/settings" onClick={() => setMenuOpen(false)}>
                         Settings
                       </NavMenuLink>
