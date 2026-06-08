@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorBySlug, getFeaturedTutors } from "@/lib/supabase/tutors";
+import { rankTutors } from "@/lib/ranking";
 import { subjectLabel } from "@/lib/subjects";
 import { yearRangeLabel } from "@/lib/yearLevels";
 import { Icon } from "@/components/Icon";
@@ -22,8 +23,8 @@ export default async function ProfilePage({ params }) {
   const tutor = await getTutorBySlug(supabase, params.slug);
   if (!tutor) return notFound();
 
-  const similarPool = await getFeaturedTutors(supabase, 10, tutor.id);
-  const similar = pickRandom(similarPool, 4);
+  const similarPool = await getFeaturedTutors(supabase, 50, tutor.id);
+  const similar = rankTutors(similarPool).slice(0, 4);
 
   const deliveryLabel = formatDelivery(tutor);
 
@@ -251,15 +252,5 @@ function SimilarTutorsStack({ similar }) {
       ))}
     </div>
   );
-}
-
-function pickRandom(arr, n) {
-  if (!arr || arr.length === 0) return [];
-  const copy = arr.slice();
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, n);
 }
 
