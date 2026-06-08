@@ -91,6 +91,14 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
   const [subjectCatalog, setSubjectCatalog] = useState([]);
 
+  // Sticky offset for the right column. When the sidebar is taller than the
+  // viewport, a fixed `top` would pin its top and hide its bottom until the
+  // page bottom. Instead we compute a negative `top` so the column scrolls up
+  // with the page and pins its *bottom* near the viewport bottom (it starts
+  // moving near the top). Shorter-than-viewport sidebars keep the 88px top pin.
+  const sidebarRef = useRef(null);
+  const [stickyTop, setStickyTop] = useState(88);
+
   useEffect(() => {
     let active = true;
     getSubjects(supabase).then((rows) => {
@@ -171,6 +179,26 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
+  // Recompute the right-column sticky offset whenever the viewport or the
+  // sidebar's own height changes (the live preview / completion meter grow and
+  // shrink as the tutor edits). The ResizeObserver can fire after unmount, so
+  // null-guard the ref inside the callback.
+  useEffect(() => {
+    const recalc = () => {
+      const el = sidebarRef.current;
+      if (!el) return;
+      setStickyTop(Math.min(88, window.innerHeight - el.offsetHeight - 24));
+    };
+    recalc();
+    window.addEventListener("resize", recalc);
+    const ro = new ResizeObserver(recalc);
+    if (sidebarRef.current) ro.observe(sidebarRef.current);
+    return () => {
+      window.removeEventListener("resize", recalc);
+      ro.disconnect();
+    };
+  }, []);
+
   const profileSlug = tutor.slug || userId;
   const publicHref = `matchtutor.com.au/tutor/${profileSlug}`;
   const publicUrl = `https://${publicHref}`;
@@ -228,7 +256,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
             <AvailabilitySection tutor={tutor} set={set} />
           </div>
 
-          <div className="space-y-5 lg:sticky lg:top-[88px]">
+          <div ref={sidebarRef} className="space-y-5 lg:sticky" style={{ top: stickyTop }}>
             <Sidebar tutor={tutor} set={set} publicHref={publicHref} publicUrl={publicUrl} catalog={subjectCatalog} />
           </div>
         </div>
