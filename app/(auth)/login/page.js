@@ -13,7 +13,9 @@ function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justReset = searchParams.get("reset") === "1";
-  const oauthError = searchParams.get("error") === "oauth";
+  const errorParam = searchParams.get("error");
+  const oauthError = errorParam === "oauth";
+  const linkError = errorParam === "link_invalid";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -71,12 +73,14 @@ function LoginInner() {
         </div>
       )}
 
-      {oauthError && (
+      {(oauthError || linkError) && (
         <div
           className="px-3 py-2 mb-5 text-[13px] text-red-700"
           style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
         >
-          Couldn&rsquo;t sign in — please try again.
+          {linkError
+            ? "That confirmation link is invalid or has expired — please sign in, or sign up again."
+            : "Couldn’t sign in — please try again."}
         </div>
       )}
 

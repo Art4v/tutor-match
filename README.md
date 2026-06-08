@@ -93,11 +93,13 @@ graph TD
         S1["/signup form"] -->|POST| S2["/api/auth/signup<br/>password + email-domain (MX) check"]
         S2 -->|auth.signUp| S3[("auth.users")]
         S3 -->|handle_new_user trigger| S4["profiles + tutor_profiles + slug"]
+        S3 -->|confirm email link| S5["/auth/callback<br/>verifyOtp (signup) + welcome"]
+        S5 --> S6["/settings"]
     end
 
     subgraph OAuth["Google OAuth (PKCE)"]
         O1["Continue with Google"] -->|signInWithOAuth| O2["Google consent"]
-        O2 -->|?code=| O3["/auth/callback<br/>exchangeCodeForSession"]
+        O2 -->|?code=| O3["/auth/callback<br/>exchangeCodeForSession + welcome"]
         O3 --> O4["/settings"]
     end
 
@@ -212,7 +214,7 @@ graph TD
 | `/admin/verify` | `app/admin/verify/page.js` | Approve-link landing page (no login — a signed `?token=` is the authorization). Shows the tutor + an Approve button. |
 | `/signup`, `/login` | `app/(auth)/…` | Email + password forms + Google OAuth. Tutor-only (Student "coming soon"). |
 | `/forgot-password`, `/reset-password` | `app/(auth)/…` | Password recovery (no email enumeration). |
-| `/auth/callback` | `app/auth/callback/route.js` | Landing for OAuth (`?code=` → `exchangeCodeForSession`) and recovery (`token_hash` → `verifyOtp`). |
+| `/auth/callback` | `app/auth/callback/route.js` | Landing for OAuth (`?code=` → `exchangeCodeForSession`), signup confirmation (`token_hash`/`type=signup` → `verifyOtp`, lands at `/settings`), and recovery (`token_hash`/`type=recovery` → `verifyOtp`). Sends the one-time welcome notification + email on OAuth + signup confirmation (idempotent; not on recovery). |
 | `/api/auth/signup` | route | `POST { fullName, email, password, role }` — re-validates password + email domain (MX/A lookup) then `auth.signUp`. Returns `session \| confirm \| exists`. |
 | `/api/auth/forgot-password` | route | `POST { email }` → `resetPasswordForEmail`. Always neutral response. |
 | `/api/places` | route | `GET ?q` → up to 6 AU suburb matches `{ label, suburb, state, postcode, lat, lng }` (Photon → Nominatim). Primary location path. |
@@ -248,7 +250,7 @@ Confirmation/recovery emails are sent **by Supabase over Resend custom SMTP** �
 
 1. Create a [Resend](https://resend.com) API key (`re_…`).
 2. Supabase → **Project Settings → Authentication → SMTP Settings** → enable Custom SMTP: host `smtp.resend.com`, port `465`/`587`, username `resend`, password = the key. Sender `onboarding@resend.dev` until a domain is verified.
-3. **Authentication → Emails** → paste `supabase/email-templates/confirm-signup.html` (Confirm signup) and `reset-password.html` (Reset Password). Re-paste after any edit — Supabase renders the live copy.
+3. **Authentication → Emails** → paste `supabase/email-templates/confirm-signup.html` (Confirm signup) and `reset-password.html` (Reset Password). Re-paste after any edit — Supabase renders the live copy. The confirm-signup link routes through `<origin>/auth/callback?next=/settings&token_hash=…&type=signup` (mirroring recovery), so confirmation logs the user in at `/settings` and triggers the one-time welcome email + notification.
 4. **Authentication → Rate Limits** → raise emails/hour above 2.
 5. **Authentication → URL Configuration** → set **Site URL** to the live domain, and add **wildcard** Redirect URLs for every origin: `https://matchtutor.com.au/auth/callback**` and `http://localhost:3000/auth/callback**`. The `**` is required — the `?next=…` query string won't match a bare entry, and a failed match silently falls back to the Site URL.
 

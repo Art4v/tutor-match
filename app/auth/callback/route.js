@@ -21,6 +21,8 @@
 
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { sendWelcomeIfNeeded } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -47,14 +49,30 @@ export async function GET(request) {
   }
 
   if (ok) {
+    // A new account is now confirmed (OAuth sign-in, or an email-signup confirm
+    // link with type=signup/email — but NOT password recovery). Send the
+    // one-time welcome; sendWelcomeIfNeeded is idempotent and never throws.
+    const isSignupConfirm = !isOAuth && (type === "signup" || type === "email");
+    if (isOAuth || isSignupConfirm) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await sendWelcomeIfNeeded(createSupabaseAdminClient(), user.id, {
+          name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          origin,
+        });
+      }
+    }
     return NextResponse.redirect(`${origin}${next}`);
   }
 
   // Send each failure to the page that requested the flow: OAuth failures back
-  // to /login, recovery (token_hash) failures to the reset page's invalid state.
-  return NextResponse.redirect(
-    isOAuth
-      ? `${origin}/login?error=oauth`
-      : `${origin}/reset-password?error=link_invalid`
-  );
+  // to /login (its ?error=oauth banner), a signup-confirm failure to /login, and
+  // recovery (token_hash) failures to the reset page's invalid state.
+  if (isOAuth) {
+    return NextResponse.redirect(`${origin}/login?error=oauth`);
+  }
+  if (type === "signup" || type === "email") {
+    return NextResponse.redirect(`${origin}/login?error=link_invalid`);
+  }
+  return NextResponse.redirect(`${origin}/reset-password?error=link_invalid`);
 }

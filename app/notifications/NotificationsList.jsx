@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // Icon + accent per notification type.
 const TYPES = {
+  welcome: { icon: "sparkle", color: "var(--accent)", bg: "var(--accent-softer)" },
   verification_requested: { icon: "shield", color: "var(--accent)", bg: "var(--accent-softer)" },
   verification_approved: { icon: "shield-check", color: "#10B981", bg: "#ECFDF5" },
 };

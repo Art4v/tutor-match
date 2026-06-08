@@ -1,7 +1,21 @@
 <!--
   Supabase "Confirm signup" email template.
   Paste into: Supabase Dashboard → Authentication → Emails → Confirm signup.
-  Template variables: {{ .ConfirmationURL }} is rendered by Supabase.
+
+  The link is built from {{ .RedirectTo }} — the emailRedirectTo the app passes
+  to supabase.auth.signUp, i.e. `<origin>/auth/callback?next=/settings`. We append
+  the signup token to it, so the final link is:
+    <origin>/auth/callback?next=/settings&token_hash=<hash>&type=signup
+  /auth/callback verifies it with supabase.auth.verifyOtp({ type: "signup",
+  token_hash }), which mints the session directly (no /verify hop, no PKCE code
+  exchange — so it also works in a different browser), lands the user logged-in
+  at /settings, and fires the one-time welcome notification + email.
+
+  Using {{ .RedirectTo }} (not the global {{ .SiteURL }}) makes the link
+  self-select dev vs prod by origin. For RedirectTo to render, its value must
+  match a WILDCARD Redirect-URLs entry (`<origin>/auth/callback**`) in
+  Authentication → URL Configuration.
+
   Colors mirror the app's accent theme (app/globals.css): accent #152764,
   softer #EFF6FF, line #BFDBFE, ink #0F172A / muted #475569.
 -->
@@ -51,7 +65,7 @@
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="background:#152764; border-radius:10px;">
-                      <a href="{{ .ConfirmationURL }}"
+                      <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup"
                          style="display:inline-block; padding:13px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px;">
                         Confirm email
                       </a>
@@ -66,7 +80,7 @@
                   If the button doesn't work, copy and paste this link into your browser:
                 </p>
                 <p style="margin:8px 0 0 0; font-size:13px; line-height:1.6; word-break:break-all;">
-                  <a href="{{ .ConfirmationURL }}" style="color:#152764; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                  <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup" style="color:#152764; text-decoration:underline;">{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup</a>
                 </p>
               </td>
             </tr>
