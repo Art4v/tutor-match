@@ -116,14 +116,14 @@ export function TopNav() {
   return (
     <div className="sticky top-0 z-40 bg-white" style={{ borderBottom: "1px solid #E5E7EB" }}>
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="nav-logo flex items-center gap-2 group">
           <div
-            className="w-7 h-7 flex items-center justify-center text-white font-hand transition-colors"
+            className="nav-logo-tile w-7 h-7 flex items-center justify-center text-white font-hand transition-colors"
             style={{ background: "var(--accent)", fontSize: 21, fontWeight: 700, lineHeight: 1, paddingBottom: 2 }}
           >mt</div>
           <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
-            <span style={{ color: "var(--ink-graphite)" }}>match</span>
-            <span className="accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
+            <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>match</span>
+            <span className="nav-logo-word accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
           </span>
         </Link>
 

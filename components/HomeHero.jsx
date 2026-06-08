@@ -68,25 +68,9 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 text-[13px]"
-              style={{
-                borderRadius: 999,
-                border: "1px solid var(--accent-line)",
-                background: "var(--accent-softer)",
-                color: "var(--accent)",
-                fontWeight: 400,
-                letterSpacing: "0.01em",
-              }}
+              className="mb-6 text-[13px]"
+              style={{ color: "#737680", letterSpacing: "0.01em" }}
             >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 999,
-                  background: "var(--accent)",
-                  boxShadow: "0 0 0 4px rgba(110,122,85,0.15)",
-                }}
-              />
               Australia&apos;s tutor directory, rebuilt.
             </motion.div>
 
