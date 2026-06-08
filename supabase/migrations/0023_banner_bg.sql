@@ -1,4 +1,4 @@
--- 0014_banner_bg.sql
+-- 0023_banner_bg.sql
 -- Decouples the banner fallback colour from the avatar fallback colour.
 -- Previously a single column `avatar_bg` drove both (the colored circle behind
 -- a missing avatar AND the banner backdrop when no banner image was uploaded),

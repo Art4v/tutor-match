@@ -108,6 +108,47 @@ graph TD
     end
 ```
 
+### Tutor verification pipeline
+
+A tutor requests verification; the admin approves via a signed email link (no admin login). Every notification is **both** an in-app row and an email, funnelled through `lib/notifications.js → notifyUser()` using the service-role client (the `notifications` table has no INSERT RLS policy).
+
+```mermaid
+sequenceDiagram
+    participant T as Tutor (/settings)
+    participant RQ as /api/verification/request
+    participant DB as Supabase
+    participant N as notifyUser() (service-role)
+    participant A as Admin (email)
+    participant AP as /api/verification/approve
+
+    T->>RQ: POST (auth-gated)
+    RQ->>DB: request_tutor_verification() RPC → status 'pending'
+    RQ->>N: notify tutor ("request received")
+    RQ->>A: email approve link (HMAC token, lib/verifyToken.js)
+    A->>AP: open /admin/verify?token → click Approve (POST { token })
+    AP->>DB: verify token → set verified + status 'verified'
+    AP->>N: notify tutor ("you're verified ✓")
+    N-->>T: in-app notification + email
+```
+
+### Emailing all tutors (Resend Broadcasts)
+
+Product updates go out via **Resend Broadcasts**, not the app. `npm run sync:audience` reconciles a Resend Audience with the live tutor list; you compose + send from the Resend dashboard. Email bodies live in `email-updates/` as numbered HTML files (see that folder's `README.md`).
+
+```mermaid
+graph LR
+    Script["npm run sync:audience<br/>scripts/sync-tutors-audience.mjs"]
+    DB[("Supabase<br/>confirmed tutors")]
+    Aud["Resend Audience<br/>(contacts)"]
+    BC["Resend Broadcasts<br/>compose + send"]
+    HTML["email-updates/NNNN_*.html"]
+
+    Script -->|service-role read| DB
+    Script -->|create missing contacts only<br/>preserves opt-outs| Aud
+    HTML -.paste.-> BC
+    Aud --> BC --> Tutors["All tutors"]
+```
+
 ---
 
 ## Project layout
@@ -120,28 +161,36 @@ graph TD
     root --> comp["components/"]
     root --> lib["lib/"]
     root --> sb["supabase/"]
+    root --> scripts["scripts/ — sync-tutors-audience.mjs"]
+    root --> emails["email-updates/ — NNNN_*.html broadcasts + README"]
     root --> mw["middleware.js<br/>jsconfig.json · *.config.*"]
 
     app --> auth["(auth)/ — login · signup ·<br/>forgot-password · reset-password"]
-    app --> apidir["api/ — auth/signup · auth/forgot-password<br/>places · geocode"]
+    app --> apidir["api/ — auth/* · places · geocode ·<br/>ai/generate-bio · verification/{request,approve}"]
     app --> callback["auth/callback/ — OAuth + recovery landing"]
     app --> browse["browse/ — page + BrowseFilters + ResultsGrid"]
     app --> tutor["tutor/[slug]/ — page + Rate/About/Availability/<br/>Service-area/Education/Experience cards"]
     app --> settings["settings/ — page · SettingsEditor · sections"]
+    app --> onboard["onboarding/ — first-login wizard"]
     app --> account["account/ — change password · delete account"]
+    app --> notif["notifications/ — list + mark-read"]
+    app --> admin["admin/verify/ — approve-link landing"]
     app --> pages["page.js (home) · layout.js · messages/"]
 
     comp --> ui["ui.js · Icon.js · TopNav · Footer · TutorCard"]
     comp --> home["HomeHero · HomeFeaturedTutors · HomeHowItWorks · HomeCta"]
     comp --> pick["SubjectPicker · SuburbAutocomplete · OAuthButtons · PasswordChecklist"]
     comp --> media["ServiceMapLeaflet · ImageCropModal · RichText · anim/*"]
+    comp --> vnotif["RequestVerification · NotificationsList"]
 
-    lib --> data["supabase/ — client · server · storage · tutors"]
-    lib --> dom["password · email · mailDomain · subjects · yearLevels · availability"]
-    lib --> loc["places · geocode · richText · motion"]
+    lib --> data["supabase/ — client · server · admin · storage · tutors"]
+    lib --> dom["password · email · mailDomain · subjects · yearLevels · availability · ranking"]
+    lib --> loc["places · geocode · richText · motion · groq"]
+    lib --> mail["email/send · notifications · verifyToken"]
 
-    sb --> migr["migrations/ — 0001 … 0017"]
+    sb --> migr["migrations/ — 0001 … 0024"]
     sb --> tmpl["email-templates/ — confirm-signup · reset-password"]
+    sb --> util["utilities/ — verify_user (dev)"]
     sb --> reset["reset/ — data_reset · delete_user (dev only)"]
 ```
 
@@ -156,7 +205,8 @@ graph TD
 | `/` | `app/page.js` | Server. Hero search, featured tutors, how-it-works, CTA. |
 | `/browse` | `app/browse/page.js` | Server. Filter state parsed from `searchParams`; `getTutorsForBrowse()`. Geospatial location via `tutors_within_service_radius` RPC. Sidebar rewrites the URL on every change. |
 | `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile via `getTutorBySlug()`; `notFound()` unless `visibility = 'public'`. Leaflet service-area map when coords exist. |
-| `/settings` | `app/settings/page.js` | Tutor profile editor. Redirects to `/login` if unauthenticated. Avatar + banner uploads, drag-to-order subjects, live map preview. |
+| `/settings` | `app/settings/page.js` | Tutor profile editor. Redirects to `/login` if unauthenticated, or `/onboarding` if not yet onboarded. Avatar + banner uploads, drag-to-order subjects, live card preview, AI bio copy, request-verification card, high-school/university education picker. |
+| `/onboarding` | `app/onboarding/page.js` | First-login one-question-per-step wizard that reuses the real `/settings` section components. Redirects to `/settings` once `onboarded`. Saves once on finish, then `markOnboarded()`. |
 | `/account` | `app/account/page.js` | Change password (re-verifies current) + delete account (`delete_own_account` RPC). |
 | `/notifications` | `app/notifications/page.js` | The user's notifications (verification request sent / approved). Marks unread rows read on view. |
 | `/admin/verify` | `app/admin/verify/page.js` | Approve-link landing page (no login — a signed `?token=` is the authorization). Shows the tutor + an Approve button. |
@@ -188,7 +238,7 @@ npm install
 2. Copy `.env.example` → `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL` — Project Settings → API → Project URL.
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the `anon public` key. **Not** the `service_role` key (it bypasses RLS).
-3. Run every file in `supabase/migrations/` (`0001`–`0020`) **in numeric order** in the SQL Editor — they build the schema below incrementally.
+3. Run every file in `supabase/migrations/` (`0001`–`0024`) **in numeric order** in the SQL Editor — they build the schema below incrementally.
 
 Without Supabase configured, public pages render empty states and signup/login fail.
 
@@ -238,7 +288,18 @@ This is the one place the **app itself** sends mail (separate from the Supabase 
 
 Apply migration `0021_verification_and_notifications.sql`. Dev shortcut: `supabase/utilities/verify_user.sql` flips one tutor verified by id without the email round-trip.
 
-### 7. Run
+### 7. Email all tutors (Resend Broadcasts) — optional
+
+Send product updates/newsletters to every tutor via **Resend Broadcasts**. The app only owns a sync that pushes current tutors into a Resend Audience; you compose + send from the Resend dashboard. Email bodies live in `email-updates/` as numbered HTML files (`NNNN_short-description.html`, kept in order like migrations).
+
+1. **Resend → Audience** — Resend gives you one default audience automatically. `RESEND_AUDIENCE_ID` is **optional** — leave it blank and the sync auto-detects the single audience; set it only if you have several.
+2. `RESEND_AUDIENCE_API_KEY` — managing contacts needs a **full-access** Resend key (the sending-only `RESEND_API_KEY` returns 401). Resend → API Keys → create one with **Full access**. (If `RESEND_API_KEY` already has full access, the sync falls back to it.)
+3. Run `npm run sync:audience` — adds every confirmed tutor as a contact. Idempotent, and it only *adds* missing contacts, so re-running never re-subscribes anyone who unsubscribed in Resend.
+4. **Resend → Broadcasts → New** → pick the audience → paste the HTML from `email-updates/` → send a test → send. See `email-updates/README.md` for the full walkthrough.
+
+Broadcasts only deliver to arbitrary recipients from a **verified domain** `From` (same caveat as step 3). Resend appends the required unsubscribe footer automatically.
+
+### 8. Run
 
 ```bash
 npm run dev      # http://localhost:3000
@@ -265,6 +326,8 @@ erDiagram
     tutor_profiles ||--o{ tutor_packages : "tutor_id"
     tutor_profiles ||--o{ tutor_experience : "tutor_id"
     tutor_profiles ||--o{ tutor_education : "tutor_id"
+    auth_users ||--o{ notifications : "user_id"
+    auth_users ||--o{ ai_usage : "user_id"
 
     auth_users {
         uuid id PK
@@ -299,7 +362,9 @@ erDiagram
         text avatar_url "+ banner_url"
         text avatar_bg "+ banner_bg"
         numeric rating "+ review_count"
-        bool verified
+        bool verified "set on approval only"
+        text verification_status "none|pending|verified|rejected"
+        bool onboarded
     }
     student_profiles {
         uuid id PK,FK "→ profiles"
@@ -340,13 +405,29 @@ erDiagram
         uuid id PK
         uuid tutor_id FK
         text school
+        text detail
+        text level "high_school | university"
         int position
+    }
+    notifications {
+        uuid id PK
+        uuid user_id FK "→ auth.users"
+        text type
+        text title
+        text body
+        bool read
+        timestamptz created_at
+    }
+    ai_usage {
+        uuid user_id PK "→ auth.users"
+        date day PK
+        int count "≤ 10 / UTC-day"
     }
 ```
 
-**Key DB functions:** `handle_new_user()` (signup trigger — OAuth-safe, defaults role to tutor), `tutors_within_service_radius(lat, lng, include_online)` (haversine RPC for location search), `assign_tutor_slug(name)` (race-safe slug regen on rename), `delete_own_account()` (`SECURITY DEFINER`, scoped to `auth.uid()`). Plus a public `profile-images` Storage bucket (owner-scoped RLS) for avatar/banner uploads.
+**Key DB functions** (all `SECURITY DEFINER` RPCs scoped to `auth.uid()` unless noted): `handle_new_user()` (signup trigger — OAuth-safe, defaults role to tutor), `tutors_within_service_radius(lat, lng, include_online)` (haversine RPC for location search), `assign_tutor_slug(name)` (race-safe slug regen on rename), `delete_own_account()`, `request_tutor_verification()` (flips `none`/`rejected` → `pending`), `consume_ai_credit()` / `refund_ai_credit()` (atomic 10/day AI cap). Approval has no RPC — it runs through the service-role client because the admin has no session when clicking the email link. Plus a public `profile-images` Storage bucket (owner-scoped RLS) for avatar/banner uploads.
 
-The schema is built incrementally by the 17 ordered files in `supabase/migrations/` (`0001`–`0017`; three independent `0014_*` files) — apply them all in numeric order. `supabase/reset/` holds dev-only destructive scripts.
+The schema is built incrementally by the ordered files in `supabase/migrations/` (`0001`–`0024`) — apply them all in numeric order; each new migration takes the next sequential number (no reuse), like `email-updates/`. `supabase/utilities/` has dev shortcuts (e.g. `verify_user.sql`) and `supabase/reset/` holds dev-only destructive scripts.
 
 ---
 
@@ -360,7 +441,12 @@ A deliberate mix of **Tailwind utilities** for layout and **inline `style={{ }}`
 
 - `lib/supabase/client.js` — `createBrowserClient` for client components.
 - `lib/supabase/server.js` — `createServerClient` wired to `cookies()` for server components / route handlers.
+- `lib/supabase/admin.js` — **server-only** `service_role` client (bypasses RLS). Used only where no user session exists: writing `notifications`, reading user emails (`auth.admin.getUserById`), approving verification, and the broadcast sync. Returns `null` when the key is unset so callers degrade gracefully.
 - `middleware.js` — calls `getUser()` on every request to refresh the session cookie (official `@supabase/ssr` pattern; matcher excludes static assets).
+
+### Verification, notifications & email
+
+`lib/notifications.js → notifyUser()` is the single path for user notifications — it inserts the in-app row **and** emails the user, so "every notification is emailed" always holds. `lib/email/send.js` sends via the Resend **HTTP API** (`RESEND_API_KEY`/`EMAIL_FROM`; unset = no-op + console log) and holds the inline-styled templates. `lib/verifyToken.js` signs/verifies the HMAC approve-link token. `saveTutorProfile` deliberately never writes `verified`/`verification_status` — those are server-controlled so a tutor can't self-verify. The verified flag adds a ranking boost in `lib/ranking.js`. Bulk update emails are out-of-app via Resend Broadcasts (`scripts/sync-tutors-audience.mjs` + `email-updates/`).
 
 ### Signup gate
 

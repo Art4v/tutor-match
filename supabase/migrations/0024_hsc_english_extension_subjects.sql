@@ -1,5 +1,5 @@
--- 0014_hsc_english_extension_subjects.sql
--- matchtutor — slice 14: add HSC English Extension 1 + Extension 2 to the
+-- 0024_hsc_english_extension_subjects.sql
+-- matchtutor — slice 24: add HSC English Extension 1 + Extension 2 to the
 -- subject catalog.
 --
 -- English Extension 1 was already seeded in 0009 (position 28); this migration
