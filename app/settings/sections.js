@@ -1366,13 +1366,13 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-2">Profile completion</h3>
         <div style={{ height: 6, background: "var(--desk)", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "var(--stamp)" : "var(--ink)", transition: "width 220ms ease" }} />
+          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "var(--accent)" : "var(--ink)", transition: "width 220ms ease" }} />
         </div>
         <ul className="mt-4 space-y-2">
           {c.checks.map((ch) => (
             <li key={ch.key} className="flex items-center gap-2 text-[13px]">
               <span className="inline-flex items-center justify-center shrink-0"
-                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "var(--stamp)" : "var(--desk)", color: ch.ok ? "#fff" : "var(--sage)" }}>
+                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "var(--accent)" : "var(--desk)", color: ch.ok ? "#fff" : "var(--sage)" }}>
                 {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--sage)" }} />}
               </span>
               <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
@@ -1417,7 +1417,7 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, 
           <div className="min-w-0">
             <div className="text-[14.5px] font-semibold text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your profile"}</div>
             <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
-              <span className="inline-block" style={{ width: 7, height: 7, borderRadius: "50%", background: dirty ? "#F59E0B" : "var(--stamp)", boxShadow: dirty ? "0 0 0 3px rgba(245,158,11,0.18)" : "0 0 0 3px rgba(16,185,129,0.18)" }} />
+              <span className="inline-block" style={{ width: 7, height: 7, borderRadius: "50%", background: dirty ? "#F59E0B" : "#10B981", boxShadow: dirty ? "0 0 0 3px rgba(245,158,11,0.18)" : "0 0 0 3px rgba(16,185,129,0.18)" }} />
               {dirty ? "Unsaved changes" : "All changes saved"}
             </div>
           </div>

@@ -11,13 +11,14 @@ export function HomeFeaturedTutors({ tutors = [] }) {
 
   return (
     <section
+      className="min-h-[70vh] flex flex-col justify-center"
       style={{
         background:
           "radial-gradient(40% 45% at 50% 18%, rgba(94,122,90,0.10) 0%, rgba(233,226,207,0) 60%), var(--desk)",
       }}
     >
-      <div className="max-w-[1200px] w-full mx-auto px-6 pt-16 pb-6">
-        <div className="max-w-[720px] mx-auto text-center flex flex-col items-center mb-10">
+      <div className="max-w-[1200px] w-full mx-auto px-6 py-10">
+        <div className="max-w-[720px] mx-auto text-center flex flex-col items-center mb-7">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -28,13 +29,13 @@ export function HomeFeaturedTutors({ tutors = [] }) {
           >
             Featured
           </motion.div>
-          <HandwrittenHeading as="h2" text="Browse our tutors." size={64} className="flex flex-col items-center" />
+          <HandwrittenHeading as="h2" text="Browse our tutors." size={52} className="flex flex-col items-center" />
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-            className="text-[15.5px] text-[color:var(--ink-muted)] mt-4 leading-[1.55]"
+            className="text-[15.5px] text-[color:var(--ink-muted)] mt-3 leading-[1.55]"
           >
             {empty
               ? "No tutors have published their profiles yet — check back soon."
@@ -52,7 +53,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
                 hidden: {},
                 show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.2 } },
               }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-[1060px] mx-auto"
             >
               {tutors.map((t) => (
                 <motion.div
@@ -67,7 +68,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
               ))}
             </motion.div>
 
-            <div className="mt-10 flex justify-center">
+            <div className="mt-7 flex justify-center">
               <Link
                 href="/browse"
                 className="group inline-flex items-center gap-2 text-[14px] font-medium relative"

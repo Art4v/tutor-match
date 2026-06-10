@@ -150,7 +150,7 @@ function SubjectChipsFill({ subjects }) {
   );
 }
 
-const CARD_HEIGHT = 440;
+const CARD_HEIGHT = 360;
 
 // Motion variants: a single source of truth for the hover behaviour. On enter,
 // y eases up to -3px while rotate plays a small back-and-forth wobble that

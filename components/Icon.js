@@ -11,6 +11,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     className,
   };
   switch (name) {
+    case "tree": return <svg {...props}><path d="M12 3.2C13.6 3.2 14.8 4.3 14.9 5.7 16.7 5.4 18.3 6.7 18 8.5 19.4 9.3 19.5 11.3 18.1 12.3 18.4 13.9 16.9 15.1 15.3 14.6 14.6 15.6 13 15.8 12 15.1 11 15.8 9.4 15.6 8.7 14.6 7.1 15.1 5.6 13.9 5.9 12.3 4.5 11.3 4.6 9.3 6 8.5 5.7 6.7 7.3 5.4 9.1 5.7 9.2 4.3 10.4 3.2 12 3.2Z"/><path d="M12 21V8"/><path d="M12 12 9.2 9.8"/><path d="m12 10.8 2.6-2"/></svg>;
     case "search": return <svg {...props}><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>;
     case "check": return <svg {...props}><path d="M20 6 9 17l-5-5"/></svg>;
     case "check-circle": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>;

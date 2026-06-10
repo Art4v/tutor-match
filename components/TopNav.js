@@ -167,18 +167,18 @@ export function TopNav() {
         transform: navHidden ? "translateY(-100%)" : "translateY(0)",
         opacity: navHidden ? 0 : 1,
         pointerEvents: navHidden ? "none" : "auto",
-        background: scrolled ? "color-mix(in srgb, var(--paper-card) 72%, transparent)" : "transparent",
-        backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
-        WebkitBackdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
-        borderBottom: scrolled ? "1px solid var(--paper-line)" : "1px solid transparent",
+        background: "transparent",
+        backdropFilter: "none",
+        WebkitBackdropFilter: "none",
+        borderBottom: "1px solid transparent",
       }}
     >
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
         <Link href="/" className="nav-logo flex items-center gap-2 group">
           <div
-            className="nav-logo-tile w-7 h-7 flex items-center justify-center text-white font-hand transition-colors"
-            style={{ background: "var(--accent)", fontSize: 21, fontWeight: 700, lineHeight: 1 }}
-          ><span style={{ display: "block", transform: "translateY(2px)" }}>mt</span></div>
+            className="nav-logo-tile w-7 h-7 flex items-center justify-center text-white transition-colors"
+            style={{ background: "var(--accent)" }}
+          ><Icon name="tree" size={18} className="text-white" strokeWidth={1.6} /></div>
           <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
             <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>match</span>
             <span className="nav-logo-word accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
