@@ -30,12 +30,7 @@ export default async function ProfilePage({ params }) {
   const deliveryLabel = formatDelivery(tutor);
 
   return (
-    <div
-      className="desk-surface relative overflow-hidden"
-      // Bleed under the fixed transparent nav (cancels the layout's nav-height
-      // spacer, same as HomeHero) so the desk backdrop shows through it.
-      style={{ marginTop: "calc(-1 * var(--nav-h))", paddingTop: "var(--nav-h)" }}
-    >
+    <div className="desk-surface bleed-under-nav relative overflow-hidden">
       {/* Same cream desk + floating stationery as the featured section. */}
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">

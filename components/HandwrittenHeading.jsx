@@ -51,8 +51,12 @@ export function HandwrittenHeading({
     return () => io.disconnect();
   }, []);
 
-  // Responsive size: never exceeds `size`, shrinks on small viewports.
-  const fontSize = `clamp(${Math.round(size * 0.42)}px, ${(size / 16).toFixed(2)}rem, ${size}px)`;
+  // Responsive size: never exceeds `size`, shrinks on small viewports. The
+  // preferred term must be viewport-relative (vw) so it actually scales down on
+  // phones — a fixed rem here would equal `size` and clamp would never shrink.
+  // `size/9`vw reaches the `size` cap around a ~900px viewport (desktop) and
+  // floors at ~0.42·size on narrow screens.
+  const fontSize = `clamp(${Math.round(size * 0.42)}px, ${(size / 9).toFixed(2)}vw, ${size}px)`;
 
   return (
     <Tag

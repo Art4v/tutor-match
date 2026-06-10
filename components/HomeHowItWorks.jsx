@@ -124,7 +124,7 @@ export function HomeHowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-            className="text-[17px] text-[color:var(--ink-muted)] mt-6 leading-[1.55] max-w-[560px]"
+            className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-6 leading-[1.5] sm:leading-[1.55] max-w-[560px]"
           >
             We did the boring parts — checking ATARs, vetting identities, building filters.
             What&apos;s left is the bit that matters: finding the right person.

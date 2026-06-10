@@ -70,6 +70,16 @@ html, body {
   .snap-section { scroll-snap-stop: normal; }
 }
 
+/* Bleed a content page up under the fixed transparent nav (cancelling the
+   layout's nav-height spacer) and pad the top back, so a full-page backdrop
+   shows through the nav while content still clears it. Used by the desk-surface
+   pages (/browse, /tutor/[slug]); HomeHero bleeds marginTop-only because it
+   centers within a full-viewport hero and intentionally has no top padding. */
+.bleed-under-nav {
+  margin-top: calc(-1 * var(--nav-h));
+  padding-top: var(--nav-h);
+}
+
 /* Global focus-visible ring in the accent color — biggest "blue everywhere" win. */
 *:focus { outline: none; }
 *:focus-visible {

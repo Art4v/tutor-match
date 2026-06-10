@@ -8,27 +8,12 @@ import { SubjectPicker } from "@/components/SubjectPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
-import { EASE_OUT, DURATION_MED } from "@/lib/motion";
+import { EASE_OUT, DURATION_MED, makeJiggleVariants } from "@/lib/motion";
 
 // Search button hover: same jiggle wobble + accent halo language as TutorCard.
-const searchButtonVariants = {
-  rest: {
-    rotate: 0,
-    boxShadow: "0 0 0px rgba(94,122,90,0), 0 0 0px rgba(94,122,90,0)",
-    transition: {
-      rotate: { duration: 0.4, ease: EASE_OUT },
-      boxShadow: { duration: 0.3, ease: EASE_OUT },
-    },
-  },
-  hover: {
-    rotate: [0, -1.6, 1.6, -0.8, 0.3, 0],
-    boxShadow: "0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)",
-    transition: {
-      rotate: { duration: 0.62, ease: "easeOut", times: [0, 0.18, 0.4, 0.62, 0.82, 1] },
-      boxShadow: { duration: 0.4, ease: EASE_OUT },
-    },
-  },
-};
+const searchButtonVariants = makeJiggleVariants(
+  "0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)"
+);
 
 /**
  * Single-viewport hero: an animated "neural network" constellation fills the
@@ -77,7 +62,7 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="mb-6 text-[13px]"
+              className="mb-4 sm:mb-6 text-[11px] sm:text-[13px]"
               style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
             >
               Australia&apos;s tutor directory, rebuilt.
@@ -87,12 +72,12 @@ export function HomeHero({ catalog }) {
             <HandwrittenHeading
               as="h1"
               lines={["Find a tutor", "you can trust."]}
-              size={104}
+              size={116}
               className="flex flex-col items-center"
             />
 
             <motion.p
-              className="text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-7 leading-[1.55] max-w-[620px]"
+              className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-5 sm:mt-7 leading-[1.5] sm:leading-[1.55] max-w-[300px] sm:max-w-[620px]"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
@@ -105,7 +90,7 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-              className="mt-9 w-full grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
+              className="mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_auto] md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
               style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
             >
               <SearchField
@@ -126,7 +111,7 @@ export function HomeHero({ catalog }) {
                 label="Subject"
                 placeholder="Mathematics Extension 1"
               />
-              <div className="px-2 md:px-1.5 flex items-center">
+              <div className="px-1.5 sm:px-2 md:px-1.5 flex items-center">
                 <motion.div
                   initial="rest"
                   animate="rest"
@@ -136,10 +121,32 @@ export function HomeHero({ catalog }) {
                   style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
                 >
                   <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>
-                    Search
+                    {/* Icon-only on phones so all three segments fit one row. */}
+                    <span className="hidden sm:inline">Search</span>
                   </Button>
                 </motion.div>
               </div>
+            </motion.div>
+
+            {/* Phones: the inline Year/Subject bar is hidden; a single centered
+                "Search Now" button takes its place, routing to /browse. */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
+              className="mt-7 flex sm:hidden justify-center"
+            >
+              <motion.div
+                initial="rest"
+                animate="rest"
+                whileHover="hover"
+                variants={searchButtonVariants}
+                style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
+              >
+                <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
+                  Search Now
+                </Button>
+              </motion.div>
             </motion.div>
 
             <motion.div
@@ -197,20 +204,20 @@ function SearchField({ icon, label, placeholder, value, onChange, options = [], 
   const shownText = displayValue ?? value;
 
   return (
-    <div ref={wrapRef} className="relative border-b md:border-b-0 md:border-r last:border-r-0" style={{ borderColor: "var(--line)" }}>
+    <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "var(--line)" }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-4 h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
+        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
       >
         <Icon name={icon} size={16} className="text-[color:var(--sage)] shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
-          <div className={"text-[14px] mt-1.5 truncate leading-none " + (shownText ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
+          <div className="text-[10px] sm:text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
+          <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (shownText ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
             {shownText || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className="text-[color:var(--sage)] shrink-0" />
+        <Icon name="chevron-down" size={14} className="text-[color:var(--sage)] shrink-0 hidden sm:block" />
       </button>
       {open && options.length > 0 && (
         <div

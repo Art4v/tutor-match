@@ -84,9 +84,14 @@ export function TopNav() {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     let active = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (active) setUser(data.user ?? null);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (active) setUser(data.user ?? null);
+      })
+      // Network failure shouldn't surface as an unhandled rejection;
+      // onAuthStateChange below still resolves the session.
+      .catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -218,7 +223,7 @@ export function TopNav() {
                     onClick={() => setMenuOpen((o) => !o)}
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
-                    className="relative hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
+                    className="relative inline-flex items-center gap-2 h-9 px-2.5 sm:px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
                     style={{ background: menuOpen ? "var(--accent-softer)" : "var(--desk)", color: menuOpen ? "var(--accent)" : "var(--ink-muted)" }}
                     title={displayName}
                   >
@@ -228,7 +233,7 @@ export function TopNav() {
                     >
                       {!avatarUrl && (displayName || "?").slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="max-w-[180px] truncate">{displayName}</span>
+                    <span className="max-w-[110px] sm:max-w-[180px] truncate">{displayName}</span>
                     <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
                     {unread > 0 && !menuOpen && (
                       <span

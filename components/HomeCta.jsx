@@ -6,30 +6,9 @@ import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { EASE_OUT, DURATION_MED } from "@/lib/motion";
+import { EASE_OUT, DURATION_MED, makeJiggleVariants } from "@/lib/motion";
 
 // Button hover: same jiggle wobble + halo language as the HomeHero search button.
-function makeJiggleVariants(glow) {
-  return {
-    rest: {
-      rotate: 0,
-      boxShadow: "0 0 0px rgba(94,122,90,0), 0 0 0px rgba(94,122,90,0)",
-      transition: {
-        rotate: { duration: 0.4, ease: EASE_OUT },
-        boxShadow: { duration: 0.3, ease: EASE_OUT },
-      },
-    },
-    hover: {
-      rotate: [0, -1.6, 1.6, -0.8, 0.3, 0],
-      boxShadow: glow,
-      transition: {
-        rotate: { duration: 0.62, ease: "easeOut", times: [0, 0.18, 0.4, 0.62, 0.82, 1] },
-        boxShadow: { duration: 0.4, ease: EASE_OUT },
-      },
-    },
-  };
-}
-
 const primaryJiggle = makeJiggleVariants("0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)");
 const outlineJiggle = makeJiggleVariants("0 0 22px rgba(94,122,90,0.14), 0 0 8px rgba(94,122,90,0.08)");
 

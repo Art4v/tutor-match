@@ -8,7 +8,6 @@ import { EASE_OUT } from "@/lib/motion";
  * card outer; the outer animates first (~0.5s), then this layer fades.
  *
  * Use for any non-text child: chips, lists, icons, buttons, images, dividers.
- * Pair with TypewriterOnView for headings/titles that should "type" in.
  */
 export function RevealChildren({ children, delay = 0.55, y = 6, className = "", style }) {
   return (
