@@ -42,9 +42,9 @@ function LoginInner() {
       initial={{ opacity: 0, scale: 0.98, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.42, ease: EASE_OUT }}
-      className="w-full max-w-[440px] bg-white"
+      className="w-full max-w-[440px] bg-[color:var(--paper-card)]"
       style={{
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--paper-line)",
         borderRadius: 16,
         padding: 32,
         boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
@@ -169,9 +169,9 @@ function Input(props) {
       {...props}
       className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
       style={{
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--paper-line)",
         borderRadius: 8,
-        background: "#fff",
+        background: "var(--paper-card)",
         transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
       }}
     />

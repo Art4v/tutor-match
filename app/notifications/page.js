@@ -19,7 +19,7 @@ export default async function NotificationsPage() {
     .limit(100);
 
   return (
-    <div className="bg-white min-h-screen pb-24">
+    <div className="bg-[color:var(--paper-card)] min-h-screen pb-24">
       <div className="max-w-[640px] mx-auto px-6 pt-10">
         <div className="mb-7">
           <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Notifications</h1>

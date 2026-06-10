@@ -22,7 +22,7 @@ export function PasswordChecklist({ password = "", show = true, className = "mt-
           <li
             key={rule.id}
             className="flex items-center gap-1.5 text-[12.5px] leading-none transition-colors"
-            style={{ color: ok ? "#16A34A" : "#94A3B8" }}
+            style={{ color: ok ? "#16A34A" : "var(--sage)" }}
           >
             <Icon name={ok ? "check" : "x"} size={13} strokeWidth={2.25} />
             {rule.label}

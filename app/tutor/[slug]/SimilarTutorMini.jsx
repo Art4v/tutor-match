@@ -11,7 +11,7 @@ const miniVariants = {
     y: 0,
     rotate: 0,
     boxShadow: "0 0 0 0 rgba(15,23,42,0)",
-    borderColor: "#E5E7EB",
+    borderColor: "var(--paper-line)",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
       rotate: { duration: 0.4, ease: EASE_OUT },
@@ -23,7 +23,7 @@ const miniVariants = {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
     boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22)",
-    borderColor: "#CBD5E1",
+    borderColor: "var(--line-strong)",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
       rotate: {
@@ -45,8 +45,8 @@ export function SimilarTutorMini({ tutor }) {
       whileHover="hover"
       variants={miniVariants}
       style={{
-        background: "#fff",
-        border: "1px solid #E5E7EB",
+        background: "var(--paper-card)",
+        border: "1px solid var(--paper-line)",
         borderRadius: 12,
         willChange: "transform, box-shadow",
       }}
@@ -82,7 +82,7 @@ export function SimilarTutorMini({ tutor }) {
           </div>
           <div
             className="mt-2 pt-2 flex items-baseline justify-end"
-            style={{ borderTop: "1px solid #F1F5F9" }}
+            style={{ borderTop: "1px solid var(--desk)" }}
           >
             <div className="tabular-nums">
               <span className="text-[13px] font-semibold text-slate-900">${tutor.rate}</span>

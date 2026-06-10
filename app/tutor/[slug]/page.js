@@ -29,9 +29,9 @@ export default async function ProfilePage({ params }) {
   const deliveryLabel = formatDelivery(tutor);
 
   return (
-    <div className="bg-white">
+    <div className="bg-[color:var(--paper-card)]">
       <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-24">
-        <SectionReveal hover className="relative bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
+        <SectionReveal hover className="relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: 16 }}>
           <div
             style={{
               height: 140,
@@ -110,7 +110,7 @@ export default async function ProfilePage({ params }) {
         </div>
       </div>
 
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white p-4 z-40 flex items-center justify-between gap-3" style={{ borderTop: "1px solid #E5E7EB" }}>
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[color:var(--paper-card)] p-4 z-40 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
         <div>
           <div className="text-[18px] font-semibold tabular-nums">
             ${tutor.rate}
@@ -139,8 +139,8 @@ function Section({ title, subtitle, children, id }) {
       as="section"
       id={id}
       hover
-      className="bg-white"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 24 }}
+      className="bg-[color:var(--paper-card)]"
+      style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 24 }}
     >
       <div className="mb-5">
         <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">
@@ -157,7 +157,7 @@ function Section({ title, subtitle, children, id }) {
 
 function SubjectsCard({ subjects }) {
   return (
-    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
       <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
       <div className="flex flex-wrap gap-1.5">
         {subjects.map((s) => (
@@ -170,12 +170,12 @@ function SubjectsCard({ subjects }) {
 
 function VerificationCard() {
   return (
-    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="text-[14px] font-semibold text-slate-900">Verification</div>
         <span
           className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-          style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+          style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink-muted)" }}
         >
           Coming soon
         </span>
@@ -190,12 +190,12 @@ function VerificationCard() {
 
 function RatingsCard() {
   return (
-    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="text-[14px] font-semibold text-slate-900">Ratings &amp; reviews</div>
         <span
           className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-          style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 999, color: "#64748B" }}
+          style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink-muted)" }}
         >
           Coming soon
         </span>
@@ -219,7 +219,7 @@ function ServiceAreaCard({ tutor }) {
   const radiusKm = sa?.radiusKm ?? 10;
   const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
   return (
-    <SectionReveal hover className="bg-white overflow-hidden" style={{ border: "1px solid #E5E7EB", borderRadius: 16 }}>
+    <SectionReveal hover className="bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: 16 }}>
       <div className="px-5 pt-5 pb-5">
         <div className="text-[14px] font-semibold text-slate-900">Service area</div>
         <div className="text-[12.5px] text-slate-500 mt-0.5">

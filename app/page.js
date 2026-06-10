@@ -22,7 +22,7 @@ export default async function HomePage() {
   const featuredTutors = rankTutors(featuredPool).slice(0, FEATURED_SLOTS);
 
   return (
-    <main className="bg-white">
+    <main style={{ background: "var(--paper)" }}>
       <HomeHero catalog={subjectCatalog} />
       <SchoolsMarquee />
       <HomeFeaturedTutors tutors={featuredTutors} />

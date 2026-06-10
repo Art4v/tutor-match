@@ -8,9 +8,9 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 const TYPES = {
   welcome: { icon: "sparkle", color: "var(--accent)", bg: "var(--accent-softer)" },
   verification_requested: { icon: "shield", color: "var(--accent)", bg: "var(--accent-softer)" },
-  verification_approved: { icon: "shield-check", color: "#10B981", bg: "#ECFDF5" },
+  verification_approved: { icon: "shield-check", color: "var(--stamp)", bg: "#ECFDF5" },
 };
-const FALLBACK = { icon: "bell", color: "#64748B", bg: "#F3F4F6" };
+const FALLBACK = { icon: "bell", color: "var(--ink-muted)", bg: "var(--desk)" };
 
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -50,9 +50,9 @@ export function NotificationsList({ initial }) {
     return (
       <div
         className="flex flex-col items-center justify-center text-center"
-        style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: "48px 24px" }}
+        style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: "48px 24px" }}
       >
-        <span className="inline-flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 999, background: "#F3F4F6", color: "#94A3B8" }}>
+        <span className="inline-flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 999, background: "var(--desk)", color: "var(--sage)" }}>
           <Icon name="bell" size={22} />
         </span>
         <p className="text-[15px] font-medium text-slate-900">No notifications yet</p>
@@ -71,7 +71,7 @@ export function NotificationsList({ initial }) {
             key={n.id}
             className="flex items-start gap-3.5"
             style={{
-              border: "1px solid #E5E7EB",
+              border: "1px solid var(--paper-line)",
               borderRadius: 14,
               padding: 16,
               background: unread ? "var(--accent-softer)" : "#fff",

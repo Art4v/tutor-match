@@ -141,7 +141,7 @@ export function BrowseFilters({
       </div>
 
       <FilterGroup title="Name">
-        <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}>
+        <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}>
           <Icon name="user" size={14} className="text-slate-400 shrink-0" />
           <input
             ref={nameInputRef}

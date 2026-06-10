@@ -17,6 +17,8 @@ export function TopNav() {
   const [unread, setUnread] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -33,6 +35,51 @@ export function TopNav() {
       document.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  // Auto-hide on scroll (meuze.ai-style): transparent at the very top, slides up
+  // and fades out when scrolling down, reappears (with a frosted backing) when
+  // scrolling up. rAF-throttled passive listener; Lenis emits real scroll events
+  // so this works under smooth-scroll too (native scroll on coarse pointers).
+  useEffect(() => {
+    const TOP = 8; // within this many px of the top = always shown, no backing
+    const HIDE_AFTER = 80; // only start hiding once past this depth
+    const DELTA = 4; // ignore micro-scrolls to avoid jitter
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const y = window.scrollY;
+      setScrolled(y > TOP);
+      const diff = y - lastY;
+      if (y <= TOP) {
+        setHidden(false);
+      } else if (Math.abs(diff) > DELTA) {
+        if (diff > 0 && y > HIDE_AFTER) setHidden(true); // scrolling down
+        else if (diff < 0) setHidden(false); // scrolling up
+      }
+      lastY = y;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Each new page starts with the nav shown.
+  useEffect(() => {
+    setHidden(false);
+  }, [pathname]);
+
+  // Never hide the bar while its dropdown menu is open.
+  const navHidden = hidden && !menuOpen;
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -114,13 +161,24 @@ export function TopNav() {
   };
 
   return (
-    <div className="sticky top-0 z-40 bg-white" style={{ borderBottom: "1px solid #E5E7EB" }}>
+    <div
+      className="nav-floating fixed top-0 left-0 right-0 z-40"
+      style={{
+        transform: navHidden ? "translateY(-100%)" : "translateY(0)",
+        opacity: navHidden ? 0 : 1,
+        pointerEvents: navHidden ? "none" : "auto",
+        background: scrolled ? "color-mix(in srgb, var(--paper-card) 72%, transparent)" : "transparent",
+        backdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
+        WebkitBackdropFilter: scrolled ? "saturate(180%) blur(12px)" : "none",
+        borderBottom: scrolled ? "1px solid var(--paper-line)" : "1px solid transparent",
+      }}
+    >
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
         <Link href="/" className="nav-logo flex items-center gap-2 group">
           <div
             className="nav-logo-tile w-7 h-7 flex items-center justify-center text-white font-hand transition-colors"
-            style={{ background: "var(--accent)", fontSize: 21, fontWeight: 700, lineHeight: 1, paddingBottom: 2 }}
-          >mt</div>
+            style={{ background: "var(--accent)", fontSize: 21, fontWeight: 700, lineHeight: 1 }}
+          ><span style={{ display: "block", transform: "translateY(2px)" }}>mt</span></div>
           <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
             <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>match</span>
             <span className="nav-logo-word accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
@@ -130,7 +188,7 @@ export function TopNav() {
         <div
           className="flex-1 max-w-[480px] hidden md:flex items-center gap-2 px-3 h-9 rounded-lg transition-colors"
           style={{
-            background: focused ? "#fff" : "#F3F4F6",
+            background: focused ? "#fff" : "var(--desk)",
             border: `1px solid ${focused ? "var(--accent)" : "transparent"}`,
             boxShadow: focused ? "0 0 0 3px var(--accent-ring)" : "none",
           }}
@@ -145,7 +203,7 @@ export function TopNav() {
             onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
             className="flex-1 bg-transparent outline-none text-[14px] placeholder:text-slate-400"
           />
-          <span className="text-[11px] text-slate-400 hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border" style={{ borderColor: "#E5E7EB" }}>⌘K</span>
+          <span className="text-[11px] text-slate-400 hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--paper-line)" }}>⌘K</span>
         </div>
 
         <div className="flex items-center gap-1 ml-auto">
@@ -161,12 +219,12 @@ export function TopNav() {
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
                     className="relative hidden sm:inline-flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
-                    style={{ background: menuOpen ? "var(--accent-softer)" : "#F3F4F6", color: menuOpen ? "var(--accent)" : "#334155" }}
+                    style={{ background: menuOpen ? "var(--accent-softer)" : "var(--desk)", color: menuOpen ? "var(--accent)" : "var(--ink-muted)" }}
                     title={displayName}
                   >
                     <span
                       className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white overflow-hidden bg-cover bg-center"
-                      style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : { background: "#0F172A" }}
+                      style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : { background: "var(--ink)" }}
                     >
                       {!avatarUrl && (displayName || "?").slice(0, 1).toUpperCase()}
                     </span>
@@ -183,9 +241,9 @@ export function TopNav() {
                   {menuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 top-full mt-2 z-40 bg-white"
+                      className="absolute right-0 top-full mt-2 z-40 bg-[color:var(--paper-card)]"
                       style={{
-                        border: "1px solid #E5E7EB",
+                        border: "1px solid var(--paper-line)",
                         borderRadius: 12,
                         boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)",
                         minWidth: 200,
@@ -255,7 +313,7 @@ function NavMenuLink({ href, onClick, children }) {
       className="block w-full text-left px-3 py-2 text-[13.5px] rounded-md transition-colors"
       style={{
         background: hover ? "var(--accent-softer)" : "transparent",
-        color: hover ? "var(--accent)" : "#334155",
+        color: hover ? "var(--accent)" : "var(--ink-muted)",
       }}
     >
       {children}
@@ -275,7 +333,7 @@ function NavMenuButton({ onClick, disabled, danger, children }) {
       onMouseLeave={() => setHover(false)}
       className="block w-full text-left px-3 py-2 text-[13.5px] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       style={{
-        color: danger ? "#DC2626" : "#334155",
+        color: danger ? "#DC2626" : "var(--ink-muted)",
         background: hover && !disabled ? (danger ? "#FEF2F2" : "var(--accent-softer)") : "transparent",
       }}
     >

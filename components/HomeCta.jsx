@@ -12,7 +12,7 @@ function makeJiggleVariants(glow) {
   return {
     rest: {
       rotate: 0,
-      boxShadow: "0 0 0px rgba(110,122,85,0), 0 0 0px rgba(110,122,85,0)",
+      boxShadow: "0 0 0px rgba(94,122,90,0), 0 0 0px rgba(94,122,90,0)",
       transition: {
         rotate: { duration: 0.4, ease: EASE_OUT },
         boxShadow: { duration: 0.3, ease: EASE_OUT },
@@ -29,8 +29,8 @@ function makeJiggleVariants(glow) {
   };
 }
 
-const primaryJiggle = makeJiggleVariants("0 0 28px rgba(110,122,85,0.38), 0 0 10px rgba(110,122,85,0.24)");
-const outlineJiggle = makeJiggleVariants("0 0 22px rgba(110,122,85,0.14), 0 0 8px rgba(110,122,85,0.08)");
+const primaryJiggle = makeJiggleVariants("0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)");
+const outlineJiggle = makeJiggleVariants("0 0 22px rgba(94,122,90,0.14), 0 0 8px rgba(94,122,90,0.08)");
 
 export function HomeCta() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export function HomeCta() {
           className="relative overflow-hidden p-10 md:p-20"
           style={{
             background:
-              "radial-gradient(80% 80% at 50% 0%, rgba(110,122,85,0.12) 0%, rgba(110,122,85,0) 60%), var(--paper)",
+              "radial-gradient(80% 80% at 50% 0%, rgba(94,122,90,0.12) 0%, rgba(94,122,90,0) 60%), var(--paper)",
             border: "1px solid var(--paper-line)",
           }}
         >
@@ -92,7 +92,7 @@ export function HomeCta() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-15% 0px" }}
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-                className="text-[16px] text-slate-600 mt-7 leading-[1.6] max-w-[560px]"
+                className="text-[16px] text-[color:var(--ink-muted)] mt-7 leading-[1.6] max-w-[560px]"
               >
                 Matchtutor is the cleanest way to build a private tutoring network.
                 Connect with clients in a way you never have before, all completely for free.

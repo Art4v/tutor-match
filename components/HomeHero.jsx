@@ -14,7 +14,7 @@ import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 const searchButtonVariants = {
   rest: {
     rotate: 0,
-    boxShadow: "0 0 0px rgba(110,122,85,0), 0 0 0px rgba(110,122,85,0)",
+    boxShadow: "0 0 0px rgba(94,122,90,0), 0 0 0px rgba(94,122,90,0)",
     transition: {
       rotate: { duration: 0.4, ease: EASE_OUT },
       boxShadow: { duration: 0.3, ease: EASE_OUT },
@@ -22,7 +22,7 @@ const searchButtonVariants = {
   },
   hover: {
     rotate: [0, -1.6, 1.6, -0.8, 0.3, 0],
-    boxShadow: "0 0 28px rgba(110,122,85,0.38), 0 0 10px rgba(110,122,85,0.24)",
+    boxShadow: "0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)",
     transition: {
       rotate: { duration: 0.62, ease: "easeOut", times: [0, 0.18, 0.4, 0.62, 0.82, 1] },
       boxShadow: { duration: 0.4, ease: EASE_OUT },
@@ -51,7 +51,7 @@ export function HomeHero({ catalog }) {
   return (
     <section
       className="relative overflow-hidden flex flex-col items-center justify-center text-center px-6"
-      style={{ minHeight: "calc(100vh - 60px)", background: "var(--paper)" }}
+      style={{ minHeight: "100svh", marginTop: "calc(-1 * var(--nav-h))", background: "var(--paper)" }}
     >
       {/* Neural-network constellation backdrop — fills the whole hero. */}
       <div className="absolute inset-0 z-0">
@@ -61,6 +61,15 @@ export function HomeHero({ catalog }) {
       {/* Faint paper grain for a sketched-page feel. */}
       <div aria-hidden="true" className="absolute inset-0 z-[1] pointer-events-none paper-grain opacity-[0.5]" />
 
+      {/* Slow-swaying botanical sprigs in the corners — a pressed-leaf accent
+          that rocks a few degrees on a long, eased loop (see .leaf-sway). */}
+      <div aria-hidden="true" className="absolute left-4 sm:left-10 top-8 z-[2] pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.35 }}>
+        <Icon name="sprig" size={132} strokeWidth={1.3} />
+      </div>
+      <div aria-hidden="true" className="absolute right-4 sm:right-12 bottom-16 z-[2] pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.28, animationDelay: "-3s" }}>
+        <Icon name="leaf" size={150} strokeWidth={1.2} />
+      </div>
+
       {/* Centered overlay — headline + search + trust pills. */}
       <div className="relative z-10 w-full flex flex-col items-center py-20">
           <div className="w-full max-w-[860px] mx-auto flex flex-col items-center">
@@ -69,7 +78,7 @@ export function HomeHero({ catalog }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
               className="mb-6 text-[13px]"
-              style={{ color: "#737680", letterSpacing: "0.01em" }}
+              style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
             >
               Australia&apos;s tutor directory, rebuilt.
             </motion.div>
@@ -83,7 +92,7 @@ export function HomeHero({ catalog }) {
             />
 
             <motion.p
-              className="text-[16.5px] md:text-[18px] text-slate-600 mt-7 leading-[1.55] max-w-[620px]"
+              className="text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-7 leading-[1.55] max-w-[620px]"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
@@ -96,7 +105,7 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-              className="mt-9 w-full grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-white max-w-[760px] hero-search-glow"
+              className="mt-9 w-full grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
               style={{ border: "1px solid var(--line)", borderRadius: 16 }}
             >
               <SearchField
@@ -138,7 +147,7 @@ export function HomeHero({ catalog }) {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.9 }}
               className="mt-6 flex items-center justify-center gap-x-6 gap-y-2 flex-wrap text-[13px]"
-              style={{ color: "#737680", letterSpacing: "0.01em" }}
+              style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
             >
               <TrustPill>ATAR-verified tutors</TrustPill>
               <TrustPill>In-person &amp; online</TrustPill>
@@ -153,7 +162,7 @@ export function HomeHero({ catalog }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-slate-400 pointer-events-none"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-[color:var(--sage)] pointer-events-none"
       >
         <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
         <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
@@ -194,18 +203,18 @@ function SearchField({ icon, label, placeholder, value, onChange, options = [], 
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 px-4 h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
       >
-        <Icon name={icon} size={16} className="text-slate-400 shrink-0" />
+        <Icon name={icon} size={16} className="text-[color:var(--sage)] shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider leading-none">{label}</div>
-          <div className={"text-[14px] mt-1.5 truncate leading-none " + (shownText ? "text-slate-900" : "text-slate-400")}>
+          <div className="text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
+          <div className={"text-[14px] mt-1.5 truncate leading-none " + (shownText ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
             {shownText || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+        <Icon name="chevron-down" size={14} className="text-[color:var(--sage)] shrink-0" />
       </button>
       {open && options.length > 0 && (
         <div
-          className="absolute left-2 right-2 top-full mt-2 z-40 bg-white max-h-[260px] overflow-y-auto"
+          className="absolute left-2 right-2 top-full mt-2 z-40 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto"
           style={{ border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
         >
           {options.map((opt) => (
@@ -213,7 +222,7 @@ function SearchField({ icon, label, placeholder, value, onChange, options = [], 
               key={opt.value}
               type="button"
               onClick={() => select(opt)}
-              className="w-full text-left px-3 py-2 text-[13.5px] text-slate-700 transition-colors"
+              className="w-full text-left px-3 py-2 text-[13.5px] text-[color:var(--ink-muted)] transition-colors"
               style={{ background: value === opt.value ? "var(--accent-softer)" : "transparent" }}
               onMouseEnter={(e) => { if (value !== opt.value) e.currentTarget.style.background = "var(--accent-softer)"; }}
               onMouseLeave={(e) => { if (value !== opt.value) e.currentTarget.style.background = "transparent"; }}

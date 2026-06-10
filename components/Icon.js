@@ -62,6 +62,10 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "list": return <svg {...props}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>;
     case "list-ordered": return <svg {...props}><path d="M10 6h11M10 12h11M10 18h11M4 6V4l-1 .5M4 10H3h2M6 18H4c0-1 2-1.5 2-2.5S5 14 4 14.5"/></svg>;
     case "smile": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>;
+    // Botanical accents (study-journal theme). A leafy sprig — a curved stem
+    // with a few paired leaves — used as the faint corner mark on cards/hero.
+    case "leaf": return <svg {...props}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2.5 1.5 5.5 1.5 8.5A8.5 8.5 0 0 1 11 20Z"/><path d="M2 21c0-3 1.85-6.36 5.5-8.5"/></svg>;
+    case "sprig": return <svg {...props}><path d="M12 22V8"/><path d="M12 13c0-2.5 2-4.5 5-5 0 2.8-2 5-5 5Z"/><path d="M12 9C12 6.8 10.2 5 7.5 4.5 7.5 7 9.4 9 12 9Z"/><path d="M12 16c0-2.2 1.8-4 4.3-4.4 0 2.4-1.9 4.4-4.3 4.4Z"/></svg>;
     default: return null;
   }
 }

@@ -45,7 +45,7 @@ export function SectionReveal({
           y: -4,
           rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
           boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22)",
-          borderColor: "#CBD5E1",
+          borderColor: "var(--line-strong)",
           transition: {
             y: { duration: 0.42, ease: EASE_OUT },
             rotate: {
@@ -63,7 +63,7 @@ export function SectionReveal({
         whileHover: {
           y: -2,
           boxShadow: "0 16px 32px -22px rgba(15,23,42,0.22)",
-          borderColor: "#CBD5E1",
+          borderColor: "var(--line-strong)",
         },
         transition: { duration: 0.32, ease: EASE_OUT },
       }

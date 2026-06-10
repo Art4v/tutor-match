@@ -13,7 +13,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
     <section
       style={{
         background:
-          "radial-gradient(40% 45% at 50% 18%, rgba(110,122,85,0.06) 0%, rgba(255,255,255,0) 60%)",
+          "radial-gradient(40% 45% at 50% 18%, rgba(94,122,90,0.10) 0%, rgba(233,226,207,0) 60%), var(--desk)",
       }}
     >
       <div className="max-w-[1200px] w-full mx-auto px-6 pt-16 pb-6">
@@ -34,7 +34,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-            className="text-[15.5px] text-slate-500 mt-4 leading-[1.55]"
+            className="text-[15.5px] text-[color:var(--ink-muted)] mt-4 leading-[1.55]"
           >
             {empty
               ? "No tutors have published their profiles yet — check back soon."

@@ -98,7 +98,7 @@ export function HomeHowItWorks() {
       className="flex items-center"
       style={{
         background:
-          "radial-gradient(45% 50% at 14% 78%, rgba(110,122,85,0.07) 0%, rgba(255,255,255,0) 60%)",
+          "radial-gradient(45% 50% at 14% 78%, rgba(94,122,90,0.07) 0%, rgba(255,255,255,0) 60%)",
       }}
     >
       <div className="max-w-[1200px] w-full mx-auto px-6 py-24">
@@ -124,7 +124,7 @@ export function HomeHowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-            className="text-[17px] text-slate-600 mt-6 leading-[1.55] max-w-[560px]"
+            className="text-[17px] text-[color:var(--ink-muted)] mt-6 leading-[1.55] max-w-[560px]"
           >
             We did the boring parts — checking ATARs, vetting identities, building filters.
             What&apos;s left is the bit that matters: finding the right person.
@@ -170,7 +170,7 @@ export function HomeHowItWorks() {
 const cardShakeHover = {
   y: -4,
   rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-  boxShadow: "0 18px 40px -24px rgba(60,55,45,0.28), 0 0 28px rgba(110,122,85,0.22), 0 0 10px rgba(110,122,85,0.16)",
+  boxShadow: "0 18px 40px -24px rgba(60,55,45,0.28), 0 0 28px rgba(94,122,90,0.22), 0 0 10px rgba(94,122,90,0.16)",
   borderColor: "var(--accent-line)",
   backgroundColor: "var(--accent-softer)",
   transition: {
@@ -263,7 +263,7 @@ function CardFrontInner({ step, hover = true }) {
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(180deg, rgba(110,122,85,0.05) 0%, rgba(110,122,85,0.12) 100%)",
+              background: "linear-gradient(180deg, rgba(94,122,90,0.05) 0%, rgba(94,122,90,0.12) 100%)",
               opacity: hover ? 0 : 1,
               transition: "opacity 360ms ease-out",
             }}
@@ -290,7 +290,7 @@ function CardFrontInner({ step, hover = true }) {
             height: 38,
             borderRadius: 10,
             background: hover ? "var(--accent)" : "var(--accent-softer)",
-            color: hover ? "#fff" : "var(--accent)",
+            color: hover ? "#FBF7EC" : "var(--accent)",
             border: "1px solid var(--accent-line)",
             transition: "background-color 220ms ease-out, color 220ms ease-out",
           }}
@@ -298,10 +298,10 @@ function CardFrontInner({ step, hover = true }) {
           <Icon name={step.icon} size={16} />
         </div>
       </div>
-      <div className="text-[19px] font-semibold text-slate-900 mb-2.5 tracking-tight">
+      <div className="text-[19px] font-semibold text-[color:var(--ink)] mb-2.5 tracking-tight">
         {step.t}
       </div>
-      <p className="text-[14.5px] text-slate-600 leading-[1.6]">{step.b}</p>
+      <p className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.6]">{step.b}</p>
     </>
   );
 }
@@ -434,7 +434,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
           style={{
             ...faceStyle,
             transform: "rotateY(180deg)",
-            background: "linear-gradient(180deg, #ffffff 0%, var(--accent-softer) 100%)",
+            background: "linear-gradient(180deg, var(--paper-card) 0%, var(--accent-softer) 100%)",
           }}
         >
           <button
@@ -449,7 +449,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
               width: 36,
               height: 36,
               borderRadius: 10,
-              background: "#ffffff",
+              background: "var(--paper-card)",
               border: "1px solid var(--accent-line)",
               color: "var(--accent)",
               cursor: "pointer",
@@ -480,7 +480,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                   height: 38,
                   borderRadius: 10,
                   background: "var(--accent)",
-                  color: "#fff",
+                  color: "#FBF7EC",
                   border: "1px solid var(--accent-line)",
                 }}
               >
@@ -503,12 +503,12 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
             )}
 
             <h3
-              className="font-display text-[26px] sm:text-[30px] text-slate-900 leading-[1.15] mb-3"
+              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink)] leading-[1.15] mb-3"
               style={{ fontWeight: 500, letterSpacing: "-0.01em" }}
             >
               {step.backTitle}
             </h3>
-            <p className="text-[15px] sm:text-[15.5px] text-slate-600 leading-[1.6] mb-5 max-w-[58ch]">
+            <p className="text-[15px] sm:text-[15.5px] text-[color:var(--ink-muted)] leading-[1.6] mb-5 max-w-[58ch]">
               {step.backLead}
             </p>
 
@@ -529,7 +529,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                   >
                     <Icon name="check" size={12} />
                   </span>
-                  <span className="text-[14.5px] text-slate-700 leading-[1.55]">{line}</span>
+                  <span className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.55]">{line}</span>
                 </li>
               ))}
             </ul>
@@ -541,7 +541,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                 className="inline-flex items-center gap-2 font-display"
                 style={{
                   background: "var(--accent)",
-                  color: "#ffffff",
+                  color: "#FBF7EC",
                   padding: "12px 18px",
                   borderRadius: 12,
                   fontWeight: 500,

@@ -3,34 +3,38 @@
 @tailwind utilities;
 
 :root {
-  /* Sage/olive green — interactive accent (buttons, links, chips, CTAs, rings) */
-  --accent: #6E7A55;
-  --accent-hover: #565F41;
-  --accent-soft: #DCE3CB;
-  --accent-softer: #EEF1E7;
-  --accent-line: #CDD5BC;
-  --accent-ring: rgba(110, 122, 85, 0.25);
-  /* Graphite "ink" — cursive headings + pencil elements */
-  --ink-graphite: #4A4E57;
-  --ink-graphite-deep: #34373E;
-  --ink-graphite-line: #D4D7DC;
-  --ink: #0F172A;
-  --ink-muted: #475569;
-  --line: #E5E7EB;
-  --line-strong: #D1D5DB;
-  --bg: #FFFFFF;
-  --bg-soft: #FAFAFA;
-  /* Paper surfaces (cards, hero canvas) */
-  --paper: #FAF8F3;
-  --paper-card: #FBFAF6;
-  --paper-line: #E7E3D8;
+  /* Botanical study-journal palette. Eucalyptus green — interactive accent
+     (buttons, links, chips, CTAs, rings). */
+  --accent: #5E7A5A;
+  --accent-hover: #4C6549;
+  --accent-soft: #DCE3D0;       /* moss — tag/chip fills */
+  --accent-softer: #EAEFE1;     /* lighter moss — hover fills */
+  --accent-line: #C7D2BA;       /* moss-derived borders */
+  --accent-ring: rgba(94, 122, 90, 0.25);
+  /* Deep-green "ink" — headings + pencil/sage elements */
+  --ink-graphite: #3D5440;
+  --ink-graphite-deep: #2A3A2E;
+  --ink-graphite-line: #C7D2BA;
+  --ink: #2A3A2E;               /* deepest green — primary text */
+  --ink-muted: #3D5440;         /* secondary text */
+  --sage: #8DA17E;              /* mid tones, icons, secondary marks */
+  --line: #DDD6C4;
+  --line-strong: #C9C0A8;
+  --bg: #F5F0E4;
+  --bg-soft: #EFE9DA;
+  /* Paper surfaces (warm cream — never pure white) */
+  --paper: #F5F0E4;             /* page base */
+  --paper-card: #FBF7EC;        /* card surface */
+  --paper-line: #E4DCC6;        /* paper-tone borders */
+  --desk: #E9E2CF;              /* section surface behind cards */
+  --stamp: #B05E3B;             /* rusty ink-stamp accent — seals, marginalia (sparing) */
   --card-shadow: 0 1px 2px rgba(60, 55, 45, 0.05), 0 10px 28px -14px rgba(60, 55, 45, 0.20);
   --nav-h: 60px;
 }
 
 html, body {
-  background: #fff;
-  color: #0F172A;
+  background: var(--paper);
+  color: var(--ink);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'cv11', 'ss01';
@@ -108,7 +112,7 @@ a.accent-link:hover::after { transform: scaleX(1); }
     100deg,
     var(--accent) 0%,
     var(--accent) 46%,
-    #AAB78E 50%,
+    #8DA17E 50%,
     var(--accent) 54%,
     var(--accent) 100%
   );
@@ -122,8 +126,8 @@ a.accent-link:hover::after { transform: scaleX(1); }
   padding: 0.05em 0.05em 0.22em;
   margin: -0.05em -0.05em -0.22em;
   text-shadow:
-    0 0 18px rgba(110, 122, 85, 0.28),
-    0 0 6px rgba(110, 122, 85, 0.22);
+    0 0 18px rgba(94, 122, 90, 0.28),
+    0 0 6px rgba(94, 122, 90, 0.22);
 }
 @media (prefers-reduced-motion: reduce) {
   .accent-shine {
@@ -138,8 +142,22 @@ a.accent-link:hover::after { transform: scaleX(1); }
    (e.g. the navbar logo) where a recurring sweep would be distracting. */
 .accent-glow {
   text-shadow:
-    0 0 14px rgba(110, 122, 85, 0.32),
-    0 0 5px rgba(110, 122, 85, 0.22);
+    0 0 14px rgba(94, 122, 90, 0.32),
+    0 0 5px rgba(94, 122, 90, 0.22);
+}
+
+/* Floating nav: transparent at the top, frosted-translucent once scrolled,
+   slides up / fades out on scroll-down. Eased so it glides rather than snaps. */
+.nav-floating {
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 320ms ease,
+    backdrop-filter 320ms ease,
+    border-color 320ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-floating { transition: none; }
 }
 
 /* Navbar logo hover: the whole wordmark lifts into an accent halo on hover.
@@ -153,18 +171,18 @@ a.accent-link:hover::after { transform: scaleX(1); }
 }
 .nav-logo:hover .nav-logo-tile {
   box-shadow:
-    0 0 22px rgba(110, 122, 85, 0.45),
-    0 0 8px rgba(110, 122, 85, 0.32);
+    0 0 22px rgba(94, 122, 90, 0.45),
+    0 0 8px rgba(94, 122, 90, 0.32);
 }
 .nav-logo:hover .nav-logo-word {
   text-shadow:
-    0 0 16px rgba(74, 78, 87, 0.30),
-    0 0 6px rgba(74, 78, 87, 0.22);
+    0 0 16px rgba(42, 58, 46, 0.30),
+    0 0 6px rgba(42, 58, 46, 0.22);
 }
 .nav-logo:hover .accent-glow {
   text-shadow:
-    0 0 22px rgba(110, 122, 85, 0.55),
-    0 0 8px rgba(110, 122, 85, 0.38);
+    0 0 22px rgba(94, 122, 90, 0.55),
+    0 0 8px rgba(94, 122, 90, 0.38);
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-logo .nav-logo-tile,
@@ -179,15 +197,15 @@ a.accent-link:hover::after { transform: scaleX(1); }
 .hero-search-glow {
   box-shadow:
     0 20px 60px -30px rgba(15, 23, 42, 0.18),
-    0 0 18px rgba(110, 122, 85, 0.10),
-    0 0 6px  rgba(110, 122, 85, 0.07);
+    0 0 18px rgba(94, 122, 90, 0.10),
+    0 0 6px  rgba(94, 122, 90, 0.07);
   transition: box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .hero-search-glow:focus-within {
   box-shadow:
     0 20px 60px -30px rgba(15, 23, 42, 0.22),
-    0 0 28px rgba(110, 122, 85, 0.22),
-    0 0 10px rgba(110, 122, 85, 0.16);
+    0 0 28px rgba(94, 122, 90, 0.22),
+    0 0 10px rgba(94, 122, 90, 0.16);
 }
 
 /* Tutor card hover jiggle — runs once per hover-enter */
@@ -227,14 +245,14 @@ a.accent-link:hover::after { transform: scaleX(1); }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 999px; border: 2px solid #fff; }
-::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 2px solid var(--paper); }
+::-webkit-scrollbar-thumb:hover { background: var(--sage); }
 ::-webkit-scrollbar-track { background: transparent; }
 
 input[type="range"] {
   -webkit-appearance: none;
   height: 4px;
-  background: #E5E7EB;
+  background: var(--line);
   border-radius: 999px;
   outline: none;
 }
@@ -242,13 +260,13 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px; height: 16px;
-  background: #0F172A;
+  background: var(--ink);
   border-radius: 50%;
   cursor: pointer;
 }
 input[type="range"]::-moz-range-thumb {
   width: 16px; height: 16px;
-  background: #0F172A;
+  background: var(--ink);
   border-radius: 50%;
   cursor: pointer;
   border: 0;
@@ -289,19 +307,19 @@ input[type="range"].dual-range::-webkit-slider-thumb {
   pointer-events: auto;
   width: 16px; height: 16px;
   background: var(--accent);
-  border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
+  border: 3px solid var(--paper-card);
+  box-shadow: 0 1px 4px rgba(42, 58, 46, 0.28);
   transition: box-shadow 140ms ease;
 }
 input[type="range"].dual-range::-webkit-slider-thumb:hover {
-  box-shadow: 0 2px 8px rgba(110, 122, 85, 0.3), 0 0 0 4px var(--accent-ring);
+  box-shadow: 0 2px 8px rgba(94, 122, 90, 0.3), 0 0 0 4px var(--accent-ring);
 }
 input[type="range"].dual-range::-moz-range-thumb {
   pointer-events: auto;
   width: 16px; height: 16px;
   background: var(--accent);
-  border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
+  border: 3px solid var(--paper-card);
+  box-shadow: 0 1px 4px rgba(42, 58, 46, 0.28);
 }
 
 /* Hide the up/down spin buttons on number inputs. Typing stays numeric-only;
@@ -322,10 +340,10 @@ input[type="number"] {
    Opt-in via the Button `glow` prop. */
 @keyframes cta-glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 9px 1px rgba(110, 122, 85, 0.28);
+    box-shadow: 0 0 9px 1px rgba(94, 122, 90, 0.28);
   }
   50% {
-    box-shadow: 0 0 20px 4px rgba(110, 122, 85, 0.5);
+    box-shadow: 0 0 20px 4px rgba(94, 122, 90, 0.5);
   }
 }
 .cta-glow {
@@ -337,20 +355,17 @@ input[type="number"] {
 @media (prefers-reduced-motion: reduce) {
   .cta-glow {
     animation: none;
-    box-shadow: 0 0 12px 2px rgba(110, 122, 85, 0.3);
+    box-shadow: 0 0 12px 2px rgba(94, 122, 90, 0.3);
   }
 }
 
 /* ───────────────────────── Pencil-on-paper theme ───────────────────────── */
 
-/* Every surface is a flat sheet of paper — NO curved edges anywhere on the
-   site. `!important` lets this win over both Tailwind `rounded-*` utilities and
-   inline `borderRadius` styles, so the rule holds without editing every
-   component. (SVG circles / the WebGL canvas are unaffected — they don't use
-   CSS border-radius.) */
-*, *::before, *::after {
-  border-radius: 0 !important;
-}
+/* Botanical study-journal: corners are relaxed (no longer a hard flat-sheet
+   rule). The blanket `border-radius: 0 !important` override was dropped so each
+   component's own authored radii apply again — gently rounded cards, chips,
+   buttons and the circular wax seal — for a softer, hand-bound-notebook feel.
+   Components that should stay crisp set their own radius locally. */
 
 /* Cursive handwriting display face (main headings). The Inter `font-display`
    stays available for body-weight display text; `.font-hand` is the Caveat
@@ -414,4 +429,21 @@ input[type="number"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .marquee-track { animation: none; }
+}
+
+/* ───────────────────────── Botanical accents ───────────────────────── */
+
+/* Slow botanical sway — a sprig motif rocks a few degrees on a long, eased
+   loop, like a leaf in still air. Pivot from the stem (bottom). */
+@keyframes leaf-sway {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50%      { transform: rotate(3.5deg); }
+}
+.leaf-sway {
+  transform-origin: 50% 90%;
+  animation: leaf-sway 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf-sway { animation: none; }
 }

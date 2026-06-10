@@ -19,7 +19,9 @@ export default function RootLayout({ children }) {
       <body>
         <SmoothScrollProvider>
           <TopNav />
-          {children}
+          {/* The nav is fixed (out of flow), so reserve its height here. The home
+              hero cancels this with a negative margin to go full-bleed. */}
+          <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
         </SmoothScrollProvider>
         <Analytics />
       </body>

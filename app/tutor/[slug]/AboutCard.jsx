@@ -10,8 +10,8 @@ export function AboutCard({ text }) {
       as="section"
       id="about"
       hover
-      className="bg-white"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 24 }}
+      className="bg-[color:var(--paper-card)]"
+      style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 24 }}
     >
       <StaggerChildren delay={0.2} step={0.1} className="text-[15px] text-slate-600 leading-[1.6]">
         <RevealItem className="mb-5">

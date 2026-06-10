@@ -67,8 +67,8 @@ function Half({ ariaHidden }) {
 export function SchoolsMarquee() {
   return (
     <section
-      className="bg-white border-y flex flex-col justify-center"
-      style={{ borderColor: "var(--line)", minHeight: "20vh" }}
+      className="border-y flex flex-col justify-center"
+      style={{ background: "var(--paper-card)", borderColor: "var(--paper-line)", minHeight: "20vh" }}
       aria-label="Schools our students come from"
     >
       <div className="w-full px-6 pb-4 text-center">

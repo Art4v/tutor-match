@@ -52,7 +52,7 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
       <RevealItem>
         <div
           className="flex items-center gap-5 mt-5 text-[13px] text-slate-500 pt-5 flex-wrap"
-          style={{ borderTop: "1px solid #F1F5F9" }}
+          style={{ borderTop: "1px solid var(--desk)" }}
         >
           {tutor.rating != null && (
             <span className="flex items-center gap-1.5 tabular-nums">

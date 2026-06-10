@@ -104,15 +104,15 @@ export function AvailabilityGrid({ availability }) {
       <div className="flex items-center gap-4 mt-4 text-[12px] text-slate-500 flex-wrap">
         <LegendSwatch
           label="Free"
-          bg="#F0FDF4"
-          border="#D1FAE5"
+          bg="var(--accent-soft)"
+          border="var(--accent-line)"
           icon="check"
-          iconColor="#10B981"
+          iconColor="var(--accent)"
           delay={maxCellDelay + 0.15}
         />
         <LegendSwatch
           label="Unavailable"
-          bg="#F8FAFC"
+          bg="var(--bg-soft)"
           delay={TABLE_FADE_DURATION + 0.05}
         />
       </div>
@@ -124,12 +124,12 @@ function Cell({ v, delay }) {
   // Every cell starts looking unavailable (pale slate, no glyph). Cells with
   // real values transition to their coloured state at `delay`. v === 0 cells
   // stay in the baseline appearance forever.
-  const baseline = { background: "#F8FAFC", color: "#CBD5E1" };
+  const baseline = { background: "var(--bg-soft)", color: "var(--line-strong)" };
   const target =
     v === 1
-      ? { background: "#F0FDF4", color: "#10B981" }
+      ? { background: "var(--accent-soft)", color: "var(--accent)" }
       : v === 2
-      ? { background: "#F3F4F6", color: "#94A3B8" }
+      ? { background: "var(--desk)", color: "var(--accent-hover)" }
       : baseline;
 
   return (

@@ -14,7 +14,7 @@ import { Footer } from "@/components/Footer";
 
 export default function MessagesDisabledPage() {
   return (
-    <div className="bg-white">
+    <div className="bg-[color:var(--paper-card)]">
       <div className="max-w-[720px] mx-auto px-6 py-24 text-center">
         <h1 className="font-hand text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
           Messaging is coming soon

@@ -46,9 +46,9 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
         className="relative w-full inline-flex items-center justify-center font-medium"
         style={{
           height: 42,
-          background: "#fff",
-          color: "#94A3B8",
-          border: "1px solid #E5E7EB",
+          background: "var(--paper-card)",
+          color: "var(--sage)",
+          border: "1px solid var(--paper-line)",
           borderRadius: 8,
           fontSize: 14,
           letterSpacing: "-0.005em",
@@ -70,9 +70,9 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
             fontWeight: 600,
             letterSpacing: "0.04em",
             textTransform: "uppercase",
-            color: "#94A3B8",
-            background: "#F1F5F9",
-            border: "1px solid #E2E8F0",
+            color: "var(--sage)",
+            background: "var(--desk)",
+            border: "1px solid var(--paper-line)",
             borderRadius: 999,
             padding: "2px 7px",
             lineHeight: 1.2,
@@ -92,9 +92,9 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
       className="relative w-full inline-flex items-center justify-center font-medium transition-colors"
       style={{
         height: 42,
-        background: "#fff",
-        color: "#334155",
-        border: "1px solid #E5E7EB",
+        background: "var(--paper-card)",
+        color: "var(--ink-muted)",
+        border: "1px solid var(--paper-line)",
         borderRadius: 8,
         fontSize: 14,
         letterSpacing: "-0.005em",
@@ -111,9 +111,9 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
 function Divider({ label }) {
   return (
     <div className="flex items-center gap-3 pt-1 pb-0.5" aria-hidden>
-      <div className="h-px flex-1" style={{ background: "#E5E7EB" }} />
+      <div className="h-px flex-1" style={{ background: "var(--paper-line)" }} />
       <span className="text-[11.5px] uppercase tracking-wider text-slate-400">{label}</span>
-      <div className="h-px flex-1" style={{ background: "#E5E7EB" }} />
+      <div className="h-px flex-1" style={{ background: "var(--paper-line)" }} />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export function ExperienceTimeline({ experience }) {
           <div className="flex flex-col items-center" style={{ width: 32 }}>
             <div
               className="w-8 h-8 rounded-md inline-flex items-center justify-center text-slate-600 shrink-0"
-              style={{ background: "#F3F4F6" }}
+              style={{ background: "var(--desk)" }}
             >
               <Icon name="briefcase" size={14} />
             </div>
@@ -47,7 +47,7 @@ export function ExperienceTimeline({ experience }) {
                 style={{
                   width: 1,
                   flex: 1,
-                  background: "#E5E7EB",
+                  background: "var(--paper-line)",
                   marginTop: 4,
                   transformOrigin: "top center",
                 }}

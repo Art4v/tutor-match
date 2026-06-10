@@ -27,7 +27,7 @@ function DeliveryCard({ tutor, set }) {
   const inPerson = !!tutor.deliversInPerson;
   const online = !!tutor.deliversOnline;
   return (
-    <div className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 14, padding: 24 }}>
+    <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 14, padding: 24 }}>
       <h3 className="text-[16px] font-semibold text-slate-900">How do you teach?</h3>
       <p className="text-[13.5px] text-slate-500 mt-1 mb-4">Pick the lesson formats you offer — you can change these later.</p>
       <div className="flex flex-wrap gap-2.5">
@@ -228,7 +228,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
   };
 
   return (
-    <div className="bg-white min-h-[calc(100vh-60px)]">
+    <div className="bg-[color:var(--paper-card)] min-h-[calc(100vh-60px)]">
       <div className="max-w-[760px] mx-auto px-6 pt-10 pb-32">
         {/* Intro */}
         <div className="mb-6">
@@ -249,7 +249,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
               <div
                 key={s.key}
                 className="h-1.5 flex-1 rounded-full transition-colors"
-                style={{ background: i <= stepIndex ? "var(--accent)" : "#E5E7EB" }}
+                style={{ background: i <= stepIndex ? "var(--accent)" : "var(--paper-line)" }}
               />
             ))}
           </div>
@@ -318,7 +318,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
           style={{
-            background: toast.kind === "error" ? "#B91C1C" : "#0F172A",
+            background: toast.kind === "error" ? "#B91C1C" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
             boxShadow: "0 10px 30px rgba(15,23,42,0.2)",

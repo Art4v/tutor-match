@@ -73,7 +73,7 @@ export default async function BrowsePage({ searchParams }) {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-[color:var(--paper-card)]">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
           <BrowseFilters
@@ -114,11 +114,11 @@ function EmptyState() {
   return (
     <div
       className="text-center py-16 px-6"
-      style={{ border: "1px dashed #E5E7EB", borderRadius: 14 }}
+      style={{ border: "1px dashed var(--paper-line)", borderRadius: 14 }}
     >
       <div
         className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center text-slate-400"
-        style={{ background: "#F3F4F6" }}
+        style={{ background: "var(--desk)" }}
       >
         <Icon name="search" size={20} />
       </div>
@@ -171,8 +171,8 @@ function Pagination({ page, totalPages, searchParams }) {
           className="w-9 h-9 text-[13px] font-medium rounded-md inline-flex items-center justify-center transition-colors"
           style={{
             background: p === page ? "var(--accent)" : "transparent",
-            color: p === page ? "#fff" : "#475569",
-            border: p === page ? "1px solid var(--accent)" : "1px solid #E5E7EB",
+            color: p === page ? "#fff" : "var(--ink-muted)",
+            border: p === page ? "1px solid var(--accent)" : "1px solid var(--paper-line)",
           }}
         >
           {p}

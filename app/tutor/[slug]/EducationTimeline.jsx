@@ -38,7 +38,7 @@ export function EducationTimeline({ education }) {
           <div className="flex flex-col items-center" style={{ width: 32 }}>
             <div
               className="w-8 h-8 rounded-md inline-flex items-center justify-center text-slate-600 shrink-0"
-              style={{ background: "#F3F4F6" }}
+              style={{ background: "var(--desk)" }}
             >
               <Icon name="graduation" size={14} />
             </div>
@@ -47,7 +47,7 @@ export function EducationTimeline({ education }) {
                 style={{
                   width: 1,
                   flex: 1,
-                  background: "#E5E7EB",
+                  background: "var(--paper-line)",
                   marginTop: 4,
                   minHeight: 16,
                   transformOrigin: "top center",
@@ -68,7 +68,7 @@ export function EducationTimeline({ education }) {
               <div className="text-[14.5px] font-semibold text-slate-900">{e.school}</div>
               <span
                 className="text-[11px] font-medium px-2 py-0.5 rounded-full text-slate-600"
-                style={{ background: "#F3F4F6" }}
+                style={{ background: "var(--desk)" }}
               >
                 {e.level === "university" ? "University" : "High School"}
               </span>
