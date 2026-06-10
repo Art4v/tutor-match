@@ -89,8 +89,8 @@ export function SuburbAutocomplete({
 
   const dropdown = open && results.length > 0 && (
     <div
-      className="absolute left-0 right-0 top-full mt-2 z-50 bg-white max-h-[260px] overflow-y-auto"
-      style={{ border: "1px solid #E5E7EB", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
+      className="absolute left-0 right-0 top-full mt-2 z-50 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto"
+      style={{ border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
     >
       {results.map((p, i) => (
         <button
@@ -99,7 +99,7 @@ export function SuburbAutocomplete({
           onMouseDown={(e) => { e.preventDefault(); choose(p); }}
           onMouseEnter={() => setActive(i)}
           className="w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100"
-          style={{ background: i === active ? "#F3F4F6" : "transparent" }}
+          style={{ background: i === active ? "var(--desk)" : "transparent" }}
         >
           <span className="text-slate-900">{p.suburb}</span>
           {(p.state || p.postcode) && (
@@ -112,7 +112,7 @@ export function SuburbAutocomplete({
 
   if (variant === "bar") {
     return (
-      <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "#E5E7EB" }}>
+      <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "var(--paper-line)" }}>
         <div className="w-full flex items-center gap-3 px-4 py-3">
           {icon && <Icon name={icon} size={16} className="text-slate-400 shrink-0" />}
           <div className="flex-1 min-w-0">
@@ -137,7 +137,7 @@ export function SuburbAutocomplete({
   // variant === "box"
   return (
     <div ref={wrapRef} className="relative">
-      <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}>
+      <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}>
         {icon && <Icon name={icon} size={14} className="text-slate-400 shrink-0" />}
         <input
           value={query}

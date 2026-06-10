@@ -24,7 +24,7 @@ export function CredentialsList({ tiles }) {
         <motion.div
           key={c.key}
           className="px-4 py-3 flex items-center gap-4"
-          style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}
+          style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "var(--bg-soft)" }}
           variants={{
             hidden: { opacity: 0, y: -22 },
             show: {

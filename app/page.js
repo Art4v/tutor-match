@@ -3,6 +3,7 @@ import { getFeaturedTutors, getSubjects } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
 import { Footer } from "@/components/Footer";
 import { HomeHero } from "@/components/HomeHero";
+import { SchoolsMarquee } from "@/components/SchoolsMarquee";
 import { HomeFeaturedTutors } from "@/components/HomeFeaturedTutors";
 import { HomeHowItWorks } from "@/components/HomeHowItWorks";
 import { HomeCta } from "@/components/HomeCta";
@@ -21,8 +22,9 @@ export default async function HomePage() {
   const featuredTutors = rankTutors(featuredPool).slice(0, FEATURED_SLOTS);
 
   return (
-    <main className="bg-white snap-scroll">
+    <main style={{ background: "var(--paper)" }}>
       <HomeHero catalog={subjectCatalog} />
+      <SchoolsMarquee />
       <HomeFeaturedTutors tutors={featuredTutors} />
       <HomeHowItWorks />
       <HomeCta />

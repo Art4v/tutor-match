@@ -75,18 +75,18 @@ export default async function AdminVerifyPage({ searchParams }) {
 
   return (
     <Shell>
-      <section className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 28 }}>
+      <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
         <div className="flex items-start gap-3 mb-5">
           <span className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}>
             <Icon name="shield-check" size={20} />
           </span>
           <div>
-            <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">Approve verification</h1>
+            <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Approve verification</h1>
             <p className="text-[13.5px] text-slate-500 mt-1">Confirm you've reviewed this tutor's profile.</p>
           </div>
         </div>
 
-        <div className="text-[14px]" style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", borderRadius: 12, padding: 16 }}>
+        <div className="text-[14px]" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
           <div className="font-semibold text-slate-900">{name}</div>
           {location && <div className="text-slate-500 text-[13px] mt-0.5">{location}</div>}
           {tutor.slug && (
@@ -108,7 +108,7 @@ export default async function AdminVerifyPage({ searchParams }) {
 
 function Shell({ children }) {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-[color:var(--paper-card)] min-h-screen">
       <div className="max-w-[520px] mx-auto px-6 pt-16 pb-24">{children}</div>
     </div>
   );
@@ -118,13 +118,13 @@ function StateCard({ tone, icon, title, body, profileHref }) {
   const colors = {
     ok: { bg: "var(--accent-softer)", fg: "var(--accent)" },
     error: { bg: "#FEF2F2", fg: "#DC2626" },
-  }[tone] || { bg: "#F3F4F6", fg: "#64748B" };
+  }[tone] || { bg: "var(--desk)", fg: "var(--ink-muted)" };
   return (
-    <section className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 28 }}>
+    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
       <span className="inline-flex items-center justify-center mb-4" style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}>
         <Icon name={icon} size={22} />
       </span>
-      <h1 className="text-[19px] font-semibold text-slate-900 tracking-tight">{title}</h1>
+      <h1 className="font-hand text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>{title}</h1>
       <p className="text-[14px] text-slate-500 mt-1.5 leading-[1.55]">{body}</p>
       {profileHref && (
         <a href={profileHref} className="inline-flex items-center gap-1.5 text-[13.5px] mt-4" style={{ color: "var(--accent)" }}>

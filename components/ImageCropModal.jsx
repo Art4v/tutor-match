@@ -47,11 +47,11 @@ export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", tit
       onClick={onCancel}
     >
       <div
-        className="bg-white w-full max-w-[560px] flex flex-col"
+        className="bg-[color:var(--paper-card)] w-full max-w-[560px] flex flex-col"
         style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(15,23,42,0.3)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 pt-4 pb-3" style={{ borderBottom: "1px solid #F1F5F9" }}>
+        <div className="px-5 pt-4 pb-3" style={{ borderBottom: "1px solid var(--desk)" }}>
           <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
           <p className="text-[12.5px] text-slate-500 mt-0.5">Drag to reposition, scroll or use the slider to zoom.</p>
         </div>
@@ -81,7 +81,7 @@ export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", tit
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
             className="flex-1"
-            style={{ accentColor: "#0F172A" }}
+            style={{ accentColor: "var(--ink)" }}
           />
         </div>
 

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@/components/Icon";
-import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
+import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
 
 const STEPS = [
@@ -59,7 +59,6 @@ const STEPS = [
 ];
 
 export function HomeHowItWorks() {
-  const [headlineDone, setHeadlineDone] = useState(false);
   const [openIndex, setOpenIndex] = useState(null);
   const [hiddenIndex, setHiddenIndex] = useState(null);
   const [sourceRect, setSourceRect] = useState(null);
@@ -96,39 +95,36 @@ export function HomeHowItWorks() {
 
   return (
     <section
-      className="snap-section flex items-center"
+      className="min-h-[60vh] flex items-center"
       style={{
         background:
-          "radial-gradient(45% 50% at 14% 78%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 60%)",
+          "radial-gradient(45% 50% at 14% 78%, rgba(94,122,90,0.07) 0%, rgba(255,255,255,0) 60%)",
       }}
     >
       <div className="max-w-[1200px] w-full mx-auto px-6 py-24">
-        <div className="max-w-[820px] mb-14">
+        <div className="max-w-[820px] mb-14 mx-auto text-center flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="font-display italic text-[18px] mb-4 accent-shine"
-            style={{ color: "var(--accent)", fontWeight: 500 }}
+            className="font-hand text-[24px] mb-2"
+            style={{ color: "var(--accent)", fontWeight: 600 }}
           >
             How it works
           </motion.div>
-          <h2
-            className="font-display text-[44px] md:text-[56px] leading-[1.05] text-slate-900"
-            style={{ fontWeight: 500 }}
-          >
-            <TypewriterOnView
-              text="Three steps. No agency in the middle."
-              speed={24}
-              onDone={() => setHeadlineDone(true)}
-            />
-          </h2>
+          <HandwrittenHeading
+            as="h2"
+            lines={["Three steps.", "No agency in the middle."]}
+            size={68}
+            className="flex flex-col items-center"
+          />
           <motion.p
             initial={{ opacity: 0, y: 10 }}
-            animate={headlineDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-            className="text-[17px] text-slate-600 mt-6 leading-[1.55] max-w-[560px]"
+            className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-6 leading-[1.5] sm:leading-[1.55] max-w-[560px]"
           >
             We did the boring parts — checking ATARs, vetting identities, building filters.
             What&apos;s left is the bit that matters: finding the right person.
@@ -171,10 +167,15 @@ export function HomeHowItWorks() {
   );
 }
 
+// Scattered resting tilts + tape angles so the three step cards read as notes
+// taped to the wall (cycled by card index).
+const CARD_TILT = [-2, 1.5, -1];
+const TAPE_TILT = [-4, 3, -2];
+
 const cardShakeHover = {
   y: -4,
   rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-  boxShadow: "0 18px 40px -24px rgba(30,58,138,0.28), 0 0 28px rgba(21,39,100,0.22), 0 0 10px rgba(21,39,100,0.16)",
+  boxShadow: "0 18px 40px -24px rgba(60,55,45,0.28), 0 0 28px rgba(94,122,90,0.22), 0 0 10px rgba(94,122,90,0.16)",
   borderColor: "var(--accent-line)",
   backgroundColor: "var(--accent-softer)",
   transition: {
@@ -192,34 +193,43 @@ const cardShakeHover = {
 
 function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
   const [hover, setHover] = useState(false);
+  const tilt = CARD_TILT[index % CARD_TILT.length];
+  const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
+  // Wobble around the resting tilt (so hover doesn't snap the card straight).
+  const hoverAnim = { ...cardShakeHover, rotate: cardShakeHover.rotate.map((r) => tilt + r) };
 
   return (
     <motion.div
       ref={cardRef}
       variants={{
-        hidden: { opacity: 0, y: 18 },
-        show: { opacity: 1, y: 0, transition: { duration: DURATION_MED, ease: EASE_OUT } },
+        hidden: { opacity: 0, y: 18, rotate: tilt },
+        show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
       }}
-      whileHover={isOpen || isHidden ? undefined : cardShakeHover}
+      whileHover={isOpen || isHidden ? undefined : hoverAnim}
       onHoverStart={() => !isOpen && setHover(true)}
       onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
-        borderRadius: 18,
-        border: "1px solid #E5E7EB",
-        background: "#ffffff",
-        boxShadow: "0 0 18px rgba(21,39,100,0.10), 0 0 6px rgba(21,39,100,0.07)",
+        border: "1px solid var(--paper-line)",
+        background: "var(--paper-card)",
+        boxShadow: "var(--card-shadow)",
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
         willChange: "transform, box-shadow",
       }}
     >
+      {/* Washi tape pinning the note to the wall. */}
+      <span
+        aria-hidden="true"
+        className="washi-tape"
+        style={{ top: -9, left: "50%", transform: `translateX(-50%) rotate(${tapeTilt}deg)`, zIndex: 5 }}
+      />
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
         className="p-8 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
         style={{
-          borderRadius: 18,
+          borderRadius: "var(--radius-card)",
           cursor: isOpen ? "default" : "pointer",
         }}
       >
@@ -268,7 +278,7 @@ function CardFrontInner({ step, hover = true }) {
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(180deg, rgba(21,39,100,0.05) 0%, rgba(21,39,100,0.12) 100%)",
+              background: "linear-gradient(180deg, rgba(94,122,90,0.05) 0%, rgba(94,122,90,0.12) 100%)",
               opacity: hover ? 0 : 1,
               transition: "opacity 360ms ease-out",
             }}
@@ -295,7 +305,7 @@ function CardFrontInner({ step, hover = true }) {
             height: 38,
             borderRadius: 10,
             background: hover ? "var(--accent)" : "var(--accent-softer)",
-            color: hover ? "#fff" : "var(--accent)",
+            color: hover ? "#FBF7EC" : "var(--accent)",
             border: "1px solid var(--accent-line)",
             transition: "background-color 220ms ease-out, color 220ms ease-out",
           }}
@@ -303,10 +313,10 @@ function CardFrontInner({ step, hover = true }) {
           <Icon name={step.icon} size={16} />
         </div>
       </div>
-      <div className="text-[19px] font-semibold text-slate-900 mb-2.5 tracking-tight">
+      <div className="text-[19px] font-semibold text-[color:var(--ink)] mb-2.5 tracking-tight">
         {step.t}
       </div>
-      <p className="text-[14.5px] text-slate-600 leading-[1.6]">{step.b}</p>
+      <p className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.6]">{step.b}</p>
     </>
   );
 }
@@ -330,7 +340,7 @@ function ExpandedOverlay({ openIndex, sourceRect, onRequestClose, onClose, onExi
         >
           <motion.div
             className="absolute inset-0"
-            style={{ background: "rgba(7, 14, 38, 0.55)", backdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(40, 38, 34, 0.55)", backdropFilter: "blur(2px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -400,10 +410,9 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
     inset: 0,
     backfaceVisibility: "hidden",
     WebkitBackfaceVisibility: "hidden",
-    borderRadius: 18,
-    background: "#ffffff",
-    border: "1px solid var(--accent-line)",
-    boxShadow: "0 40px 80px -30px rgba(7,14,38,0.45)",
+    background: "var(--paper-card)",
+    border: "1px solid var(--paper-line)",
+    boxShadow: "0 40px 80px -30px rgba(40,38,34,0.45)",
     overflow: "hidden",
   };
 
@@ -415,7 +424,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
       transition={{ type: "spring", stiffness: 260, damping: 30 }}
       className="absolute"
       style={{
-        borderRadius: 18,
+        borderRadius: "var(--radius-card)",
         perspective: 1600,
       }}
       onClick={(e) => e.stopPropagation()}
@@ -440,7 +449,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
           style={{
             ...faceStyle,
             transform: "rotateY(180deg)",
-            background: "linear-gradient(180deg, #ffffff 0%, var(--accent-softer) 100%)",
+            background: "linear-gradient(180deg, var(--paper-card) 0%, var(--accent-softer) 100%)",
           }}
         >
           <button
@@ -455,7 +464,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
               width: 36,
               height: 36,
               borderRadius: 10,
-              background: "#ffffff",
+              background: "var(--paper-card)",
               border: "1px solid var(--accent-line)",
               color: "var(--accent)",
               cursor: "pointer",
@@ -486,7 +495,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                   height: 38,
                   borderRadius: 10,
                   background: "var(--accent)",
-                  color: "#fff",
+                  color: "#FBF7EC",
                   border: "1px solid var(--accent-line)",
                 }}
               >
@@ -509,12 +518,12 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
             )}
 
             <h3
-              className="font-display text-[26px] sm:text-[30px] text-slate-900 leading-[1.15] mb-3"
+              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink)] leading-[1.15] mb-3"
               style={{ fontWeight: 500, letterSpacing: "-0.01em" }}
             >
               {step.backTitle}
             </h3>
-            <p className="text-[15px] sm:text-[15.5px] text-slate-600 leading-[1.6] mb-5 max-w-[58ch]">
+            <p className="text-[15px] sm:text-[15.5px] text-[color:var(--ink-muted)] leading-[1.6] mb-5 max-w-[58ch]">
               {step.backLead}
             </p>
 
@@ -535,7 +544,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                   >
                     <Icon name="check" size={12} />
                   </span>
-                  <span className="text-[14.5px] text-slate-700 leading-[1.55]">{line}</span>
+                  <span className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.55]">{line}</span>
                 </li>
               ))}
             </ul>
@@ -547,7 +556,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                 className="inline-flex items-center gap-2 font-display"
                 style={{
                   background: "var(--accent)",
-                  color: "#ffffff",
+                  color: "#FBF7EC",
                   padding: "12px 18px",
                   borderRadius: 12,
                   fontWeight: 500,

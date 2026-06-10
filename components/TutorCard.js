@@ -22,9 +22,9 @@ function CredTag({ icon, active = true, truncate = false, children }) {
         padding: "5px 11px",
         borderRadius: 8,
         lineHeight: 1.15,
-        background: active ? "var(--accent-softer)" : "#FAFAFA",
-        color: active ? "var(--accent)" : "#94A3B8",
-        border: `1px solid ${active ? "var(--accent-line)" : "#E5E7EB"}`,
+        background: active ? "var(--accent-softer)" : "var(--bg-soft)",
+        color: active ? "var(--accent)" : "var(--sage)",
+        border: `1px solid ${active ? "var(--accent-line)" : "var(--paper-line)"}`,
       }}
     >
       <Icon name={icon} size={14} className="shrink-0" />
@@ -38,8 +38,8 @@ function CredTag({ icon, active = true, truncate = false, children }) {
 function MorePill({ count }) {
   return (
     <span
-      className="shrink-0 inline-flex items-center font-medium text-slate-500 whitespace-nowrap"
-      style={{ fontSize: 13, padding: "5px 9px", borderRadius: 8, lineHeight: 1.15, background: "#fff", border: "1px solid #E5E7EB" }}
+      className="shrink-0 inline-flex items-center font-medium text-[color:var(--ink-muted)] whitespace-nowrap"
+      style={{ fontSize: 13, padding: "5px 9px", borderRadius: 8, lineHeight: 1.15, background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
     >
       +{count} more
     </span>
@@ -52,7 +52,7 @@ function SubjectChip({ children }) {
   return (
     <span
       className="inline-flex items-center font-medium whitespace-nowrap"
-      style={{ fontSize: 11.5, padding: "3px 8px", borderRadius: 7, lineHeight: 1.2, color: "#374151", background: "#fff", border: "1px solid #E5E7EB" }}
+      style={{ fontSize: 11.5, padding: "3px 8px", borderRadius: 7, lineHeight: 1.2, color: "var(--ink)", background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
     >
       {children}
     </span>
@@ -83,7 +83,10 @@ function SubjectChipsFill({ subjects }) {
       const moreNode = m.querySelector('[data-kind="more"]');
       const moreW = moreNode ? moreNode.offsetWidth : 0;
       const colGap = 6, rowGap = 6;
-      const maxRows = Math.max(1, Math.floor((availH + rowGap) / (chipH + rowGap)));
+      // Whole rows only — if not even one row fully fits, render nothing
+      // (sentinel -1: not even the "+N" pill) rather than a half-clipped row.
+      const maxRows = Math.floor((availH + rowGap) / (chipH + rowGap));
+      if (maxRows < 1) { setVisibleCount(-1); return; }
 
       // Greedily flow `n` chip widths (plus an optional trailing "+N" pill) into
       // `maxRows` rows of width `availW`; returns whether they all fit.
@@ -117,8 +120,8 @@ function SubjectChipsFill({ subjects }) {
 
   if (subjects.length === 0) return <div ref={containerRef} className="h-full" />;
 
-  const visible = subjects.slice(0, visibleCount);
-  const extra = subjects.length - visibleCount;
+  const visible = subjects.slice(0, Math.max(0, visibleCount));
+  const extra = visibleCount < 0 ? 0 : subjects.length - visible.length;
 
   return (
     <div ref={containerRef} className="relative h-full flex flex-wrap content-start gap-1.5 overflow-hidden">
@@ -150,18 +153,24 @@ function SubjectChipsFill({ subjects }) {
   );
 }
 
-const CARD_HEIGHT = 440;
+const CARD_HEIGHT = 400;
 
 // Motion variants: a single source of truth for the hover behaviour. On enter,
 // y eases up to -3px while rotate plays a small back-and-forth wobble that
 // settles on 0; the shadow + border ease in. On leave, every property
 // interpolates back to rest with the same easing — no snapping, no overlap.
+// Both boxShadow strings MUST keep the same shape (same layers, same value
+// count per layer: contact + drop + sheet + glow) — motion can only tween
+// shadows with matching templates; a mismatch makes it swap discretely
+// instead of fading. Layers that exist in only one state fade via alpha.
 const cardVariants = {
   rest: {
     y: 0,
     rotate: 0,
-    boxShadow: "0 0 18px rgba(21,39,100,0.10), 0 0 6px rgba(21,39,100,0.07)",
-    borderColor: "#E5E7EB",
+    // Cream sheet: soft drop shadow + a faint offset "sheet beneath" so the card
+    // reads like a page in a small stack.
+    boxShadow: "0 1px 2px 0 rgba(60,55,45,0.05), 0 10px 26px -16px rgba(60,55,45,0.22), 5px 7px 0 -3px rgba(120,114,98,0.12), 0 0 22px 0 rgba(94,122,90,0)",
+    borderColor: "var(--paper-line)",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
       rotate: { duration: 0.4, ease: EASE_OUT },
@@ -172,8 +181,8 @@ const cardVariants = {
   hover: {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22), 0 0 28px rgba(21,39,100,0.22), 0 0 10px rgba(21,39,100,0.16)",
-    borderColor: "#CBD5E1",
+    boxShadow: "0 1px 2px 0 rgba(60,55,45,0), 0 18px 36px -20px rgba(40,38,34,0.26), 7px 9px 0 -3px rgba(120,114,98,0.16), 0 0 22px 0 rgba(94,122,90,0.18)",
+    borderColor: "var(--accent-line)",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
       rotate: {
@@ -204,18 +213,20 @@ export function TutorCard({ tutor }) {
       animate="rest"
       whileHover="hover"
       variants={cardVariants}
+      className="paper-grain"
       style={{
+        position: "relative",
         height: CARD_HEIGHT,
-        borderRadius: 14,
-        background: "#fff",
-        border: "1px solid #E5E7EB",
+        backgroundColor: "var(--paper-card)",
+        border: "1px solid var(--paper-line)",
+        borderRadius: "var(--radius-card)",
+        overflow: "hidden",
         willChange: "transform, box-shadow",
       }}
     >
       <Link
         href={`/tutor/${tutor.slug}`}
         className="relative cursor-pointer flex flex-col h-full overflow-hidden"
-        style={{ borderRadius: 14 }}
       >
         <div
           className="shrink-0"
@@ -224,28 +235,25 @@ export function TutorCard({ tutor }) {
             : { height: 62, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
         />
 
-        <div className="px-5 pb-5 flex flex-col flex-1 min-h-0">
+        <div className="px-6 pb-6 flex flex-col flex-1 min-h-0">
           <div className="shrink-0" style={{ marginTop: -32, marginBottom: 12 }}>
             <Avatar tutor={tutor} size={64} ring />
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              className="text-[16px] font-semibold text-slate-900 truncate"
-              style={{ letterSpacing: "-0.01em" }}
-            >
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span className="font-hand text-[22px] font-semibold text-[color:var(--ink)] truncate leading-tight pr-1">
               {tutor.name}
             </span>
             {tutor.verified && <VerifiedTick size={14} />}
           </div>
 
           {/* Tagline (one line, reserved) */}
-          <div className="text-[13.5px] text-slate-500 mt-0.5 truncate shrink-0" style={{ minHeight: "1.35em" }}>
+          <div className="text-[13.5px] text-[color:var(--ink-muted)] mt-0.5 truncate shrink-0" style={{ minHeight: "1.35em" }}>
             {stripMarkdown(tutor.bio) || " "}
           </div>
 
           {/* Location (one line, reserved) */}
-          <div className="text-[12.5px] text-slate-400 mt-0.5 flex items-center gap-1 shrink-0" style={{ minHeight: "1.3em" }}>
+          <div className="text-[12.5px] text-[color:var(--sage)] mt-0.5 flex items-center gap-1 shrink-0" style={{ minHeight: "1.3em" }}>
             {(tutor.suburb || tutor.city) ? (
               <>
                 <Icon name="map-pin" size={11} />
@@ -261,7 +269,7 @@ export function TutorCard({ tutor }) {
           {/* Long bio — capped at 3 lines with ellipsis so the card stays
               skimmable. */}
           <div
-            className="text-[13px] text-slate-500 mt-3 shrink-0 leading-[1.55]"
+            className="text-[13px] text-[color:var(--ink-muted)] mt-3 shrink-0 leading-[1.55]"
             style={{
               maxHeight: "calc(3 * 1.55 * 13px)",
               display: "-webkit-box",
@@ -288,20 +296,20 @@ export function TutorCard({ tutor }) {
             {/* Education: show the high school only; fall back to the university
                 when no high school is listed. */}
             <div
-              className="flex items-center gap-1.5 text-[13px] text-slate-500 mb-3"
+              className="flex items-center gap-1.5 text-[13px] text-[color:var(--ink-muted)] mb-3"
               style={{ minHeight: "1.3em" }}
             >
               <Icon name="graduation" size={14} />
               <span className="truncate">
                 {tutor.highSchool || tutor.university || (
-                  <span className="text-slate-400 italic">School not listed</span>
+                  <span className="text-[color:var(--sage)] italic">School not listed</span>
                 )}
               </span>
             </div>
 
             <div
-              className="pt-4 flex items-end gap-3 border-t"
-              style={{ borderColor: "#F1F5F9" }}
+              className="pt-4 flex items-center gap-3 border-t"
+              style={{ borderColor: "var(--paper-line)" }}
             >
               <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
                 {atar ? (
@@ -313,14 +321,16 @@ export function TutorCard({ tutor }) {
                 )}
                 {moreCount > 0 && <MorePill count={moreCount} />}
               </div>
-              <div className="text-right shrink-0 leading-none">
-                <span className="text-[22px] font-bold text-slate-900 tabular-nums">${tutor.rate}</span>
-                <span className="text-[13px] text-slate-400 font-medium">/hr</span>
+              <div className="text-right shrink-0 leading-none" style={{ paddingRight: 3 }}>
+                <span className="text-[22px] font-bold text-[color:var(--ink)] tabular-nums">${tutor.rate}</span>
+                <span className="text-[13px] text-[color:var(--sage)] font-medium">/hr</span>
               </div>
             </div>
           </div>
         </div>
       </Link>
+      {/* Folded paper corner — decorative, never intercepts the link. */}
+      <span aria-hidden="true" className="dog-ear" />
     </motion.div>
   );
 }

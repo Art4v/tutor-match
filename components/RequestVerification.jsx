@@ -50,7 +50,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
       <div className="flex items-center justify-between gap-3 mb-1">
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Get verified</h3>
         {status === "verified" && (
-          <span className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "#10B981" }}>
+          <span className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "var(--stamp)" }}>
             <VerifiedTick size={14} /> Verified
           </span>
         )}
@@ -93,7 +93,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
 
 function Card({ children }) {
   return (
-    <section className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 20 }}>
+    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 20 }}>
       {children}
     </section>
   );

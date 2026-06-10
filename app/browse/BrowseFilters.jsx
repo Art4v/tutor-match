@@ -124,7 +124,7 @@ export function BrowseFilters({
   return (
     <aside className="space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+        <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
           {searchQuery ? <>Results for &ldquo;{searchQuery}&rdquo;</> : "All tutors"}
         </h1>
         <div className="text-[14px] text-slate-500 mt-1 tabular-nums">
@@ -141,7 +141,7 @@ export function BrowseFilters({
       </div>
 
       <FilterGroup title="Name">
-        <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}>
+        <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}>
           <Icon name="user" size={14} className="text-slate-400 shrink-0" />
           <input
             ref={nameInputRef}

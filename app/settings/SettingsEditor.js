@@ -205,7 +205,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const profileHref = tutor.slug ? `/tutor/${tutor.slug}` : null;
 
   return (
-    <div className="bg-white min-h-screen pb-32 md:pb-12">
+    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
       <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       <AnimatePresence>
@@ -233,7 +233,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
       <div className="max-w-[1200px] mx-auto px-6 pt-6">
         <div className="flex items-end justify-between gap-4 mb-7">
           <div>
-            <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Edit your profile</h1>
+            <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Edit your profile</h1>
             <p className="text-[14px] text-slate-500 mt-1">Changes appear immediately on your public profile once saved.</p>
           </div>
           <div className="hidden lg:block text-[12.5px] text-slate-400 tabular-nums">
@@ -268,7 +268,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
         <div
           className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
           style={{
-            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "#0F172A",
+            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
             boxShadow: "0 10px 30px rgba(15,23,42,0.2)",

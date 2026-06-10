@@ -10,7 +10,7 @@ export function RateCard({ tutor }) {
   const rateLine = "Online or in person · flexible scheduling";
 
   return (
-    <SectionReveal hover className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
       <StaggerChildren delay={0.3} step={0.12}>
         <RevealItem>
           <div className="flex items-baseline gap-1">
@@ -32,10 +32,10 @@ export function RateCard({ tutor }) {
                 onClick={() => setPkg(i)}
                 className="w-full flex items-center justify-between p-3 text-left transition-colors"
                 style={{
-                  border: `1px solid ${pkg === i ? "var(--accent)" : "#E5E7EB"}`,
+                  border: `1px solid ${pkg === i ? "var(--accent)" : "var(--paper-line)"}`,
                   borderRadius: 10,
                   background: pkg === i ? "var(--accent-softer)" : "#fff",
-                  color: pkg === i ? "var(--accent)" : "#0F172A",
+                  color: pkg === i ? "var(--accent)" : "var(--ink)",
                   transition: "background-color 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out",
                 }}
               >

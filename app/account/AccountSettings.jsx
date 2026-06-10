@@ -115,10 +115,10 @@ export function AccountSettings({ userEmail }) {
   };
 
   return (
-    <div className="bg-white min-h-screen pb-32 md:pb-12">
+    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
       <div className="max-w-[760px] mx-auto px-6 pt-10">
         <div className="mb-7">
-          <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">Account</h1>
+          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Account</h1>
           <p className="text-[14px] text-slate-500 mt-1">
             Manage your sign-in password and account.
           </p>
@@ -190,8 +190,8 @@ export function AccountSettings({ userEmail }) {
 
           {/* Delete account ------------------------------------------------- */}
           <section
-            className="bg-white"
-            style={{ border: "1px solid #FECACA", borderRadius: 16, padding: 24 }}
+            className="bg-[color:var(--paper-card)]"
+            style={{ border: "1px solid #FECACA", borderRadius: "var(--radius-card)", padding: 24 }}
           >
             <header className="flex items-start gap-2 mb-4">
               <span className="mt-0.5" style={{ color: "#DC2626" }}>
@@ -257,7 +257,7 @@ export function AccountSettings({ userEmail }) {
         <div
           className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
           style={{
-            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "#0F172A",
+            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
             boxShadow: "0 10px 30px rgba(15,23,42,0.2)",
@@ -276,7 +276,7 @@ export function AccountSettings({ userEmail }) {
 
 function Card({ children }) {
   return (
-    <section className="bg-white" style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding: 24 }}>
+    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
       {children}
     </section>
   );
@@ -311,9 +311,9 @@ function Input(props) {
       {...props}
       className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
       style={{
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--paper-line)",
         borderRadius: 8,
-        background: "#fff",
+        background: "var(--paper-card)",
         transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
       }}
     />
@@ -339,10 +339,10 @@ function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
       onClick={onCancel}
     >
       <div
-        className="bg-white w-full"
+        className="bg-[color:var(--paper-card)] w-full"
         style={{
           maxWidth: 420,
-          borderRadius: 16,
+          borderRadius: "var(--radius-card)",
           padding: 24,
           boxShadow: "0 24px 60px rgba(15,23,42,0.28)",
         }}

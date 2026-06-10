@@ -118,23 +118,23 @@ export function SubjectPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-4 h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
+        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
       >
         <Icon name="search" size={16} className="text-slate-400 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider leading-none">{label}</div>
-          <div className={"text-[14px] mt-1.5 truncate leading-none " + (singleLabel ? "text-slate-900" : "text-slate-400")}>
+          <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 uppercase tracking-wider leading-none">{label}</div>
+          <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (singleLabel ? "text-slate-900" : "text-slate-400")}>
             {singleLabel || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0 hidden sm:block" />
       </button>
     ) : (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-2 h-9 px-3 text-left"
-        style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff" }}
+        style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
       >
         <Icon name="search" size={14} className="text-slate-400 shrink-0" />
         <span className={"flex-1 text-[13.5px] truncate " + (selected.length ? "text-slate-900" : "text-slate-400")}>
@@ -152,7 +152,7 @@ export function SubjectPicker({
     <div
       ref={wrapRef}
       className={variant === "bar" ? "relative border-r last:border-r-0" : "relative"}
-      style={variant === "bar" ? { borderColor: "#E5E7EB" } : undefined}
+      style={variant === "bar" ? { borderColor: "var(--paper-line)" } : undefined}
     >
       {trigger}
 
@@ -187,17 +187,17 @@ export function SubjectPicker({
 
       {open && groups.length > 0 && (
         <div
-          className="absolute top-full mt-2 z-50 bg-white overflow-hidden"
+          className="absolute top-full mt-2 z-50 bg-[color:var(--paper-card)] overflow-hidden"
           style={{
             ...panelWidth,
-            border: "1px solid #E5E7EB",
+            border: "1px solid var(--paper-line)",
             borderRadius: 12,
             boxShadow: "0 10px 24px -8px rgba(15,23,42,0.18)",
           }}
         >
           {/* Search */}
-          <div className="p-2.5" style={{ borderBottom: "1px solid #F1F5F9" }}>
-            <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "#FAFAFA", borderRadius: 8 }}>
+          <div className="p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
+            <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "var(--bg-soft)", borderRadius: 8 }}>
               <Icon name="search" size={13} className="text-slate-400 shrink-0" />
               <input
                 value={search}
@@ -209,7 +209,7 @@ export function SubjectPicker({
           </div>
 
           {/* Exam selector */}
-          <div className="flex flex-wrap gap-1.5 p-2.5" style={{ borderBottom: "1px solid #F1F5F9" }}>
+          <div className="flex flex-wrap gap-1.5 p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
             {groups.map((g) => {
               const active = g.code === activeExam;
               return (
@@ -220,9 +220,9 @@ export function SubjectPicker({
                   onClick={() => { setActiveExam(g.code); setSearch(""); }}
                   className="px-2.5 py-1 text-[12px] font-medium rounded-full transition-colors"
                   style={{
-                    background: active ? "#1F2937" : "#F3F4F6",
-                    color: active ? "#fff" : "#374151",
-                    border: "1px solid " + (active ? "#1F2937" : "transparent"),
+                    background: active ? "var(--ink)" : "var(--desk)",
+                    color: active ? "#fff" : "var(--ink-muted)",
+                    border: "1px solid " + (active ? "var(--ink)" : "transparent"),
                   }}
                 >
                   {examLabel(g)}
@@ -244,15 +244,15 @@ export function SubjectPicker({
                     type="button"
                     onClick={() => toggle(s.slug)}
                     className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[13.5px] text-slate-700 hover:bg-slate-100"
-                    style={{ background: sel && mode === "single" ? "#F3F4F6" : "transparent" }}
+                    style={{ background: sel && mode === "single" ? "var(--desk)" : "transparent" }}
                   >
                     {mode === "multi" && (
                       <span
                         className="inline-flex items-center justify-center shrink-0"
                         style={{
                           width: 16, height: 16, borderRadius: 4,
-                          background: sel ? "#1F2937" : "#fff",
-                          border: "1px solid " + (sel ? "#1F2937" : "#CBD5E1"),
+                          background: sel ? "var(--ink)" : "#fff",
+                          border: "1px solid " + (sel ? "var(--ink)" : "var(--line-strong)"),
                         }}
                       >
                         {sel && <Icon name="check" size={11} strokeWidth={3} className="text-white" />}

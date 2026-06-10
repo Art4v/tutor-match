@@ -58,16 +58,16 @@ export default function ForgotPasswordPage() {
       initial={{ opacity: 0, scale: 0.98, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.42, ease: EASE_OUT }}
-      className="w-full max-w-[440px] bg-white"
+      className="w-full max-w-[440px] bg-[color:var(--paper-card)]"
       style={{
-        border: "1px solid #E5E7EB",
-        borderRadius: 16,
+        border: "1px solid var(--paper-line)",
+        borderRadius: "var(--radius-card)",
         padding: 32,
         boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
       }}
     >
       <div className="mb-6">
-        <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
+        <h1 className="font-hand text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
           Reset your password.
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">
@@ -79,7 +79,7 @@ export default function ForgotPasswordPage() {
       {sent ? (
         <div
           className="p-4 text-[13.5px] text-slate-700 leading-[1.55]"
-          style={{ background: "#F8FAFC", border: "1px solid #E5E7EB", borderRadius: 10 }}
+          style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 10 }}
         >
           If an account exists for{" "}
           <span className="font-medium text-slate-900">{email}</span>, we&rsquo;ve
@@ -158,9 +158,9 @@ function Input(props) {
       {...props}
       className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
       style={{
-        border: "1px solid #E5E7EB",
+        border: "1px solid var(--paper-line)",
         borderRadius: 8,
-        background: "#fff",
+        background: "var(--paper-card)",
         transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
       }}
     />

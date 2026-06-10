@@ -59,7 +59,7 @@ export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false 
   // (panes 400, controls 1000) into their own stacking context, so the map can't
   // paint over the page's sticky nav / save bar / unsaved-changes banner.
   return (
-    <div style={{ position: "relative", zIndex: 0, height: 200, borderRadius: 12, overflow: "hidden", border: "1px solid #F1F5F9" }}>
+    <div style={{ position: "relative", zIndex: 0, height: 200, borderRadius: 12, overflow: "hidden", border: "1px solid var(--desk)" }}>
       <MapContainer
         center={center}
         zoom={11}
@@ -70,12 +70,12 @@ export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false 
         <Circle
           center={center}
           radius={r * 1000}
-          pathOptions={{ color: "#0F172A", weight: 1.25, dashArray: "4 4", fillColor: "#0F172A", fillOpacity: 0.06 }}
+          pathOptions={{ color: "var(--ink)", weight: 1.25, dashArray: "4 4", fillColor: "var(--ink)", fillOpacity: 0.06 }}
         />
         <Circle
           center={center}
           radius={Math.max(40, r * 25)}
-          pathOptions={{ color: "#0F172A", weight: 0, fillColor: "#0F172A", fillOpacity: 1 }}
+          pathOptions={{ color: "var(--ink)", weight: 0, fillColor: "var(--ink)", fillOpacity: 1 }}
         />
         <FitToCircle lat={lat} lng={lng} radiusKm={r} />
         <FallbackOnError onFallback={() => { if (tiles !== CARTO) setTiles(CARTO); }} />

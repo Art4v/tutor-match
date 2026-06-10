@@ -14,12 +14,14 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
         <SmoothScrollProvider>
           <TopNav />
-          {children}
+          {/* The nav is fixed (out of flow), so reserve its height here. The home
+              hero cancels this with a negative margin to go full-bleed. */}
+          <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
         </SmoothScrollProvider>
         <Analytics />
       </body>

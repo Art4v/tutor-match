@@ -11,6 +11,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     className,
   };
   switch (name) {
+    case "tree": return <svg {...props}><path d="M12 3.2C13.6 3.2 14.8 4.3 14.9 5.7 16.7 5.4 18.3 6.7 18 8.5 19.4 9.3 19.5 11.3 18.1 12.3 18.4 13.9 16.9 15.1 15.3 14.6 14.6 15.6 13 15.8 12 15.1 11 15.8 9.4 15.6 8.7 14.6 7.1 15.1 5.6 13.9 5.9 12.3 4.5 11.3 4.6 9.3 6 8.5 5.7 6.7 7.3 5.4 9.1 5.7 9.2 4.3 10.4 3.2 12 3.2Z"/><path d="M12 21V8"/><path d="M12 12 9.2 9.8"/><path d="m12 10.8 2.6-2"/></svg>;
     case "search": return <svg {...props}><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>;
     case "check": return <svg {...props}><path d="M20 6 9 17l-5-5"/></svg>;
     case "check-circle": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>;
@@ -62,6 +63,19 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "list": return <svg {...props}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>;
     case "list-ordered": return <svg {...props}><path d="M10 6h11M10 12h11M10 18h11M4 6V4l-1 .5M4 10H3h2M6 18H4c0-1 2-1.5 2-2.5S5 14 4 14.5"/></svg>;
     case "smile": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>;
+    // Stationery accents (study-desk theme). Faint floating motifs on the
+    // desk backdrop — hand-authored to match the 24×24 stroke set.
+    case "pencil": return <svg {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
+    case "eraser": return <svg {...props}><path d="m7 21-4.3-4.3a1.6 1.6 0 0 1 0-2.3l9.7-9.7a1.6 1.6 0 0 1 2.3 0l4.6 4.6a1.6 1.6 0 0 1 0 2.3L13 21"/><path d="M22 21H7"/><path d="m5 13 6 6"/></svg>;
+    case "ruler": return <svg {...props}><path d="M21.3 15.3a1.7 1.7 0 0 1 0 2.4l-3.6 3.6a1.7 1.7 0 0 1-2.4 0L2.7 8.7a1.7 1.7 0 0 1 0-2.4l3.6-3.6a1.7 1.7 0 0 1 2.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>;
+    case "paperclip": return <svg {...props}><path d="m21.4 11-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6A4 4 0 0 1 18 8.8l-8.6 8.6a2 2 0 0 1-2.8-2.9l8.5-8.4"/></svg>;
+    case "scissors": return <svg {...props}><circle cx="6" cy="6" r="3"/><path d="M8.1 8.1 12 12"/><path d="M20 4 8.1 15.9"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>;
+    case "set-square": return <svg {...props}><path d="M5 4v16h16Z"/><path d="M9 16h2"/><path d="M9 13h5"/><path d="M9 10h8"/></svg>;
+    case "notebook": return <svg {...props}><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M16 3v18"/><path d="M2 7h3"/><path d="M2 12h3"/><path d="M2 17h3"/></svg>;
+    // Botanical accents (study-journal theme). A leafy sprig — a curved stem
+    // with a few paired leaves — used as the faint corner mark on cards/hero.
+    case "leaf": return <svg {...props}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2.5 1.5 5.5 1.5 8.5A8.5 8.5 0 0 1 11 20Z"/><path d="M2 21c0-3 1.85-6.36 5.5-8.5"/></svg>;
+    case "sprig": return <svg {...props}><path d="M12 22V8"/><path d="M12 13c0-2.5 2-4.5 5-5 0 2.8-2 5-5 5Z"/><path d="M12 9C12 6.8 10.2 5 7.5 4.5 7.5 7 9.4 9 12 9Z"/><path d="M12 16c0-2.2 1.8-4 4.3-4.4 0 2.4-1.9 4.4-4.3 4.4Z"/></svg>;
     default: return null;
   }
 }

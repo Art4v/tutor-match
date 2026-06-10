@@ -11,8 +11,8 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
   return (
     <StaggerChildren delay={0.2} step={0.12} className="mt-5">
       <RevealItem>
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-[26px] font-semibold text-slate-900 tracking-tight">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="font-hand text-[36px] font-semibold text-slate-900 leading-tight pr-1">
             {tutor.name}
           </h1>
           {tutor.verified && <VerifiedTick size={18} />}
@@ -52,7 +52,7 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
       <RevealItem>
         <div
           className="flex items-center gap-5 mt-5 text-[13px] text-slate-500 pt-5 flex-wrap"
-          style={{ borderTop: "1px solid #F1F5F9" }}
+          style={{ borderTop: "1px solid var(--desk)" }}
         >
           {tutor.rating != null && (
             <span className="flex items-center gap-1.5 tabular-nums">

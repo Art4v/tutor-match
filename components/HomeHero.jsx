@@ -3,65 +3,27 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
-import { Button, VerifiedTick } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
-import { TypewriterOnView } from "@/components/anim/TypewriterOnView";
-import { CrossfadeSlideshow } from "@/components/anim/CrossfadeSlideshow";
+import { HandwrittenHeading } from "@/components/HandwrittenHeading";
+import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
-import { EASE_OUT, DURATION_MED } from "@/lib/motion";
-
-// Modern, openly-licensed study/classroom photography for the hero panel.
-// Credits + licenses live in public/images/CREDITS.md.
-const HERO_IMAGES = [
-  { src: "/images/hero/hero-1.jpg", alt: "A laptop and notebook on a library study desk" },
-  { src: "/images/hero/hero-2.jpg", alt: "A student writing notes in a modern library" },
-  { src: "/images/hero/hero-3.jpg", alt: "A student studying with a laptop and an open book" },
-  { src: "/images/hero/hero-4.jpg", alt: "A smiling student at their desk in class" },
-  { src: "/images/hero/hero-5.jpg", alt: "Two students studying together with notebooks" },
-];
+import { EASE_OUT, DURATION_MED, makeJiggleVariants } from "@/lib/motion";
 
 // Search button hover: same jiggle wobble + accent halo language as TutorCard.
-// rest → hover settles rotate on 0 and amplifies the glow; on leave both
-// properties ease back to rest with no snap.
-const searchButtonVariants = {
-  rest: {
-    rotate: 0,
-    boxShadow:
-      "0 0 0px rgba(21,39,100,0), 0 0 0px rgba(21,39,100,0)",
-    transition: {
-      rotate: { duration: 0.4, ease: EASE_OUT },
-      boxShadow: { duration: 0.3, ease: EASE_OUT },
-    },
-  },
-  hover: {
-    rotate: [0, -1.6, 1.6, -0.8, 0.3, 0],
-    boxShadow:
-      "0 0 28px rgba(21,39,100,0.38), 0 0 10px rgba(21,39,100,0.24)",
-    transition: {
-      rotate: {
-        duration: 0.62,
-        ease: "easeOut",
-        times: [0, 0.18, 0.4, 0.62, 0.82, 1],
-      },
-      boxShadow: { duration: 0.4, ease: EASE_OUT },
-    },
-  },
-};
+const searchButtonVariants = makeJiggleVariants(
+  "0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)"
+);
 
 /**
- * catalog: exam-scoped subject catalog from getSubjects(). The picker is
- * exam-first; the form submits the selected slug as ?subject= so /browse
- * matches the URL contract.
+ * Single-viewport hero: an animated "neural network" constellation fills the
+ * whole hero behind the centered headline + search. The search wiring
+ * (`goBrowse`) is unchanged.
  */
 export function HomeHero({ catalog }) {
   const router = useRouter();
   const [year, setYear] = useState("");
   const [subject, setSubject] = useState(null);
-
-  // Clause chaining: h1 line 1 → h1 line 2 → subtitle → search bar
-  const [clause1Done, setClause1Done] = useState(false);
-  const [clause2Done, setClause2Done] = useState(false);
-  const [subtitleDone, setSubtitleDone] = useState(false);
 
   const goBrowse = () => {
     const params = new URLSearchParams();
@@ -73,161 +35,144 @@ export function HomeHero({ catalog }) {
 
   return (
     <section
-      className="snap-section relative overflow-x-clip"
-      style={{
-        background:
-          "radial-gradient(55% 55% at 22% 28%, rgba(30,58,138,0.08) 0%, rgba(255,255,255,0) 100%), radial-gradient(35% 35% at 78% 72%, rgba(30,58,138,0.07) 0%, rgba(255,255,255,0) 100%), #ffffff",
-      }}
+      className="relative overflow-hidden flex flex-col items-center justify-center text-center px-6"
+      style={{ minHeight: "100svh", marginTop: "calc(-1 * var(--nav-h))", background: "var(--paper)" }}
     >
-      {/* Faint editorial grid texture */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 pointer-events-none opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(15,23,42,0.04) 1px, transparent 1px)",
-          backgroundSize: "120px 100%",
-        }}
-      />
+      {/* Neural-network constellation backdrop — fills the whole hero. */}
+      <div className="absolute inset-0 z-0">
+        <ParticleNetwork />
+      </div>
 
-      {/* Top-anchored content (no vertical centering) so the hero doesn't
-          jitter when fonts/text reflow. The padding pushes it visually toward
-          the optical center. */}
-      <div className="relative max-w-[1200px] w-full mx-auto px-6 pt-[12vh] pb-24">
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-12 lg:items-center">
-          <div className="max-w-[880px] lg:max-w-none">
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: EASE_OUT }}
-            className="inline-flex items-center gap-2 mb-7 px-3 py-1.5"
-            style={{
-              borderRadius: 999,
-              border: "1px solid var(--accent-line)",
-              background: "var(--accent-softer)",
-              color: "var(--accent)",
-              fontSize: 12.5,
-              fontWeight: 500,
-              letterSpacing: "0.02em",
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 999,
-                background: "var(--accent)",
-                boxShadow: "0 0 0 4px rgba(30,58,138,0.15)",
-              }}
-            />
-            Australia&apos;s tutor directory, rebuilt.
-          </motion.div>
+      {/* Faint paper grain for a sketched-page feel. */}
+      <div aria-hidden="true" className="absolute inset-0 z-[1] pointer-events-none paper-grain opacity-[0.5]" />
 
-          <h1
-            className="font-display text-[52px] sm:text-[60px] md:text-[76px] leading-[1.02] text-slate-900"
-            style={{ fontWeight: 500 }}
-          >
-            <TypewriterOnView
-              text="Find a tutor"
-              speed={26}
-              start={true}
-              onDone={() => setClause1Done(true)}
-              as="span"
-              className="block"
-            />
-            <TypewriterOnView
-              text="you can trust."
-              speed={28}
-              start={clause1Done}
-              onDone={() => setClause2Done(true)}
-              as="span"
-              className="block italic accent-shine"
-              style={{ color: "var(--accent)" }}
-            />
-          </h1>
+      {/* Slow-swaying botanical sprigs in the corners — a pressed-leaf accent
+          that rocks a few degrees on a long, eased loop (see .leaf-sway). */}
+      <div aria-hidden="true" className="absolute left-4 sm:left-10 top-8 z-[2] pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.35 }}>
+        <Icon name="sprig" size={132} strokeWidth={1.3} />
+      </div>
+      <div aria-hidden="true" className="absolute right-4 sm:right-12 bottom-16 z-[2] pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.28, animationDelay: "-3s" }}>
+        <Icon name="leaf" size={150} strokeWidth={1.2} />
+      </div>
 
-          <motion.p
-            className="text-[16.5px] md:text-[18px] text-slate-600 mt-7 leading-[1.55] max-w-[600px]"
-            initial={{ opacity: 0, y: 8 }}
-            animate={clause2Done ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-            transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
-            onAnimationComplete={() => clause2Done && setSubtitleDone(true)}
-          >
-            High school students across Australia are using matchtutor to work with the country&apos;s strongest recent graduates — verified ATARs, real reviews, no agency markup.
-          </motion.p>
+      {/* Centered overlay — headline + search + trust pills. */}
+      <div className="relative z-10 w-full flex flex-col items-center py-20">
+          <div className="w-full max-w-[860px] mx-auto flex flex-col items-center">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: EASE_OUT }}
+              className="mb-4 sm:mb-6 text-[11px] sm:text-[13px]"
+              style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
+            >
+              Australia&apos;s tutor directory, rebuilt.
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={subtitleDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.15 }}
-            className="mt-10 grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-white max-w-[760px] hero-search-glow"
-            style={{
-              border: "1px solid #E5E7EB",
-              borderRadius: 16,
-            }}
-          >
-            <SearchField
-              icon="graduation"
-              label="Year"
-              placeholder="Year 12"
-              options={YEAR_LEVELS.map((o) => ({ label: o.label, value: o.value }))}
-              value={year}
-              displayValue={year !== "" ? yearLabel(year) : ""}
-              onChange={setYear}
+            {/* Cursive graphite headline — writes itself in on view. */}
+            <HandwrittenHeading
+              as="h1"
+              lines={["Find a tutor", "you can trust."]}
+              size={116}
+              className="flex flex-col items-center"
             />
-            <SubjectPicker
-              catalog={catalog}
-              value={subject?.slug ?? null}
-              onChange={(slug, sub) => setSubject(slug ? { slug, name: sub?.name, exam: sub?.exam } : null)}
-              mode="single"
-              variant="bar"
-              label="Subject"
-              placeholder="Mathematics Extension 1"
-            />
-            <div className="px-2 md:px-1.5 flex items-center">
+
+            <motion.p
+              className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-5 sm:mt-7 leading-[1.5] sm:leading-[1.55] max-w-[300px] sm:max-w-[620px]"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+            >
+              High school students across Australia are using matchtutor to work with the country&apos;s
+              strongest recent graduates. Verified ATARs, real reviews, no agency markup.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
+              className="mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_auto] md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
+              style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
+            >
+              <SearchField
+                icon="graduation"
+                label="Year"
+                placeholder="Year 12"
+                options={YEAR_LEVELS.map((o) => ({ label: o.label, value: o.value }))}
+                value={year}
+                displayValue={year !== "" ? yearLabel(year) : ""}
+                onChange={setYear}
+              />
+              <SubjectPicker
+                catalog={catalog}
+                value={subject?.slug ?? null}
+                onChange={(slug, sub) => setSubject(slug ? { slug, name: sub?.name, exam: sub?.exam } : null)}
+                mode="single"
+                variant="bar"
+                label="Subject"
+                placeholder="Mathematics Extension 1"
+              />
+              <div className="px-1.5 sm:px-2 md:px-1.5 flex items-center">
+                <motion.div
+                  initial="rest"
+                  animate="rest"
+                  whileHover="hover"
+                  variants={searchButtonVariants}
+                  className="w-full"
+                  style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
+                >
+                  <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>
+                    {/* Icon-only on phones so all three segments fit one row. */}
+                    <span className="hidden sm:inline">Search</span>
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
+
+            {/* Phones: the inline Year/Subject bar is hidden; a single centered
+                "Search Now" button takes its place, routing to /browse. */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
+              className="mt-7 flex sm:hidden justify-center"
+            >
               <motion.div
                 initial="rest"
                 animate="rest"
                 whileHover="hover"
                 variants={searchButtonVariants}
-                className="w-full"
                 style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
               >
-                <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>Search</Button>
+                <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
+                  Search Now
+                </Button>
               </motion.div>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={subtitleDone ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.35 }}
-            className="mt-6 flex items-center gap-x-5 gap-y-2 flex-wrap text-[12.5px] text-slate-500"
-          >
-            <TrustPill>ATAR-verified tutors</TrustPill>
-            <TrustPill>In-person &amp; online</TrustPill>
-            <TrustPill>No agency markup</TrustPill>
-            <TrustPill>No messaging fee</TrustPill>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.9 }}
+              className="mt-6 flex items-center justify-center gap-x-6 gap-y-2 flex-wrap text-[13px]"
+              style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
+            >
+              <TrustPill>ATAR-verified tutors</TrustPill>
+              <TrustPill>In-person &amp; online</TrustPill>
+              <TrustPill>No agency markup</TrustPill>
+              <TrustPill>No messaging fee</TrustPill>
+            </motion.div>
           </div>
-
-          <HeroPanel show={subtitleDone} />
         </div>
-      </div>
 
-      {/* Scroll indicator — anchored within the visible viewport (snap-section
-          is sized to 100vh - nav-h, so bottom-6 sits safely above the fold). */}
+      {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={subtitleDone ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.6 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-slate-400 pointer-events-none"
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-[color:var(--sage)] pointer-events-none"
       >
         <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
+        <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
           <Icon name="chevron-down" size={16} />
         </motion.div>
       </motion.div>
@@ -235,83 +180,8 @@ export function HomeHero({ catalog }) {
   );
 }
 
-// Right-hand hero slideshow. Hidden below lg so phones/tablets keep the clean
-// single-column hero. Reveal is gated on `subtitleDone` so it joins the same
-// entrance choreography as the search bar rather than popping in early.
-function HeroPanel({ show }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-      transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.3 }}
-      className="hidden lg:block relative"
-    >
-      <div
-        className="relative"
-        style={{
-          borderRadius: 20,
-          border: "1px solid var(--accent-line)",
-          overflow: "hidden",
-          boxShadow:
-            "0 24px 64px -32px rgba(15,23,42,0.30), 0 0 28px rgba(21,39,100,0.12), 0 0 8px rgba(21,39,100,0.08)",
-        }}
-      >
-        <CrossfadeSlideshow images={HERO_IMAGES} priorityFirst className="aspect-[4/5] w-full" />
-
-        {/* Soft navy scrim along the base so the floating chip and lower edge read. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(12,24,64,0.30) 0%, rgba(12,24,64,0) 40%)",
-          }}
-        />
-        {/* Inner hairline ring for a framed, editorial feel over the photo. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{ borderRadius: 20, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)" }}
-        />
-      </div>
-
-      {/* Floating verification chip, overlapping the lower-left corner. */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={show ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.92 }}
-        transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
-        className="absolute -bottom-4 -left-4 flex items-center gap-2.5 bg-white px-3.5 py-2.5"
-        style={{
-          borderRadius: 14,
-          border: "1px solid var(--accent-line)",
-          boxShadow: "0 12px 30px -14px rgba(15,23,42,0.30)",
-        }}
-      >
-        <VerifiedTick size={18} />
-        <div className="leading-none">
-          <div className="text-[13px] font-semibold text-slate-900">Verified ATARs</div>
-          <div className="text-[11px] text-slate-500 mt-1">every tutor, checked by hand</div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 function TrustPill({ children }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: 999,
-          background: "var(--accent)",
-          flexShrink: 0,
-        }}
-      />
-      <span className="accent-shine" style={{ color: "var(--accent)" }}>{children}</span>
-    </span>
-  );
+  return <span className="whitespace-nowrap">{children}</span>;
 }
 
 function SearchField({ icon, label, placeholder, value, onChange, options = [], displayValue }) {
@@ -334,32 +204,32 @@ function SearchField({ icon, label, placeholder, value, onChange, options = [], 
   const shownText = displayValue ?? value;
 
   return (
-    <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "#E5E7EB" }}>
+    <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "var(--line)" }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-4 h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
+        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
       >
-        <Icon name={icon} size={16} className="text-slate-400 shrink-0" />
+        <Icon name={icon} size={16} className="text-[color:var(--sage)] shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider leading-none">{label}</div>
-          <div className={"text-[14px] mt-1.5 truncate leading-none " + (shownText ? "text-slate-900" : "text-slate-400")}>
+          <div className="text-[10px] sm:text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
+          <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (shownText ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
             {shownText || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+        <Icon name="chevron-down" size={14} className="text-[color:var(--sage)] shrink-0 hidden sm:block" />
       </button>
       {open && options.length > 0 && (
         <div
-          className="absolute left-2 right-2 top-full mt-2 z-40 bg-white max-h-[260px] overflow-y-auto"
-          style={{ border: "1px solid #E5E7EB", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
+          className="absolute left-2 right-2 top-full mt-2 z-40 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto"
+          style={{ border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
         >
           {options.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => select(opt)}
-              className="w-full text-left px-3 py-2 text-[13.5px] text-slate-700 transition-colors"
+              className="w-full text-left px-3 py-2 text-[13.5px] text-[color:var(--ink-muted)] transition-colors"
               style={{ background: value === opt.value ? "var(--accent-softer)" : "transparent" }}
               onMouseEnter={(e) => { if (value !== opt.value) e.currentTarget.style.background = "var(--accent-softer)"; }}
               onMouseLeave={(e) => { if (value !== opt.value) e.currentTarget.style.background = "transparent"; }}

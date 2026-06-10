@@ -87,9 +87,9 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
     <div
       className="flex items-stretch"
       style={{
-        background: "#FAFAFA",
+        background: "var(--bg-soft)",
         borderRadius: 10,
-        border: `1px solid ${focus ? "#0F172A" : "transparent"}`,
+        border: `1px solid ${focus ? "var(--ink)" : "transparent"}`,
         transition: "border-color 120ms ease",
       }}
     >
@@ -249,7 +249,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
       onMouseDown={(e) => e.preventDefault()} // keep textarea selection
       onClick={onClick}
       className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors"
-      style={active ? { background: "rgba(15,23,42,0.08)", color: "#0F172A" } : undefined}
+      style={active ? { background: "rgba(15,23,42,0.08)", color: "var(--ink)" } : undefined}
     >
       <Icon name={icon} size={15} strokeWidth={2} />
     </button>
@@ -260,9 +260,9 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
       ref={wrapRef}
       className="relative"
       style={{
-        background: "#FAFAFA",
+        background: "var(--bg-soft)",
         borderRadius: 10,
-        border: `1px solid ${focus ? "#0F172A" : "transparent"}`,
+        border: `1px solid ${focus ? "var(--ink)" : "transparent"}`,
         transition: "border-color 120ms ease",
       }}
     >
@@ -318,7 +318,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
               onClick={runGenerate}
               disabled={genState === "loading" || ai.usage?.remaining === 0}
               className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-md text-[12.5px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors disabled:opacity-60 disabled:cursor-default"
-              style={genState === "loading" || genState === "preview" ? { background: "rgba(15,23,42,0.08)", color: "#0F172A" } : undefined}
+              style={genState === "loading" || genState === "preview" ? { background: "rgba(15,23,42,0.08)", color: "var(--ink)" } : undefined}
             >
               <Icon name="sparkle" size={15} strokeWidth={2} />
               {genState === "loading" ? "Generating…" : "Generate with AI"}
@@ -365,7 +365,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
             <div>
               <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400 mb-1.5">AI draft — preview</div>
               <div
-                className="text-[14px] text-slate-800 whitespace-pre-wrap rounded-lg bg-white border border-slate-200 px-3 py-2"
+                className="text-[14px] text-slate-800 whitespace-pre-wrap rounded-lg bg-[color:var(--paper-card)] border border-slate-200 px-3 py-2"
                 style={{ lineHeight: 1.55 }}
               >
                 {preview}
@@ -389,9 +389,9 @@ function Select({ value, onChange, options }) {
     <div
       className="relative"
       style={{
-        background: "#FAFAFA",
+        background: "var(--bg-soft)",
         borderRadius: 10,
-        border: `1px solid ${focus ? "#0F172A" : "transparent"}`,
+        border: `1px solid ${focus ? "var(--ink)" : "transparent"}`,
         transition: "border-color 120ms ease",
       }}
     >
@@ -416,8 +416,8 @@ function Toggle({ value, onChange, label, hint }) {
   return (
     <button type="button" onClick={() => onChange(!value)} className="flex items-start gap-3 w-full text-left py-1">
       <span className="relative inline-block shrink-0 mt-0.5"
-        style={{ width: 36, height: 22, borderRadius: 999, background: value ? "#0F172A" : "#E5E7EB", transition: "background 140ms ease" }}>
-        <span className="absolute top-0.5 inline-block bg-white"
+        style={{ width: 36, height: 22, borderRadius: 999, background: value ? "var(--ink)" : "var(--paper-line)", transition: "background 140ms ease" }}>
+        <span className="absolute top-0.5 inline-block bg-[color:var(--paper-card)]"
           style={{ width: 18, height: 18, borderRadius: "50%", left: value ? 16 : 2, transition: "left 140ms ease", boxShadow: "0 1px 2px rgba(0,0,0,0.15)" }} />
       </span>
       <span className="flex-1 min-w-0">
@@ -430,7 +430,7 @@ function Toggle({ value, onChange, label, hint }) {
 
 function Card({ children, padding = 24, className = "" }) {
   return (
-    <section className={"bg-white " + className} style={{ border: "1px solid #E5E7EB", borderRadius: 16, padding }}>
+    <section className={"bg-[color:var(--paper-card)] " + className} style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding }}>
       {children}
     </section>
   );
@@ -463,7 +463,7 @@ function move(arr, from, to) {
 
 function ReorderRow({ index, count, onMove, onRemove, children }) {
   return (
-    <div className="group relative flex items-stretch gap-3 py-3" style={{ borderTop: index === 0 ? "none" : "1px solid #F1F5F9" }}>
+    <div className="group relative flex items-stretch gap-3 py-3" style={{ borderTop: index === 0 ? "none" : "1px solid var(--desk)" }}>
       <div className="flex flex-col items-center justify-center pt-2 text-slate-300 select-none">
         <button type="button" onClick={() => onMove(Math.max(0, index - 1))} disabled={index === 0} className="hover:text-slate-700 disabled:opacity-30" aria-label="Move up"><Icon name="chevron-up" size={14} /></button>
         <span className="text-slate-300 my-0.5"><Icon name="grip" size={14} /></span>
@@ -496,9 +496,9 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
         className="flex flex-wrap items-center gap-1.5"
         onClick={() => ref.current?.focus()}
         style={{
-          background: "#FAFAFA",
+          background: "var(--bg-soft)",
           borderRadius: 10,
-          border: `1px solid ${focus ? "#0F172A" : "transparent"}`,
+          border: `1px solid ${focus ? "var(--ink)" : "transparent"}`,
           padding: "7px 9px",
           minHeight: 40,
           cursor: "text",
@@ -531,7 +531,7 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
               key={s}
               onMouseDown={(e) => { e.preventDefault(); add(s); }}
               className="text-[12px] text-slate-500 hover:text-slate-900 px-2 py-1 rounded-full"
-              style={{ background: "#F8FAFC", border: "1px solid #F1F5F9" }}
+              style={{ background: "var(--bg-soft)", border: "1px solid var(--desk)" }}
             >+ {s}</button>
           ))}
         </div>
@@ -641,8 +641,8 @@ export function BannerAvatarSection({ tutor, set, supabase }) {
                     height: 32,
                     borderRadius: 999,
                     background: c,
-                    border: `2px solid ${selectedBanner === c ? "#0F172A" : "transparent"}`,
-                    boxShadow: "inset 0 0 0 1px #E5E7EB",
+                    border: `2px solid ${selectedBanner === c ? "var(--ink)" : "transparent"}`,
+                    boxShadow: "inset 0 0 0 1px var(--paper-line)",
                     cursor: swatchesDisabled ? "not-allowed" : "pointer",
                   }}
                   aria-label="Pick swatch"
@@ -657,7 +657,7 @@ export function BannerAvatarSection({ tutor, set, supabase }) {
           )}
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-7 pt-5" style={{ borderTop: "1px solid #F1F5F9" }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-7 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
         <Toggle value={tutor.deliversInPerson} onChange={(v) => set({ deliversInPerson: v })} label="Accepts in-person lessons" hint="Inside the service area you set below." />
         <Toggle value={tutor.deliversOnline} onChange={(v) => set({ deliversOnline: v })} label="Accepts online lessons" hint="Over Zoom or Google Meet." />
       </div>
@@ -718,7 +718,7 @@ export function CredentialsSection({ tutor, set }) {
     <Card>
       <SectionHeader title="Credentials" subtitle="The ATAR, awards, degrees, or state ranks that show on your profile."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add credential</Button>} />
-      {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "#FAFAFA", borderRadius: 10 }}>No credentials yet — add an ATAR, award, degree, or state rank.</div>}
+      {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "var(--bg-soft)", borderRadius: 10 }}>No credentials yet — add an ATAR, award, degree, or state rank.</div>}
       <div>
         {list.map((c, i) => {
           const t = typeForIcon(c.icon);
@@ -733,14 +733,14 @@ export function CredentialsSection({ tutor, set }) {
         })}
       </div>
       {list.some((c) => c.label) && (
-        <div className="mt-5 pt-5" style={{ borderTop: "1px solid #F1F5F9" }}>
+        <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
           <MetaLabel>Preview</MetaLabel>
           <div className="flex flex-col gap-2.5 mt-2">
             {list.map((c, i) => {
               if (!c.label) return null;
               const t = typeForIcon(c.icon);
               return (
-                <div key={i} className="px-4 py-3 flex items-center gap-4" style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }}>
+                <div key={i} className="px-4 py-3 flex items-center gap-4" style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "var(--bg-soft)" }}>
                   <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium w-[120px] shrink-0">
                     <Icon name={c.icon} size={12} /> {t.caption}
                   </div>
@@ -958,7 +958,7 @@ export function YearLevelsSection({ tutor, set }) {
           <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
             style={{ left: `${maxPct}%`, transform: `translateX(-${maxPct}%)` }}>{yearLabel(max)}</span>
           <div className="relative h-4">
-            <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "#E5E7EB", zIndex: 1 }} />
+            <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "var(--paper-line)", zIndex: 1 }} />
             <div className="absolute" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "var(--accent)", left: `${minPct}%`, right: `${100 - maxPct}%`, zIndex: 2 }} />
             <input type="range" className="dual-range" style={{ zIndex: 3 }} min={YEAR_MIN} max={YEAR_MAX} step={1} value={min}
               onChange={(e) => setMin(e.target.value)} aria-label="Lowest year level" />
@@ -971,7 +971,7 @@ export function YearLevelsSection({ tutor, set }) {
               const inRange = y.value >= min && y.value <= max;
               return (
                 <span key={y.value} className="text-[11px] tabular-nums"
-                  style={{ color: inRange ? "var(--accent)" : "#94A3B8", fontWeight: inRange ? 600 : 400 }}>
+                  style={{ color: inRange ? "var(--accent)" : "var(--sage)", fontWeight: inRange ? 600 : 400 }}>
                   {y.short}
                 </span>
               );
@@ -986,20 +986,20 @@ export function YearLevelsSection({ tutor, set }) {
 function ServiceMapPlaceholder({ radiusKm }) {
   const radius = 18 + (Math.min(50, Math.max(1, radiusKm)) / 50) * 68;
   return (
-    <div style={{ background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 12, overflow: "hidden", height: 200 }} className="relative">
+    <div style={{ background: "var(--bg-soft)", border: "1px solid var(--desk)", borderRadius: 12, overflow: "hidden", height: 200 }} className="relative">
       <svg viewBox="0 0 280 200" width="100%" height="100%">
         <defs>
           <pattern id="grid-bg" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E5E7EB" strokeWidth="0.5"/>
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--paper-line)" strokeWidth="0.5"/>
           </pattern>
         </defs>
         <rect width="280" height="200" fill="url(#grid-bg)" />
-        <path d="M 0 130 C 80 120 160 150 280 110" stroke="#E5E7EB" strokeWidth="6" fill="none"/>
-        <path d="M 60 0 C 80 60 120 110 100 200" stroke="#E5E7EB" strokeWidth="4" fill="none"/>
-        <path d="M 200 0 L 180 200" stroke="#E5E7EB" strokeWidth="3" fill="none"/>
-        <circle cx="140" cy="100" r={radius} fill="#0F172A" fillOpacity="0.06" stroke="#0F172A" strokeWidth="1.25" strokeDasharray="4 4"/>
-        <circle cx="140" cy="100" r="4" fill="#0F172A"/>
-        <circle cx="140" cy="100" r="9" fill="none" stroke="#0F172A" strokeWidth="1.25" opacity="0.4"/>
+        <path d="M 0 130 C 80 120 160 150 280 110" stroke="var(--paper-line)" strokeWidth="6" fill="none"/>
+        <path d="M 60 0 C 80 60 120 110 100 200" stroke="var(--paper-line)" strokeWidth="4" fill="none"/>
+        <path d="M 200 0 L 180 200" stroke="var(--paper-line)" strokeWidth="3" fill="none"/>
+        <circle cx="140" cy="100" r={radius} fill="var(--ink)" fillOpacity="0.06" stroke="var(--ink)" strokeWidth="1.25" strokeDasharray="4 4"/>
+        <circle cx="140" cy="100" r="4" fill="var(--ink)"/>
+        <circle cx="140" cy="100" r="9" fill="none" stroke="var(--ink)" strokeWidth="1.25" opacity="0.4"/>
       </svg>
       <div className="absolute top-2.5 left-3 text-[11px] font-medium uppercase tracking-wider text-slate-500">{radiusKm} km radius</div>
     </div>
@@ -1104,8 +1104,8 @@ function HourSelect({ value, min = 0, max = 24, onChange }) {
     <select
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="text-[13px] text-slate-700 bg-white rounded-md px-1.5 py-1 tabular-nums focus:outline-none cursor-pointer"
-      style={{ border: "1px solid #E5E7EB" }}
+      className="text-[13px] text-slate-700 bg-[color:var(--paper-card)] rounded-md px-1.5 py-1 tabular-nums focus:outline-none cursor-pointer"
+      style={{ border: "1px solid var(--paper-line)" }}
     >
       {opts.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
     </select>
@@ -1180,7 +1180,7 @@ export function AvailabilitySection({ tutor, set }) {
         ))}
       </div>
 
-      <div className="divide-y" style={{ borderColor: "#F1F5F9" }}>
+      <div className="divide-y" style={{ borderColor: "var(--desk)" }}>
         {DAYS.map((d, c) => {
           const dayBlocks = blocks[d] || [];
           return (
@@ -1192,7 +1192,7 @@ export function AvailabilitySection({ tutor, set }) {
               )}
 
               {dayBlocks.map((b, i) => (
-                <span key={i} className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1" style={{ background: "#F8FAFC", border: "1px solid #EEF2F6" }}>
+                <span key={i} className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1" style={{ background: "var(--bg-soft)", border: "1px solid #EEF2F6" }}>
                   <HourSelect value={b.start} min={0} max={23} onChange={(v) => setStart(d, i, v)} />
                   <span className="text-[12px] text-slate-400">to</span>
                   <HourSelect value={b.end} min={b.start + 1} max={24} onChange={(v) => editBlock(d, i, { end: v })} />
@@ -1332,10 +1332,10 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
           {visOptions.map((o) => (
             <button key={o.value} type="button" onClick={() => set({ visibility: o.value })}
               className="w-full text-left flex items-start gap-3 px-3 py-2.5 transition-colors"
-              style={{ background: tutor.visibility === o.value ? "#0F172A" : "#FAFAFA", color: tutor.visibility === o.value ? "#fff" : "#0F172A", borderRadius: 10, border: `1px solid ${tutor.visibility === o.value ? "#0F172A" : "transparent"}` }}>
+              style={{ background: tutor.visibility === o.value ? "var(--ink)" : "var(--bg-soft)", color: tutor.visibility === o.value ? "#fff" : "var(--ink)", borderRadius: 10, border: `1px solid ${tutor.visibility === o.value ? "var(--ink)" : "transparent"}` }}>
               <span className="inline-flex items-center justify-center shrink-0 mt-0.5"
-                style={{ width: 16, height: 16, borderRadius: "50%", border: `1.5px solid ${tutor.visibility === o.value ? "#fff" : "#CBD5E1"}`, background: tutor.visibility === o.value ? "#fff" : "transparent" }}>
-                {tutor.visibility === o.value && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0F172A" }} />}
+                style={{ width: 16, height: 16, borderRadius: "50%", border: `1.5px solid ${tutor.visibility === o.value ? "#fff" : "var(--line-strong)"}`, background: tutor.visibility === o.value ? "#fff" : "transparent" }}>
+                {tutor.visibility === o.value && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ink)" }} />}
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[13.5px] font-medium">{o.label}</span>
@@ -1353,7 +1353,7 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
           onClick={copyPublicHref}
           title={copied ? "Copied!" : "Click to copy"}
           className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-100"
-          style={{ background: "#FAFAFA", borderRadius: 10 }}
+          style={{ background: "var(--bg-soft)", borderRadius: 10 }}
         >
           <Icon name={copied ? "check" : "globe"} size={14} className={(copied ? "text-emerald-500" : "text-slate-400") + " shrink-0"} />
           <code className="text-[12.5px] text-slate-700 truncate flex-1 min-w-0">{publicHref}</code>
@@ -1365,20 +1365,20 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
 
       <Card padding={20}>
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-2">Profile completion</h3>
-        <div style={{ height: 6, background: "#F1F5F9", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "#10B981" : "#0F172A", transition: "width 220ms ease" }} />
+        <div style={{ height: 6, background: "var(--desk)", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "var(--accent)" : "var(--ink)", transition: "width 220ms ease" }} />
         </div>
         <ul className="mt-4 space-y-2">
           {c.checks.map((ch) => (
             <li key={ch.key} className="flex items-center gap-2 text-[13px]">
               <span className="inline-flex items-center justify-center shrink-0"
-                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "#10B981" : "#F1F5F9", color: ch.ok ? "#fff" : "#94A3B8" }}>
-                {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#94A3B8" }} />}
+                style={{ width: 16, height: 16, borderRadius: "50%", background: ch.ok ? "var(--accent)" : "var(--desk)", color: ch.ok ? "#fff" : "var(--sage)" }}>
+                {ch.ok ? <Icon name="check" size={10} strokeWidth={3} /> : <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--sage)" }} />}
               </span>
               <span className={ch.ok ? "text-slate-600 line-through decoration-slate-300" : "text-slate-700"}>{ch.key}</span>
               {ch.soon && (
                 <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                  style={{ background: "#FAFAFA", border: "1px solid #E5E7EB", color: "#94A3B8" }}>
+                  style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", color: "var(--sage)" }}>
                   Coming soon
                 </span>
               )}
@@ -1410,7 +1410,7 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, 
   const router = useRouter();
   const canView = !dirty && !saving && !!profileHref;
   return (
-    <div className="sticky top-0 z-30 bg-white/85 backdrop-blur" style={{ borderBottom: "1px solid #E5E7EB" }}>
+    <div className="sticky top-0 z-30 bg-[rgba(251,247,236,0.85)] backdrop-blur" style={{ borderBottom: "1px solid var(--paper-line)" }}>
       <div className="max-w-[1200px] mx-auto px-6 h-[68px] flex items-center gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar tutor={tutor} size={36} />
@@ -1440,7 +1440,7 @@ export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref, n
   const router = useRouter();
   const canView = !dirty && !saving && !!profileHref;
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid #E5E7EB" }}>
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[color:var(--paper-card)] px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
       <div className="flex-1 text-[13px] text-slate-600">{dirty ? "You have unsaved changes" : "All saved"}</div>
       <Button variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
       {canView ? (
