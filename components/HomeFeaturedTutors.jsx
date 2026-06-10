@@ -4,20 +4,18 @@ import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { TutorCard } from "@/components/TutorCard";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
+import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
 export function HomeFeaturedTutors({ tutors = [] }) {
   const empty = tutors.length === 0;
 
   return (
-    <section
-      className="min-h-[70vh] flex flex-col justify-center"
-      style={{
-        background:
-          "radial-gradient(40% 45% at 50% 18%, rgba(94,122,90,0.10) 0%, rgba(233,226,207,0) 60%), var(--desk)",
-      }}
-    >
-      <div className="max-w-[1200px] w-full mx-auto px-6 py-10">
+    <section className="relative overflow-hidden min-h-[70vh] flex flex-col justify-center desk-surface">
+      {/* Cream desk with faint floating stationery. */}
+      <DeskBackdrop />
+
+      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-10">
         <div className="max-w-[720px] mx-auto text-center flex flex-col items-center mb-7">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -51,7 +49,9 @@ export function HomeFeaturedTutors({ tutors = [] }) {
               viewport={{ once: true, margin: "-8% 0px" }}
               variants={{
                 hidden: {},
-                show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.2 } },
+                // Hold the cards until the eyebrow + handwritten heading + subtitle
+                // have animated in, so the grid clearly follows the text.
+                show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.7 } },
               }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-[1060px] mx-auto"
             >

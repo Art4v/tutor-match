@@ -191,7 +191,7 @@ export function AccountSettings({ userEmail }) {
           {/* Delete account ------------------------------------------------- */}
           <section
             className="bg-[color:var(--paper-card)]"
-            style={{ border: "1px solid #FECACA", borderRadius: 16, padding: 24 }}
+            style={{ border: "1px solid #FECACA", borderRadius: "var(--radius-card)", padding: 24 }}
           >
             <header className="flex items-start gap-2 mb-4">
               <span className="mt-0.5" style={{ color: "#DC2626" }}>
@@ -276,7 +276,7 @@ export function AccountSettings({ userEmail }) {
 
 function Card({ children }) {
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 24 }}>
+    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
       {children}
     </section>
   );
@@ -342,7 +342,7 @@ function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
         className="bg-[color:var(--paper-card)] w-full"
         style={{
           maxWidth: 420,
-          borderRadius: 16,
+          borderRadius: "var(--radius-card)",
           padding: 24,
           boxShadow: "0 24px 60px rgba(15,23,42,0.28)",
         }}

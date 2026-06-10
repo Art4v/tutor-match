@@ -50,7 +50,7 @@ export function NotificationsList({ initial }) {
     return (
       <div
         className="flex flex-col items-center justify-center text-center"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: "48px 24px" }}
+        style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: "48px 24px" }}
       >
         <span className="inline-flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 999, background: "var(--desk)", color: "var(--sage)" }}>
           <Icon name="bell" size={22} />
@@ -72,7 +72,7 @@ export function NotificationsList({ initial }) {
             className="flex items-start gap-3.5"
             style={{
               border: "1px solid var(--paper-line)",
-              borderRadius: 14,
+              borderRadius: "var(--radius-card)",
               padding: 16,
               background: unread ? "var(--accent-softer)" : "#fff",
             }}

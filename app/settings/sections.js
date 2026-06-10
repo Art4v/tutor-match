@@ -430,7 +430,7 @@ function Toggle({ value, onChange, label, hint }) {
 
 function Card({ children, padding = 24, className = "" }) {
   return (
-    <section className={"bg-[color:var(--paper-card)] " + className} style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding }}>
+    <section className={"bg-[color:var(--paper-card)] " + className} style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding }}>
       {children}
     </section>
   );

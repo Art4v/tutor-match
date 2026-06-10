@@ -10,7 +10,7 @@ export function RateCard({ tutor }) {
   const rateLine = "Online or in person · flexible scheduling";
 
   return (
-    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
       <StaggerChildren delay={0.3} step={0.12}>
         <RevealItem>
           <div className="flex items-baseline gap-1">

@@ -70,7 +70,7 @@ export function SchoolsMarquee() {
       style={{ background: "var(--paper-card)", borderColor: "var(--paper-line)", minHeight: "20vh" }}
       aria-label="Schools our students come from"
     >
-      <div className="w-full px-6 pb-4 text-center">
+      <div className="w-full px-6 pt-6 pb-2 text-center">
         <span
           className="font-hand text-[22px]"
           style={{ color: "var(--ink-graphite)" }}
@@ -78,7 +78,7 @@ export function SchoolsMarquee() {
           Trusted tutors from
         </span>
       </div>
-      <div className="marquee-mask overflow-hidden py-4">
+      <div className="marquee-mask overflow-hidden pt-2 pb-4">
         <div className="marquee-track">
           <Half />
           <Half ariaHidden />

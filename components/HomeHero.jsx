@@ -106,7 +106,7 @@ export function HomeHero({ catalog }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
               className="mt-9 w-full grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
-              style={{ border: "1px solid var(--line)", borderRadius: 16 }}
+              style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
             >
               <SearchField
                 icon="graduation"

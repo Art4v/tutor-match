@@ -7,6 +7,7 @@ import { subjectLabel } from "@/lib/subjects";
 import { yearRangeLabel } from "@/lib/yearLevels";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { SectionReveal } from "@/components/anim/SectionReveal";
 import { RateCard } from "./RateCard";
 import ServiceAreaMap from "./ServiceAreaMap";
@@ -29,9 +30,11 @@ export default async function ProfilePage({ params }) {
   const deliveryLabel = formatDelivery(tutor);
 
   return (
-    <div className="bg-[color:var(--paper-card)]">
-      <div className="max-w-[1200px] mx-auto px-6 pt-6 pb-24">
-        <SectionReveal hover className="relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: 16 }}>
+    <div className="desk-surface relative overflow-hidden">
+      {/* Same cream desk + floating stationery as the featured section. */}
+      <DeskBackdrop />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">
+        <SectionReveal hover className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
           <div
             style={{
               height: 140,
@@ -139,8 +142,8 @@ function Section({ title, subtitle, children, id }) {
       as="section"
       id={id}
       hover
-      className="bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 24 }}
+      className="paper-page bg-[color:var(--paper-card)]"
+      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}
     >
       <div className="mb-5">
         <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">
@@ -157,7 +160,7 @@ function Section({ title, subtitle, children, id }) {
 
 function SubjectsCard({ subjects }) {
   return (
-    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
       <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
       <div className="flex flex-wrap gap-1.5">
         {subjects.map((s) => (
@@ -170,7 +173,7 @@ function SubjectsCard({ subjects }) {
 
 function VerificationCard() {
   return (
-    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="text-[14px] font-semibold text-slate-900">Verification</div>
         <span
@@ -190,7 +193,7 @@ function VerificationCard() {
 
 function RatingsCard() {
   return (
-    <SectionReveal hover className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="text-[14px] font-semibold text-slate-900">Ratings &amp; reviews</div>
         <span
@@ -219,7 +222,7 @@ function ServiceAreaCard({ tutor }) {
   const radiusKm = sa?.radiusKm ?? 10;
   const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
   return (
-    <SectionReveal hover className="bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: 16 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
       <div className="px-5 pt-5 pb-5">
         <div className="text-[14px] font-semibold text-slate-900">Service area</div>
         <div className="text-[12.5px] text-slate-500 mt-0.5">

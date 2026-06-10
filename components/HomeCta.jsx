@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
@@ -56,15 +57,18 @@ export function HomeCta() {
             background:
               "radial-gradient(80% 80% at 50% 0%, rgba(94,122,90,0.12) 0%, rgba(94,122,90,0) 60%), var(--paper)",
             border: "1px solid var(--paper-line)",
+            borderRadius: "var(--radius-card)",
           }}
         >
-          {/* Editorial decorative quote mark */}
+          {/* Decorative tree — trunk grows from the card's bottom edge.
+              The icon's trunk ends 3/24 of its size above its box, so the
+              negative bottom offset (size * 3/24) lands the trunk on the edge. */}
           <div
             aria-hidden="true"
-            className="absolute font-hand select-none pointer-events-none"
-            style={{ top: -60, right: 24, fontSize: 280, lineHeight: 1, color: "var(--accent)", opacity: 0.1, fontWeight: 700 }}
+            className="absolute select-none pointer-events-none"
+            style={{ bottom: -38, right: 32, color: "var(--accent)", opacity: 0.1 }}
           >
-            &#8221;
+            <Icon name="tree" size={300} strokeWidth={1.1} />
           </div>
 
           <div className="relative flex flex-col items-center text-center gap-9">

@@ -86,7 +86,7 @@ function ResetPasswordInner() {
       className="w-full max-w-[440px] bg-[color:var(--paper-card)]"
       style={{
         border: "1px solid var(--paper-line)",
-        borderRadius: 16,
+        borderRadius: "var(--radius-card)",
         padding: 32,
         boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
       }}

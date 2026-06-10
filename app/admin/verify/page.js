@@ -75,7 +75,7 @@ export default async function AdminVerifyPage({ searchParams }) {
 
   return (
     <Shell>
-      <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 28 }}>
+      <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
         <div className="flex items-start gap-3 mb-5">
           <span className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}>
             <Icon name="shield-check" size={20} />
@@ -120,7 +120,7 @@ function StateCard({ tone, icon, title, body, profileHref }) {
     error: { bg: "#FEF2F2", fg: "#DC2626" },
   }[tone] || { bg: "var(--desk)", fg: "var(--ink-muted)" };
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 28 }}>
+    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
       <span className="inline-flex items-center justify-center mb-4" style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}>
         <Icon name={icon} size={22} />
       </span>

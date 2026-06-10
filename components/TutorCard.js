@@ -156,13 +156,17 @@ const CARD_HEIGHT = 360;
 // y eases up to -3px while rotate plays a small back-and-forth wobble that
 // settles on 0; the shadow + border ease in. On leave, every property
 // interpolates back to rest with the same easing — no snapping, no overlap.
+// Both boxShadow strings MUST keep the same shape (same layers, same value
+// count per layer: contact + drop + sheet + glow) — motion can only tween
+// shadows with matching templates; a mismatch makes it swap discretely
+// instead of fading. Layers that exist in only one state fade via alpha.
 const cardVariants = {
   rest: {
     y: 0,
     rotate: 0,
     // Cream sheet: soft drop shadow + a faint offset "sheet beneath" so the card
     // reads like a page in a small stack.
-    boxShadow: "0 1px 2px rgba(60,55,45,0.05), 0 10px 26px -16px rgba(60,55,45,0.22), 5px 7px 0 -3px rgba(120,114,98,0.12)",
+    boxShadow: "0 1px 2px 0 rgba(60,55,45,0.05), 0 10px 26px -16px rgba(60,55,45,0.22), 5px 7px 0 -3px rgba(120,114,98,0.12), 0 0 22px 0 rgba(94,122,90,0)",
     borderColor: "var(--paper-line)",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
@@ -174,7 +178,7 @@ const cardVariants = {
   hover: {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 18px 36px -20px rgba(40,38,34,0.26), 7px 9px 0 -3px rgba(120,114,98,0.16), 0 0 22px rgba(94,122,90,0.18)",
+    boxShadow: "0 1px 2px 0 rgba(60,55,45,0), 0 18px 36px -20px rgba(40,38,34,0.26), 7px 9px 0 -3px rgba(120,114,98,0.16), 0 0 22px 0 rgba(94,122,90,0.18)",
     borderColor: "var(--accent-line)",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
@@ -208,9 +212,12 @@ export function TutorCard({ tutor }) {
       variants={cardVariants}
       className="paper-grain"
       style={{
+        position: "relative",
         height: CARD_HEIGHT,
         backgroundColor: "var(--paper-card)",
         border: "1px solid var(--paper-line)",
+        borderRadius: "var(--radius-card)",
+        overflow: "hidden",
         willChange: "transform, box-shadow",
       }}
     >
@@ -230,11 +237,8 @@ export function TutorCard({ tutor }) {
             <Avatar tutor={tutor} size={64} ring />
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              className="text-[16px] font-semibold text-[color:var(--ink)] truncate"
-              style={{ letterSpacing: "-0.01em" }}
-            >
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span className="font-hand text-[22px] font-semibold text-[color:var(--ink)] truncate leading-tight pr-1">
               {tutor.name}
             </span>
             {tutor.verified && <VerifiedTick size={14} />}
@@ -301,7 +305,7 @@ export function TutorCard({ tutor }) {
             </div>
 
             <div
-              className="pt-4 flex items-end gap-3 border-t"
+              className="pt-4 flex items-center gap-3 border-t"
               style={{ borderColor: "var(--paper-line)" }}
             >
               <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
@@ -314,7 +318,7 @@ export function TutorCard({ tutor }) {
                 )}
                 {moreCount > 0 && <MorePill count={moreCount} />}
               </div>
-              <div className="text-right shrink-0 leading-none">
+              <div className="text-right shrink-0 leading-none" style={{ paddingRight: 3 }}>
                 <span className="text-[22px] font-bold text-[color:var(--ink)] tabular-nums">${tutor.rate}</span>
                 <span className="text-[13px] text-[color:var(--sage)] font-medium">/hr</span>
               </div>
@@ -322,6 +326,8 @@ export function TutorCard({ tutor }) {
           </div>
         </div>
       </Link>
+      {/* Folded paper corner — decorative, never intercepts the link. */}
+      <span aria-hidden="true" className="dog-ear" />
     </motion.div>
   );
 }

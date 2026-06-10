@@ -27,7 +27,7 @@ function DeliveryCard({ tutor, set }) {
   const inPerson = !!tutor.deliversInPerson;
   const online = !!tutor.deliversOnline;
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 14, padding: 24 }}>
+    <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
       <h3 className="text-[16px] font-semibold text-slate-900">How do you teach?</h3>
       <p className="text-[13.5px] text-slate-500 mt-1 mb-4">Pick the lesson formats you offer — you can change these later.</p>
       <div className="flex flex-wrap gap-2.5">

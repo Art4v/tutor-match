@@ -68,6 +68,11 @@ export function HandwrittenHeading({
           style={{
             display: "block",
             fontSize,
+            // Bleed room for Caveat's ascenders, deep descenders (y, g, p) and
+            // trailing swashes: padding sits inside the clip box so the wipe
+            // can't cut glyphs; the negative margin cancels it in layout.
+            padding: "0.3em 0.35em 0.55em 0.2em",
+            margin: "-0.3em -0.35em -0.55em -0.2em",
             // @ts-ignore CSS custom props
             "--write-delay": `${i * 0.5}s`,
             "--write-dur": `${Math.min(1.8, 0.6 + line.length * 0.05)}s`,

@@ -6,6 +6,7 @@ import {
 } from "@/lib/supabase/tutors";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
+import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { Footer } from "@/components/Footer";
 import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
 import { BrowseResultsGrid } from "./BrowseResultsGrid";
@@ -73,7 +74,11 @@ export default async function BrowsePage({ searchParams }) {
   };
 
   return (
-    <div className="bg-[color:var(--paper-card)]">
+    <div className="desk-surface relative">
+      {/* Same cream desk + floating stationery as the featured section.
+          Negative z keeps it behind the content without needing overflow-hidden
+          (which would break the sticky filter sidebar). */}
+      <DeskBackdrop className="-z-10" />
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
           <BrowseFilters
@@ -114,7 +119,7 @@ function EmptyState() {
   return (
     <div
       className="text-center py-16 px-6"
-      style={{ border: "1px dashed var(--paper-line)", borderRadius: 14 }}
+      style={{ border: "1px dashed var(--paper-line)", borderRadius: "var(--radius-card)" }}
     >
       <div
         className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center text-slate-400"

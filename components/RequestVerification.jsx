@@ -93,7 +93,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
 
 function Card({ children }) {
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: 16, padding: 20 }}>
+    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 20 }}>
       {children}
     </section>
   );

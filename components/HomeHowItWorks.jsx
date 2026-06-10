@@ -95,7 +95,7 @@ export function HomeHowItWorks() {
 
   return (
     <section
-      className="flex items-center"
+      className="min-h-[60vh] flex items-center"
       style={{
         background:
           "radial-gradient(45% 50% at 14% 78%, rgba(94,122,90,0.07) 0%, rgba(255,255,255,0) 60%)",
@@ -167,6 +167,11 @@ export function HomeHowItWorks() {
   );
 }
 
+// Scattered resting tilts + tape angles so the three step cards read as notes
+// taped to the wall (cycled by card index).
+const CARD_TILT = [-2, 1.5, -1];
+const TAPE_TILT = [-4, 3, -2];
+
 const cardShakeHover = {
   y: -4,
   rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
@@ -188,15 +193,19 @@ const cardShakeHover = {
 
 function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
   const [hover, setHover] = useState(false);
+  const tilt = CARD_TILT[index % CARD_TILT.length];
+  const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
+  // Wobble around the resting tilt (so hover doesn't snap the card straight).
+  const hoverAnim = { ...cardShakeHover, rotate: cardShakeHover.rotate.map((r) => tilt + r) };
 
   return (
     <motion.div
       ref={cardRef}
       variants={{
-        hidden: { opacity: 0, y: 18 },
-        show: { opacity: 1, y: 0, transition: { duration: DURATION_MED, ease: EASE_OUT } },
+        hidden: { opacity: 0, y: 18, rotate: tilt },
+        show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
       }}
-      whileHover={isOpen || isHidden ? undefined : cardShakeHover}
+      whileHover={isOpen || isHidden ? undefined : hoverAnim}
       onHoverStart={() => !isOpen && setHover(true)}
       onHoverEnd={() => setHover(false)}
       style={{
@@ -209,12 +218,18 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
         willChange: "transform, box-shadow",
       }}
     >
+      {/* Washi tape pinning the note to the wall. */}
+      <span
+        aria-hidden="true"
+        className="washi-tape"
+        style={{ top: -9, left: "50%", transform: `translateX(-50%) rotate(${tapeTilt}deg)`, zIndex: 5 }}
+      />
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
         className="p-8 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
         style={{
-          borderRadius: 18,
+          borderRadius: "var(--radius-card)",
           cursor: isOpen ? "default" : "pointer",
         }}
       >
@@ -409,7 +424,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
       transition={{ type: "spring", stiffness: 260, damping: 30 }}
       className="absolute"
       style={{
-        borderRadius: 18,
+        borderRadius: "var(--radius-card)",
         perspective: 1600,
       }}
       onClick={(e) => e.stopPropagation()}

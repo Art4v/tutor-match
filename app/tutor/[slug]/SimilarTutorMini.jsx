@@ -44,6 +44,7 @@ export function SimilarTutorMini({ tutor }) {
       animate="rest"
       whileHover="hover"
       variants={miniVariants}
+      className="paper-page"
       style={{
         background: "var(--paper-card)",
         border: "1px solid var(--paper-line)",
@@ -65,11 +66,8 @@ export function SimilarTutorMini({ tutor }) {
           <div style={{ marginTop: -18, marginBottom: 6 }}>
             <Avatar tutor={tutor} size={36} ring />
           </div>
-          <div className="flex items-center gap-1 min-w-0">
-            <span
-              className="text-[12.5px] font-semibold text-slate-900 truncate"
-              style={{ letterSpacing: "-0.01em" }}
-            >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-hand text-[16px] font-semibold text-slate-900 truncate leading-tight pr-1">
               {tutor.name}
             </span>
             {tutor.verified && <VerifiedTick size={11} />}
