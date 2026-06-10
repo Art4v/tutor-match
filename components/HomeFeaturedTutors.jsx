@@ -53,7 +53,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
                 // have animated in, so the grid clearly follows the text.
                 show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.7 } },
               }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-[1060px] mx-auto"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7 max-w-[1120px] mx-auto"
             >
               {tutors.map((t) => (
                 <motion.div

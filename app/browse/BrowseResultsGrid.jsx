@@ -12,7 +12,7 @@ export function BrowseResultsGrid({ tutors }) {
         hidden: {},
         show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.05 } },
       }}
-      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7"
     >
       {tutors.map((t) => (
         <motion.div

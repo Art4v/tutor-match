@@ -30,7 +30,12 @@ export default async function ProfilePage({ params }) {
   const deliveryLabel = formatDelivery(tutor);
 
   return (
-    <div className="desk-surface relative overflow-hidden">
+    <div
+      className="desk-surface relative overflow-hidden"
+      // Bleed under the fixed transparent nav (cancels the layout's nav-height
+      // spacer, same as HomeHero) so the desk backdrop shows through it.
+      style={{ marginTop: "calc(-1 * var(--nav-h))", paddingTop: "var(--nav-h)" }}
+    >
       {/* Same cream desk + floating stationery as the featured section. */}
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">
@@ -105,7 +110,6 @@ export default async function ProfilePage({ params }) {
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
-            <VerificationCard />
             <RatingsCard />
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
@@ -166,26 +170,6 @@ function SubjectsCard({ subjects }) {
         {subjects.map((s) => (
           <Chip key={s.slug} tone="cream" icon="graduation">{subjectLabel(s)}</Chip>
         ))}
-      </div>
-    </SectionReveal>
-  );
-}
-
-function VerificationCard() {
-  return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="text-[14px] font-semibold text-slate-900">Verification</div>
-        <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
-          style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink-muted)" }}
-        >
-          Coming soon
-        </span>
-      </div>
-      <div className="text-[13px] text-slate-500 leading-[1.5] flex items-center gap-2">
-        <Icon name="shield" size={14} className="text-slate-400 shrink-0" />
-        Identity &amp; credential checks are coming soon.
       </div>
     </SectionReveal>
   );

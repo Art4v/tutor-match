@@ -98,7 +98,7 @@ export function HomeHero({ catalog }) {
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
             >
               High school students across Australia are using matchtutor to work with the country&apos;s
-              strongest recent graduates — verified ATARs, real reviews, no agency markup.
+              strongest recent graduates. Verified ATARs, real reviews, no agency markup.
             </motion.p>
 
             <motion.div

@@ -74,7 +74,12 @@ export default async function BrowsePage({ searchParams }) {
   };
 
   return (
-    <div className="desk-surface relative">
+    <div
+      className="desk-surface relative"
+      // Bleed under the fixed transparent nav (cancels the layout's nav-height
+      // spacer, same as HomeHero) so the desk backdrop shows through it.
+      style={{ marginTop: "calc(-1 * var(--nav-h))", paddingTop: "var(--nav-h)" }}
+    >
       {/* Same cream desk + floating stationery as the featured section.
           Negative z keeps it behind the content without needing overflow-hidden
           (which would break the sticky filter sidebar). */}

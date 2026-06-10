@@ -83,7 +83,10 @@ function SubjectChipsFill({ subjects }) {
       const moreNode = m.querySelector('[data-kind="more"]');
       const moreW = moreNode ? moreNode.offsetWidth : 0;
       const colGap = 6, rowGap = 6;
-      const maxRows = Math.max(1, Math.floor((availH + rowGap) / (chipH + rowGap)));
+      // Whole rows only — if not even one row fully fits, render nothing
+      // (sentinel -1: not even the "+N" pill) rather than a half-clipped row.
+      const maxRows = Math.floor((availH + rowGap) / (chipH + rowGap));
+      if (maxRows < 1) { setVisibleCount(-1); return; }
 
       // Greedily flow `n` chip widths (plus an optional trailing "+N" pill) into
       // `maxRows` rows of width `availW`; returns whether they all fit.
@@ -117,8 +120,8 @@ function SubjectChipsFill({ subjects }) {
 
   if (subjects.length === 0) return <div ref={containerRef} className="h-full" />;
 
-  const visible = subjects.slice(0, visibleCount);
-  const extra = subjects.length - visibleCount;
+  const visible = subjects.slice(0, Math.max(0, visibleCount));
+  const extra = visibleCount < 0 ? 0 : subjects.length - visible.length;
 
   return (
     <div ref={containerRef} className="relative h-full flex flex-wrap content-start gap-1.5 overflow-hidden">
@@ -150,7 +153,7 @@ function SubjectChipsFill({ subjects }) {
   );
 }
 
-const CARD_HEIGHT = 360;
+const CARD_HEIGHT = 400;
 
 // Motion variants: a single source of truth for the hover behaviour. On enter,
 // y eases up to -3px while rotate plays a small back-and-forth wobble that
@@ -232,7 +235,7 @@ export function TutorCard({ tutor }) {
             : { height: 62, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
         />
 
-        <div className="px-5 pb-5 flex flex-col flex-1 min-h-0">
+        <div className="px-6 pb-6 flex flex-col flex-1 min-h-0">
           <div className="shrink-0" style={{ marginTop: -32, marginBottom: 12 }}>
             <Avatar tutor={tutor} size={64} ring />
           </div>
