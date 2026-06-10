@@ -6,7 +6,7 @@ the app — you compose and send from the Resend dashboard.
 
 | File | What it is |
 | --- | --- |
-| `0001_verification-and-education-update.html` | The launch email for **Verification** + **High school / University** education. Paste into a Resend Broadcast. |
+| `0001_verification-and-education-update.html` | The launch email: the **fresh new look** (redesign) + **Verification** + **High school / University** education. Paste into a Resend Broadcast. |
 | `README.md` | This guide. |
 
 **Naming:** each email is a numbered HTML file (`NNNN_short-description.html`, e.g.
@@ -35,7 +35,7 @@ number; `README.md` is the only unnumbered file.
 1. Go to **Resend → Broadcasts → Create broadcast** (a.k.a. "New broadcast").
 2. **Audience** — pick your tutors audience (the one `npm run sync:audience` fills).
 3. **From** — choose an address on your verified domain, e.g. `matchtutor <noreply@matchtutor.com.au>`.
-4. **Subject** — e.g. `Two new ways to stand out on matchtutor`.
+4. **Subject** — e.g. `matchtutor has a fresh new look — plus more ways to stand out`.
 5. **Body** — switch the editor to **HTML / "Code"**, then **paste the entire contents of** the
    email file you're sending (e.g. `0001_verification-and-education-update.html`). (If you prefer the
    visual editor, you can rebuild it there, but the HTML file already matches the site theme.)
@@ -44,7 +44,7 @@ number; `README.md` is the only unnumbered file.
    - `{{{RESEND_UNSUBSCRIBE_URL}}}` — Resend fills this per-recipient for the unsubscribe link.
 
    Leave these exactly as written; Resend substitutes them at send time.
-7. **Send a test** to yourself first (Resend → "Send test email"). Check the logo, both feature
+7. **Send a test** to yourself first (Resend → "Send test email"). Check the logo, all three feature
    cards, the button, and the unsubscribe link render correctly.
 8. **Send** (or **Schedule** for later). Done.
 
@@ -57,7 +57,9 @@ number; `README.md` is the only unnumbered file.
   re-subscribes them, so re-running `npm run sync:audience` before the next campaign is safe.
 - **Re-sync before every campaign** so new tutors are included and the list stays current.
 - **Editing the email** — keep styles **inline** (email clients strip `<style>` blocks and external
-  CSS). Match the brand: logo is `match` + `tutor` in indigo `#4F46E5`; body text `#334155`; muted
-  text `#64748B` / `#94A3B8`; accent / buttons `#4F46E5`; surfaces `#FFFFFF` on a `#F8FAFC` page.
+  CSS). Match the brand (study-journal green palette): logo is `match` + `tutor` with `tutor` in
+  eucalyptus green `#5E7A5A`; headings `#2A3A2E`; body text `#3D5440`; muted text `#6A7A64` /
+  `#8DA17E`; accent / buttons `#5E7A5A`; card surface `#FBF7EC` and accent-tinted feature cards
+  `#EAEFE1` (border `#C7D2BA`) on a warm cream `#F5F0E4` page.
 - **New campaigns** — drop another numbered `.html` file in this folder (next number, same
   structure and theme), then repeat the steps above.
