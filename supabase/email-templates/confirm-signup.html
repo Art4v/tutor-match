@@ -16,8 +16,9 @@
   match a WILDCARD Redirect-URLs entry (`<origin>/auth/callback**`) in
   Authentication → URL Configuration.
 
-  Colors mirror the app's accent theme (app/globals.css): accent #152764,
-  softer #EFF6FF, line #BFDBFE, ink #0F172A / muted #475569.
+  Colors mirror the app's study-journal theme (app/globals.css): accent #5E7A5A,
+  ink #2A3A2E, graphite #3D5440, muted #6A7A64 / #8DA17E, paper #F5F0E4, card
+  #FBF7EC, paper-line #E4DCC6.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -26,35 +27,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light only" />
     <title>Confirm your email</title>
+    <!-- Caveat (the site's handwritten brand font). Honoured by clients that load
+         web fonts (Apple Mail, iOS Mail); Gmail/Outlook strip it and fall back to
+         a system handwriting face, then cursive — see the inline font stacks. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap');
+    </style>
   </head>
-  <body style="margin:0; padding:0; background:#F8FAFC; font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;">
+  <body style="margin:0; padding:0; background:#F5F0E4; font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E4;">
       <tr>
         <td align="center" style="padding:40px 16px;">
           <!-- Card -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background:#ffffff; border:1px solid #E5E7EB; border-radius:16px; overflow:hidden;">
-            <!-- Accent top bar -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background:#FBF7EC; border:1px solid #E4DCC6; border-radius:16px; overflow:hidden;">
             <tr>
               <td style="padding:36px 36px 8px 36px;">
-                <!-- Brand (mark + wordmark, matching the site navbar) -->
-                <table role="presentation" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="width:34px; height:34px; background:#152764; border-radius:8px; text-align:center; vertical-align:middle;">
-                      <span style="color:#ffffff; font-size:15px; font-weight:700; letter-spacing:-0.04em;">mt</span>
-                    </td>
-                    <td style="padding-left:9px; vertical-align:middle;">
-                      <span style="font-size:17px; font-weight:600; letter-spacing:-0.02em;"><span style="color:#0F172A;">match</span><span style="color:#152764;">tutor</span></span>
-                    </td>
-                  </tr>
-                </table>
+                <!-- Brand wordmark — Caveat rendered to a PNG so it's identical in
+                     every client (Gmail/Outlook strip web fonts). alt= keeps the
+                     brand visible if images are blocked. -->
+                <img src="https://matchtutor.com.au/images/email/wordmark.png" alt="matchtutor" width="165" height="34" style="display:block; border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; width:165px; height:34px;" />
               </td>
             </tr>
             <tr>
               <td style="padding:24px 36px 0 36px;">
-                <h1 style="margin:0; font-size:22px; line-height:1.3; font-weight:700; color:#0F172A; letter-spacing:-0.02em;">
+                <h1 style="margin:0; font-family:'Caveat','Segoe Script','Bradley Hand',cursive; font-size:30px; line-height:1.2; font-weight:700; color:#2A3A2E;">
                   Confirm your email
                 </h1>
-                <p style="margin:14px 0 0 0; font-size:15px; line-height:1.6; color:#475569;">
+                <p style="margin:14px 0 0 0; font-size:15px; line-height:1.6; color:#3D5440;">
                   Thanks for signing up. Click the button below to confirm your email address and finish setting up your account.
                 </p>
               </td>
@@ -64,7 +66,7 @@
                 <!-- Button -->
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="background:#152764; border-radius:10px;">
+                    <td style="background:#5E7A5A; border-radius:10px;">
                       <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup"
                          style="display:inline-block; padding:13px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px;">
                         Confirm email
@@ -76,26 +78,26 @@
             </tr>
             <tr>
               <td style="padding:24px 36px 0 36px;">
-                <p style="margin:0; font-size:13px; line-height:1.6; color:#94A3B8;">
+                <p style="margin:0; font-size:13px; line-height:1.6; color:#8DA17E;">
                   If the button doesn't work, copy and paste this link into your browser:
                 </p>
                 <p style="margin:8px 0 0 0; font-size:13px; line-height:1.6; word-break:break-all;">
-                  <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup" style="color:#152764; text-decoration:underline;">{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup</a>
+                  <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup" style="color:#5E7A5A; text-decoration:underline;">{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup</a>
                 </p>
               </td>
             </tr>
             <tr>
               <td style="padding:28px 36px 36px 36px;">
-                <hr style="border:none; border-top:1px solid #F1F5F9; margin:0 0 18px 0;" />
-                <p style="margin:0; font-size:12px; line-height:1.6; color:#94A3B8;">
+                <hr style="border:none; border-top:1px solid #E4DCC6; margin:0 0 18px 0;" />
+                <p style="margin:0; font-size:12px; line-height:1.6; color:#8DA17E;">
                   If you didn't create an account, you can safely ignore this email.
                 </p>
               </td>
             </tr>
           </table>
           <!-- Footer -->
-          <p style="margin:20px 0 0 0; font-size:12px; color:#94A3B8;">
-            &copy; <span style="color:#475569; font-weight:600;">match</span><span style="color:#152764; font-weight:600;">tutor</span>
+          <p style="margin:20px 0 0 0; font-size:12px; color:#8DA17E;">
+            &copy; <span style="font-family:'Caveat','Segoe Script','Bradley Hand',cursive; font-size:16px; color:#2A3A2E; font-weight:700;">match</span><span style="font-family:'Caveat','Segoe Script','Bradley Hand',cursive; font-size:16px; color:#5E7A5A; font-weight:700;">tutor</span>
           </p>
         </td>
       </tr>

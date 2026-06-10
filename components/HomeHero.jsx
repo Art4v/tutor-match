@@ -208,7 +208,7 @@ function SearchField({ icon, label, placeholder, value, onChange, options = [], 
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
+        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)] rounded-l-[9px]"
       >
         <Icon name={icon} size={16} className="text-[color:var(--sage)] shrink-0" />
         <div className="flex-1 min-w-0">
