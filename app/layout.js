@@ -3,9 +3,30 @@ import { Analytics } from "@vercel/analytics/next";
 import { TopNav } from "@/components/TopNav";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
+const SITE_URL = "https://www.matchtutor.com.au";
+const SITE_DESCRIPTION =
+  "A directory for high school students looking for serious, verified tutors across Australia.";
+
 export const metadata = {
-  title: "matchtutor",
-  description: "A directory for high school students looking for serious, verified tutors across Australia.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "matchtutor — verified tutors across Australia",
+    template: "%s · matchtutor",
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "matchtutor",
+    title: "matchtutor — verified tutors across Australia",
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    locale: "en_AU",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "matchtutor — verified tutors across Australia",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }) {
