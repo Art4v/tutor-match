@@ -35,28 +35,35 @@ export function HomeHero({ catalog }) {
 
   return (
     <section
-      className="relative overflow-hidden flex flex-col items-center justify-center text-center px-6"
+      className="relative z-10 flex flex-col items-center justify-center text-center px-6"
       style={{ minHeight: "100svh", marginTop: "calc(-1 * var(--nav-h))", background: "var(--paper)" }}
     >
-      {/* Neural-network constellation backdrop — fills the whole hero. */}
-      <div className="absolute inset-0 z-0">
-        <ParticleNetwork />
+      {/* Backdrop layers live in their own clip so the section can stay
+          overflow-visible — that lets the search dropdowns spill below the
+          hero and paint over the marquee (the section's z-10 beats it),
+          while the constellation/grain/leaves never bleed past the hero. */}
+      <div aria-hidden="true" className="absolute inset-0 z-0 overflow-hidden">
+        {/* Neural-network constellation backdrop — fills the whole hero. */}
+        <div className="absolute inset-0">
+          <ParticleNetwork />
+        </div>
+
+        {/* Faint paper grain for a sketched-page feel. */}
+        <div className="absolute inset-0 pointer-events-none paper-grain opacity-[0.5]" />
+
+        {/* Slow-swaying botanical sprigs in the corners — a pressed-leaf accent
+            that rocks a few degrees on a long, eased loop (see .leaf-sway). */}
+        <div className="absolute left-4 sm:left-10 top-8 pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.35 }}>
+          <Icon name="sprig" size={132} strokeWidth={1.3} />
+        </div>
+        <div className="absolute right-4 sm:right-12 bottom-16 pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.28, animationDelay: "-3s" }}>
+          <Icon name="leaf" size={150} strokeWidth={1.2} />
+        </div>
       </div>
 
-      {/* Faint paper grain for a sketched-page feel. */}
-      <div aria-hidden="true" className="absolute inset-0 z-[1] pointer-events-none paper-grain opacity-[0.5]" />
-
-      {/* Slow-swaying botanical sprigs in the corners — a pressed-leaf accent
-          that rocks a few degrees on a long, eased loop (see .leaf-sway). */}
-      <div aria-hidden="true" className="absolute left-4 sm:left-10 top-8 z-[2] pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.35 }}>
-        <Icon name="sprig" size={132} strokeWidth={1.3} />
-      </div>
-      <div aria-hidden="true" className="absolute right-4 sm:right-12 bottom-16 z-[2] pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.28, animationDelay: "-3s" }}>
-        <Icon name="leaf" size={150} strokeWidth={1.2} />
-      </div>
-
-      {/* Centered overlay — headline + search + trust pills. */}
-      <div className="relative z-10 w-full flex flex-col items-center py-20">
+      {/* Centered overlay — headline + search + trust pills. z-20 keeps the
+          search dropdowns above the section-level scroll indicator (z-10). */}
+      <div className="relative z-20 w-full flex flex-col items-center py-20">
           <div className="w-full max-w-[860px] mx-auto flex flex-col items-center">
             <motion.div
               initial={{ opacity: 0, y: -6 }}
@@ -90,7 +97,7 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-              className="mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_auto] md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
+              className="relative z-30 mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_auto] md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
               style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
             >
               <SearchField
@@ -221,8 +228,9 @@ function SearchField({ icon, label, placeholder, value, onChange, options = [], 
       </button>
       {open && options.length > 0 && (
         <div
-          className="absolute left-2 right-2 top-full mt-2 z-40 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto"
+          className="absolute left-2 right-2 top-full mt-2 z-40 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto overscroll-contain"
           style={{ border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)" }}
+          data-lenis-prevent
         >
           {options.map((opt) => (
             <button
