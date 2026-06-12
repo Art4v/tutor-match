@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getFeaturedTutors, getSubjects } from "@/lib/supabase/tutors";
+import { getFeaturedTutors, getSubjects, getSchools } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
 import { Footer } from "@/components/Footer";
 import { HomeHero } from "@/components/HomeHero";
@@ -12,9 +12,10 @@ const FEATURED_SLOTS = 6;
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [featuredPool, subjectCatalog] = await Promise.all([
+  const [featuredPool, subjectCatalog, schoolCatalog] = await Promise.all([
     getFeaturedTutors(supabase, 50),
     getSubjects(supabase),
+    getSchools(supabase),
   ]);
   // Order the featured strip by profile completeness (same algorithm as
   // /browse — see lib/ranking.js); equal-completeness tutors are randomized
@@ -23,7 +24,7 @@ export default async function HomePage() {
 
   return (
     <main style={{ background: "var(--paper)" }}>
-      <HomeHero catalog={subjectCatalog} />
+      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} />
       <SchoolsMarquee />
       <HomeFeaturedTutors tutors={featuredTutors} />
       <HomeHowItWorks />

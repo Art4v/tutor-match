@@ -9,6 +9,7 @@ import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
 import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
+import { SchoolCombobox } from "@/components/SchoolCombobox";
 import { RequestVerification } from "@/components/RequestVerification";
 import { subjectLabel } from "@/lib/subjects";
 import { completionScore } from "@/lib/ranking";
@@ -896,25 +897,39 @@ export function ExperienceSection({ tutor, set }) {
   );
 }
 
-export function EducationSection({ tutor, set }) {
+export function EducationSection({ tutor, set, schoolCatalog = [] }) {
   const list = tutor.education || [];
   const update = (i, p) => set({ education: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ education: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ education: move(list, i, to) });
-  const add = () => set({ education: [...list, { school: "", detail: "", level: "high_school" }] });
+  const add = () => set({ education: [...list, { school: "", detail: "", level: "high_school", schoolSlug: null }] });
   return (
     <Card>
       <SectionHeader title="Education" right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add school</Button>} />
       <div>
-        {list.map((e, i) => (
-          <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
-            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1.4fr] gap-2">
-              <Select value={e.level ?? "high_school"} onChange={(v) => update(i, { level: v })} options={EDUCATION_LEVELS} />
-              <TextInput value={e.school} onChange={(v) => update(i, { school: v })} placeholder="UNSW Sydney" />
-              <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder="B. Medical Studies — Year 3" />
-            </div>
-          </ReorderRow>
-        ))}
+        {list.map((e, i) => {
+          const level = e.level ?? "high_school";
+          return (
+            <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
+              <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1.4fr] gap-2">
+                {/* Switching away from high school clears any listed-school link. */}
+                <Select value={level} onChange={(v) => update(i, v === "high_school" ? { level: v } : { level: v, schoolSlug: null })} options={EDUCATION_LEVELS} />
+                {level === "high_school" ? (
+                  <SchoolCombobox
+                    value={e.school}
+                    schoolSlug={e.schoolSlug ?? null}
+                    catalog={schoolCatalog}
+                    onChange={({ school, schoolSlug }) => update(i, { school, schoolSlug })}
+                    placeholder="James Ruse Agricultural High School"
+                  />
+                ) : (
+                  <TextInput value={e.school} onChange={(v) => update(i, { school: v })} placeholder="UNSW Sydney" />
+                )}
+                <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder="B. Medical Studies — Year 3" />
+              </div>
+            </ReorderRow>
+          );
+        })}
       </div>
     </Card>
   );

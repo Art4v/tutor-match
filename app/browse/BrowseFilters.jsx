@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
+import { SchoolPicker } from "@/components/SchoolPicker";
 import { subjectLabel } from "@/lib/subjects";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 
@@ -22,6 +23,7 @@ import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
 export function BrowseFilters({
   filters,
   catalog,
+  schoolCatalog,
   totalCount,
   searchQuery,
 }) {
@@ -73,6 +75,13 @@ export function BrowseFilters({
       next.forEach((s) => p.append("subject", s));
     });
 
+  // Same contract for the SchoolPicker — repeated `school=` slug params.
+  const setSchools = (next) =>
+    pushParams((p) => {
+      p.delete("school");
+      next.forEach((s) => p.append("school", s));
+    });
+
   const setLocation = (place) =>
     pushParams((p) => {
       if (place && Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
@@ -115,6 +124,7 @@ export function BrowseFilters({
     !!searchQuery ||
     !!filters.name ||
     (filters.subjectSlugs?.length ?? 0) > 0 ||
+    (filters.schoolSlugs?.length ?? 0) > 0 ||
     !!filters.place ||
     (filters.modes?.length ?? 0) > 0 ||
     filters.atarMin != null ||
@@ -206,6 +216,15 @@ export function BrowseFilters({
         />
       </FilterGroup>
 
+      <FilterGroup title="School">
+        <SchoolPicker
+          catalog={schoolCatalog}
+          value={filters.schoolSlugs}
+          onChange={setSchools}
+          placeholder="Add schools"
+        />
+      </FilterGroup>
+
       <FilterGroup title="Mode">
         <div className="flex gap-1.5">
           {[
@@ -260,7 +279,7 @@ export function BrowseFilters({
   );
 }
 
-export function BrowseSortAndChips({ filters, catalog }) {
+export function BrowseSortAndChips({ filters, catalog, schoolCatalog }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -280,6 +299,13 @@ export function BrowseSortAndChips({ filters, catalog }) {
       rest.forEach((s) => p.append("subject", s));
     });
 
+  const removeSchool = (slug) =>
+    pushParams((p) => {
+      const rest = p.getAll("school").filter((s) => s !== slug);
+      p.delete("school");
+      rest.forEach((s) => p.append("school", s));
+    });
+
   const removeMode = (value) =>
     pushParams((p) => {
       const rest = p.getAll("mode").filter((v) => v !== value);
@@ -297,6 +323,9 @@ export function BrowseSortAndChips({ filters, catalog }) {
   const subjectNameFor = (slug) =>
     subjectLabel((catalog ?? []).find((s) => s.slug === slug) ?? { name: slug });
 
+  const schoolNameFor = (slug) =>
+    (schoolCatalog ?? []).find((s) => s.slug === slug)?.name ?? slug;
+
   return (
     <div className="mb-5">
       <div className="flex flex-wrap gap-1.5">
@@ -308,6 +337,11 @@ export function BrowseSortAndChips({ filters, catalog }) {
         {filters.subjectSlugs.map((slug) => (
           <Chip key={slug} onClick={() => removeSubject(slug)} icon="x">
             {subjectNameFor(slug)}
+          </Chip>
+        ))}
+        {(filters.schoolSlugs ?? []).map((slug) => (
+          <Chip key={slug} onClick={() => removeSchool(slug)} icon="x">
+            {schoolNameFor(slug)}
           </Chip>
         ))}
         {(filters.modes ?? []).map((m) => (

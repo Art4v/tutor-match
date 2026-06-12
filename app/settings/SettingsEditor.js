@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getSubjects, saveTutorProfile } from "@/lib/supabase/tutors";
+import { getSubjects, getSchools, saveTutorProfile } from "@/lib/supabase/tutors";
 import { subjectLabel } from "@/lib/subjects";
 import {
   BannerAvatarSection,
@@ -90,6 +90,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
   const [subjectCatalog, setSubjectCatalog] = useState([]);
+  const [schoolCatalog, setSchoolCatalog] = useState([]);
 
   // Sticky offset for the right column. When the sidebar is taller than the
   // viewport, a fixed `top` would pin its top and hide its bottom until the
@@ -103,6 +104,9 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
     let active = true;
     getSubjects(supabase).then((rows) => {
       if (active) setSubjectCatalog(rows);
+    });
+    getSchools(supabase).then((rows) => {
+      if (active) setSchoolCatalog(rows);
     });
     return () => { active = false; };
   }, [supabase]);
@@ -249,7 +253,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
             <AboutSection tutor={tutor} set={set} />
             <RateSection tutor={tutor} set={set} />
             <ExperienceSection tutor={tutor} set={set} />
-            <EducationSection tutor={tutor} set={set} />
+            <EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />
             <SubjectsSection tutor={tutor} set={set} catalog={subjectCatalog} />
             <YearLevelsSection tutor={tutor} set={set} />
             <ServiceAreaSection tutor={tutor} set={set} />

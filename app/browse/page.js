@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getTutorsForBrowse,
   getSubjects,
+  getSchools,
 } from "@/lib/supabase/tutors";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
@@ -29,6 +30,7 @@ export default async function BrowsePage({ searchParams }) {
   const supabase = createSupabaseServerClient();
 
   const subjectSlugs = asArray(searchParams.subject);
+  const schoolSlugs = asArray(searchParams.school);
   const q = (searchParams.q ?? "").toString();
   const name = (searchParams.name ?? "").toString();
   const lat = parseNumber(searchParams.lat);
@@ -42,11 +44,12 @@ export default async function BrowsePage({ searchParams }) {
   const modes = asArray(searchParams.mode);
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
 
-  const [{ tutors, total }, subjectCatalog] = await Promise.all([
+  const [{ tutors, total }, subjectCatalog, schoolCatalog] = await Promise.all([
     getTutorsForBrowse(supabase, {
       q: q || undefined,
       name: name || undefined,
       subjectSlugs,
+      schoolSlugs,
       lat,
       lng,
       atarMin,
@@ -57,6 +60,7 @@ export default async function BrowsePage({ searchParams }) {
       pageSize: PAGE_SIZE,
     }),
     getSubjects(supabase),
+    getSchools(supabase),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -64,6 +68,7 @@ export default async function BrowsePage({ searchParams }) {
   const filterState = {
     name: name || null,
     subjectSlugs,
+    schoolSlugs,
     place: place || null,
     lat,
     lng,
@@ -84,6 +89,7 @@ export default async function BrowsePage({ searchParams }) {
           <BrowseFilters
             filters={filterState}
             catalog={subjectCatalog}
+            schoolCatalog={schoolCatalog}
             totalCount={total}
             searchQuery={q}
           />
@@ -92,6 +98,7 @@ export default async function BrowsePage({ searchParams }) {
             <BrowseSortAndChips
               filters={filterState}
               catalog={subjectCatalog}
+              schoolCatalog={schoolCatalog}
             />
 
             {tutors.length === 0 ? (
