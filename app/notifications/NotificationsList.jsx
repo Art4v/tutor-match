@@ -9,6 +9,7 @@ const TYPES = {
   welcome: { icon: "sparkle", color: "var(--accent)", bg: "var(--accent-softer)" },
   verification_requested: { icon: "shield", color: "var(--accent)", bg: "var(--accent-softer)" },
   verification_approved: { icon: "shield-check", color: "var(--stamp)", bg: "#ECFDF5" },
+  verification_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
 };
 const FALLBACK = { icon: "bell", color: "var(--ink-muted)", bg: "var(--desk)" };
 

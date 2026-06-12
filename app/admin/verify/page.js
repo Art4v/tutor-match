@@ -1,9 +1,9 @@
 import { Icon } from "@/components/Icon";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyApproveToken } from "@/lib/verifyToken";
-import { ApproveButton } from "./ApproveButton";
+import { VerifyDecision } from "./VerifyDecision";
 
-export const metadata = { title: "Approve verification — matchtutor" };
+export const metadata = { title: "Review verification — matchtutor" };
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -81,8 +81,8 @@ export default async function AdminVerifyPage({ searchParams }) {
             <Icon name="shield-check" size={20} />
           </span>
           <div>
-            <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Approve verification</h1>
-            <p className="text-[13.5px] text-slate-500 mt-1">Confirm you've reviewed this tutor's profile.</p>
+            <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Review verification</h1>
+            <p className="text-[13.5px] text-slate-500 mt-1">Review this tutor's profile, then approve or reject.</p>
           </div>
         </div>
 
@@ -97,10 +97,10 @@ export default async function AdminVerifyPage({ searchParams }) {
         </div>
 
         <p className="text-[12.5px] text-slate-500 mt-4 mb-5">
-          Approving turns on their verified badge and ranks them above unverified tutors. They'll be notified by email.
+          Approving turns on their verified badge and ranks them above unverified tutors. Rejecting lets them update their profile and request another review. Either way they'll be notified by email.
         </p>
 
-        <ApproveButton token={token} tutorName={name} profileHref={tutor.slug ? `/tutor/${tutor.slug}` : null} />
+        <VerifyDecision token={token} tutorName={name} profileHref={tutor.slug ? `/tutor/${tutor.slug}` : null} />
       </section>
     </Shell>
   );
