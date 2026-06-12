@@ -78,8 +78,12 @@ export function TopNav() {
     setHidden(false);
   }, [pathname]);
 
-  // Never hide the bar while its dropdown menu is open.
-  const navHidden = hidden && !menuOpen;
+  // Never hide the bar while its dropdown menu is open. On the settings editor
+  // the nav sits in normal flow (see `inFlow` below) and scrolls away with the
+  // page, handing the top over to the editor's own sticky save bar — so the
+  // auto-hide transform is disabled there to avoid fighting that scroll.
+  const inFlow = pathname?.startsWith("/settings");
+  const navHidden = hidden && !menuOpen && !inFlow;
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -167,7 +171,7 @@ export function TopNav() {
 
   return (
     <div
-      className="nav-floating fixed top-0 left-0 right-0 z-40"
+      className={inFlow ? "nav-floating relative z-40" : "nav-floating fixed top-0 left-0 right-0 z-40"}
       style={{
         transform: navHidden ? "translateY(-100%)" : "translateY(0)",
         opacity: navHidden ? 0 : 1,

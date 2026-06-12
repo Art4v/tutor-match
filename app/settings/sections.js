@@ -9,6 +9,7 @@ import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
 import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
+import { SchoolCombobox } from "@/components/SchoolCombobox";
 import { RequestVerification } from "@/components/RequestVerification";
 import { subjectLabel } from "@/lib/subjects";
 import { completionScore } from "@/lib/ranking";
@@ -93,7 +94,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         transition: "border-color 120ms ease",
       }}
     >
-      {prefix && <span className="flex items-center pl-3 pr-1 text-[14px] text-slate-500 tabular-nums">{prefix}</span>}
+      {prefix && <span className="flex items-center pl-3.5 pr-1 text-[14px] text-slate-500 tabular-nums">{prefix}</span>}
       <Tag
         type={multiline ? undefined : type}
         inputMode={inputMode}
@@ -106,7 +107,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         maxLength={maxLength}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
         style={{
-          padding: multiline ? "10px 12px" : "9px 12px",
+          padding: multiline ? "10px 14px" : "10px 14px",
           paddingLeft: prefix ? 4 : undefined,
           paddingRight: suffix ? 4 : undefined,
           resize: multiline ? "vertical" : "none",
@@ -115,7 +116,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
           letterSpacing: "-0.003em",
         }}
       />
-      {suffix && <span className="flex items-center whitespace-nowrap pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
+      {suffix && <span className="flex items-center whitespace-nowrap pl-1 pr-3.5 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
     </div>
   );
 }
@@ -337,7 +338,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
         maxLength={maxLength}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
         style={{
-          padding: "10px 12px",
+          padding: "10px 14px",
           resize: "vertical",
           lineHeight: 1.55,
           fontFamily: "inherit",
@@ -401,7 +402,7 @@ function Select({ value, onChange, options }) {
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 appearance-none"
-        style={{ padding: "9px 36px 9px 12px", fontFamily: "inherit", letterSpacing: "-0.003em" }}
+        style={{ padding: "10px 36px 10px 14px", fontFamily: "inherit", letterSpacing: "-0.003em" }}
       >
         {options.map((o) => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
       </select>
@@ -896,25 +897,39 @@ export function ExperienceSection({ tutor, set }) {
   );
 }
 
-export function EducationSection({ tutor, set }) {
+export function EducationSection({ tutor, set, schoolCatalog = [] }) {
   const list = tutor.education || [];
   const update = (i, p) => set({ education: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ education: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ education: move(list, i, to) });
-  const add = () => set({ education: [...list, { school: "", detail: "", level: "high_school" }] });
+  const add = () => set({ education: [...list, { school: "", detail: "", level: "high_school", schoolSlug: null }] });
   return (
     <Card>
       <SectionHeader title="Education" right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add school</Button>} />
       <div>
-        {list.map((e, i) => (
-          <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
-            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1.4fr] gap-2">
-              <Select value={e.level ?? "high_school"} onChange={(v) => update(i, { level: v })} options={EDUCATION_LEVELS} />
-              <TextInput value={e.school} onChange={(v) => update(i, { school: v })} placeholder="UNSW Sydney" />
-              <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder="B. Medical Studies — Year 3" />
-            </div>
-          </ReorderRow>
-        ))}
+        {list.map((e, i) => {
+          const level = e.level ?? "high_school";
+          return (
+            <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
+              <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1.4fr] gap-2">
+                {/* Switching away from high school clears any listed-school link. */}
+                <Select value={level} onChange={(v) => update(i, v === "high_school" ? { level: v } : { level: v, schoolSlug: null })} options={EDUCATION_LEVELS} />
+                {level === "high_school" ? (
+                  <SchoolCombobox
+                    value={e.school}
+                    schoolSlug={e.schoolSlug ?? null}
+                    catalog={schoolCatalog}
+                    onChange={({ school, schoolSlug }) => update(i, { school, schoolSlug })}
+                    placeholder="James Ruse Agricultural High School"
+                  />
+                ) : (
+                  <TextInput value={e.school} onChange={(v) => update(i, { school: v })} placeholder="UNSW Sydney" />
+                )}
+                <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder="B. Medical Studies — Year 3" />
+              </div>
+            </ReorderRow>
+          );
+        })}
       </div>
     </Card>
   );
