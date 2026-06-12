@@ -9,10 +9,10 @@ export function Footer() {
           <span style={{ color: "var(--accent)" }}>tutor</span>
         </span>
         <div className="flex items-center gap-4 mt-1.5">
-          <Link href="/terms-of-service" className="transition-colors hover:text-[color:var(--ink-muted)]">
+          <Link href="/terms-of-service" className="accent-link--glow transition-colors hover:text-[color:var(--ink-muted)]">
             Terms of Service
           </Link>
-          <Link href="/privacy-policy" className="transition-colors hover:text-[color:var(--ink-muted)]">
+          <Link href="/privacy-policy" className="accent-link--glow transition-colors hover:text-[color:var(--ink-muted)]">
             Privacy Policy
           </Link>
         </div>

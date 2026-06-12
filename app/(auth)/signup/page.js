@@ -207,11 +207,11 @@ export default function SignupPage() {
             />
             <span className="text-[13px] text-slate-600 leading-[1.5]">
               I agree to the{" "}
-              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
                 Privacy Policy
               </Link>
               .
@@ -235,11 +235,11 @@ export default function SignupPage() {
             <OAuthButtons divider="top" />
             <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">
               By continuing with Google, you agree to our{" "}
-              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
                 Privacy Policy
               </Link>
               .
