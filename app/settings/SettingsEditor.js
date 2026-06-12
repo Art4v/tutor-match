@@ -209,7 +209,12 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const profileHref = tutor.slug ? `/tutor/${tutor.slug}` : null;
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
+    // The nav renders in normal flow on /settings (see TopNav `inFlow`), so it
+    // occupies its own height at the top of the document. The root layout still
+    // pads children by the nav height to clear the *fixed* nav on every other
+    // page; cancel that here with a matching negative margin so we don't get a
+    // double gap.
+    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12" style={{ marginTop: "calc(-1 * var(--nav-h))" }}>
       <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       <AnimatePresence>
