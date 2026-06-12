@@ -8,6 +8,16 @@ import Lenis from "lenis";
  * - Disables on coarse pointers (mobile) where native momentum scrolling feels better.
  * - Emits real scroll events, so CSS scroll-snap and IntersectionObserver keep working.
  */
+
+// The active Lenis instance, exposed so blocking overlays (PolicyConsentGate)
+// can stop()/start() it — Lenis drives scrolling from its own wheel listener
+// and RAF loop, so overflow:hidden on <body> doesn't stop it. Null when Lenis
+// is disabled (reduced motion / coarse pointer).
+let activeLenis = null;
+export function getLenis() {
+  return activeLenis;
+}
+
 export function SmoothScrollProvider({ children }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -22,6 +32,7 @@ export function SmoothScrollProvider({ children }) {
       wheelMultiplier: 1,
       touchMultiplier: 1.2,
     });
+    activeLenis = lenis;
 
     let rafId;
     const raf = (time) => {
@@ -33,6 +44,7 @@ export function SmoothScrollProvider({ children }) {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      activeLenis = null;
     };
   }, []);
 

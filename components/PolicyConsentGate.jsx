@@ -10,10 +10,11 @@
 // pass needsPolicyConsent() and never see this. Logged-out visitors render
 // nothing — no flash on the public pages.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getLenis } from "@/components/SmoothScrollProvider";
 import { needsPolicyConsent } from "@/lib/policy";
 import { Button } from "@/components/ui";
 
@@ -23,6 +24,7 @@ export default function PolicyConsentGate() {
   const [agreed, setAgreed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const overlayRef = useRef(null);
 
   // Never block the policy pages themselves — a gated user must be able to read
   // what they're agreeing to (the modal links open these in a new tab, but a
@@ -75,6 +77,40 @@ export default function PolicyConsentGate() {
     };
   }, []);
 
+  // Lock background scroll while the blocking modal is visible (but not on the
+  // policy pages, where we render nothing). Scrolling is driven by Lenis
+  // (SmoothScrollProvider) — its own wheel listener + RAF loop bypass
+  // overflow:hidden entirely, so it must be stop()ped explicitly. The
+  // overflow:hidden + non-passive wheel/touchmove blockers remain as the
+  // fallback for when Lenis is disabled (reduced motion / coarse pointers,
+  // where native scrolling is in effect). Everything restores on close/unmount.
+  const blocking = open && !onPolicyPage;
+  useEffect(() => {
+    if (!blocking) return;
+    const lenis = getLenis();
+    lenis?.stop();
+
+    const html = document.documentElement;
+    const { body } = document;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+
+    const block = (e) => e.preventDefault();
+    const overlay = overlayRef.current;
+    overlay?.addEventListener("wheel", block, { passive: false });
+    overlay?.addEventListener("touchmove", block, { passive: false });
+
+    return () => {
+      lenis?.start();
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+      overlay?.removeEventListener("wheel", block);
+      overlay?.removeEventListener("touchmove", block);
+    };
+  }, [blocking]);
+
   const onAccept = async () => {
     setError(null);
     setSaving(true);
@@ -92,6 +128,7 @@ export default function PolicyConsentGate() {
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ background: "rgba(42, 58, 46, 0.45)", backdropFilter: "blur(2px)" }}
       role="dialog"
@@ -116,11 +153,11 @@ export default function PolicyConsentGate() {
         </h2>
         <p className="text-[14px] text-slate-600 mt-3 leading-[1.55]">
           We&rsquo;ve made changes to our{" "}
-          <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+          <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+          <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
             Privacy Policy
           </Link>
           . Please review and agree to continue using matchtutor.
@@ -135,7 +172,15 @@ export default function PolicyConsentGate() {
             style={{ accentColor: "var(--accent)" }}
           />
           <span className="text-[13px] text-slate-600 leading-[1.5]">
-            I agree to the updated Terms of Service and Privacy Policy.
+            I agree to the updated{" "}
+            <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }} onClick={(e) => e.stopPropagation()}>
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }} onClick={(e) => e.stopPropagation()}>
+              Privacy Policy
+            </Link>
+            .
           </span>
         </label>
 

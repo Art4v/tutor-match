@@ -107,6 +107,20 @@ a.accent-link::after {
 }
 a.accent-link:hover::after { transform: scaleX(1); }
 
+/* Always-underlined accent link that glows softly on hover (policy links). */
+a.accent-link--glow {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: text-shadow 200ms ease-out;
+}
+a.accent-link--glow::after { content: none; }
+a.accent-link--glow:hover {
+  text-shadow:
+    0 0 12px rgba(94, 122, 90, 0.45),
+    0 0 4px rgba(94, 122, 90, 0.35);
+}
+
 /* Subtle gleam + glow for accented text in landing-page headings.
    - A short left-to-right shine runs once every ~24 seconds, then rests.
    - A soft accent-coloured text-shadow gives the glyphs a halo. text-shadow
