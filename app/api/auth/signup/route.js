@@ -19,7 +19,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { fullName, email, password, role } = body ?? {};
+  const { fullName, email, password, role, agreed } = body ?? {};
 
   if (!email || !password) {
     return NextResponse.json(
@@ -49,6 +49,15 @@ export async function POST(request) {
         error: "Password does not meet the security requirements.",
         failed: failed.map((rule) => rule.id),
       },
+      { status: 400 }
+    );
+  }
+
+  // Legal agreement is required to create an account. The browser gates the
+  // submit button on this too, but a raw POST must not bypass it.
+  if (agreed !== true) {
+    return NextResponse.json(
+      { error: "You must agree to the Terms of Service and Privacy Policy." },
       { status: 400 }
     );
   }

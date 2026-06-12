@@ -19,6 +19,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [pwTouched, setPwTouched] = useState(false);
   const [role, setRole] = useState("tutor");
+  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
@@ -43,6 +44,10 @@ export default function SignupPage() {
       setError("Please choose a password that meets all the requirements below.");
       return;
     }
+    if (!agreed) {
+      setError("Please agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
 
     setSubmitting(true);
     let res;
@@ -51,7 +56,7 @@ export default function SignupPage() {
       res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password, role }),
+        body: JSON.stringify({ fullName, email, password, role, agreed }),
       });
       payload = await res.json();
     } catch {
@@ -192,6 +197,27 @@ export default function SignupPage() {
             )}
           </Field>
 
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+              style={{ accentColor: "var(--accent)" }}
+            />
+            <span className="text-[13px] text-slate-600 leading-[1.5]">
+              I agree to the{" "}
+              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+
           {error && (
             <div
               className="px-3 py-2 text-[13px] text-red-700"
@@ -207,6 +233,17 @@ export default function SignupPage() {
         </form>
           <div className="mt-5">
             <OAuthButtons divider="top" />
+            <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">
+              By continuing with Google, you agree to our{" "}
+              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+                Privacy Policy
+              </Link>
+              .
+            </p>
           </div>
         </>
       )}

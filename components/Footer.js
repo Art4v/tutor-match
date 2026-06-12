@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
     <footer className="py-5" style={{ borderTop: "1px solid var(--line)", background: "var(--paper)" }}>
@@ -6,7 +8,14 @@ export function Footer() {
           <span style={{ color: "var(--ink-graphite)" }}>match</span>
           <span style={{ color: "var(--accent)" }}>tutor</span>
         </span>
-        <span>© 2026 matchtutor. All rights reserved.</span>
+        <div className="flex items-center gap-4 mt-1.5">
+          <Link href="/terms-of-service" className="transition-colors hover:text-[color:var(--ink-muted)]">
+            Terms of Service
+          </Link>
+          <Link href="/privacy-policy" className="transition-colors hover:text-[color:var(--ink-muted)]">
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </footer>
   );
