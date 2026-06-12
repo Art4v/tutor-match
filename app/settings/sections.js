@@ -94,7 +94,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         transition: "border-color 120ms ease",
       }}
     >
-      {prefix && <span className="flex items-center pl-3 pr-1 text-[14px] text-slate-500 tabular-nums">{prefix}</span>}
+      {prefix && <span className="flex items-center pl-3.5 pr-1 text-[14px] text-slate-500 tabular-nums">{prefix}</span>}
       <Tag
         type={multiline ? undefined : type}
         inputMode={inputMode}
@@ -107,7 +107,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         maxLength={maxLength}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
         style={{
-          padding: multiline ? "10px 12px" : "9px 12px",
+          padding: multiline ? "10px 14px" : "10px 14px",
           paddingLeft: prefix ? 4 : undefined,
           paddingRight: suffix ? 4 : undefined,
           resize: multiline ? "vertical" : "none",
@@ -116,7 +116,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
           letterSpacing: "-0.003em",
         }}
       />
-      {suffix && <span className="flex items-center whitespace-nowrap pl-1 pr-3 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
+      {suffix && <span className="flex items-center whitespace-nowrap pl-1 pr-3.5 text-[14px] text-slate-500 tabular-nums">{suffix}</span>}
     </div>
   );
 }
@@ -338,7 +338,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
         maxLength={maxLength}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
         style={{
-          padding: "10px 12px",
+          padding: "10px 14px",
           resize: "vertical",
           lineHeight: 1.55,
           fontFamily: "inherit",
@@ -402,7 +402,7 @@ function Select({ value, onChange, options }) {
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 appearance-none"
-        style={{ padding: "9px 36px 9px 12px", fontFamily: "inherit", letterSpacing: "-0.003em" }}
+        style={{ padding: "10px 36px 10px 14px", fontFamily: "inherit", letterSpacing: "-0.003em" }}
       >
         {options.map((o) => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
       </select>

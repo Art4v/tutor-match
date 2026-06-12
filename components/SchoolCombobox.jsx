@@ -105,10 +105,10 @@ export function SchoolCombobox({
           onMouseDown={() => setOpen(true)}
           placeholder={placeholder}
           className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
-          style={{ padding: "9px 12px", lineHeight: 1.3, letterSpacing: "-0.003em", fontFamily: "inherit" }}
+          style={{ padding: "10px 14px", lineHeight: 1.3, letterSpacing: "-0.003em", fontFamily: "inherit" }}
         />
         {!!schoolSlug && (
-          <span className="flex items-center pl-1 pr-3 shrink-0" title="Listed school">
+          <span className="flex items-center pl-1 pr-3.5 shrink-0" title="Listed school">
             <Icon name="check" size={14} className="text-emerald-600" />
           </span>
         )}
