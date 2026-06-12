@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getSubjects, saveTutorProfile } from "@/lib/supabase/tutors";
+import { getSubjects, getSchools, saveTutorProfile } from "@/lib/supabase/tutors";
 import { subjectLabel } from "@/lib/subjects";
 import {
   BannerAvatarSection,
@@ -90,6 +90,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
   const [subjectCatalog, setSubjectCatalog] = useState([]);
+  const [schoolCatalog, setSchoolCatalog] = useState([]);
 
   // Sticky offset for the right column. When the sidebar is taller than the
   // viewport, a fixed `top` would pin its top and hide its bottom until the
@@ -103,6 +104,9 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
     let active = true;
     getSubjects(supabase).then((rows) => {
       if (active) setSubjectCatalog(rows);
+    });
+    getSchools(supabase).then((rows) => {
+      if (active) setSchoolCatalog(rows);
     });
     return () => { active = false; };
   }, [supabase]);
@@ -205,7 +209,12 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
   const profileHref = tutor.slug ? `/tutor/${tutor.slug}` : null;
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
+    // The nav renders in normal flow on /settings (see TopNav `inFlow`), so it
+    // occupies its own height at the top of the document. The root layout still
+    // pads children by the nav height to clear the *fixed* nav on every other
+    // page; cancel that here with a matching negative margin so we don't get a
+    // double gap.
+    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12" style={{ marginTop: "calc(-1 * var(--nav-h))" }}>
       <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={profileHref} nameValid={nameValid} />
 
       <AnimatePresence>
@@ -249,7 +258,7 @@ export function SettingsEditor({ initialTutor, userId, userEmail }) {
             <AboutSection tutor={tutor} set={set} />
             <RateSection tutor={tutor} set={set} />
             <ExperienceSection tutor={tutor} set={set} />
-            <EducationSection tutor={tutor} set={set} />
+            <EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />
             <SubjectsSection tutor={tutor} set={set} catalog={subjectCatalog} />
             <YearLevelsSection tutor={tutor} set={set} />
             <ServiceAreaSection tutor={tutor} set={set} />

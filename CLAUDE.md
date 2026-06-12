@@ -69,6 +69,7 @@ Three distinct mail paths:
 - `getFeaturedTutors(supabase, limit, excludeId)` — top-N by `rating desc nulls last, review_count desc`. Used by `/` and the similar-tutors sidebar.
 - `getTutorBySlug(supabase, slug)` — detail-page shape (internal `tutorRowToDetail`), normalises `availability`. Returns null if no public match.
 - `getSubjects(supabase)` — exam-scoped catalog, flat, sorted by exam then subject position; rows `{ name, slug, exam, examName }`. Group with `groupByExam` (`lib/subjects.js`).
+- `getSchools(supabase)` — seeded school catalog (top 50 NSW HSC schools, 0026), flat, ordered by rank; rows `{ name, slug }`. Feeds the `/browse` School filter (`SchoolPicker`) and the education editor (`SchoolCombobox`).
 - `getTutorProfile` / `getTutorProfileForEditor` / `saveTutorProfile` — `/settings`. Editor helper returns camelCase. `saveTutorProfile` = scalar update + replace-all on the four child tables (subjects, packages, experience, education); **not transactional**.
 
 **Rules:**
@@ -102,6 +103,7 @@ Three distinct mail paths:
 `0022_education_level` — `tutor_education.level` (NOT NULL default `'high_school'`, CHECK in `{high_school, university}`). Threaded through `tutors.js`; card shows high school (falls back to university), profile `EducationTimeline` + editor `EducationSection` get a level picker.
 `0023_banner_bg` — nullable `tutor_profiles.banner_bg`, decoupling the banner fallback colour from `avatar_bg` (readers fall back to `avatar_bg` when null). Renumbered from a duplicate `0014_`; additive, safe after `0022`.
 `0024_hsc_english_extension_subjects` — seeds HSC English Extension 1 + 2 (`on conflict do nothing`, idempotent). Renumbered from a duplicate `0014_`; additive, safe after `0022`.
+`0026_schools` — seeded `schools` ref table (top 50 NSW schools, 2025 HSC ranking; public-read RLS, no write policy — like `subjects`) + nullable `tutor_education.school_id` FK (`on delete set null`). The `school` text column stays the always-present display name; `school_id` is set only when a **high-school** entry matches a listed school (the editor's `SchoolCombobox` works in slugs, `saveTutorProfile` resolves slug→id). Backfills existing high-school rows by case-insensitive name match. Drives the `/browse` School filter (`?school=` slugs → `getTutorsForBrowse` resolves slug→id→tutor ids, like subjects). Seed list is point-in-time; re-seed with a later additive migration. Additive, safe after `0025`.
 
 ### Components
 
@@ -110,6 +112,8 @@ Three distinct mail paths:
 - `components/TutorCard.js` — canonical hover-animated card; lift driven by `motion/react` variants (`cardVariants` rest/hover), not `useState`. Other lift cards (e.g. `HomeHowItWorks.jsx`) follow the same shape. Links to `/tutor/${tutor.slug}`. Footer credentials + subject row use `CredentialChipsRow` / `SubjectChipsRow` — render chips off-screen, measure with a `ResizeObserver`, show as many as fit + a `+N` pill. **The `recalc` closure null-guards both refs internally** (not just at effect start) because the observer can fire after unmount — otherwise `containerRef.current.offsetWidth` throws.
 - `components/HomeHero.jsx` / `HomeHowItWorks.jsx` / `HomeCta.jsx` — client subcomponents so `/` stays a server component. `HomeHero` builds a `/browse` query (`subject` slug, `lat`/`lng`/`place`, `year`) and `router.push`es it.
 - `components/SubjectPicker.jsx` — shared exam-first picker fed by `getSubjects()` (`groupByExam`). `mode="single"` (hero/sidebar) or multi-select (editor); emits subject **slugs**, matching the `?subject=` URL contract.
+- `components/SchoolPicker.jsx` — flat searchable **multi-select** of seeded schools for the `/browse` School filter; emits slugs (`?school=`). Like `SubjectPicker` minus the exam tabs.
+- `components/SchoolCombobox.jsx` — education-editor school field: a suburb-picker-style typeahead over the seeded catalog that **also accepts free text** (unlisted schools → `schoolSlug` null). Shown only for High School rows in `EducationSection`; University stays a plain `TextInput`.
 - `components/ServiceMapLeaflet.jsx` — `"use client"` Leaflet map (OSM tiles, CARTO Voyager after >3 `tileerror`s). Imports `leaflet/dist/leaflet.css` and touches `window` at module init, so callers **must dynamic-import with `{ ssr: false }`** (editor does directly; tutor page via the `ServiceAreaMap.jsx` wrapper).
 - `components/TopNav.js` — auth-aware: logged in → Browse/Settings/Log out collapse into a dropdown on the avatar chip; logged out → only Log in + Sign Up. `z-40` to sit above the editor's `z-30` sticky save bar.
 

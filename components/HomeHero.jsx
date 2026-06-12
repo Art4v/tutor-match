@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
+import { SchoolPicker } from "@/components/SchoolPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
@@ -20,14 +21,16 @@ const searchButtonVariants = makeJiggleVariants(
  * whole hero behind the centered headline + search. The search wiring
  * (`goBrowse`) is unchanged.
  */
-export function HomeHero({ catalog }) {
+export function HomeHero({ catalog, schoolCatalog = [] }) {
   const router = useRouter();
   const [year, setYear] = useState("");
+  const [school, setSchool] = useState(null);
   const [subject, setSubject] = useState(null);
 
   const goBrowse = () => {
     const params = new URLSearchParams();
     if (subject?.slug) params.append("subject", subject.slug);
+    if (school?.slug) params.append("school", school.slug);
     if (year !== "" && year != null) params.set("year", String(year));
     const qs = params.toString();
     router.push(`/browse${qs ? `?${qs}` : ""}`);
@@ -64,7 +67,7 @@ export function HomeHero({ catalog }) {
       {/* Centered overlay — headline + search + trust pills. z-20 keeps the
           search dropdowns above the section-level scroll indicator (z-10). */}
       <div className="relative z-20 w-full flex flex-col items-center py-20">
-          <div className="w-full max-w-[860px] mx-auto flex flex-col items-center">
+          <div className="w-full max-w-[960px] mx-auto flex flex-col items-center">
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -97,7 +100,7 @@ export function HomeHero({ catalog }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-              className="relative z-30 mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_auto] md:grid-cols-[1fr_1.4fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[760px] hero-search-glow"
+              className="relative z-30 mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.15fr)_auto] md:grid-cols-[0.8fr_1.1fr_1.3fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[920px] hero-search-glow"
               style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
             >
               <SearchField
@@ -108,6 +111,15 @@ export function HomeHero({ catalog }) {
                 value={year}
                 displayValue={year !== "" ? yearLabel(year) : ""}
                 onChange={setYear}
+              />
+              <SchoolPicker
+                catalog={schoolCatalog}
+                value={school?.slug ?? null}
+                onChange={(slug, s) => setSchool(slug ? { slug, name: s?.name } : null)}
+                mode="single"
+                variant="bar"
+                label="School"
+                placeholder="Any school"
               />
               <SubjectPicker
                 catalog={catalog}

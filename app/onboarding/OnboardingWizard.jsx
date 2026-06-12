@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button, Chip } from "@/components/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getSubjects, saveTutorProfile, markOnboarded } from "@/lib/supabase/tutors";
+import { getSubjects, getSchools, saveTutorProfile, markOnboarded } from "@/lib/supabase/tutors";
 import { defaultTutor } from "../settings/SettingsEditor";
 import {
   IdentitySection,
@@ -108,7 +108,7 @@ const STEPS = [
   {
     key: "education",
     isAnswered: (t) => (t.education ?? []).some((e) => hasText(e?.school) || hasText(e?.detail)),
-    render: ({ tutor, set }) => <EducationSection tutor={tutor} set={set} />,
+    render: ({ tutor, set, schoolCatalog }) => <EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />,
   },
 ];
 
@@ -138,6 +138,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
 
   const [tutor, setTutor] = useState(seed);
   const [catalog, setCatalog] = useState([]);
+  const [schoolCatalog, setSchoolCatalog] = useState([]);
   const [stepIndex, setStepIndex] = useState(0);
   const [dir, setDir] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -148,6 +149,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
   useEffect(() => {
     let active = true;
     getSubjects(supabase).then((rows) => { if (active) setCatalog(rows); });
+    getSchools(supabase).then((rows) => { if (active) setSchoolCatalog(rows); });
     return () => { active = false; };
   }, [supabase]);
 
@@ -270,7 +272,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
               exit="exit"
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              {step.render({ tutor, set, catalog })}
+              {step.render({ tutor, set, catalog, schoolCatalog })}
             </motion.div>
           </AnimatePresence>
         </div>
