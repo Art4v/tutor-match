@@ -116,11 +116,11 @@ export default function PolicyConsentGate() {
         </h2>
         <p className="text-[14px] text-slate-600 mt-3 leading-[1.55]">
           We&rsquo;ve made changes to our{" "}
-          <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+          <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
+          <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
             Privacy Policy
           </Link>
           . Please review and agree to continue using matchtutor.
