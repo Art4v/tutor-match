@@ -1,5 +1,3 @@
-import { Footer } from "@/components/Footer";
-
 export const metadata = { title: "Privacy Policy — matchtutor" };
 
 const USE_ROWS = [
@@ -297,7 +295,6 @@ export default function PrivacyPolicyPage() {
           </section>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

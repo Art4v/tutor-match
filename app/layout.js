@@ -2,6 +2,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { TopNav } from "@/components/TopNav";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
+import { SiteFooter } from "@/components/SiteFooter";
 import PolicyConsentGate from "@/components/PolicyConsentGate";
 
 const SITE_URL = "https://www.matchtutor.com.au";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
           {/* The nav is fixed (out of flow), so reserve its height here. The home
               hero cancels this with a negative margin to go full-bleed. */}
           <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
+          <SiteFooter />
           <PolicyConsentGate />
         </SmoothScrollProvider>
         <Analytics />

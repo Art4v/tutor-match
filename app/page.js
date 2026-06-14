@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getFeaturedTutors, getSubjects, getSchools } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
-import { Footer } from "@/components/Footer";
 import { HomeHero } from "@/components/HomeHero";
 import { SchoolsMarquee } from "@/components/SchoolsMarquee";
 import { HomeFeaturedTutors } from "@/components/HomeFeaturedTutors";
@@ -29,7 +28,6 @@ export default async function HomePage() {
       <HomeFeaturedTutors tutors={featuredTutors} />
       <HomeHowItWorks />
       <HomeCta />
-      <Footer />
     </main>
   );
 }

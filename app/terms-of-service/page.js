@@ -1,5 +1,3 @@
-import { Footer } from "@/components/Footer";
-
 export const metadata = { title: "Terms of Service — matchtutor" };
 
 export default function TermsOfServicePage() {
@@ -201,7 +199,6 @@ export default function TermsOfServicePage() {
           </section>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

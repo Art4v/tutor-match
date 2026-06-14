@@ -8,7 +8,6 @@ import {
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
-import { Footer } from "@/components/Footer";
 import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
 import { BrowseResultsGrid } from "./BrowseResultsGrid";
 
@@ -117,7 +116,6 @@ export default async function BrowsePage({ searchParams }) {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

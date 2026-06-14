@@ -10,7 +10,6 @@
 // ============================================================================
 
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
 
 export default function MessagesDisabledPage() {
   return (
@@ -29,7 +28,6 @@ export default function MessagesDisabledPage() {
           Browse tutors →
         </Link>
       </div>
-      <Footer />
     </div>
   );
 }
