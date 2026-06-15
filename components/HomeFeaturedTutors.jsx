@@ -7,7 +7,7 @@ import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
-export function HomeFeaturedTutors({ tutors = [] }) {
+export function HomeFeaturedTutors({ tutors = [], verifiedCount }) {
   const empty = tutors.length === 0;
 
   return (
@@ -36,8 +36,8 @@ export function HomeFeaturedTutors({ tutors = [] }) {
             className="text-[15.5px] text-[color:var(--ink-muted)] mt-3 leading-[1.55]"
           >
             {empty
-              ? "No tutors have published their profiles yet — check back soon."
-              : "Independently verified, currently accepting students."}
+              ? "No tutors have published their profiles yet."
+              : "Enjoy learning from top graduates and qualified teachers with verified marks and reviews."}
           </motion.p>
         </div>
 
@@ -74,7 +74,7 @@ export function HomeFeaturedTutors({ tutors = [] }) {
                 className="group inline-flex items-center gap-2 text-[14px] font-medium relative"
                 style={{ color: "var(--accent)" }}
               >
-                See all tutors
+                See all{typeof verifiedCount === "number" ? ` ${verifiedCount}` : ""} verified tutors
                 <Icon name="arrow-right" size={14} />
                 <span
                   aria-hidden="true"

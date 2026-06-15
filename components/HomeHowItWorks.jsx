@@ -18,9 +18,9 @@ const STEPS = [
     backLead:
       "We verify every tutor's ATAR, subject marks and identity before they appear in search. You see the people who actually have the receipts.",
     bullets: [
-      "Every tutor independently verified — ATAR, marks, identity.",
+      "Every tutor independently verified. ATAR, marks, identity.",
       "Filter by subject, year level, suburb, hourly rate, in-person or online.",
-      "Free to browse — no account needed until you want to reach out.",
+      "Free to browse. No account needed until you want to reach out.",
     ],
     cta: { label: "Start browsing", href: "/browse" },
   },
@@ -30,11 +30,11 @@ const STEPS = [
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
     t: "Pick a tutor that fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
-    backTitle: "Reach out directly — no agency in the middle",
+    backTitle: "Reach out directly. No agency in the middle",
     backLead:
       "When you've found someone who fits, sign up as a student (free) and email them directly. We don't take a cut, and there's no platform fee on top of the tutor's rate.",
     bullets: [
-      "Sign up free as a student — takes about a minute.",
+      "Sign up free as a student. Takes about a minute.",
       "Contact tutors directly by email. No agency, no booking fee.",
       "Pick the tutor's flat hourly rate, or choose one of their listed packages.",
     ],
@@ -48,11 +48,11 @@ const STEPS = [
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
     backTitle: "Lessons on your terms",
     backLead:
-      "Meet in person or over video — whatever suits the subject. After sessions, leave a review so the next student knows what they're getting. Not the right fit? Switch tutors, no questions asked.",
+      "Meet in person or over video. Whatever suits the subject. After sessions, leave a review so the next student knows what they're getting. Not the right fit? Switch tutors, no questions asked.",
     bullets: [
-      "Lessons in person or over video — your call, their availability.",
+      "Lessons in person or over video. Your call, their availability.",
       "Leave a review after sessions so other students can choose well.",
-      "Switch tutors any time — you're never locked into anyone.",
+      "Switch tutors any time. You're never locked into anyone.",
     ],
     cta: { label: "Find your tutor", href: "/browse" },
   },
@@ -115,7 +115,7 @@ export function HomeHowItWorks() {
           </motion.div>
           <HandwrittenHeading
             as="h2"
-            lines={["Three steps.", "No agency in the middle."]}
+            lines={["Finding the right tutor is easy"]}
             size={68}
             className="flex flex-col items-center"
           />
@@ -126,8 +126,7 @@ export function HomeHowItWorks() {
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
             className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-6 leading-[1.5] sm:leading-[1.55] max-w-[560px]"
           >
-            We did the boring parts — checking ATARs, vetting identities, building filters.
-            What&apos;s left is the bit that matters: finding the right person.
+            Browsing, messaging and booking all done on one platform.
           </motion.p>
         </div>
 

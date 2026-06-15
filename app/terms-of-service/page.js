@@ -1,4 +1,4 @@
-export const metadata = { title: "Terms of Service — matchtutor" };
+export const metadata = { title: "matchtutor" };
 
 export default function TermsOfServicePage() {
   return (
@@ -15,7 +15,7 @@ export default function TermsOfServicePage() {
             </h2>
             <p>
               1.1 MatchTutor (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) is an online tutoring marketplace
-              (&quot;Platform&quot;) operated as a general partnership in Australia.
+              (&quot;Platform&quot;) operated as a general partnership (ABN 57 896 085 477) in Australia.
             </p>
             <p className="mt-3">
               1.2 Our Platform connects a person who engages a tutor to provide tutoring services
@@ -146,9 +146,12 @@ export default function TermsOfServicePage() {
               9. Privacy
             </h2>
             <p>
-              Your privacy is important to us. Please see our Privacy Policy at matchtutor.com.au/privacy, which
-              forms part of these Terms and is governed by the Privacy Act 1988 (Cth) and the Australian Privacy
-              Principles.
+              Your privacy is important to us. Please see our{" "}
+              <a href="/privacy-policy" className="underline" style={{ color: "var(--ink-graphite)" }}>
+                Privacy Policy
+              </a>
+              , which forms part of these Terms and is governed by the Privacy Act 1988 (Cth) and the Australian
+              Privacy Principles.
             </p>
           </section>
 

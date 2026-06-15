@@ -75,13 +75,13 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
               className="mb-4 sm:mb-6 text-[11px] sm:text-[13px]"
               style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
             >
-              Australia&apos;s tutor directory, rebuilt.
+              Australia&apos;s No.1 Tutor Directory
             </motion.div>
 
             {/* Cursive graphite headline — writes itself in on view. */}
             <HandwrittenHeading
               as="h1"
-              lines={["Find a tutor", "you can trust."]}
+              lines={["Find the perfect", "tutor for you"]}
               size={116}
               className="flex flex-col items-center"
             />
@@ -92,8 +92,7 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
             >
-              High school students across Australia are using matchtutor to work with the country&apos;s
-              strongest recent graduates. Verified ATARs, real reviews, no agency markup.
+              Fully verified private tutors and the leading tutoring companies. Authentic reviews, proven results, and a commitment to helping every student find the right match.
             </motion.p>
 
             <motion.div
@@ -175,10 +174,10 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
               className="mt-6 flex items-center justify-center gap-x-6 gap-y-2 flex-wrap text-[13px]"
               style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
             >
-              <TrustPill>ATAR-verified tutors</TrustPill>
-              <TrustPill>In-person &amp; online</TrustPill>
-              <TrustPill>No agency markup</TrustPill>
-              <TrustPill>No messaging fee</TrustPill>
+              <TrustPill>Verified ATARs and marks</TrustPill>
+              <TrustPill>Completely free browsing</TrustPill>
+              <TrustPill>Private and group tutoring</TrustPill>
+              <TrustPill>In-person and Online</TrustPill>
             </motion.div>
           </div>
         </div>

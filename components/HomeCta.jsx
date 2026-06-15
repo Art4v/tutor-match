@@ -77,9 +77,7 @@ export function HomeCta() {
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
                 className="text-[16px] text-[color:var(--ink-muted)] mt-7 leading-[1.6] max-w-[560px]"
               >
-                Matchtutor is the cleanest way to build a private tutoring network.
-                Connect with clients in a way you never have before, all completely for free.
-                No fees, no commissions, no catch.
+                Looking for students? Matchtutor is the easiest way to advertise your skills. Set your own rate and availability, and start teaching in under 10 minutes!
               </motion.p>
             </div>
 
