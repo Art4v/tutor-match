@@ -115,7 +115,7 @@ export function HomeHowItWorks() {
           </motion.div>
           <HandwrittenHeading
             as="h2"
-            lines={["Finding the right tutor is easy"]}
+            lines={["Finding the right", "tutor is easy"]}
             size={68}
             className="flex flex-col items-center"
           />

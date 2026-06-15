@@ -72,10 +72,10 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="mb-4 sm:mb-6 text-[11px] sm:text-[13px]"
+              className="mb-4 sm:mb-6 text-[12px] sm:text-[20px]"
               style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
             >
-              Australia&apos;s No.1 Tutor Directory
+              Australia&apos;s No.1 Tutor Platform
             </motion.div>
 
             {/* Cursive graphite headline — writes itself in on view. */}

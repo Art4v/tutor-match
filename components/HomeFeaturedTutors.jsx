@@ -7,7 +7,7 @@ import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
-export function HomeFeaturedTutors({ tutors = [], verifiedCount }) {
+export function HomeFeaturedTutors({ tutors = [] }) {
   const empty = tutors.length === 0;
 
   return (
@@ -37,7 +37,7 @@ export function HomeFeaturedTutors({ tutors = [], verifiedCount }) {
           >
             {empty
               ? "No tutors have published their profiles yet."
-              : "Enjoy learning from top graduates and qualified teachers with verified marks and reviews."}
+              : "Learn from top graduates and qualified teachers with verified marks and reviews."}
           </motion.p>
         </div>
 
