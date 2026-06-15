@@ -12,7 +12,7 @@ const SITE_DESCRIPTION =
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "matchtutor — verified tutors across Australia",
+    default: "matchtutor",
     template: "%s · matchtutor",
   },
   description: SITE_DESCRIPTION,
