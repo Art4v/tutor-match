@@ -315,7 +315,9 @@ export function TutorCard({ tutor }) {
             ? { height: 88, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
             : { height: 88, background: tutor.bannerBg ?? tutor.avatarBg }}
         >
-          <LeafMark size={84} color="#fff" opacity={0.14} style={{ right: -12, bottom: -20 }} />
+          {!tutor.bannerImg && (
+            <LeafMark size={84} color="#fff" opacity={0.14} style={{ right: -12, bottom: -20 }} />
+          )}
         </div>
 
         <div className="px-4 pb-4 flex flex-col flex-1 min-h-0 items-center text-center">
