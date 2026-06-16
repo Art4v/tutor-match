@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import Lenis from "lenis";
+import { registerLenis } from "@/lib/scrollLock";
 
 /**
  * Inertial / "delayed" smooth scroll layer. Wraps the app once at the root.
@@ -23,6 +24,8 @@ export function SmoothScrollProvider({ children }) {
       touchMultiplier: 1.2,
     });
 
+    registerLenis(lenis);
+
     let rafId;
     const raf = (time) => {
       lenis.raf(time);
@@ -33,6 +36,7 @@ export function SmoothScrollProvider({ children }) {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      registerLenis(null);
     };
   }, []);
 

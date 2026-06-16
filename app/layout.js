@@ -4,6 +4,7 @@ import { TopNav } from "@/components/TopNav";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import PolicyConsentGate from "@/components/PolicyConsentGate";
+import VerificationPrompt from "@/components/VerificationPrompt";
 
 const SITE_URL = "https://www.matchtutor.com.au";
 const SITE_DESCRIPTION =
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
           <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
           <SiteFooter />
           <PolicyConsentGate />
+          <VerificationPrompt />
         </SmoothScrollProvider>
         <Analytics />
       </body>
