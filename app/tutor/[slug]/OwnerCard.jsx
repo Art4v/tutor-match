@@ -145,9 +145,12 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
             <span className={"text-[11px] font-medium shrink-0 " + (copied ? "text-emerald-600" : "text-slate-400")}>{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>
-      </div>
 
-      <RequestVerification status={profile.verificationStatus} completionPct={c.pct} />
+        {/* Verification */}
+        <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+          <RequestVerification status={profile.verificationStatus} completionPct={c.pct} unstyled />
+        </div>
+      </div>
     </div>
   );
 }

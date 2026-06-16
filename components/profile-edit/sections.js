@@ -597,12 +597,11 @@ function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hi
   );
 }
 
-export function BannerAvatarSection({ tutor, set, supabase }) {
+export function BannerAvatarSection({ tutor, set, supabase, bare = false }) {
   const swatchesDisabled = !!tutor.bannerImg;
-  return (
-    <Card>
-      <SectionHeader title="Banner & avatar" subtitle="The banner, your photo and badges visible at the top of your profile." />
-      <div className="space-y-4">
+  const body = (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ImageUploadControl
           label="Avatar image"
           value={tutor.avatarImg}
@@ -625,56 +624,62 @@ export function BannerAvatarSection({ tutor, set, supabase }) {
           aspect={1200 / 320}
           cropShape="rect"
         />
-        <div style={{ opacity: swatchesDisabled ? 0.5 : 1 }}>
-          <MetaLabel>Banner colour</MetaLabel>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {AVATAR_SWATCHES.map((c) => {
-              const selectedBanner = tutor.bannerBg ?? tutor.avatarBg;
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => set({ bannerBg: c })}
-                  disabled={swatchesDisabled}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 999,
-                    background: c,
-                    border: `2px solid ${selectedBanner === c ? "var(--ink)" : "transparent"}`,
-                    boxShadow: "inset 0 0 0 1px var(--paper-line)",
-                    cursor: swatchesDisabled ? "not-allowed" : "pointer",
-                  }}
-                  aria-label="Pick swatch"
-                />
-              );
-            })}
-          </div>
-          {swatchesDisabled && (
-            <div className="text-[12px] text-slate-400 mt-2">
-              Used only when no banner image is set.
-            </div>
-          )}
-        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-7 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+      <div className="mt-4" style={{ opacity: swatchesDisabled ? 0.5 : 1 }}>
+        <MetaLabel>Banner colour</MetaLabel>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {AVATAR_SWATCHES.map((c) => {
+            const selectedBanner = tutor.bannerBg ?? tutor.avatarBg;
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => set({ bannerBg: c })}
+                disabled={swatchesDisabled}
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 999,
+                  background: c,
+                  border: `2px solid ${selectedBanner === c ? "var(--ink)" : "transparent"}`,
+                  boxShadow: "inset 0 0 0 1px var(--paper-line)",
+                  cursor: swatchesDisabled ? "not-allowed" : "pointer",
+                }}
+                aria-label="Pick swatch"
+              />
+            );
+          })}
+        </div>
+        {swatchesDisabled && (
+          <div className="text-[12px] text-slate-400 mt-1.5">
+            Used only when no banner image is set.
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
         <Toggle value={tutor.deliversInPerson} onChange={(v) => set({ deliversInPerson: v })} label="Accepts in-person lessons" hint="Inside the service area you set below." />
         <Toggle value={tutor.deliversOnline} onChange={(v) => set({ deliversOnline: v })} label="Accepts online lessons" hint="Over Zoom or Google Meet." />
       </div>
-      <div className="mt-6">
+      <div className="mt-4">
         <Field label="Response time">
           <Select value={tutor.responsiveText} onChange={(v) => set({ responsiveText: v })} options={RESPONSE_OPTIONS} />
         </Field>
       </div>
+    </>
+  );
+  if (bare) return body;
+  return (
+    <Card padding={20}>
+      <SectionHeader title="Banner & avatar" subtitle="The banner, your photo and badges visible at the top of your profile." />
+      {body}
     </Card>
   );
 }
 
-export function IdentitySection({ tutor, set }) {
+export function IdentitySection({ tutor, set, bare = false }) {
   const nameError = (tutor.name || "").trim() ? undefined : "Your full name is required.";
-  return (
-    <Card>
-      <SectionHeader title="Identity" subtitle="Shown directly under your avatar on the public profile." />
+  const body = (
+    <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Full name" hint="Use the name that matches your government ID." error={nameError}><TextInput value={tutor.name} onChange={(v) => set({ name: v, initial: (v || " ").charAt(0).toUpperCase() })} placeholder="Amelia Tran" /></Field>
         <Field label="Years tutoring">
@@ -686,6 +691,13 @@ export function IdentitySection({ tutor, set }) {
           <TagInput values={tutor.languages} onChange={(v) => set({ languages: v })} suggestions={LANGUAGE_SUGGESTIONS} placeholder="Add a language" />
         </Field>
       </div>
+    </>
+  );
+  if (bare) return body;
+  return (
+    <Card>
+      <SectionHeader title="Identity" subtitle="Shown directly under your avatar on the public profile." />
+      {body}
     </Card>
   );
 }
@@ -950,7 +962,7 @@ export function SubjectsSection({ tutor, set, catalog }) {
   );
 }
 
-export function YearLevelsSection({ tutor, set }) {
+export function YearLevelsSection({ tutor, set, bare = false }) {
   // Single dual-handle slider. Clamp each handle against the other so the range
   // stays valid (min ≤ max) without one handle pushing the other.
   const min = Number.isFinite(tutor.yearMin) ? tutor.yearMin : 7;
@@ -960,10 +972,8 @@ export function YearLevelsSection({ tutor, set }) {
   const span = (YEAR_MAX - YEAR_MIN) || 1;
   const minPct = ((min - YEAR_MIN) / span) * 100;
   const maxPct = ((max - YEAR_MIN) / span) * 100;
-  return (
-    <Card>
-      <SectionHeader title="Year levels" subtitle="The range of year groups you'll tutor — students filter on this." />
-      <Field label="Year range" hint={`You tutor ${yearRangeLabel(min, max)}.`}>
+  const body = (
+    <Field label="Year range" hint={`You tutor ${yearRangeLabel(min, max)}.`}>
         <div className="relative pt-8 pb-1">
           {/* Floating value labels that track each handle (clamped in-bounds via
               the translateX(-pct%) trick so the ends don't overflow the card). */}
@@ -993,6 +1003,12 @@ export function YearLevelsSection({ tutor, set }) {
           </div>
         </div>
       </Field>
+  );
+  if (bare) return body;
+  return (
+    <Card>
+      <SectionHeader title="Year levels" subtitle="The range of year groups you'll tutor — students filter on this." />
+      {body}
     </Card>
   );
 }
@@ -1073,7 +1089,7 @@ export function ServiceAreaSection({ tutor, set }) {
   return (
     <Card>
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5">
+      <div className="grid grid-cols-1 gap-5">
         <div>
           <Field label="Base suburb" hint="Type the full suburb name, then wait a couple of seconds for the list to load (the lookup can be slow) and pick your suburb.">
             <SuburbAutocomplete variant="box" value={sa.suburb || ""} placeholder="Chatswood" onSelect={onPick} onClear={onClearSuburb} />

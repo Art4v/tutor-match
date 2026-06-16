@@ -187,10 +187,16 @@ export function OwnerProfile({ editorTutor, userId }) {
           {...regionProps("header", "profile header")}
           view={headerView}
           edit={
-            <div className="space-y-5">
-              <BannerAvatarSection tutor={draft} set={set} supabase={supabase} />
-              <IdentitySection tutor={draft} set={set} />
-              <YearLevelsSection tutor={draft} set={set} />
+            <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 20 }}>
+              <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Profile header</h2>
+              <p className="text-[13px] text-slate-500 mt-1 mb-5">The banner, photo and intro at the top of your profile.</p>
+              <BannerAvatarSection tutor={draft} set={set} supabase={supabase} bare />
+              <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+                <IdentitySection tutor={draft} set={set} bare />
+              </div>
+              <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+                <YearLevelsSection tutor={draft} set={set} bare />
+              </div>
             </div>
           }
         />
