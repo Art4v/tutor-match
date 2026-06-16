@@ -8,7 +8,7 @@ import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { subjectLabel } from "@/lib/subjects";
-import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
+import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
 
 /**
  * URL-driven sidebar for /browse. Every change calls router.replace() with a
@@ -193,7 +193,7 @@ export function BrowseFilters({
           <Chip active={yearLevels.length === 0} onClick={() => toggleYearLevel("all")}>
             All
           </Chip>
-          {YEAR_LEVELS.map((y) => (
+          {YEAR_LEVELS_DESC.map((y) => (
             <Chip
               key={y.value}
               active={yearLevels.includes(y.value)}
