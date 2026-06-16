@@ -7,7 +7,7 @@ import { Icon } from "@/components/Icon";
 import { Button, Chip } from "@/components/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, getSchools, saveTutorProfile, markOnboarded } from "@/lib/supabase/tutors";
-import { defaultTutor } from "../settings/SettingsEditor";
+import { defaultTutor } from "@/components/profile-edit/defaults";
 import {
   IdentitySection,
   SubjectsSection,
@@ -18,7 +18,7 @@ import {
   CredentialsSection,
   ExperienceSection,
   EducationSection,
-} from "../settings/sections";
+} from "@/components/profile-edit/sections";
 
 // Delivery-mode question. The two toggles otherwise live inside
 // BannerAvatarSection, which onboarding skips (it's mostly image uploads), so
@@ -219,10 +219,9 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
         }
       }
       await markOnboarded(supabase, userId);
-      // Always land on /settings: a brand-new (unconfirmed) tutor's public page
-      // 404s until email confirmation, and the slug may have been regenerated
-      // server-side if the name changed.
-      router.replace("/settings");
+      // Land on /profile, which resolves the (possibly regenerated) slug and
+      // redirects to the tutor's own profile for inline editing.
+      router.replace("/profile");
     } catch (e) {
       setSubmitting(false);
       showToast("error", "Something went wrong — please try again.");

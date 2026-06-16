@@ -70,9 +70,9 @@ export async function POST(request) {
     options: {
       // The confirm-signup email link routes through /auth/callback (token_hash
       // /type=signup, mirroring the recovery flow) so confirmation mints a
-      // session and lands the user logged-in at /settings — and gives the
-      // callback an app-side hook to send the one-time welcome.
-      emailRedirectTo: `${origin}/auth/callback?next=/settings`,
+      // session and lands the user logged-in at /profile (which resolves their
+      // slug) — and gives the callback an app-side hook to send the welcome.
+      emailRedirectTo: `${origin}/auth/callback?next=/profile`,
       // These end up in auth.users.raw_user_meta_data, where the
       // handle_new_user() trigger reads them to populate the profile rows.
       data: { full_name: fullName ?? "", role: role === "student" ? "student" : "tutor" },

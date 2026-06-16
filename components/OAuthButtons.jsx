@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function OAuthButtons({ divider = "bottom", next = "/settings" }) {
+export default function OAuthButtons({ divider = "bottom", next = "/profile" }) {
   // Holds the provider currently redirecting ("google"), so only the clicked
   // button shows its loading state.
   const [loadingProvider, setLoadingProvider] = useState(null);

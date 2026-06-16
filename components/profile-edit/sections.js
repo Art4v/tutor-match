@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
@@ -1406,26 +1405,14 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
 }
 
 /* ============================================================
-   Top bar + breadcrumb
+   Save bars
    ============================================================ */
 
-export function Breadcrumb() {
-  return (
-    <nav className="text-[12.5px] text-slate-500 flex items-center gap-1.5 py-4">
-      <Link href="/" className="hover:text-slate-900">Home</Link>
-      <Icon name="chevron-right" size={12} className="text-slate-300" />
-      <Link href="/settings" className="hover:text-slate-900">Settings</Link>
-      <Icon name="chevron-right" size={12} className="text-slate-300" />
-      <span className="text-slate-900 font-medium">Edit profile</span>
-    </nav>
-  );
-}
-
-export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, nameValid = true }) {
+export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, nameValid = true, top = "var(--nav-h)" }) {
   const router = useRouter();
   const canView = !dirty && !saving && !!profileHref;
   return (
-    <div className="sticky top-0 z-30 bg-[rgba(251,247,236,0.85)] backdrop-blur" style={{ borderBottom: "1px solid var(--paper-line)" }}>
+    <div className="sticky z-30 bg-[rgba(251,247,236,0.85)] backdrop-blur" style={{ top, borderBottom: "1px solid var(--paper-line)" }}>
       <div className="max-w-[1200px] mx-auto px-6 h-[68px] flex items-center gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar tutor={tutor} size={36} />

@@ -79,12 +79,10 @@ export function TopNav() {
     setHidden(false);
   }, [pathname]);
 
-  // Never hide the bar while its dropdown menu is open. On the settings editor
-  // the nav sits in normal flow (see `inFlow` below) and scrolls away with the
-  // page, handing the top over to the editor's own sticky save bar — so the
-  // auto-hide transform is disabled there to avoid fighting that scroll.
-  const inFlow = pathname?.startsWith("/settings");
-  const navHidden = hidden && !menuOpen && !inFlow;
+  // Never hide the bar while its dropdown menu is open. The nav stays fixed on
+  // every route now (inline profile editing pins its own save bar below the
+  // fixed nav at top: var(--nav-h)), so there is no in-flow exception.
+  const navHidden = hidden && !menuOpen;
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -172,7 +170,7 @@ export function TopNav() {
 
   return (
     <div
-      className={inFlow ? "nav-floating relative z-40" : "nav-floating fixed top-0 left-0 right-0 z-40"}
+      className="nav-floating fixed top-0 left-0 right-0 z-40"
       style={{
         transform: navHidden ? "translateY(-100%)" : "translateY(0)",
         opacity: navHidden ? 0 : 1,
@@ -260,11 +258,9 @@ export function TopNav() {
                       <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
                         Browse
                       </NavMenuLink>
-                      {tutorSlug && (
-                        <NavMenuLink href={`/tutor/${tutorSlug}`} onClick={() => setMenuOpen(false)}>
-                          Profile
-                        </NavMenuLink>
-                      )}
+                      <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
+                        My profile
+                      </NavMenuLink>
                       <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
                         <span className="flex items-center justify-between gap-2">
                           Notifications
@@ -277,9 +273,6 @@ export function TopNav() {
                             </span>
                           )}
                         </span>
-                      </NavMenuLink>
-                      <NavMenuLink href="/settings" onClick={() => setMenuOpen(false)}>
-                        Settings
                       </NavMenuLink>
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
                         Account
