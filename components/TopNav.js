@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Icon } from "./Icon";
+import { BookSproutMark } from "./Logo";
 import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -184,10 +185,7 @@ export function TopNav() {
     >
       <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
         <Link href="/" className="nav-logo flex items-center gap-2 group">
-          <div
-            className="nav-logo-tile w-7 h-7 flex items-center justify-center text-white transition-colors"
-            style={{ background: "var(--accent)" }}
-          ><Icon name="tree" size={18} className="text-white" strokeWidth={1.6} /></div>
+          <BookSproutMark size={30} className="nav-logo-mark shrink-0" />
           <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
             <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>match</span>
             <span className="nav-logo-word accent-glow" style={{ color: "var(--accent)" }}>tutor</span>

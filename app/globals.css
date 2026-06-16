@@ -188,18 +188,17 @@ a.accent-link--glow:hover {
 }
 
 /* Navbar logo hover: the whole wordmark lifts into an accent halo on hover.
-   The "mt" tile gains a box-shadow glow; both words gain (or amplify) a
-   text-shadow halo. Transitions are eased so it blooms rather than snaps. */
-.nav-logo .nav-logo-tile {
-  transition: box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
+   The book+sprout mark gains a drop-shadow glow (filter so it hugs the SVG
+   silhouette); both words gain (or amplify) a text-shadow halo. Transitions
+   are eased so it blooms rather than snaps. */
+.nav-logo .nav-logo-mark {
+  transition: filter 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav-logo .nav-logo-word {
   transition: text-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.nav-logo:hover .nav-logo-tile {
-  box-shadow:
-    0 0 22px rgba(94, 122, 90, 0.45),
-    0 0 8px rgba(94, 122, 90, 0.32);
+.nav-logo:hover .nav-logo-mark {
+  filter: drop-shadow(0 0 7px rgba(94, 122, 90, 0.45));
 }
 .nav-logo:hover .nav-logo-word {
   text-shadow:
@@ -212,7 +211,7 @@ a.accent-link--glow:hover {
     0 0 8px rgba(94, 122, 90, 0.38);
 }
 @media (prefers-reduced-motion: reduce) {
-  .nav-logo .nav-logo-tile,
+  .nav-logo .nav-logo-mark,
   .nav-logo .nav-logo-word {
     transition: none;
   }
