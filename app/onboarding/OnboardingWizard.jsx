@@ -68,7 +68,7 @@ const STEPS = [
       (t.packages?.length ?? 0) > 0,
     render: ({ tutor, set, supabase }) => (
       <div className="space-y-5">
-        <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} bare />
+        <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} />
         <IdentitySection tutor={tutor} set={set} />
         <RateSection tutor={tutor} set={set} />
       </div>

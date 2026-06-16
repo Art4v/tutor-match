@@ -8,41 +8,55 @@ import { EASE_OUT } from "@/lib/motion";
 import { subjectLabel } from "@/lib/subjects";
 import { stripMarkdown } from "@/lib/richText";
 
-// Enlarged headline credential tag. `truncate` lets the label shrink (used when
-// an achievement stands in for a missing ATAR) so the tag can never push past
-// its container into the rate; `active={false}` renders the muted "No ATAR"
-// placeholder so the footer keeps a consistent height across cards.
-function CredTag({ icon, active = true, truncate = false, children }) {
+// Brand leaf / sprout mark — decorative overlay on the banner (ported from the
+// design handoff). Absolutely positioned by the caller.
+function LeafMark({ size = 28, color = "#fff", opacity = 1, style }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      opacity={opacity}
+      aria-hidden="true"
+      style={{ position: "absolute", ...style }}
+    >
+      <path d="M32 60 C32 47 31 39 33 31" stroke={color} strokeWidth="3.4" strokeLinecap="round" />
+      <path d="M33 36 C18 35 9 25 10 11 C25 11 35 21 34 35 Z" fill={color} />
+      <path d="M34 31 C48 28 56 16 54 3 C40 5 31 17 33 30 Z" fill={color} />
+    </svg>
+  );
+}
+
+// Compact overflow pill for credentials/achievements beyond the ATAR stat.
+function MorePill({ count }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-semibold tabular-nums ${truncate ? "min-w-0" : "shrink-0"}`}
-      style={{
-        maxWidth: "100%",
-        fontSize: 14,
-        padding: "5px 11px",
-        borderRadius: 8,
-        lineHeight: 1.15,
-        background: active ? "var(--accent-softer)" : "var(--bg-soft)",
-        color: active ? "var(--accent)" : "var(--sage)",
-        border: `1px solid ${active ? "var(--accent-line)" : "var(--paper-line)"}`,
-      }}
+      className="inline-flex items-center font-medium text-[color:var(--ink-muted)] whitespace-nowrap"
+      style={{ fontSize: 12, padding: "3px 9px", borderRadius: 999, lineHeight: 1.15, background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
     >
-      <Icon name={icon} size={14} className="shrink-0" />
-      <span className={truncate ? "truncate" : "whitespace-nowrap"}>{children}</span>
+      +{count} more
     </span>
   );
 }
 
-// Compact overflow pill for credentials/achievements beyond the headline one.
-// Fixed, short footprint and shrink-0 so it never gets squeezed out.
-function MorePill({ count }) {
+// A single cell in the ATAR / rate stat strip.
+function StatCell({ value, label, tone = "accent" }) {
   return (
-    <span
-      className="shrink-0 inline-flex items-center font-medium text-[color:var(--ink-muted)] whitespace-nowrap"
-      style={{ fontSize: 13, padding: "5px 9px", borderRadius: 8, lineHeight: 1.15, background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
-    >
-      +{count} more
-    </span>
+    <div className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
+      <span
+        className="font-extrabold tabular-nums leading-none truncate max-w-full"
+        style={{ fontSize: 18, color: tone === "accent" ? "var(--accent)" : tone === "muted" ? "var(--sage)" : "var(--ink)" }}
+      >
+        {value}
+      </span>
+      <span
+        className="font-bold uppercase whitespace-nowrap"
+        style={{ fontSize: 9, letterSpacing: "0.04em", color: "var(--sage)" }}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -52,7 +66,7 @@ function SubjectChip({ children }) {
   return (
     <span
       className="inline-flex items-center font-medium whitespace-nowrap"
-      style={{ fontSize: 11.5, padding: "3px 8px", borderRadius: 7, lineHeight: 1.2, color: "var(--ink)", background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
+      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 7, lineHeight: 1.2, color: "var(--ink-2, var(--ink))", background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
     >
       {children}
     </span>
@@ -60,11 +74,11 @@ function SubjectChip({ children }) {
 }
 
 // Subject chips that fill the available vertical space — wraps across as many
-// rows as fit between the bio and the footer, then caps with a "+N" pill. Packs
-// chips off-screen first (measured) so the visible rows never overflow / clip a
-// chip mid-row. Re-runs on width AND height changes (it lives in a flex region
-// whose height shifts with the rest of the card).
-function SubjectChipsFill({ subjects }) {
+// rows as fit, then caps with a "+N" pill. Packs chips off-screen first
+// (measured) so the visible rows never overflow / clip a chip mid-row. Re-runs
+// on width AND height changes (it lives in a flex region whose height shifts
+// with the rest of the card). `center` centres the rows for the Crown layout.
+function SubjectChipsFill({ subjects, center = false }) {
   const containerRef = useRef(null);
   const measureRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(subjects.length);
@@ -124,7 +138,10 @@ function SubjectChipsFill({ subjects }) {
   const extra = visibleCount < 0 ? 0 : subjects.length - visible.length;
 
   return (
-    <div ref={containerRef} className="relative h-full flex flex-wrap content-start gap-1.5 overflow-hidden">
+    <div
+      ref={containerRef}
+      className={`relative h-full flex flex-wrap content-start gap-1.5 overflow-hidden ${center ? "justify-center" : ""}`}
+    >
       <div
         ref={measureRef}
         aria-hidden
@@ -153,10 +170,10 @@ function SubjectChipsFill({ subjects }) {
   );
 }
 
-const CARD_HEIGHT = 400;
+const CARD_HEIGHT = 458;
 
 // Motion variants: a single source of truth for the hover behaviour. On enter,
-// y eases up to -3px while rotate plays a small back-and-forth wobble that
+// y eases up to -4px while rotate plays a small back-and-forth wobble that
 // settles on 0; the shadow + border ease in. On leave, every property
 // interpolates back to rest with the same easing — no snapping, no overlap.
 // Both boxShadow strings MUST keep the same shape (same layers, same value
@@ -199,13 +216,15 @@ const cardVariants = {
 export function TutorCard({ tutor }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
-  // Headline credential: the ATAR if set, otherwise the tutor's first
-  // achievement stands in for it. Everything past the headline collapses into a
-  // "+N more" pill. `otherCreds` is every non-ATAR achievement.
+  // ATAR is the headline stat. Every other credential the tutor entered collapses
+  // into a "+N more" pill so nothing they listed is silently dropped.
   const atar = credentials.find((c) => c.icon === "atar")?.label || null;
-  const otherCreds = credentials.filter((c) => c.icon !== "atar");
-  const headlineCred = atar ? null : otherCreds[0] || null;
-  const moreCount = atar ? otherCreds.length : Math.max(0, otherCreds.length - 1);
+  const moreCount = credentials.filter((c) => c.icon !== "atar").length;
+
+  const tagline = stripMarkdown(tutor.bio);
+  const longBio = stripMarkdown(tutor.bioLong);
+  const location = [tutor.suburb, tutor.city].filter(Boolean).join(" · ");
+  const school = tutor.highSchool || tutor.university;
 
   return (
     <motion.div
@@ -228,109 +247,105 @@ export function TutorCard({ tutor }) {
         href={`/tutor/${tutor.slug}`}
         className="relative cursor-pointer flex flex-col h-full overflow-hidden"
       >
+        {/* Coloured banner — the tutor's uploaded banner image if present, else
+            their backdrop colour. Leaf marks are a decorative overlay. */}
         <div
-          className="shrink-0"
+          className="shrink-0 relative overflow-hidden"
           style={tutor.bannerImg
-            ? { height: 62, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-            : { height: 62, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
-        />
+            ? { height: 88, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
+            : { height: 88, background: tutor.bannerBg ?? tutor.avatarBg }}
+        >
+          <LeafMark size={84} color="#fff" opacity={0.14} style={{ right: -12, bottom: -20 }} />
+        </div>
 
-        <div className="px-6 pb-6 flex flex-col flex-1 min-h-0">
-          <div className="shrink-0" style={{ marginTop: -32, marginBottom: 12 }}>
-            <Avatar tutor={tutor} size={64} ring />
+        <div className="px-4 pb-4 flex flex-col flex-1 min-h-0 items-center text-center">
+          {/* Avatar "crown" — straddles the banner. */}
+          <div className="shrink-0" style={{ marginTop: -50, marginBottom: 6 }}>
+            <Avatar tutor={tutor} size={100} ring />
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
-            <span className="font-hand text-[22px] font-semibold text-[color:var(--ink)] truncate leading-tight pr-1">
+          {/* Name + verified checkmark (kept design, slightly smaller). */}
+          <div className="flex items-center justify-center gap-1.5 shrink-0 max-w-full">
+            <span className="text-[19px] font-extrabold tracking-[-0.02em] text-[color:var(--ink)] truncate leading-tight">
               {tutor.name}
             </span>
-            {tutor.verified && <VerifiedTick size={14} />}
+            {tutor.verified && <VerifiedTick size={15} />}
           </div>
 
-          {/* Tagline (one line, reserved) */}
-          <div className="text-[13.5px] text-[color:var(--ink-muted)] mt-0.5 truncate shrink-0" style={{ minHeight: "1.35em" }}>
-            {stripMarkdown(tutor.bio) || " "}
+          {/* Tagline (one line, reserved) — no leaf icon. */}
+          <div className="text-[12.5px] font-bold text-[color:var(--accent)] mt-1 truncate shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
+            {tagline || " "}
           </div>
 
-          {/* Location (one line, reserved) */}
-          <div className="text-[12.5px] text-[color:var(--sage)] mt-0.5 flex items-center gap-1 shrink-0" style={{ minHeight: "1.3em" }}>
-            {(tutor.suburb || tutor.city) ? (
+          {/* Long bio — capped at 2 lines so the centred stack stays compact. */}
+          <div
+            className="text-[11.5px] text-[color:var(--ink-muted)] mt-1 shrink-0 leading-[1.5]"
+            style={{
+              minHeight: "1.5em",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {longBio || " "}
+          </div>
+
+          {/* Location — deliberately quieter than the ATAR / rate stats. */}
+          <div className="text-[11.5px] text-[color:var(--sage)] mt-1.5 flex items-center justify-center gap-1 shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
+            {location ? (
               <>
-                <Icon name="map-pin" size={11} />
-                <span className="truncate">
-                  {tutor.suburb}{tutor.suburb && tutor.city ? " · " : ""}{tutor.city}
-                </span>
+                <Icon name="map-pin" size={10} className="shrink-0" />
+                <span className="truncate">{location}</span>
               </>
             ) : (
               " "
             )}
           </div>
 
-          {/* Long bio — capped at 3 lines with ellipsis so the card stays
-              skimmable. */}
+          {/* School line. */}
+          <div className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[color:var(--ink)] mt-1 shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
+            <Icon name="graduation" size={13} className="shrink-0" />
+            <span className="truncate">
+              {school || <span className="text-[color:var(--sage)] font-normal italic">School not listed</span>}
+            </span>
+          </div>
+
+          {/* Stat strip: ATAR · rate. */}
           <div
-            className="text-[13px] text-[color:var(--ink-muted)] mt-3 shrink-0 leading-[1.55]"
-            style={{
-              maxHeight: "calc(3 * 1.55 * 13px)",
-              display: "-webkit-box",
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
+            className="w-full flex items-center mt-2.5 shrink-0"
+            style={{ padding: "10px 14px", borderRadius: 11, border: "1px solid var(--paper-line)" }}
           >
-            {stripMarkdown(tutor.bioLong) || " "}
+            <StatCell value={atar || "—"} label="ATAR" tone={atar ? "accent" : "muted"} />
+            <div className="self-stretch" style={{ width: 1, background: "var(--paper-line)" }} />
+            <StatCell value={`$${tutor.rate}`} label="per hr" tone="ink" />
           </div>
 
-          {/* Subjects fill the gap between the bio and the pinned footer — they
-              wrap across as many rows as fit, so a tutor with many subjects
-              shows more instead of leaving whitespace. This flex-1 region also
-              absorbs leftover space, pinning the footer to the card's edge. The
-              bottom margin reserves a gap so the last row (or its "+N" cutoff)
-              never touches the school line below. */}
-          <div className="flex-1 min-h-0 mt-3 mb-3">
-            <SubjectChipsFill subjects={subjects} />
-          </div>
-
-          {/* Footer: featured school line + headline credential / rate. */}
-          <div className="shrink-0">
-            {/* Education: show the high school only; fall back to the university
-                when no high school is listed. */}
-            <div
-              className="flex items-center gap-1.5 text-[13px] text-[color:var(--ink-muted)] mb-3"
-              style={{ minHeight: "1.3em" }}
-            >
-              <Icon name="graduation" size={14} />
-              <span className="truncate">
-                {tutor.highSchool || tutor.university || (
-                  <span className="text-[color:var(--sage)] italic">School not listed</span>
-                )}
-              </span>
+          {/* Other credentials the tutor listed, collapsed into a pill. */}
+          {moreCount > 0 && (
+            <div className="mt-1.5 shrink-0">
+              <MorePill count={moreCount} />
             </div>
+          )}
 
-            <div
-              className="pt-4 flex items-center gap-3 border-t"
-              style={{ borderColor: "var(--paper-line)" }}
-            >
-              <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
-                {atar ? (
-                  <CredTag icon="trophy">{atar} <span className="font-medium opacity-80">ATAR</span></CredTag>
-                ) : headlineCred ? (
-                  <CredTag icon={headlineCred.icon || "trophy"} truncate>{headlineCred.label}</CredTag>
-                ) : (
-                  <CredTag icon="trophy" active={false}>No ATAR</CredTag>
-                )}
-                {moreCount > 0 && <MorePill count={moreCount} />}
-              </div>
-              <div className="text-right shrink-0 leading-none" style={{ paddingRight: 3 }}>
-                <span className="text-[22px] font-bold text-[color:var(--ink)] tabular-nums">${tutor.rate}</span>
-                <span className="text-[13px] text-[color:var(--sage)] font-medium">/hr</span>
-              </div>
-            </div>
+          {/* Subjects fill the gap above the CTA — wrap across as many rows as
+              fit, then cap with a "+N" pill. This flex-1 region also absorbs
+              leftover space, pinning the CTA to the card's bottom edge. */}
+          <div className="w-full flex-1 min-h-0 mt-2.5 mb-2.5">
+            <SubjectChipsFill subjects={subjects} center />
           </div>
+
+          {/* CTA — visual only; the whole card is already the link, so this is a
+              styled span (a nested <button>/<a> inside <a> is invalid). */}
+          <span
+            className="w-full shrink-0 inline-flex items-center justify-center gap-1.5 font-semibold text-white"
+            style={{ background: "var(--accent)", borderRadius: 9, padding: "9px 14px", fontSize: 12.5 }}
+          >
+            View full profile
+            <Icon name="arrow-right" size={14} className="shrink-0" />
+          </span>
         </div>
       </Link>
-      {/* Folded paper corner — decorative, never intercepts the link. */}
-      <span aria-hidden="true" className="dog-ear" />
     </motion.div>
   );
 }
