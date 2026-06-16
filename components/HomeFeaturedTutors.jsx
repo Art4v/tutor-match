@@ -7,7 +7,7 @@ import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
-export function HomeFeaturedTutors({ tutors = [] }) {
+export function HomeFeaturedTutors({ tutors = [], verifiedCount }) {
   const empty = tutors.length === 0;
 
   return (

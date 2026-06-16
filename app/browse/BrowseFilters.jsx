@@ -93,6 +93,10 @@ export function BrowseFilters({
       }
     });
 
+  // Verified-only defaults ON; toggling off writes the explicit ?verified=0
+  // opt-out, toggling back on just drops the param.
+  const setVerifiedOnly = (on) => setSingle("verified", on ? null : "0", null);
+
   const toggleMode = (value) =>
     pushParams((p) => {
       const current = p.getAll("mode");
@@ -129,7 +133,8 @@ export function BrowseFilters({
     (filters.modes?.length ?? 0) > 0 ||
     filters.atarMin != null ||
     filters.rateMax != null ||
-    (filters.yearLevels?.length ?? 0) > 0;
+    (filters.yearLevels?.length ?? 0) > 0 ||
+    filters.verifiedOnly === false;
 
   return (
     <aside className="space-y-6">
@@ -274,6 +279,43 @@ export function BrowseFilters({
         <div className="flex justify-between text-[11px] text-slate-400 tabular-nums mt-1">
           <span>$30</span><span>$200</span>
         </div>
+      </FilterGroup>
+
+      <FilterGroup title="Verification">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={filters.verifiedOnly !== false}
+          onClick={() => setVerifiedOnly(filters.verifiedOnly === false)}
+          className="w-full flex items-center justify-between gap-3 text-left"
+        >
+          <span className="inline-flex items-center gap-1.5 text-[13.5px] text-slate-700">
+            <span className="inline-flex" style={{ color: "var(--accent)" }}>
+              <Icon name="check-badge" size={15} />
+            </span>
+            Verified tutors only
+          </span>
+          <span
+            aria-hidden="true"
+            className="relative shrink-0 rounded-full"
+            style={{
+              width: 38,
+              height: 22,
+              background: filters.verifiedOnly !== false ? "var(--accent)" : "var(--paper-line)",
+              transition: "background 160ms ease-out",
+            }}
+          >
+            <span
+              className="absolute top-1/2 rounded-full bg-white shadow-sm"
+              style={{
+                width: 16,
+                height: 16,
+                transform: `translateY(-50%) translateX(${filters.verifiedOnly !== false ? 19 : 3}px)`,
+                transition: "transform 160ms ease-out",
+              }}
+            />
+          </span>
+        </button>
       </FilterGroup>
     </aside>
   );

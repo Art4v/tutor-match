@@ -81,7 +81,7 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    router.push("/settings");
+    router.push("/profile");
     router.refresh();
   };
 

@@ -41,6 +41,8 @@ export default async function BrowsePage({ searchParams }) {
     .map(Number)
     .filter((n) => Number.isFinite(n));
   const modes = asArray(searchParams.mode);
+  // Verified-only is ON by default; `?verified=0` is the explicit opt-out.
+  const verifiedOnly = searchParams.verified !== "0";
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
 
   const [{ tutors, total }, subjectCatalog, schoolCatalog] = await Promise.all([
@@ -55,6 +57,7 @@ export default async function BrowsePage({ searchParams }) {
       rateMax,
       yearLevels,
       modes,
+      verifiedOnly,
       page,
       pageSize: PAGE_SIZE,
     }),
@@ -75,6 +78,7 @@ export default async function BrowsePage({ searchParams }) {
     atarMin,
     rateMax,
     yearLevels,
+    verifiedOnly,
   };
 
   return (

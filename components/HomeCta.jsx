@@ -96,7 +96,7 @@ export function HomeCta() {
                 className="flex-1"
                 style={{ willChange: "transform, box-shadow" }}
               >
-                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/settings" : "/signup")} full glow>
+                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/profile" : "/signup")} full glow>
                   Become a tutor
                 </Button>
               </motion.div>

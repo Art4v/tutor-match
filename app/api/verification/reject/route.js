@@ -55,7 +55,7 @@ export async function POST(request) {
 
   const name = tutor.profile?.full_name || "";
   const origin = new URL(request.url).origin;
-  const profileUrl = `${origin}/settings`;
+  const profileUrl = `${origin}/profile`;
 
   await notifyUser(admin, tutorId, {
     type: "verification_rejected",

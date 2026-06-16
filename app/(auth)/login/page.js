@@ -33,7 +33,7 @@ function LoginInner() {
       return;
     }
     const role = data?.user?.user_metadata?.role;
-    router.push(role === "tutor" ? "/settings" : "/");
+    router.push(role === "tutor" ? "/profile" : "/");
     router.refresh();
   };
 

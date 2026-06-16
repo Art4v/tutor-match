@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Icon } from "./Icon";
 import { Button, VerifiedTick } from "./ui";
 
@@ -16,7 +16,9 @@ import { Button, VerifiedTick } from "./ui";
 //   beforeRequest  optional async () => boolean — run before POSTing (onboarding
 //                  saves the profile first); return false to abort
 //   onRequested    optional (newStatus) => void — notify the parent
-export function RequestVerification({ status: initialStatus = "none", completionPct = 100, beforeRequest, onRequested }) {
+//   unstyled       render without the bordered Card wrapper (when nested inside
+//                  another card, e.g. the owner sidebar)
+export function RequestVerification({ status: initialStatus = "none", completionPct = 100, beforeRequest, onRequested, unstyled = false }) {
   const [status, setStatus] = useState(initialStatus);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -45,8 +47,10 @@ export function RequestVerification({ status: initialStatus = "none", completion
     setWorking(false);
   };
 
+  const Wrapper = unstyled ? Fragment : Card;
+
   return (
-    <Card>
+    <Wrapper>
       <div className="flex items-center justify-between gap-3 mb-1">
         <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Get verified</h3>
         {status === "verified" && (
@@ -87,7 +91,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
           {error && <p className="mt-2 text-[12px]" style={{ color: "#DC2626" }}>{error}</p>}
         </>
       )}
-    </Card>
+    </Wrapper>
   );
 }
 

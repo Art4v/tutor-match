@@ -16,7 +16,7 @@ export default async function OnboardingPage() {
   const initialTutor = await getTutorProfileForEditor(supabase, user.id);
 
   // Already onboarded (or an existing/backfilled tutor) — skip the questionnaire.
-  if (initialTutor?.onboarded) redirect("/settings");
+  if (initialTutor?.onboarded) redirect("/profile");
 
   return (
     <OnboardingWizard
