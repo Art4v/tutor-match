@@ -43,7 +43,7 @@ export default async function ProfilePage({ params }) {
   const tiles = buildCredentialTiles(tutor.credentials);
 
   return (
-    <div className="desk-surface bleed-under-nav relative overflow-hidden">
+    <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden">
       {/* Same cream desk + floating stationery as the featured section. */}
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">

@@ -47,7 +47,7 @@ export function Section({ title, subtitle, children, id }) {
       id={id}
       hover
       className="paper-page bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}
+      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24, boxShadow: "var(--card-shadow)" }}
     >
       <div className="mb-5">
         <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">
@@ -64,7 +64,7 @@ export function Section({ title, subtitle, children, id }) {
 
 export function SubjectsCard({ subjects }) {
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
       <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
       <div className="flex flex-wrap gap-1.5">
         {subjects.map((s) => (
@@ -77,7 +77,7 @@ export function SubjectsCard({ subjects }) {
 
 export function RatingsCard() {
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="text-[14px] font-semibold text-slate-900">Ratings &amp; reviews</div>
         <span
@@ -106,7 +106,7 @@ export function ServiceAreaCard({ tutor }) {
   const radiusKm = sa?.radiusKm ?? 10;
   const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
       <div className="px-5 pt-5 pb-5">
         <div className="text-[14px] font-semibold text-slate-900">Service area</div>
         <div className="text-[12.5px] text-slate-500 mt-0.5">

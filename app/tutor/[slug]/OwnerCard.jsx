@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { RequestVerification } from "@/components/RequestVerification";
+import { SectionReveal } from "@/components/anim/SectionReveal";
 import { calcCompletion } from "@/components/profile-edit/sections";
 
 /**
@@ -69,7 +70,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
 
   return (
     <div className="space-y-5">
-      <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
+      <SectionReveal hover style={{ backgroundColor: "var(--paper-card)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)", backgroundImage: "repeating-linear-gradient(0deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(180deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(270deg, var(--line-strong) 0 10px, transparent 10px 20px)", backgroundSize: "2px 100%, 100% 2px, 2px 100%, 100% 2px", backgroundPosition: "0 0, 0 0, 100% 0, 0 100%", backgroundRepeat: "no-repeat" }}>
         <div className="flex items-center gap-2 mb-3">
           <Icon name="eye" size={15} className="text-slate-500" />
           <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Your profile</h3>
@@ -150,7 +151,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
         <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
           <RequestVerification status={profile.verificationStatus} completionPct={c.pct} unstyled />
         </div>
-      </div>
+      </SectionReveal>
     </div>
   );
 }

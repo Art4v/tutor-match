@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -143,14 +144,30 @@ export function OwnerProfile({ editorTutor, userId }) {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
+  // While a section editor is open it renders as a modal: lock the background
+  // scroll (same approach as the image lightbox in HomeHowItWorks) and let
+  // Escape close it. Restored when the editor closes.
+  useEffect(() => {
+    if (!editingKey) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setEditingKey(null); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [editingKey]);
+
   const display = useMemo(() => editorToDisplay(profile, subjectCatalog), [profile, subjectCatalog]);
   const credTiles = buildCredentialTiles(display.credentials);
 
   const publicHref = `matchtutor.com.au/tutor/${profile.slug || userId}`;
   const publicUrl = `https://${publicHref}`;
 
-  const regionProps = (k, label) => ({
+  const regionProps = (k, label, maxW = 760) => ({
     label,
+    maxW,
     editing: editingKey === k,
     saving: savingKey === k,
     onEdit: () => openSection(k),
@@ -180,14 +197,14 @@ export function OwnerProfile({ editorTutor, userId }) {
   );
 
   return (
-    <div className="desk-surface relative overflow-hidden pb-24">
+    <div className="bg-[color:var(--paper-card)] relative overflow-hidden pb-24">
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6">
         <EditRegion
-          {...regionProps("header", "profile header")}
+          {...regionProps("header", "profile header", 1100)}
           view={headerView}
           edit={
-            <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 20 }}>
+            <div>
               <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Profile header</h2>
               <p className="text-[13px] text-slate-500 mt-1 mb-5">The banner, photo and intro at the top of your profile.</p>
               <BannerAvatarSection tutor={draft} set={set} supabase={supabase} bare />
@@ -208,7 +225,7 @@ export function OwnerProfile({ editorTutor, userId }) {
               view={display.bioLong
                 ? <AboutCard text={display.bioLong} />
                 : <Section title="About"><EmptyHint>Tell students about your teaching approach.</EmptyHint></Section>}
-              edit={<AboutSection tutor={draft} set={set} />}
+              edit={<AboutSection tutor={draft} set={set} bare />}
             />
 
             <EditRegion
@@ -218,7 +235,7 @@ export function OwnerProfile({ editorTutor, userId }) {
                   {credTiles.length > 0 ? <CredentialsList tiles={credTiles} /> : <EmptyHint>Add your ATAR, awards, degrees or state ranks.</EmptyHint>}
                 </Section>
               }
-              edit={<CredentialsSection tutor={draft} set={set} />}
+              edit={<CredentialsSection tutor={draft} set={set} bare />}
             />
 
             <EditRegion
@@ -228,7 +245,7 @@ export function OwnerProfile({ editorTutor, userId }) {
                   {display.experience.length > 0 ? <ExperienceTimeline experience={display.experience} /> : <EmptyHint>Add your tutoring or teaching roles.</EmptyHint>}
                 </Section>
               }
-              edit={<ExperienceSection tutor={draft} set={set} />}
+              edit={<ExperienceSection tutor={draft} set={set} bare />}
             />
 
             <EditRegion
@@ -238,7 +255,7 @@ export function OwnerProfile({ editorTutor, userId }) {
                   {display.education.length > 0 ? <EducationTimeline education={display.education} /> : <EmptyHint>Add your high school and university.</EmptyHint>}
                 </Section>
               }
-              edit={<EducationSection tutor={draft} set={set} schoolCatalog={schoolCatalog} />}
+              edit={<EducationSection tutor={draft} set={set} schoolCatalog={schoolCatalog} bare />}
             />
 
             <EditRegion
@@ -248,7 +265,7 @@ export function OwnerProfile({ editorTutor, userId }) {
                   {display.availability ? <AvailabilityGrid availability={display.availability} /> : <EmptyHint>Set your weekly availability.</EmptyHint>}
                 </Section>
               }
-              edit={<AvailabilitySection tutor={draft} set={set} />}
+              edit={<AvailabilitySection tutor={draft} set={set} bare />}
             />
           </div>
 
@@ -256,25 +273,25 @@ export function OwnerProfile({ editorTutor, userId }) {
             <OwnerCard profile={profile} onVisibilityChange={onVisibilityChange} publicHref={publicHref} publicUrl={publicUrl} />
 
             <EditRegion
-              {...regionProps("rate", "rate")}
+              {...regionProps("rate", "rate", 480)}
               view={<RateCard tutor={display} />}
-              edit={<RateSection tutor={draft} set={set} />}
+              edit={<RateSection tutor={draft} set={set} bare />}
             />
 
             <EditRegion
-              {...regionProps("subjects", "subjects")}
+              {...regionProps("subjects", "subjects", 560)}
               view={display.subjects.length > 0
                 ? <SubjectsCard subjects={display.subjects} />
                 : <MiniCard title="Subjects"><EmptyHint>Add the subjects you tutor.</EmptyHint></MiniCard>}
-              edit={<SubjectsSection tutor={draft} set={set} catalog={subjectCatalog} />}
+              edit={<SubjectsSection tutor={draft} set={set} catalog={subjectCatalog} bare />}
             />
 
             <EditRegion
-              {...regionProps("serviceArea", "service area")}
+              {...regionProps("serviceArea", "service area", 520)}
               view={(display.serviceArea?.suburb || display.suburb)
                 ? <ServiceAreaCard tutor={display} />
                 : <MiniCard title="Service area"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></MiniCard>}
-              edit={<ServiceAreaSection tutor={draft} set={set} />}
+              edit={<ServiceAreaSection tutor={draft} set={set} bare />}
             />
           </aside>
         </div>
@@ -304,47 +321,65 @@ export function OwnerProfile({ editorTutor, userId }) {
  * view mode; the section form plus a Cancel / Save footer in edit mode. Save
  * persists only this section (handled by the parent's saveSection).
  */
-function EditRegion({ editing, saving, onEdit, onCancel, onSave, label, view, edit }) {
-  if (editing) {
-    return (
-      <div>
-        {edit}
-        <div className="flex justify-end gap-2 mt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={saving}
-            className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors hover:bg-slate-100 disabled:opacity-60"
-            style={{ background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={saving}
-            className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 inline-flex items-center gap-1.5"
-            style={{ background: "var(--ink)", color: "#fff" }}
-          >
-            {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
-          </button>
-        </div>
-      </div>
-    );
-  }
+function EditRegion({ editing, saving, onEdit, onCancel, onSave, label, view, edit, maxW = 640 }) {
+  // Always render the read-only view; in edit mode it sits (blurred) behind a
+  // modal overlay so the page itself stays the preview. The overlay is
+  // portaled to <body> so ancestor overflow/transforms can't clip it. The
+  // editor is one card with a sticky Save/Cancel action bar at the top-right.
   return (
     <div className="relative">
       {view}
-      <button
-        type="button"
-        onClick={onEdit}
-        aria-label={`Edit ${label}`}
-        title={`Edit ${label}`}
-        className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
-        style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", boxShadow: "0 1px 3px rgba(15,23,42,0.08)" }}
-      >
-        <Icon name="pencil" size={14} strokeWidth={2} />
-      </button>
+      {!editing && (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${label}`}
+          title={`Edit ${label}`}
+          className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
+          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", boxShadow: "0 1px 3px rgba(15,23,42,0.08)" }}
+        >
+          <Icon name="pencil" size={14} strokeWidth={2} />
+        </button>
+      )}
+      {editing && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-6"
+          style={{ background: "rgba(42,58,46,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Edit ${label}`}
+        >
+          <div
+            className="w-full flex flex-col bg-[color:var(--paper-card)]"
+            style={{ maxWidth: maxW, maxHeight: "88vh", border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "0 30px 80px -40px rgba(15,23,42,0.35)" }}
+          >
+            <div className="shrink-0 flex items-center justify-end gap-2 px-5 sm:px-6 py-3" style={{ borderBottom: "1px solid var(--desk)" }}>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={saving}
+                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors hover:bg-slate-100 disabled:opacity-60"
+                style={{ background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={saving}
+                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 inline-flex items-center gap-1.5"
+                style={{ background: "var(--ink)", color: "#fff" }}
+              >
+                {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
+              </button>
+            </div>
+            <div className="overflow-y-auto overscroll-contain px-5 sm:px-6 py-5" data-lenis-prevent>
+              {edit}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

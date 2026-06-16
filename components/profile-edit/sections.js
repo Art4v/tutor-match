@@ -569,21 +569,45 @@ function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hi
     onChange(res.url);
   };
 
+  const isRound = (cropShape ?? "rect") === "round";
+  const previewH = 56;
+  const previewW = isRound ? previewH : Math.round(previewH * (aspect ?? 1));
+
   return (
     <div>
       <MetaLabel>{label}</MetaLabel>
-      <div className="flex items-center gap-2 mt-2">
-        <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
-        <Button variant="outline" size="sm" icon="upload" disabled={busy} onClick={() => inputRef.current?.click()}>
-          {busy ? "Uploading…" : value ? "Replace" : "Upload"}
-        </Button>
-        {value && !busy && (
-          <Button variant="ghost" size="sm" onClick={() => onChange(null)}>Remove</Button>
-        )}
+      <div className="flex items-start gap-3 mt-2">
+        <div
+          className="shrink-0 overflow-hidden bg-[color:var(--bg-soft)] flex items-center justify-center"
+          style={{
+            width: previewW,
+            height: previewH,
+            borderRadius: isRound ? "50%" : 10,
+            border: "1px solid var(--paper-line)",
+          }}
+        >
+          {value ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt={`${label} preview`} className="w-full h-full object-cover" />
+          ) : (
+            <Icon name="image" size={20} className="text-slate-300" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+            <Button variant="outline" size="sm" icon="upload" disabled={busy} onClick={() => inputRef.current?.click()}>
+              {busy ? "Uploading…" : value ? "Replace" : "Upload"}
+            </Button>
+            {value && !busy && (
+              <Button variant="ghost" size="sm" onClick={() => onChange(null)}>Remove</Button>
+            )}
+          </div>
+          {err
+            ? <div className="text-[12px] text-rose-600 mt-1.5">{err}</div>
+            : hint && <div className="text-[12px] text-slate-400 mt-1.5">{hint}</div>}
+        </div>
       </div>
-      {err
-        ? <div className="text-[12px] text-rose-600 mt-1.5">{err}</div>
-        : hint && <div className="text-[12px] text-slate-400 mt-1.5">{hint}</div>}
       <ImageCropModal
         open={!!pendingFile}
         file={pendingFile}
@@ -719,7 +743,8 @@ const EDUCATION_LEVELS = [
   { value: "university",  label: "University" },
 ];
 
-export function CredentialsSection({ tutor, set }) {
+export function CredentialsSection({ tutor, set, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   const list = tutor.credentials || [];
   const update = (i, p) => set({ credentials: list.map((c, idx) => idx === i ? { ...c, ...p } : c) });
   const remove = (i) => set({ credentials: list.filter((_, idx) => idx !== i) });
@@ -727,7 +752,7 @@ export function CredentialsSection({ tutor, set }) {
   const add = () => set({ credentials: [...list, { label: "", icon: "trophy" }] });
 
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="Credentials" subtitle="The ATAR, awards, degrees, or state ranks that show on your profile."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add credential</Button>} />
       {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "var(--bg-soft)", borderRadius: 10 }}>No credentials yet — add an ATAR, award, degree, or state rank.</div>}
@@ -744,28 +769,7 @@ export function CredentialsSection({ tutor, set }) {
           );
         })}
       </div>
-      {list.some((c) => c.label) && (
-        <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
-          <MetaLabel>Preview</MetaLabel>
-          <div className="flex flex-col gap-2.5 mt-2">
-            {list.map((c, i) => {
-              if (!c.label) return null;
-              const t = typeForIcon(c.icon);
-              return (
-                <div key={i} className="px-4 py-3 flex items-center gap-4" style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "var(--bg-soft)" }}>
-                  <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium w-[120px] shrink-0">
-                    <Icon name={c.icon} size={12} /> {t.caption}
-                  </div>
-                  <div className={`text-[14px] font-semibold text-slate-900 leading-snug${t.kind === "stat" ? " tabular-nums" : ""}`}>
-                    {c.label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </Card>
+    </Wrap>
   );
 }
 
@@ -792,7 +796,8 @@ function aiProfileContext(t) {
   };
 }
 
-export function AboutSection({ tutor, set }) {
+export function AboutSection({ tutor, set, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   const long = tutor.bioLong || "";
   const SOFT_LIMIT = 5000; // words
   const wordCount = long.trim() ? long.trim().split(/\s+/).length : 0;
@@ -828,7 +833,7 @@ export function AboutSection({ tutor, set }) {
   };
 
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="About" subtitle="The story students read on your profile." />
       <Field as="div" label="Tagline" hint="One line shown on your browse cards and under your profile header.">
         <RichTextField rows={2} value={tutor.bio} onChange={(v) => set({ bio: v })} maxLength={180}
@@ -844,18 +849,19 @@ export function AboutSection({ tutor, set }) {
             placeholder="Tell students about your teaching approach…" />
         </Field>
       </div>
-    </Card>
+    </Wrap>
   );
 }
 
-export function RateSection({ tutor, set }) {
+export function RateSection({ tutor, set, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   const list = tutor.packages || [];
   const update = (i, p) => set({ packages: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ packages: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ packages: move(list, i, to) });
   const add = () => set({ packages: [...list, { label: "", price: tutor.rate || 0 }] });
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="Rate & packages" subtitle="Base rate and the bundles students can buy."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add package</Button>} />
       <Field label="Hourly rate">
@@ -876,18 +882,19 @@ export function RateSection({ tutor, set }) {
           ))}
         </div>
       </div>
-    </Card>
+    </Wrap>
   );
 }
 
-export function ExperienceSection({ tutor, set }) {
+export function ExperienceSection({ tutor, set, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   const list = tutor.experience || [];
   const update = (i, p) => set({ experience: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ experience: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ experience: move(list, i, to) });
   const add = () => set({ experience: [...list, { role: "", org: "", period: "", note: "" }] });
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="Experience" subtitle="Renders as the briefcase timeline on your profile."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add role</Button>} />
       <div>
@@ -904,18 +911,19 @@ export function ExperienceSection({ tutor, set }) {
           </ReorderRow>
         ))}
       </div>
-    </Card>
+    </Wrap>
   );
 }
 
-export function EducationSection({ tutor, set, schoolCatalog = [] }) {
+export function EducationSection({ tutor, set, schoolCatalog = [], bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   const list = tutor.education || [];
   const update = (i, p) => set({ education: list.map((x, idx) => idx === i ? { ...x, ...p } : x) });
   const remove = (i) => set({ education: list.filter((_, idx) => idx !== i) });
   const moveTo = (i, to) => set({ education: move(list, i, to) });
   const add = () => set({ education: [...list, { school: "", detail: "", level: "high_school", schoolSlug: null }] });
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="Education" right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add school</Button>} />
       <div>
         {list.map((e, i) => {
@@ -942,13 +950,14 @@ export function EducationSection({ tutor, set, schoolCatalog = [] }) {
           );
         })}
       </div>
-    </Card>
+    </Wrap>
   );
 }
 
-export function SubjectsSection({ tutor, set, catalog }) {
+export function SubjectsSection({ tutor, set, catalog, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="Subjects" subtitle="Powers your placement in browse filters. Pick an exam, then choose the subjects you tutor." />
       <SubjectPicker
         catalog={catalog}
@@ -958,7 +967,7 @@ export function SubjectsSection({ tutor, set, catalog }) {
         variant="box"
         placeholder="Add subjects"
       />
-    </Card>
+    </Wrap>
   );
 }
 
@@ -1036,7 +1045,8 @@ function ServiceMapPlaceholder({ radiusKm }) {
   );
 }
 
-export function ServiceAreaSection({ tutor, set }) {
+export function ServiceAreaSection({ tutor, set, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   const sa = tutor.serviceArea || { suburb: "", radiusKm: 5 };
   const r = sa.radiusKm;
   const suburb = sa.suburb || "";
@@ -1087,7 +1097,7 @@ export function ServiceAreaSection({ tutor, set }) {
     });
 
   return (
-    <Card>
+    <Wrap>
       <SectionHeader title="Service area" subtitle="Where you'll travel for in-person lessons." />
       <div className="grid grid-cols-1 gap-5">
         <div>
@@ -1108,7 +1118,7 @@ export function ServiceAreaSection({ tutor, set }) {
           ? <ServiceMapLeaflet lat={sa.lat} lng={sa.lng} radiusKm={r} />
           : <ServiceMapPlaceholder radiusKm={r} />}
       </div>
-    </Card>
+    </Wrap>
   );
 }
 
@@ -1142,7 +1152,8 @@ function HourSelect({ value, min = 0, max = 24, onChange }) {
   );
 }
 
-export function AvailabilitySection({ tutor, set }) {
+export function AvailabilitySection({ tutor, set, bare = false }) {
+  const Wrap = bare ? Fragment : Card;
   // Block-based editor. The local `blocks` map ({ Mon: [{start,end}], … }) is
   // initialized once from the stored grid and is the editor's working source of
   // truth; every edit compiles it back to the 24×7 grid (tutor.availability) so
@@ -1196,7 +1207,7 @@ export function AvailabilitySection({ tutor, set }) {
   const totalBlocks = DAYS.reduce((n, d) => n + (blocks[d]?.length || 0), 0);
 
   return (
-    <Card padding={20}>
+    <Wrap {...(bare ? {} : { padding: 20 })}>
       <SectionHeader title="Availability" subtitle="Add the times you're free to tutor each day. Students see these on your profile."
         right={
           <Button variant="ghost" size="sm" onClick={clearAll} disabled={totalBlocks === 0}>Clear all</Button>
@@ -1263,7 +1274,7 @@ export function AvailabilitySection({ tutor, set }) {
           );
         })}
       </div>
-    </Card>
+    </Wrap>
   );
 }
 
