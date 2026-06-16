@@ -40,16 +40,69 @@ function MorePill({ count }) {
   );
 }
 
+// Credential icon → human label for the stat-cell subtitle, mirroring the
+// editor's CREDENTIAL_TYPES (components/profile-edit/sections.js). The cell
+// uppercases it via CSS, so these stay sentence-case here.
+const CRED_CAPTIONS = {
+  atar: "ATAR",
+  trophy: "Award",
+  graduation: "Degree",
+  "check-badge": "State rank",
+  star: "Highlight",
+};
+const captionForIcon = (icon) => CRED_CAPTIONS[icon] || "Credential";
+
+// Single-line text that scales its font down to fit its container's width.
+// Short values (ATAR, rate) keep `max`; long credential labels shrink toward
+// `min`, with truncation as a last resort so they can never spill the cell.
+function FitText({ children, max = 18, min = 10, className = "", style }) {
+  const boxRef = useRef(null);
+  const textRef = useRef(null);
+  const [size, setSize] = useState(max);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const fit = () => {
+      const b = boxRef.current, t = textRef.current;
+      if (!b || !t) return;
+      // Measure the natural width at full size, then restore.
+      const prev = t.style.fontSize;
+      t.style.fontSize = max + "px";
+      const natural = t.scrollWidth;
+      t.style.fontSize = prev;
+      const avail = b.clientWidth;
+      if (natural > 0 && avail > 0) {
+        setSize(natural > avail ? Math.max(min, Math.floor((max * avail) / natural)) : max);
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [children, max, min]);
+
+  return (
+    <div ref={boxRef} className="w-full flex justify-center min-w-0">
+      <span
+        ref={textRef}
+        className={`inline-block whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${className}`}
+        style={{ fontSize: size, ...style }}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
 // A single cell in the ATAR / rate stat strip.
 function StatCell({ value, label, tone = "accent" }) {
+  const color = tone === "accent" ? "var(--accent)" : tone === "muted" ? "var(--sage)" : "var(--ink)";
   return (
     <div className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
-      <span
-        className="font-extrabold tabular-nums leading-none truncate max-w-full"
-        style={{ fontSize: 18, color: tone === "accent" ? "var(--accent)" : tone === "muted" ? "var(--sage)" : "var(--ink)" }}
-      >
+      <FitText max={18} min={10} className="font-extrabold tabular-nums leading-none" style={{ color }}>
         {value}
-      </span>
+      </FitText>
       <span
         className="font-bold uppercase whitespace-nowrap"
         style={{ fontSize: 9, letterSpacing: "0.04em", color: "var(--sage)" }}
@@ -216,10 +269,17 @@ const cardVariants = {
 export function TutorCard({ tutor }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
-  // ATAR is the headline stat. Every other credential the tutor entered collapses
-  // into a "+N more" pill so nothing they listed is silently dropped.
+  // Headline stat: the ATAR if set, otherwise the tutor's first credential
+  // stands in for it — labelled by its type (Award / Degree / State rank /
+  // Highlight). Everything past the headline collapses into a "+N more" pill so
+  // nothing they listed is silently dropped.
   const atar = credentials.find((c) => c.icon === "atar")?.label || null;
-  const moreCount = credentials.filter((c) => c.icon !== "atar").length;
+  const otherCreds = credentials.filter((c) => c.icon !== "atar");
+  const headlineCred = atar ? null : otherCreds[0] || null;
+  const statValue = atar || headlineCred?.label || "—";
+  const statLabel = atar ? "ATAR" : headlineCred ? captionForIcon(headlineCred.icon) : "ATAR";
+  const statTone = atar || headlineCred ? "accent" : "muted";
+  const moreCount = atar ? otherCreds.length : Math.max(0, otherCreds.length - 1);
 
   const tagline = stripMarkdown(tutor.bio);
   const longBio = stripMarkdown(tutor.bioLong);
@@ -316,7 +376,7 @@ export function TutorCard({ tutor }) {
             className="w-full flex items-center mt-2.5 shrink-0"
             style={{ padding: "10px 14px", borderRadius: 11, border: "1px solid var(--paper-line)" }}
           >
-            <StatCell value={atar || "—"} label="ATAR" tone={atar ? "accent" : "muted"} />
+            <StatCell value={statValue} label={statLabel} tone={statTone} />
             <div className="self-stretch" style={{ width: 1, background: "var(--paper-line)" }} />
             <StatCell value={`$${tutor.rate}`} label="per hr" tone="ink" />
           </div>
