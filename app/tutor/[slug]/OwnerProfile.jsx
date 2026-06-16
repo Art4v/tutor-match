@@ -172,6 +172,9 @@ export function OwnerProfile({ editorTutor, userId }) {
     maxW,
     editing: editingKey === k,
     saving: savingKey === k,
+    // Only the open section renders its modal, so the shared `dirty` (draft vs
+    // committed profile) is exactly this section's unsaved state.
+    dirty,
     onEdit: () => openSection(k),
     onCancel: cancel,
     onSave: () => saveSection(k),
@@ -323,7 +326,7 @@ export function OwnerProfile({ editorTutor, userId }) {
  * view mode; the section form plus a Cancel / Save footer in edit mode. Save
  * persists only this section (handled by the parent's saveSection).
  */
-function EditRegion({ editing, saving, onEdit, onCancel, onSave, label, view, edit, maxW = 640 }) {
+function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, view, edit, maxW = 640 }) {
   // Always render the read-only view; in edit mode it sits (blurred) behind a
   // modal overlay so the page itself stays the preview. The overlay is
   // portaled to <body> so ancestor overflow/transforms can't clip it. The
@@ -372,8 +375,8 @@ function EditRegion({ editing, saving, onEdit, onCancel, onSave, label, view, ed
               <button
                 type="button"
                 onClick={onSave}
-                disabled={saving}
-                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 inline-flex items-center gap-1.5"
+                disabled={saving || !dirty}
+                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
                 style={{ background: "var(--ink)", color: "#fff" }}
               >
                 {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
