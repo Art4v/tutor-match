@@ -20,8 +20,6 @@ import {
   SubjectsSection,
   ServiceAreaSection,
   AvailabilitySection,
-  SaveBar,
-  MobileSaveBar,
 } from "@/components/profile-edit/sections";
 import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AboutCard } from "./AboutCard";
@@ -31,29 +29,28 @@ import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { Section, SubjectsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
-import { OwnerToolbar } from "./OwnerToolbar";
-
-const SAVEBAR_H = 68;
+import { OwnerCard } from "./OwnerCard";
 
 /**
  * Inline profile editor — the LinkedIn-style replacement for /settings. Renders
- * the tutor's own public profile from a live draft (editor shape → display
- * shape via editorToDisplay) so the page IS the preview. Each card carries a
- * pen that swaps its read-only view for the matching settings section form;
- * all edits share one draft and are committed together by the sticky SaveBar.
+ * the tutor's own public profile from the committed `profile` (editor shape →
+ * display shape via editorToDisplay). Each card carries a pen that opens its
+ * matching settings section form; **each section saves independently** (Save /
+ * Cancel live inside the card) — there is no global save bar and no top banner.
+ * Only one section is open at a time, so a save never clobbers another section.
  */
 export function OwnerProfile({ editorTutor, userId }) {
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
   const supabase = supabaseRef.current;
 
-  const [tutor, setTutor] = useState(editorTutor);
-  const [snapshot, setSnapshot] = useState(editorTutor);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
+  const [profile, setProfile] = useState(editorTutor); // committed/saved truth
+  const [editingKey, setEditingKey] = useState(null);  // open section, or null
+  const [draft, setDraft] = useState(editorTutor);      // working copy of open section
+  const [savingKey, setSavingKey] = useState(null);
+  const [toast, setToast] = useState(null);             // { kind, text }
   const [subjectCatalog, setSubjectCatalog] = useState([]);
   const [schoolCatalog, setSchoolCatalog] = useState([]);
-  const [openSections, setOpenSections] = useState(() => new Set());
 
   useEffect(() => {
     let active = true;
@@ -62,73 +59,83 @@ export function OwnerProfile({ editorTutor, userId }) {
     return () => { active = false; };
   }, [supabase]);
 
-  const dirty = useMemo(
-    () => JSON.stringify(tutor) !== JSON.stringify(snapshot),
-    [tutor, snapshot]
-  );
-
-  const set = (patch) => setTutor((t) => ({ ...t, ...patch }));
-  const nameValid = !!(tutor.name && tutor.name.trim());
-
-  const toggle = (k) =>
-    setOpenSections((s) => {
-      const n = new Set(s);
-      if (n.has(k)) n.delete(k); else n.add(k);
-      return n;
-    });
-
-  const showToast = (kind, text, ms = 2400) => {
+  const showToast = (kind, text, ms = 2200) => {
     setToast({ kind, text });
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), ms);
   };
 
-  const onSave = async () => {
-    if (!nameValid) {
-      showToast("error", "Please enter your full name before saving.", 3500);
-      return;
-    }
-    setSaving(true);
-    // Last-chance geocode: if the user hit Save before the debounced editor
-    // geocode fired, resolve coords now so the public profile has a map.
-    let toSave = tutor;
-    const sa = tutor.serviceArea;
-    const suburb = (sa?.suburb || "").trim();
-    const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
-      || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
-    if (stale) {
-      try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
-        if (res.ok) {
-          const body = await res.json();
-          if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
-            toSave = { ...tutor, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
-            setTutor(toSave);
-          } else {
-            toSave = { ...tutor, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
-            setTutor(toSave);
+  // Opening a section reseeds the working draft from committed truth, so an
+  // abandoned edit elsewhere can never leak into this one.
+  const openSection = (k) => {
+    setDraft({ ...profile });
+    setEditingKey(k);
+  };
+  const cancel = () => setEditingKey(null);
+  const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
+
+  const dirty = useMemo(
+    () => editingKey != null && JSON.stringify(draft) !== JSON.stringify(profile),
+    [editingKey, draft, profile]
+  );
+
+  const saveSection = async (k) => {
+    if (savingKey) return;
+    let toSave = draft;
+    // Service area: resolve coords now if the debounced editor geocode hasn't.
+    if (k === "serviceArea") {
+      const sa = draft.serviceArea;
+      const suburb = (sa?.suburb || "").trim();
+      const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
+        || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
+      if (stale) {
+        try {
+          const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
+          if (res.ok) {
+            const body = await res.json();
+            if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
+              toSave = { ...draft, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
+            } else {
+              toSave = { ...draft, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
+            }
+            setDraft(toSave);
           }
-        }
-      } catch { /* save with whatever's there */ }
+        } catch { /* save with whatever's there */ }
+      }
     }
+    setSavingKey(k);
     const result = await saveTutorProfile(supabase, userId, toSave);
-    setSaving(false);
+    setSavingKey(null);
     if (!result.ok) {
       console.error("[profile] save failed:", result.error);
       showToast("error", result.error?.message || "Save failed — please try again.", 4000);
       return;
     }
-    setSnapshot(toSave);
+    setProfile(toSave);
+    setEditingKey(null);
     if (result.droppedSubjects.length > 0) {
       const bySlug = new Map(subjectCatalog.map((s) => [s.slug, s]));
       const labels = result.droppedSubjects.map((slug) => subjectLabel(bySlug.get(slug) ?? { name: slug }));
       showToast("warn", `Saved. Skipped unrecognised subjects: ${labels.join(", ")}.`, 5000);
     } else {
-      showToast("ok", "Profile saved", 1800);
+      showToast("ok", "Section saved", 1600);
     }
   };
 
-  const onDiscard = () => setTutor(snapshot);
+  // Visibility lives in the owner card and has no section editor, so it persists
+  // immediately. Keep any open draft in sync so a later section save doesn't
+  // revert the visibility change.
+  const onVisibilityChange = async (value) => {
+    const next = { ...profile, visibility: value };
+    const result = await saveTutorProfile(supabase, userId, next);
+    if (!result.ok) {
+      showToast("error", result.error?.message || "Couldn't update visibility.", 3500);
+      return false;
+    }
+    setProfile(next);
+    setDraft((d) => ({ ...d, visibility: value }));
+    return true;
+  };
 
   useEffect(() => {
     const h = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
@@ -136,15 +143,23 @@ export function OwnerProfile({ editorTutor, userId }) {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  const display = useMemo(() => editorToDisplay(tutor, subjectCatalog), [tutor, subjectCatalog]);
-
-  const publicHref = `matchtutor.com.au/tutor/${tutor.slug || userId}`;
-  const publicUrl = `https://${publicHref}`;
-
+  const display = useMemo(() => editorToDisplay(profile, subjectCatalog), [profile, subjectCatalog]);
   const credTiles = buildCredentialTiles(display.credentials);
 
-  // Header view — banner + avatar + intro (plain div so toggling doesn't re-fire
-  // the entrance animation on every edit).
+  const publicHref = `matchtutor.com.au/tutor/${profile.slug || userId}`;
+  const publicUrl = `https://${publicHref}`;
+
+  const regionProps = (k, label) => ({
+    label,
+    editing: editingKey === k,
+    saving: savingKey === k,
+    onEdit: () => openSection(k),
+    onCancel: cancel,
+    onSave: () => saveSection(k),
+  });
+
+  // Header view — plain div (not SectionReveal) so opening/closing an edit
+  // doesn't re-fire the entrance animation.
   const headerView = (
     <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
       <div
@@ -165,118 +180,103 @@ export function OwnerProfile({ editorTutor, userId }) {
   );
 
   return (
-    <>
-      <SaveBar tutor={tutor} dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={null} nameValid={nameValid} />
-      <OwnerToolbar tutor={tutor} set={set} publicHref={publicHref} publicUrl={publicUrl} top={`calc(var(--nav-h) + ${SAVEBAR_H}px)`} />
-
-      <div className="desk-surface relative overflow-hidden pb-32 md:pb-24">
-        <DeskBackdrop />
-        <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6">
-          {!nameValid && (
-            <div className="mb-4 px-4 py-2.5 text-[13px] flex items-center gap-2" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, color: "#92400E" }}>
-              <Icon name="alert-triangle" size={15} strokeWidth={2} className="shrink-0" />
-              Add your full name (edit the header) before you can save.
+    <div className="desk-surface relative overflow-hidden pb-24">
+      <DeskBackdrop />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6">
+        <EditRegion
+          {...regionProps("header", "profile header")}
+          view={headerView}
+          edit={
+            <div className="space-y-5">
+              <BannerAvatarSection tutor={draft} set={set} supabase={supabase} />
+              <IdentitySection tutor={draft} set={set} />
+              <YearLevelsSection tutor={draft} set={set} />
             </div>
-          )}
+          }
+        />
 
-          <EditRegion
-            k="header"
-            label="profile header"
-            openSet={openSections}
-            toggle={toggle}
-            view={headerView}
-            edit={
-              <div className="space-y-5">
-                <BannerAvatarSection tutor={tutor} set={set} supabase={supabase} />
-                <IdentitySection tutor={tutor} set={set} />
-                <YearLevelsSection tutor={tutor} set={set} />
-              </div>
-            }
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8 items-start">
+          <div className="space-y-8 min-w-0">
+            <EditRegion
+              {...regionProps("about", "about")}
+              view={display.bioLong
+                ? <AboutCard text={display.bioLong} />
+                : <Section title="About"><EmptyHint>Tell students about your teaching approach.</EmptyHint></Section>}
+              edit={<AboutSection tutor={draft} set={set} />}
+            />
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8 items-start">
-            <div className="space-y-8 min-w-0">
-              <EditRegion
-                k="about" label="about" openSet={openSections} toggle={toggle}
-                view={display.bioLong
-                  ? <AboutCard text={display.bioLong} />
-                  : <Section title="About"><EmptyHint>Tell students about your teaching approach.</EmptyHint></Section>}
-                edit={<AboutSection tutor={tutor} set={set} />}
-              />
+            <EditRegion
+              {...regionProps("credentials", "credentials")}
+              view={
+                <Section title="Credentials" subtitle="What sets you apart">
+                  {credTiles.length > 0 ? <CredentialsList tiles={credTiles} /> : <EmptyHint>Add your ATAR, awards, degrees or state ranks.</EmptyHint>}
+                </Section>
+              }
+              edit={<CredentialsSection tutor={draft} set={set} />}
+            />
 
-              <EditRegion
-                k="credentials" label="credentials" openSet={openSections} toggle={toggle}
-                view={
-                  <Section title="Credentials" subtitle="What sets you apart">
-                    {credTiles.length > 0 ? <CredentialsList tiles={credTiles} /> : <EmptyHint>Add your ATAR, awards, degrees or state ranks.</EmptyHint>}
-                  </Section>
-                }
-                edit={<CredentialsSection tutor={tutor} set={set} />}
-              />
+            <EditRegion
+              {...regionProps("experience", "experience")}
+              view={
+                <Section title="Experience">
+                  {display.experience.length > 0 ? <ExperienceTimeline experience={display.experience} /> : <EmptyHint>Add your tutoring or teaching roles.</EmptyHint>}
+                </Section>
+              }
+              edit={<ExperienceSection tutor={draft} set={set} />}
+            />
 
-              <EditRegion
-                k="experience" label="experience" openSet={openSections} toggle={toggle}
-                view={
-                  <Section title="Experience">
-                    {display.experience.length > 0 ? <ExperienceTimeline experience={display.experience} /> : <EmptyHint>Add your tutoring or teaching roles.</EmptyHint>}
-                  </Section>
-                }
-                edit={<ExperienceSection tutor={tutor} set={set} />}
-              />
+            <EditRegion
+              {...regionProps("education", "education")}
+              view={
+                <Section title="Education">
+                  {display.education.length > 0 ? <EducationTimeline education={display.education} /> : <EmptyHint>Add your high school and university.</EmptyHint>}
+                </Section>
+              }
+              edit={<EducationSection tutor={draft} set={set} schoolCatalog={schoolCatalog} />}
+            />
 
-              <EditRegion
-                k="education" label="education" openSet={openSections} toggle={toggle}
-                view={
-                  <Section title="Education">
-                    {display.education.length > 0 ? <EducationTimeline education={display.education} /> : <EmptyHint>Add your high school and university.</EmptyHint>}
-                  </Section>
-                }
-                edit={<EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />}
-              />
-
-              <EditRegion
-                k="availability" label="availability" openSet={openSections} toggle={toggle}
-                view={
-                  <Section title="Availability" subtitle="When students can book a session each week">
-                    {display.availability ? <AvailabilityGrid availability={display.availability} /> : <EmptyHint>Set your weekly availability.</EmptyHint>}
-                  </Section>
-                }
-                edit={<AvailabilitySection tutor={tutor} set={set} />}
-              />
-            </div>
-
-            <aside className="space-y-5">
-              <EditRegion
-                k="rate" label="rate" openSet={openSections} toggle={toggle}
-                view={<RateCard tutor={display} />}
-                edit={<RateSection tutor={tutor} set={set} />}
-              />
-
-              <EditRegion
-                k="subjects" label="subjects" openSet={openSections} toggle={toggle}
-                view={display.subjects.length > 0
-                  ? <SubjectsCard subjects={display.subjects} />
-                  : <MiniCard title="Subjects"><EmptyHint>Add the subjects you tutor.</EmptyHint></MiniCard>}
-                edit={<SubjectsSection tutor={tutor} set={set} catalog={subjectCatalog} />}
-              />
-
-              <EditRegion
-                k="serviceArea" label="service area" openSet={openSections} toggle={toggle}
-                view={(display.serviceArea?.suburb || display.suburb)
-                  ? <ServiceAreaCard tutor={display} />
-                  : <MiniCard title="Service area"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></MiniCard>}
-                edit={<ServiceAreaSection tutor={tutor} set={set} />}
-              />
-            </aside>
+            <EditRegion
+              {...regionProps("availability", "availability")}
+              view={
+                <Section title="Availability" subtitle="When students can book a session each week">
+                  {display.availability ? <AvailabilityGrid availability={display.availability} /> : <EmptyHint>Set your weekly availability.</EmptyHint>}
+                </Section>
+              }
+              edit={<AvailabilitySection tutor={draft} set={set} />}
+            />
           </div>
+
+          <aside className="space-y-5">
+            <OwnerCard profile={profile} onVisibilityChange={onVisibilityChange} publicHref={publicHref} publicUrl={publicUrl} />
+
+            <EditRegion
+              {...regionProps("rate", "rate")}
+              view={<RateCard tutor={display} />}
+              edit={<RateSection tutor={draft} set={set} />}
+            />
+
+            <EditRegion
+              {...regionProps("subjects", "subjects")}
+              view={display.subjects.length > 0
+                ? <SubjectsCard subjects={display.subjects} />
+                : <MiniCard title="Subjects"><EmptyHint>Add the subjects you tutor.</EmptyHint></MiniCard>}
+              edit={<SubjectsSection tutor={draft} set={set} catalog={subjectCatalog} />}
+            />
+
+            <EditRegion
+              {...regionProps("serviceArea", "service area")}
+              view={(display.serviceArea?.suburb || display.suburb)
+                ? <ServiceAreaCard tutor={display} />
+                : <MiniCard title="Service area"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></MiniCard>}
+              edit={<ServiceAreaSection tutor={draft} set={set} />}
+            />
+          </aside>
         </div>
       </div>
 
-      <MobileSaveBar dirty={dirty} saving={saving} onSave={onSave} onDiscard={onDiscard} profileHref={null} nameValid={nameValid} />
-
       {toast && (
         <div
-          className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
           style={{
             background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
             color: "#fff",
@@ -289,29 +289,38 @@ export function OwnerProfile({ editorTutor, userId }) {
           <span className="truncate">{toast.text}</span>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
 /**
- * Wraps a profile region with the inline-edit affordance: a pen at the card's
- * top-right in view mode; the section form plus a "Done" button (which only
- * collapses the form — saving is global via the SaveBar) in edit mode.
+ * Wraps a profile region with inline editing: a pen at the card's top-right in
+ * view mode; the section form plus a Cancel / Save footer in edit mode. Save
+ * persists only this section (handled by the parent's saveSection).
  */
-function EditRegion({ k, label, openSet, toggle, view, edit }) {
-  const open = openSet.has(k);
-  if (open) {
+function EditRegion({ editing, saving, onEdit, onCancel, onSave, label, view, edit }) {
+  if (editing) {
     return (
       <div>
         {edit}
-        <div className="flex justify-end mt-2">
+        <div className="flex justify-end gap-2 mt-2">
           <button
             type="button"
-            onClick={() => toggle(k)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors"
+            onClick={onCancel}
+            disabled={saving}
+            className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors hover:bg-slate-100 disabled:opacity-60"
+            style={{ background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 inline-flex items-center gap-1.5"
             style={{ background: "var(--ink)", color: "#fff" }}
           >
-            <Icon name="check" size={13} strokeWidth={2.4} /> Done
+            {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
           </button>
         </div>
       </div>
@@ -322,7 +331,7 @@ function EditRegion({ k, label, openSet, toggle, view, edit }) {
       {view}
       <button
         type="button"
-        onClick={() => toggle(k)}
+        onClick={onEdit}
         aria-label={`Edit ${label}`}
         title={`Edit ${label}`}
         className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
