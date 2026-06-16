@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MatchTutor — Tutor Card Layouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --card: #F4F1E8;
+    --ink: #2C3F2A;
+    --ink-2: #455041;
+    --muted: #8A9180;
+    --green: #3E5C3A;
+    --green-2: #5C7349;
+    --line: #E0DACB;
+    --panel: #EFECE2;
+  }
+  html, body { margin: 0; height: 100%; background: #e4dfd2; }
+  * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+  .tcard {
+    background: var(--card);
+    border: 1px solid #E2DDD0;
+    box-shadow: 0 6px 20px rgba(44,55,35,0.09);
+    display: flex;
+    flex-direction: column;
+  }
+  button { font: inherit; }
+  image-slot { background: #d8d2c4; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="image-slot.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="cards.jsx"></script>
+<script type="text/babel">
+function Frame({ children, w, h }) {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      {children}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <DesignCanvas bg="#e4dfd2">
+      <DCSection id="ref" title="MatchTutor — Tutor card layouts"
+        subtitle="Smaller cards · large centred photo · no bio · awards enlarged. Drop your own headshot onto any avatar; download a card from its ⋯ menu.">
+        <DCArtboard id="old" label="Before · current card (447×487)" width={447} height={487}>
+          <div style={{ width: '100%', height: '100%' }}>
+            <img src="uploads/pasted-1781499247879-0.png" alt="current card" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="layouts" title="Four professional layouts" subtitle="Skyline header + role kept, bio removed, school enlarged, real awards bar, and a See more / View profile on each. Tell me which to refine.">
+        <DCArtboard id="l1" label="A · Classic (centred)" width={360} height={490}>
+          <Frame><CardClassic /></Frame>
+        </DCArtboard>
+        <DCArtboard id="l2" label="B · Left-aligned (refined original)" width={384} height={470}>
+          <Frame><CardLeft /></Frame>
+        </DCArtboard>
+        <DCArtboard id="l3" label="C · Compact" width={320} height={430}>
+          <Frame><CardCompact /></Frame>
+        </DCArtboard>
+        <DCArtboard id="l4" label="D · Credentials-forward" width={364} height={490}>
+          <Frame><CardCredentials /></Frame>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

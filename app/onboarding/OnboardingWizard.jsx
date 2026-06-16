@@ -18,7 +18,10 @@ import {
   CredentialsSection,
   ExperienceSection,
   EducationSection,
+  ProfileImagesSection,
+  calcCompletion,
 } from "@/components/profile-edit/sections";
+import { RequestVerification } from "@/components/RequestVerification";
 
 // Delivery-mode question. The two toggles otherwise live inside
 // BannerAvatarSection, which onboarding skips (it's mostly image uploads), so
@@ -57,12 +60,15 @@ const STEPS = [
     // count as "answered": the button stays Skip until something *other* than the
     // name is filled in, then flips to Next.
     isAnswered: (t) =>
+      !!t.avatarImg ||
+      !!t.bannerImg ||
       (t.yearsTutoring ?? 0) > 0 ||
       (t.languages?.length ?? 0) > 0 ||
       (t.rate ?? 0) > 0 ||
       (t.packages?.length ?? 0) > 0,
-    render: ({ tutor, set }) => (
+    render: ({ tutor, set, supabase }) => (
       <div className="space-y-5">
+        <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} bare />
         <IdentitySection tutor={tutor} set={set} />
         <RateSection tutor={tutor} set={set} />
       </div>
@@ -97,18 +103,47 @@ const STEPS = [
     key: "credentials",
     isAnswered: (t) =>
       (t.credentials ?? []).some((c) => hasText(c?.label)) ||
-      (t.experience ?? []).some((e) => hasText(e?.role) || hasText(e?.org) || hasText(e?.note)),
-    render: ({ tutor, set }) => (
+      (t.experience ?? []).some((e) => hasText(e?.role) || hasText(e?.org) || hasText(e?.note)) ||
+      (t.education ?? []).some((e) => hasText(e?.school) || hasText(e?.detail)),
+    render: ({ tutor, set, schoolCatalog }) => (
       <div className="space-y-5">
         <CredentialsSection tutor={tutor} set={set} />
         <ExperienceSection tutor={tutor} set={set} />
+        <EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />
       </div>
     ),
   },
   {
-    key: "education",
-    isAnswered: (t) => (t.education ?? []).some((e) => hasText(e?.school) || hasText(e?.detail)),
-    render: ({ tutor, set, schoolCatalog }) => <EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />,
+    // Final step: a soft, optional prompt to request verification. Never gates
+    // Finish — mirrors the /settings sidebar behaviour. `render` receives extra
+    // wizard props (persistProfile, showToast) so the request can save first.
+    key: "verify",
+    isAnswered: () => true,
+    render: ({ tutor, set, persistProfile, showToast }) => (
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-hand text-[28px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+            One last thing
+          </h2>
+          <p className="text-[14px] text-slate-500 mt-1">
+            Verified tutors get a badge and rank higher in search. It’s optional. You can request it anytime from Settings.
+          </p>
+        </div>
+        <RequestVerification
+          status={tutor.verificationStatus}
+          completionPct={calcCompletion(tutor).pct}
+          beforeRequest={async () => {
+            const r = await persistProfile();
+            if (!r.ok) {
+              showToast("error", r.error || "Couldn't save — please try again.");
+              return false;
+            }
+            return true;
+          }}
+          onRequested={(s) => set({ verificationStatus: s })}
+        />
+      </div>
+    ),
   },
 ];
 
@@ -183,6 +218,37 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
     setStepIndex((i) => i + 1);
   };
 
+  // Save whatever's been entered so far. Shared by `complete()` (Finish /
+  // Skip everything) and the verification step's `beforeRequest` — the
+  // verification API reads the tutor row from the DB, so the profile must be
+  // persisted before requesting. Returns { ok, error }.
+  const persistProfile = async () => {
+    if (!nameValid) return { ok: false, error: "Enter your full name first." };
+    // Last-chance geocode, mirroring SettingsEditor.onSave: if the picked
+    // suburb never resolved to coords, fetch them now so the map renders.
+    let toSave = tutor;
+    const sa = tutor.serviceArea;
+    const suburb = (sa?.suburb || "").trim();
+    const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
+      || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
+    if (stale) {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
+        if (res.ok) {
+          const body = await res.json();
+          if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
+            toSave = { ...tutor, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
+          } else {
+            toSave = { ...tutor, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
+          }
+        }
+      } catch { /* save with whatever's there */ }
+    }
+    const result = await saveTutorProfile(supabase, userId, toSave);
+    if (!result.ok) return { ok: false, error: result.error?.message || "Couldn't save — please try again." };
+    return { ok: true };
+  };
+
   // Finish or "Skip everything": persist whatever's been entered (when a name
   // exists — saveTutorProfile rejects a blank name), flip the onboarded flag so
   // the wizard never reappears, then land the tutor in their settings editor.
@@ -191,30 +257,10 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
     setSubmitting(true);
     try {
       if (nameValid) {
-        // Last-chance geocode, mirroring SettingsEditor.onSave: if the picked
-        // suburb never resolved to coords, fetch them now so the map renders.
-        let toSave = tutor;
-        const sa = tutor.serviceArea;
-        const suburb = (sa?.suburb || "").trim();
-        const stale = suburb && (!Number.isFinite(sa?.lat) || !Number.isFinite(sa?.lng)
-          || (sa?.geocodedSuburb || "").toLowerCase() !== suburb.toLowerCase());
-        if (stale) {
-          try {
-            const res = await fetch(`/api/geocode?q=${encodeURIComponent(suburb)}`);
-            if (res.ok) {
-              const body = await res.json();
-              if (Number.isFinite(body?.lat) && Number.isFinite(body?.lng)) {
-                toSave = { ...tutor, serviceArea: { ...sa, lat: body.lat, lng: body.lng, geocodedSuburb: suburb } };
-              } else {
-                toSave = { ...tutor, serviceArea: { ...sa, lat: null, lng: null, geocodedSuburb: null } };
-              }
-            }
-          } catch { /* save with whatever's there */ }
-        }
-        const result = await saveTutorProfile(supabase, userId, toSave);
+        const result = await persistProfile();
         if (!result.ok) {
           setSubmitting(false);
-          showToast("error", result.error?.message || "Couldn't save — please try again.");
+          showToast("error", result.error);
           return;
         }
       }
@@ -271,7 +317,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
               exit="exit"
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              {step.render({ tutor, set, catalog, schoolCatalog })}
+              {step.render({ tutor, set, catalog, schoolCatalog, supabase, persistProfile, showToast })}
             </motion.div>
           </AnimatePresence>
         </div>

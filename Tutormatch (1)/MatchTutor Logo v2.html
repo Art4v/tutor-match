@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MatchTutor — Botanical Logo Exploration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin:0; height:100%; background:#e9e5d8; }
+  * { -webkit-font-smoothing:antialiased; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="botanical-marks.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const { useState } = React;
+
+// Palettes — all green-forward; first one is sampled from the live site.
+const PALETTES = [
+  { key:'forest',  name:'Forest · Blush  (site)', ink:'#2C3F2A', primary:'#3E5C3A', sage:'#7C9277', accent:'#C98B86', onPrimary:'#fff', paper:'#EFEBE0' },
+  { key:'sage',    name:'Sage · Honey',           ink:'#33402E', primary:'#5C7349', sage:'#9BAE8C', accent:'#D7A53F', onPrimary:'#fff', paper:'#F1EEE3' },
+  { key:'pine',    name:'Deep Pine · Gold',       ink:'#16241B', primary:'#234C38', sage:'#6E9078', accent:'#E0A93E', onPrimary:'#fff', paper:'#ECEDE2' },
+  { key:'olive',   name:'Olive · Terracotta',     ink:'#2B2A1C', primary:'#5C6431', sage:'#929A66', accent:'#C46A4B', onPrimary:'#fff', paper:'#F0EDDF' },
+  { key:'euca',    name:'Eucalyptus · Sky',       ink:'#1E312B', primary:'#2F6F5E', sage:'#84A99B', accent:'#7FA7C4', onPrimary:'#fff', paper:'#EBEEE8' },
+  { key:'fern',    name:'Fern · Mono',            ink:'#1F241E', primary:'#2F4A2C', sage:'#5E7355', accent:'#2F4A2C', onPrimary:'#fff', paper:'#ECEADF' },
+];
+const LEAD = PALETTES[0];
+
+function Stage({ children, cap, bg, pad = 26, gap = 18 }) {
+  return (
+    <div style={{ width:'100%', height:'100%', background: bg || LEAD.paper, boxSizing:'border-box',
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap, padding:pad }}>
+      {children}
+      {cap && <div style={{ fontFamily:'ui-monospace,Menlo,monospace', fontSize:10.5, letterSpacing:'0.06em',
+                            color:'#a7a08f', textAlign:'center', textTransform:'uppercase' }}>{cap}</div>}
+    </div>
+  );
+}
+
+// preset key -> palette object (for the colourway picker)
+const PRESETS = {};
+PALETTES.forEach((p) => { PRESETS[p.key] = p; });
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "preset": "forest",
+  "primary": "#3E5C3A",
+  "leaf2": "#7C9277",
+  "accent": "#C98B86",
+  "paper": "#EFEBE0",
+  "ink": "#2C3F2A",
+  "heroMark": "bubble",
+  "showWordmark": true
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const pal = { ink: t.ink, primary: t.primary, sage: t.leaf2, accent: t.accent, onPrimary: '#fff', paper: t.paper };
+  const HeroMark = t.heroMark === 'seedling' ? MarkSprout : MarkSproutBubble;
+
+  // Applying a preset swaps all five colours at once.
+  const applyPreset = (key) => {
+    const p = PRESETS[key] || PRESETS.forest;
+    setTweak({ preset: key, primary: p.primary, leaf2: p.sage, accent: p.accent, paper: p.paper, ink: p.ink });
+  };
+
+  return (
+   <React.Fragment>
+    <DesignCanvas bg="#e9e5d8">
+
+      {/* ============ HERO / RECOMMENDED ============ */}
+      <DCSection id="hero" title="MatchTutor — Botanical logo"
+        subtitle="Education nurtures growth. A seedling motif, drawn to live in your cream-and-forest site. Tweak the colours (top toolbar → Tweaks), then download any frame from its ⋯ menu.">
+        <DCArtboard id="hero-main" label="Recommended · seedling in a message bubble" width={620} height={400}>
+          <Stage gap={30} bg={pal.paper}>
+            <HeroMark pal={pal} size={168} />
+            {t.showWordmark && <Wordmark pal={pal} size={40} />}
+          </Stage>
+        </DCArtboard>
+        <DCArtboard id="hero-plain" label="Recommended · clean seedling" width={420} height={400}>
+          <Stage gap={26} bg={pal.paper}>
+            <MarkSprout pal={pal} size={150} />
+            {t.showWordmark && <Lockup pal={pal} height={50} Mark={MarkSprout} />}
+          </Stage>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ============ CONCEPTS ============ */}
+      <DCSection id="concepts" title="Six botanical directions" subtitle="One motif family, drawn six ways — all follow the Tweaks colours.">
+        <DCArtboard id="c-a" label="A · Seedling" width={300} height={330}>
+          <Stage cap="the classic — two leaves, one stem" bg={pal.paper}><MarkSprout pal={pal} size={150} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="c-b" label="B · Seedling in bubble" width={300} height={330}>
+          <Stage cap="grow + message + match" bg={pal.paper}><MarkSproutBubble pal={pal} size={150} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="c-c" label="C · Book + sprout" width={300} height={330}>
+          <Stage cap="learning makes you grow" bg={pal.paper}><MarkBookSprout pal={pal} size={158} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="c-d" label="D · Two leaves (match)" width={300} height={330}>
+          <Stage cap="two parties, shared growth" bg={pal.paper}><MarkTwoLeaves pal={pal} size={158} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="c-e" label="E · Cap + sprout" width={300} height={330}>
+          <Stage cap="academic, but it grows" bg={pal.paper}><MarkCapSprout pal={pal} size={158} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="c-f" label="F · Growth network" width={300} height={330}>
+          <Stage cap="the matching graph, as a tree" bg={pal.paper}><MarkTreeNet pal={pal} size={158} /></Stage>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ============ COLOURWAYS ============ */}
+      <DCSection id="colors" title="Colourways" subtitle="The seedling-in-bubble across six green-forward palettes.">
+        {PALETTES.map((p) => (
+          <DCArtboard key={p.key} id={`col-${p.key}`} label={p.name} width={290} height={330}>
+            <Stage bg={p.paper} gap={18}>
+              <MarkSproutBubble pal={p} size={132} />
+              <Wordmark pal={p} size={26} />
+              <div style={{ fontFamily:'ui-monospace,Menlo,monospace', fontSize:10, letterSpacing:'0.04em', color:'#aaa492' }}>
+                {p.primary} · {p.sage} · {p.accent}
+              </div>
+            </Stage>
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      {/* ============ IN USE ============ */}
+      <DCSection id="inuse" title="In use" subtitle="Wordmark, reversed, app tile and favicon — on your paper background.">
+        <DCArtboard id="u-light" label="Horizontal lockup" width={540} height={210}>
+          <Stage bg={pal.paper}><Lockup pal={pal} height={62} Mark={MarkSprout} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="u-dark" label="On forest" width={540} height={210}>
+          <Stage bg={pal.primary}><Lockup pal={pal} height={62} reverse Mark={MarkSprout} /></Stage>
+        </DCArtboard>
+        <DCArtboard id="u-app" label="App tile + favicon" width={440} height={280}>
+          <Stage gap={24} bg={pal.paper}>
+            <div style={{ display:'flex', alignItems:'flex-end', gap:24 }}>
+              <AppIcon pal={pal} size={112} Mark={MarkSprout} />
+              <AppIcon pal={pal} size={64} bg={pal.primary} Mark={MarkSprout} />
+              <AppIcon pal={pal} size={32} Mark={MarkSprout} />
+            </div>
+            <AppIcon pal={pal} size={60} bg={pal.paper} markColor={pal.primary} Mark={MarkSproutBubble} />
+          </Stage>
+        </DCArtboard>
+        <DCArtboard id="u-mono" label="Monochrome" width={440} height={280}>
+          <Stage gap={26} bg={pal.paper}>
+            <Lockup pal={{ ...pal, ink:'#2b3327', primary:'#2b3327', sage:'#2b3327' }} height={44} Mark={MarkSprout} />
+            <div style={{ background:pal.ink, padding:'18px 26px', borderRadius:10 }}>
+              <Lockup pal={{ ...pal, ink:'#fff', primary:'#fff', sage:'rgba(255,255,255,0.8)' }} height={38} reverse Mark={MarkSprout} />
+            </div>
+          </Stage>
+        </DCArtboard>
+      </DCSection>
+
+    </DesignCanvas>
+
+    <TweaksPanel title="Tweaks">
+      <TweakSection label="Colourway" />
+      <TweakSelect label="Preset" value={t.preset}
+        options={PALETTES.map((p) => ({ value: p.key, label: p.name }))}
+        onChange={applyPreset} />
+      <TweakColor label="Stem & leaf" value={t.primary}
+        options={['#3E5C3A','#234C38','#2F6F5E','#5C6431','#2F4A2C','#1F3D2A']}
+        onChange={(v) => setTweak({ primary: v, preset: 'custom' })} />
+      <TweakColor label="Second leaf" value={t.leaf2}
+        options={['#7C9277','#9BAE8C','#6E9078','#929A66','#84A99B','#5E7355']}
+        onChange={(v) => setTweak({ leaf2: v, preset: 'custom' })} />
+      <TweakColor label="Accent" value={t.accent}
+        options={['#C98B86','#D7A53F','#E0A93E','#C46A4B','#7FA7C4','#2F4A2C']}
+        onChange={(v) => setTweak({ accent: v, preset: 'custom' })} />
+      <TweakColor label="Paper" value={t.paper}
+        options={['#EFEBE0','#F4F1E8','#FFFFFF','#ECEDE2','#EBEEE8','#E7E2D4']}
+        onChange={(v) => setTweak({ paper: v, preset: 'custom' })} />
+
+      <TweakSection label="Hero mark" />
+      <TweakRadio label="Shape" value={t.heroMark}
+        options={[{ value:'bubble', label:'Bubble' }, { value:'seedling', label:'Seedling' }]}
+        onChange={(v) => setTweak('heroMark', v)} />
+      <TweakToggle label="Show wordmark" value={t.showWordmark}
+        onChange={(v) => setTweak('showWordmark', v)} />
+
+      <TweakButton label="Reset to site colours" onClick={() => applyPreset('forest')} />
+      <div style={{ fontSize:11, lineHeight:1.5, opacity:0.6, padding:'8px 2px 2px' }}>
+        To download: hover any frame → ⋯ menu → Download PNG (3×) or HTML.
+      </div>
+    </TweaksPanel>
+   </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MatchTutor — Seedling Bubble Logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --paper:#EFEBE0; --primary:#3E5C3A; --sage:#7C9277; --accent:#C98B86; --ink:#2C3F2A; }
+  html, body { margin:0; min-height:100%; background:#e9e5d8; }
+  * { -webkit-font-smoothing:antialiased; box-sizing:border-box; }
+  .wrap { max-width:1080px; margin:0 auto; padding:64px 40px 96px; }
+  .head { font-family:'Plus Jakarta Sans',system-ui; color:var(--ink); }
+  .head h1 { font-size:13px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; margin:0 0 6px; color:#8a8472; }
+  .head p { font-size:15px; font-weight:500; margin:0; color:#6f6a59; max-width:560px; line-height:1.5; }
+  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:22px; margin-top:40px; }
+  .tile { background:var(--paper); border:1px solid #ddd7c8; border-radius:18px; display:flex; flex-direction:column;
+          align-items:center; justify-content:center; gap:26px; padding:40px; min-height:240px; position:relative; }
+  .tile.dark { background:var(--primary); border-color:transparent; }
+  .cap { position:absolute; left:16px; bottom:13px; font-family:ui-monospace,Menlo,monospace; font-size:10px;
+         letter-spacing:0.06em; text-transform:uppercase; color:#a7a08f; }
+  .tile.dark .cap { color:rgba(255,255,255,0.5); }
+  .span-7 { grid-column:span 7; } .span-5 { grid-column:span 5; }
+  .span-4 { grid-column:span 4; } .span-6 { grid-column:span 6; } .span-12 { grid-column:span 12; }
+  .iconrow { display:flex; align-items:flex-end; gap:26px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="botanical-marks.jsx"></script>
+<script type="text/babel">
+const pal = { ink:'#2C3F2A', primary:'#3E5C3A', sage:'#7C9277', accent:'#C98B86', onPrimary:'#fff', paper:'#EFEBE0' };
+
+function App() {
+  return (
+    <div className="wrap">
+      <div className="head" data-screen-label="Logo final">
+        <h1>MatchTutor · Primary mark</h1>
+        <p>The seedling in a message bubble — education nurtures growth, framed as a conversation. The complete, locked logo with its core renditions.</p>
+      </div>
+      <div className="grid">
+        {/* Primary lockup */}
+        <div className="tile span-7" style={{ minHeight:320 }}>
+          <MarkSproutBubble pal={pal} size={150} />
+          <Wordmark pal={pal} size={44} />
+          <span className="cap">Primary lockup</span>
+        </div>
+
+        {/* Mark alone */}
+        <div className="tile span-5" style={{ minHeight:320 }}>
+          <MarkSproutBubble pal={pal} size={184} />
+          <span className="cap">Symbol</span>
+        </div>
+
+        {/* Horizontal lockup */}
+        <div className="tile span-7">
+          <Lockup pal={pal} height={58} Mark={MarkSproutBubble} />
+          <span className="cap">Horizontal lockup</span>
+        </div>
+
+        {/* Reversed on forest */}
+        <div className="tile dark span-5">
+          <Lockup pal={pal} height={54} reverse Mark={MarkSproutBubble} />
+          <span className="cap">Reversed</span>
+        </div>
+
+        {/* App icons / favicon */}
+        <div className="tile span-7">
+          <div className="iconrow">
+            <AppIcon pal={pal} size={120} bg={pal.primary} markColor="#fff" Mark={MarkSproutBubble} />
+            <AppIcon pal={pal} size={72} bg={pal.primary} markColor="#fff" Mark={MarkSproutBubble} />
+            <AppIcon pal={pal} size={40} bg={pal.primary} markColor="#fff" Mark={MarkSproutBubble} />
+          </div>
+          <span className="cap">App tile · favicon</span>
+        </div>
+
+        {/* Monochrome */}
+        <div className="tile span-5">
+          <MarkSproutBubble pal={{ ...pal, primary:'#2b3327', onPrimary:'#EFEBE0' }} size={120} />
+          <span className="cap">One colour</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

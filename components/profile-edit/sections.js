@@ -621,7 +621,11 @@ function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hi
   );
 }
 
-export function BannerAvatarSection({ tutor, set, supabase, bare = false }) {
+// Just the image portion of BannerAvatarSection — the avatar + banner uploads
+// and the banner-colour swatch. Split out so the onboarding wizard can surface
+// image upload on step 1 without dragging in the delivery toggles (which it
+// asks separately). BannerAvatarSection composes this + delivery + response.
+export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
   const swatchesDisabled = !!tutor.bannerImg;
   const body = (
     <>
@@ -680,6 +684,21 @@ export function BannerAvatarSection({ tutor, set, supabase, bare = false }) {
           </div>
         )}
       </div>
+    </>
+  );
+  if (bare) return body;
+  return (
+    <Card padding={20}>
+      <SectionHeader title="Profile images" subtitle="Your photo and banner at the top of your profile." />
+      {body}
+    </Card>
+  );
+}
+
+export function BannerAvatarSection({ tutor, set, supabase, bare = false }) {
+  const body = (
+    <>
+      <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} bare />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
         <Toggle value={tutor.deliversInPerson} onChange={(v) => set({ deliversInPerson: v })} label="Accepts in-person lessons" hint="Inside the service area you set below." />
         <Toggle value={tutor.deliversOnline} onChange={(v) => set({ deliversOnline: v })} label="Accepts online lessons" hint="Over Zoom or Google Meet." />
