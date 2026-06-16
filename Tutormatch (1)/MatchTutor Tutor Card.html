@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MatchTutor — Tutor Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --card: #F4F1E8;
+    --ink: #2C3F2A;
+    --ink-2: #455041;
+    --muted: #8A9180;
+    --green: #3E5C3A;
+    --green-2: #5C7349;
+    --line: #E0DACB;
+    --panel: #EFECE2;
+  }
+  html, body { margin: 0; min-height: 100%; background: #e4dfd2; }
+  * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+  .tcard {
+    background: var(--card);
+    border: 1px solid #E2DDD0;
+    box-shadow: 0 6px 20px rgba(44,55,35,0.09);
+    display: flex;
+    flex-direction: column;
+  }
+  button { font: inherit; }
+  image-slot { background: #d8d2c4; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 64px 40px 96px; }
+  .head { font-family: var(--sans); color: var(--ink); }
+  .head h1 { font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 6px; color: #8a8472; }
+  .head p { font-size: 15px; font-weight: 500; margin: 0; color: #6f6a59; max-width: 560px; line-height: 1.5; }
+  .row { display: flex; gap: 48px; justify-content: center; align-items: flex-start; flex-wrap: wrap; margin-top: 48px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .col .lbl { font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: #a7a08f; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="image-slot.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="cards2.jsx"></script>
+<script type="text/babel" src="cards3.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <div className="wrap">
+      <div className="head" data-screen-label="Tutor card final">
+        <h1>MatchTutor · Tutor card</h1>
+        <p>The two front-runners — vertical card, big photo on top, tagline as its own header. Drop a headshot onto any photo. Pick one and I'll finalise it.</p>
+      </div>
+      <div className="row">
+        <div className="col" data-screen-label="Design 2 — Stack">
+          <VStack id="final-stack" />
+          <span className="lbl">Design 2 · Stack</span>
+        </div>
+        <div className="col" data-screen-label="Design 3 — Crown">
+          <VCrown id="final-crown" />
+          <span className="lbl">Design 3 · Crown</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
