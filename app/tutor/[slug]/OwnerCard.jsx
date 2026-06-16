@@ -65,7 +65,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
 
   const visOptions = [
     { value: "public", label: "Public", hint: "Listed on browse and visible to everyone.", icon: "globe" },
-    { value: "hidden", label: "Hidden", hint: "Offline — only you can see it.", icon: "eye" },
+    { value: "hidden", label: "Hidden", hint: "Offline. Only you can see it.", icon: "eye" },
   ];
 
   return (

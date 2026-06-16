@@ -106,7 +106,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         maxLength={maxLength}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
         style={{
-          padding: multiline ? "10px 14px" : "10px 14px",
+          padding: multiline ? "10px 16px" : "10px 16px",
           paddingLeft: prefix ? 4 : undefined,
           paddingRight: suffix ? 4 : undefined,
           resize: multiline ? "vertical" : "none",

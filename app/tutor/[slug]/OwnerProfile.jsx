@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion } from "motion/react";
+import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -178,7 +180,7 @@ export function OwnerProfile({ editorTutor, userId }) {
   // Header view — plain div (not SectionReveal) so opening/closing an edit
   // doesn't re-fire the entrance animation.
   const headerView = (
-    <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
+    <div className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
       <div
         style={{
           height: 140,
@@ -197,7 +199,7 @@ export function OwnerProfile({ editorTutor, userId }) {
   );
 
   return (
-    <div className="bg-[color:var(--paper-card)] relative overflow-hidden pb-24">
+    <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6">
         <EditRegion
@@ -330,16 +332,20 @@ function EditRegion({ editing, saving, onEdit, onCancel, onSave, label, view, ed
     <div className="relative">
       {view}
       {!editing && (
-        <button
+        <motion.button
           type="button"
           onClick={onEdit}
           aria-label={`Edit ${label}`}
           title={`Edit ${label}`}
           className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
           style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", boxShadow: "0 1px 3px rgba(15,23,42,0.08)" }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: "-12% 0px -8% 0px" }}
+          transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.15 }}
         >
           <Icon name="pencil" size={14} strokeWidth={2} />
-        </button>
+        </motion.button>
       )}
       {editing && typeof document !== "undefined" && createPortal(
         <div
