@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#F5F0E4"/>
-  <!-- "Book + sprout" mark, recolored to site tokens (accent #5E7A5A, sage #8DA17E). -->
-  <g transform="translate(3 4) scale(0.2)">
+  <!-- "Book + sprout" mark, recolored to site tokens (accent #5E7A5A, sage #8DA17E). No tile. -->
+  <g transform="translate(1.7 2.8) scale(0.22)">
     <!-- seedling -->
     <g transform="translate(5 -6)">
       <path d="M60 84 C 60 70 59 58 60 46" fill="none" stroke="#5E7A5A" stroke-width="6" stroke-linecap="round"/>
@@ -15,6 +14,5 @@
     <!-- book — two open pages -->
     <path d="M65 92 C 50 82 34 80 18 83 L18 104 C 34 101 50 103 65 112 Z" fill="#5E7A5A"/>
     <path d="M65 92 C 80 82 96 80 112 83 L112 104 C 96 101 80 103 65 112 Z" fill="#8DA17E"/>
-    <path d="M65 92 L65 112" stroke="#F5F0E4" stroke-width="2.4"/>
   </g>
 </svg>
