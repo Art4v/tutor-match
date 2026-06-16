@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
-import { groupByExam, subjectLabel } from "@/lib/subjects";
+import { groupByExam, sortSubjectsByCategory, subjectLabel } from "@/lib/subjects";
 
 /**
  * Exam-first subject selector, shared by /settings, /browse and the home hero.
@@ -85,7 +85,7 @@ export function SubjectPicker({
   const q = search.trim().toLowerCase();
   const searching = q.length > 0;
   const filtered = searching
-    ? catalog.filter((s) => subjectLabel(s).toLowerCase().includes(q))
+    ? sortSubjectsByCategory(catalog.filter((s) => subjectLabel(s).toLowerCase().includes(q)))
     : (activeGroup?.subjects ?? []);
 
   const isSelected = (slug) => selected.includes(slug);

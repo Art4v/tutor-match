@@ -8,7 +8,7 @@ import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
-import { YEAR_LEVELS, yearLabel } from "@/lib/yearLevels";
+import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
 import { EASE_OUT, DURATION_MED, makeJiggleVariants } from "@/lib/motion";
 
 // Search button hover: same jiggle wobble + accent halo language as TutorCard.
@@ -106,7 +106,7 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
                 icon="graduation"
                 label="Year"
                 placeholder="Year 12"
-                options={YEAR_LEVELS.map((o) => ({ label: o.label, value: o.value }))}
+                options={YEAR_LEVELS_DESC.map((o) => ({ label: o.label, value: o.value }))}
                 value={year}
                 displayValue={year !== "" ? yearLabel(year) : ""}
                 onChange={setYear}
