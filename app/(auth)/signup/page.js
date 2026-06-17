@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [emailTouched, setEmailTouched] = useState(false);
   const [password, setPassword] = useState("");
   const [pwTouched, setPwTouched] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("tutor");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -167,17 +168,29 @@ export default function SignupPage() {
           </Field>
 
           <Field label="Password">
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setPwTouched(true)}
-              placeholder="At least 8 characters"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              aria-invalid={pwTouched && !pw.valid}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setPwTouched(true)}
+                placeholder="At least 8 characters"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                aria-invalid={pwTouched && !pw.valid}
+                className="!pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <Icon name={showPassword ? "eye-off" : "eye"} size={16} strokeWidth={1.75} />
+              </button>
+            </div>
             {(pwTouched || password.length > 0) && (
               <ul className="mt-2.5 space-y-1.5">
                 {PASSWORD_RULES.map((rule) => {
@@ -275,11 +288,11 @@ function Field({ label, children }) {
   );
 }
 
-function Input(props) {
+function Input({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className="w-full h-9 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-400"
+      className={`w-full h-9 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-400 ${className}`}
       style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
     />
   );
