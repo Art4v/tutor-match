@@ -19,6 +19,8 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [pwTouched, setPwTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [role, setRole] = useState("tutor");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,6 +29,7 @@ export default function SignupPage() {
 
   const pw = validatePassword(password);
   const emailValid = validateEmailFormat(email);
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -43,6 +46,11 @@ export default function SignupPage() {
     if (!pw.valid) {
       setPwTouched(true);
       setError("Please choose a password that meets all the requirements below.");
+      return;
+    }
+    if (!passwordsMatch) {
+      setConfirmTouched(true);
+      setError("The passwords you entered don't match.");
       return;
     }
     if (!agreed) {
@@ -207,6 +215,24 @@ export default function SignupPage() {
                   );
                 })}
               </ul>
+            )}
+          </Field>
+
+          <Field label="Confirm password">
+            <Input
+              type={showPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              onBlur={() => setConfirmTouched(true)}
+              placeholder="Re-enter your password"
+              required
+              autoComplete="new-password"
+              aria-invalid={confirmTouched && confirmPassword.length > 0 && !passwordsMatch}
+            />
+            {confirmTouched && confirmPassword.length > 0 && !passwordsMatch && (
+              <p className="mt-2 text-[12.5px]" style={{ color: "#DC2626" }}>
+                Passwords don&rsquo;t match.
+              </p>
             )}
           </Field>
 
