@@ -72,7 +72,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
       ) : status === "pending" ? (
         <p className="text-[12.5px] text-slate-500 leading-[1.5] flex items-start gap-2">
           <span className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }}><Icon name="clock" size={14} /></span>
-          Your request is in — an admin is reviewing your profile. We'll email you the moment it's approved.
+          Your request is in. An admin is reviewing your profile, and we'll email you the moment it's approved.
         </p>
       ) : (
         <>
