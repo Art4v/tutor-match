@@ -123,10 +123,10 @@ const STEPS = [
       <div className="space-y-4">
         <div>
           <h2 className="font-hand text-[28px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
-            One last thing
+            All done?
           </h2>
           <p className="text-[14px] text-slate-500 mt-1">
-            Verified tutors get a badge and rank higher in search. It’s optional. You can request it anytime from Settings.
+            Get verified now to boost your profile. You can request it anytime from Settings.
           </p>
         </div>
         <RequestVerification
