@@ -180,10 +180,16 @@ export function OwnerProfile({ editorTutor, userId }) {
     onSave: () => saveSection(k),
   });
 
-  // Header view — plain div (not SectionReveal) so opening/closing an edit
-  // doesn't re-fire the entrance animation.
+  // Header view — motion.div (not SectionReveal) so opening/closing an edit
+  // doesn't re-fire the entrance reveal, but it still gets the same quiet hover
+  // lift as the other cards (whileHover only; no whileInView entrance).
   const headerView = (
-    <div className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
+    <motion.div
+      className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden"
+      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}
+      whileHover={{ y: -2, boxShadow: "0 16px 32px -22px rgba(15,23,42,0.22)", borderColor: "var(--line-strong)" }}
+      transition={{ duration: 0.32, ease: EASE_OUT }}
+    >
       <div
         style={{
           height: 140,
@@ -198,7 +204,7 @@ export function OwnerProfile({ editorTutor, userId }) {
         </div>
         <ProfileHeaderText tutor={display} deliveryLabel={formatDelivery(display)} />
       </div>
-    </div>
+    </motion.div>
   );
 
   return (

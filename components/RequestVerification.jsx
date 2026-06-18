@@ -67,7 +67,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
 
       {status === "verified" ? (
         <p className="text-[12.5px] text-slate-500 leading-[1.5]">
-          Your account is verified — the badge shows next to your name across matchtutor, and you rank higher in search.
+          Your account is verified. The badge shows next to your name across matchtutor, and you rank higher in search.
         </p>
       ) : status === "pending" ? (
         <p className="text-[12.5px] text-slate-500 leading-[1.5] flex items-start gap-2">

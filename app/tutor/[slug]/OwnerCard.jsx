@@ -77,6 +77,11 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
           <span className="ml-auto text-[11.5px] text-slate-400">Only you see this</span>
         </div>
 
+        {/* Verification — top of the card so the get-verified nudge leads. */}
+        <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
+          <RequestVerification status={profile.verificationStatus} completionPct={c.pct} unstyled />
+        </div>
+
         {/* Completion */}
         <div className="flex items-center justify-between text-[12.5px] mb-1.5">
           <span className="text-slate-500">Profile completion</span>
@@ -145,11 +150,6 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
             <code className="text-[12.5px] text-slate-700 truncate flex-1 min-w-0">{publicHref}</code>
             <span className={"text-[11px] font-medium shrink-0 " + (copied ? "text-emerald-600" : "text-slate-400")}>{copied ? "Copied" : "Copy"}</span>
           </button>
-        </div>
-
-        {/* Verification */}
-        <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
-          <RequestVerification status={profile.verificationStatus} completionPct={c.pct} unstyled />
         </div>
       </SectionReveal>
     </div>
