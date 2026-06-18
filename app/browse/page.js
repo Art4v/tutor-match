@@ -10,6 +10,7 @@ import { Button } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
 import { BrowseResultsGrid } from "./BrowseResultsGrid";
+import { BrowseSeed } from "./BrowseSeed";
 
 const PAGE_SIZE = 24;
 
@@ -44,6 +45,10 @@ export default async function BrowsePage({ searchParams }) {
   // Verified-only is ON by default; `?verified=0` is the explicit opt-out.
   const verifiedOnly = searchParams.verified !== "0";
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
+  // Per-page-load shuffle seed for the equal-score tie-break. `<BrowseSeed>`
+  // injects it on the client so the order stays put while paging and only a
+  // refresh reshuffles. Absent on the very first paint → deterministic order 0.
+  const seed = parseNumber(searchParams.seed) ?? 0;
 
   const [{ tutors, total }, subjectCatalog, schoolCatalog] = await Promise.all([
     getTutorsForBrowse(supabase, {
@@ -60,6 +65,7 @@ export default async function BrowsePage({ searchParams }) {
       verifiedOnly,
       page,
       pageSize: PAGE_SIZE,
+      seed,
     }),
     getSubjects(supabase),
     getSchools(supabase),
@@ -87,6 +93,7 @@ export default async function BrowsePage({ searchParams }) {
           Negative z keeps it behind the content without needing overflow-hidden
           (which would break the sticky filter sidebar). */}
       <DeskBackdrop className="-z-10" />
+      <BrowseSeed />
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
           <BrowseFilters
