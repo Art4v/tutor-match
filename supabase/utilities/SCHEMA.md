@@ -1,0 +1,259 @@
+# tutormatch — Current Database Schema
+
+**Living reference.** This file describes the *cumulative* state of the `public` schema
+after all migrations in `supabase/migrations/` have been applied in order. It is the
+human-readable snapshot — the migrations remain the source of truth.
+
+> **KEEP THIS UPDATED.** Every time you add a migration (`NNNN_*.sql`), edit this file in the
+> same change so it reflects the new final state: add/rename/drop the columns, functions,
+> triggers, policies, or seed data the migration introduces, and bump **Applied through** below.
+> Edit the affected section in place (don't append a changelog) — this doc describes the *end
+> state*, not the history. The migration files are the history.
+
+**Applied through:** `0026_schools.sql`
+**Last reviewed:** 2026-06-24
+
+---
+
+## Conventions
+
+- All tables live in the `public` schema unless noted.
+- "Self-write" RLS = `auth.uid() = <owner col>` for `INSERT`/`UPDATE`/`DELETE`.
+- `(NNNN)` after a column/feature notes the migration that introduced or last changed it.
+
+---
+
+## Enums / Types
+
+| Type | Values | Migration |
+| --- | --- | --- |
+| `public.user_role` | `'tutor'`, `'student'` | 0001 |
+
+---
+
+## Tables
+
+### `profiles`
+1:1 with `auth.users`. Created by the `handle_new_user()` trigger on signup.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK → `auth.users(id)` ON DELETE CASCADE |
+| `role` | `user_role` | NOT NULL |
+| `full_name` | text | nullable; CHECK `full_name IS NULL OR btrim(full_name) <> ''` (0017) |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+| `updated_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+### `tutor_profiles`
+Extension table keyed 1:1 with `profiles`. The most-altered table — columns below are in **final form**.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK → `profiles(id)` ON DELETE CASCADE |
+| `slug` | text | UNIQUE (0004); race-safe assignment via `_assign_tutor_slug()` (0013) |
+| `email_confirmed_at` | timestamptz | mirrored from `auth.users` (0007); indexed |
+| `avatar_url` | text | profile-images upload (0006) |
+| `banner_url` | text | profile-images upload (0006) |
+| `service_lat` | double precision | geo coords for distance filter (0008) |
+| `service_lng` | double precision | (0008) |
+| `service_radius_km` | int | (0008) |
+| `year_min` | int | NOT NULL DEFAULT `0` (0011; default `7`→`0` in 0019); CHECK 0–12 & `year_min ≤ year_max` |
+| `year_max` | int | NOT NULL DEFAULT `12` (0011) |
+| `bio` | text | the "tagline" shown under the name; absorbed old `headline` (0012) |
+| `bio_long` | text | long description (0002) |
+| `location_display` | text | e.g. "Lower North Shore + Online" (0002) |
+| `suburb` | text | (0002) |
+| `city` | text | indexed (0002) |
+| `avatar_bg` | text | CSS `oklch()` fallback colour when no avatar (0002) |
+| `banner_bg` | text | banner fallback colour; falls back to `avatar_bg` when null (0023) |
+| `initials` | text | 2-char monogram (0002) |
+| `atar` | numeric(4,2) | e.g. 99.85 (0002) |
+| `rank` | text | renamed from `atar_rank` (0003) |
+| `rank_subject` | text | (0003) |
+| `rate` | int | AUD/hour; indexed (0002) |
+| `online` | bool | NOT NULL DEFAULT false — legacy; use `delivers_online` (0002) |
+| `delivers_in_person` | bool | NOT NULL DEFAULT true (0003) |
+| `delivers_online` | bool | NOT NULL DEFAULT true (0003) |
+| `responsive` | text | responsiveness label (0002) |
+| `years_tutoring` | int | (0002) |
+| `school` | text | high-school name; always-present display text (0002) |
+| `school_year` | text | "Class of 2023" (0002) |
+| `university` | text | (0002) |
+| `degree` | text | (0002) |
+| `degree_year` | text | "Expected 2027" (0002) |
+| `credentials` | jsonb | NOT NULL DEFAULT `'[]'`; `{label, icon}` objects (text[]→jsonb in 0003) |
+| `languages` | text[] | NOT NULL DEFAULT `'{}'` (0002) |
+| `rating` | numeric(2,1) | e.g. 4.9 (0002) |
+| `review_count` | int | NOT NULL DEFAULT 0 (0002) |
+| `availability` | jsonb | `{hours, days, grid}` (0002) |
+| `service_area` | jsonb | base suburb + radius; legacy after coords lifted out in 0008 |
+| `verifications` | jsonb | NOT NULL DEFAULT `'[]'` (0003) |
+| `visibility` | text | NOT NULL DEFAULT `'public'` (0003; default `'unlisted'`→`'public'` in 0005); CHECK `public/unlisted/hidden` |
+| `verified` | bool | NOT NULL DEFAULT false; display flag, true only on approval (0003) |
+| `verification_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/rejected` (0021) |
+| `verification_requested_at` | timestamptz | (0021) |
+| `onboarded` | bool | NOT NULL DEFAULT false; drives `/onboarding` gate (0018) |
+| `terms_agreed_at` | timestamptz | nullable; consent stamp, NULL ⇒ must (re-)agree (0025) |
+| `updated_at` | timestamptz | NOT NULL DEFAULT `now()` (0002) |
+
+**Indexes:** `(visibility)`, `(city)`, `(atar)`, `(rate)` (0004); `(email_confirmed_at)` (0007); `(service_lat, service_lng)` (0008).
+
+### `student_profiles`
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK → `profiles(id)` ON DELETE CASCADE |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+### `exams` (renamed from `certificates` in 0010)
+Reference catalog of exam systems.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `code` | text | PK (e.g. `HSC`, `VCE`, `GENERAL`, `TEST`) |
+| `name` | text | NOT NULL |
+| `jurisdiction` | text | nullable (null for `TEST`/`GENERAL`) |
+| `external_exams` | bool | nullable |
+| `position` | int | NOT NULL DEFAULT 0; `GENERAL`=0, `TEST`=9 |
+
+**Seed:** 10 rows — `GENERAL, HSC, VCE, IB, QCE, SACE, WACE, TCE, ACT, TEST` (0009/0010/0011). Public-read RLS.
+
+### `subjects`
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `name` | text | NOT NULL; **not unique** (exam-scoped) — `name` UNIQUE dropped in 0009 |
+| `slug` | text | NOT NULL UNIQUE; canonical key, exam-prefixed e.g. `vce-biology` (0009) |
+| `exam_code` | text | NOT NULL → `exams(code)`; renamed from `certificate_code` (0009/0010) |
+| `position` | int | NOT NULL DEFAULT 0; order within exam group |
+
+**Seed:** ~254 subjects across the exam groups (`GENERAL` 5, `TEST` ~14, each state cert ~30). Maintained 0009; `GENERAL` group 0011; HSC English Extension 1 & 2 0024. Public-read RLS. **Index:** `(exam_code, position)`.
+
+### `tutor_subjects` (join)
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `tutor_id` | uuid | PK part → `tutor_profiles(id)` ON DELETE CASCADE |
+| `subject_id` | uuid | PK part → `subjects(id)` ON DELETE CASCADE |
+| `position` | int | NOT NULL DEFAULT 0; drag-order, 0-indexed (0014) |
+
+**Index:** `(tutor_id, position)`. Public read; tutor self-write.
+
+### `tutor_packages`
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
+| `label` | text | NOT NULL |
+| `duration` | text | "60 min" / "5 × 60 min" |
+| `price` | int | NOT NULL; AUD |
+| `save_text` | text | "save $25" (nullable) |
+| `position` | int | NOT NULL DEFAULT 0 |
+
+**Index:** `(tutor_id, position)`. Public read; tutor self-write.
+
+### `tutor_experience`
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
+| `role` | text | |
+| `org` | text | |
+| `period` | text | "2024 — present" |
+| `note` | text | |
+| `position` | int | NOT NULL DEFAULT 0 |
+
+**Index:** `(tutor_id, position)`. Public read; tutor self-write.
+
+### `tutor_education`
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
+| `school` | text | always-present display name (free text) |
+| `detail` | text | |
+| `level` | text | NOT NULL DEFAULT `'high_school'`; CHECK `high_school/university` (0022) |
+| `school_id` | uuid | → `schools(id)` ON DELETE SET NULL; set only for high-school rows matching a listed school (0026) |
+| `position` | int | NOT NULL DEFAULT 0 |
+
+**Indexes:** `(tutor_id, position)`, `(school_id)` (0026). Public read; tutor self-write.
+
+### `schools` (0026)
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `name` | text | NOT NULL UNIQUE |
+| `slug` | text | NOT NULL UNIQUE |
+| `position` | int | NOT NULL DEFAULT 0; 2025 HSC rank order |
+
+**Seed:** top 50 NSW schools by 2025 HSC ranking. Public-read RLS, no write policy.
+
+### `ai_usage` (0020)
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `user_id` | uuid | PK part → `auth.users(id)` ON DELETE CASCADE |
+| `day` | date | PK part (UTC day) |
+| `count` | int | NOT NULL DEFAULT 0 |
+
+Self-only SELECT; **no write policy** (writes only via `consume_ai_credit()` / `refund_ai_credit()`).
+
+### `notifications` (0021)
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `user_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE |
+| `type` | text | NOT NULL (e.g. `verification_requested`, `verification_approved`, `verification_rejected`) |
+| `title` | text | NOT NULL |
+| `body` | text | |
+| `read` | bool | NOT NULL DEFAULT false |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+Self-only SELECT + UPDATE (mark-read); **no INSERT policy** — written by the service-role client in API routes.
+
+### Storage: `profile-images` bucket (0006)
+Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`.
+
+---
+
+## Functions / RPCs
+
+| Function | Returns | Purpose | Migration |
+| --- | --- | --- | --- |
+| `handle_new_user()` | trigger | On signup: create `profiles` + role table; default role→`tutor` & name←Google `name` claim; placeholder slug then `_assign_tutor_slug`; mirror `email_confirmed_at`; stamp `terms_agreed_at` for tutors | 0001 → 0016/0025 |
+| `handle_user_email_confirmed()` | trigger | Mirror `auth.users.email_confirmed_at` onto `tutor_profiles` on confirmation | 0007 |
+| `generate_unique_slug(p_name)` | text | Name→slug with collision suffix; superseded by `_assign_tutor_slug` (0013) but still present | 0004 |
+| `_assign_tutor_slug(p_id, p_name)` | text | Race-safe slug assignment (retry on unique_violation). SECURITY DEFINER; execute revoked from anon/authenticated | 0013 |
+| `assign_tutor_slug(p_name)` | text | Authenticated wrapper scoped to `auth.uid()`; called by `saveTutorProfile` on rename | 0013 |
+| `tutors_within_service_radius(lat, lng, include_online)` | TABLE(id uuid) | Haversine (no PostGIS) — ids of public+confirmed tutors whose radius covers the point, OR online when `include_online`. Public execute | 0008 |
+| `delete_own_account()` | void | Delete caller's `auth.users` row (cascades everything). SECURITY DEFINER, `auth.uid()`-scoped | 0015 |
+| `consume_ai_credit()` | TABLE(allowed bool, used int, day_limit int) | Atomic conditional increment of `ai_usage` (limit hardcoded 10/day) | 0020 |
+| `refund_ai_credit()` | void | Decrement floored at 0; called only on Groq failure | 0020 |
+| `request_tutor_verification()` | text | `none`/`rejected` → `pending`, idempotent; returns new status. `auth.uid()`-scoped | 0021 |
+| `accept_current_terms()` | void | Stamp caller's `terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 |
+
+Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
+
+---
+
+## Triggers
+
+| Trigger | Table | Event | Function | Migration |
+| --- | --- | --- | --- | --- |
+| `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` | 0001 |
+| `on_auth_user_email_confirmed` | `auth.users` | AFTER UPDATE OF `email_confirmed_at` | `handle_user_email_confirmed()` | 0007 |
+
+---
+
+## RLS summary
+
+| Table | Read | Write |
+| --- | --- | --- |
+| `profiles` | self; **+ public read for tutor rows** (0004, so the browse join returns names) | self UPDATE |
+| `tutor_profiles` | public | tutor self (ALL) |
+| `student_profiles` | self | self (ALL) |
+| `subjects` / `exams` / `schools` | public | none (reference data) |
+| `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
+| `ai_usage` | self | none (SECURITY DEFINER fns only) |
+| `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
+| `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid |
+
+> **Invariant:** `saveTutorProfile` never writes `verified` / `verification_status` — those are
+> server-controlled so a tutor cannot self-verify.
