@@ -128,7 +128,7 @@ sequenceDiagram
     RQ->>N: notify tutor ("request received")
     RQ->>A: email approve link (HMAC token, lib/verifyToken.js)
     A->>AP: open /admin/verify?token → click Approve (POST { token })
-    AP->>DB: verify token → set verified + status 'verified'
+    AP->>DB: verify token → set verification_status = 'verified'
     AP->>N: notify tutor ("you're verified ✓")
     N-->>T: in-app notification + email
 ```

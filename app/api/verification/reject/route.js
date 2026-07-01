@@ -47,7 +47,7 @@ export async function POST(request) {
 
   const { error: updateErr } = await admin
     .from("tutor_profiles")
-    .update({ verified: false, verification_status: "rejected" })
+    .update({ verification_status: "rejected" })
     .eq("id", tutorId);
   if (updateErr) {
     return NextResponse.json({ error: "Could not reject — please try again." }, { status: 500 });

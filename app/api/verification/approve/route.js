@@ -32,20 +32,20 @@ export async function POST(request) {
   // no-op success so a double-click doesn't error.
   const { data: tutor, error: readErr } = await admin
     .from("tutor_profiles")
-    .select("verified, slug, profile:profiles!inner ( full_name )")
+    .select("verification_status, slug, profile:profiles!inner ( full_name )")
     .eq("id", tutorId)
     .maybeSingle();
   if (readErr || !tutor) {
     return NextResponse.json({ error: "Tutor not found." }, { status: 404 });
   }
 
-  if (tutor.verified) {
+  if (tutor.verification_status === "verified") {
     return NextResponse.json({ ok: true, alreadyVerified: true });
   }
 
   const { error: updateErr } = await admin
     .from("tutor_profiles")
-    .update({ verified: true, verification_status: "verified" })
+    .update({ verification_status: "verified" })
     .eq("id", tutorId);
   if (updateErr) {
     return NextResponse.json({ error: "Could not approve — please try again." }, { status: 500 });

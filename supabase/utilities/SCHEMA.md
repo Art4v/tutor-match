@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0026_schools.sql`
-**Last reviewed:** 2026-06-24
+**Applied through:** `0029_save_tutor_profile_rpc.sql`
+**Last reviewed:** 2026-07-01
 
 ---
 
@@ -20,6 +20,24 @@ human-readable snapshot — the migrations remain the source of truth.
 - All tables live in the `public` schema unless noted.
 - "Self-write" RLS = `auth.uid() = <owner col>` for `INSERT`/`UPDATE`/`DELETE`.
 - `(NNNN)` after a column/feature notes the migration that introduced or last changed it.
+
+---
+
+## Deliberate denormalizations / redundancy
+
+These duplications are **intentional** — don't "tidy them up" without understanding why:
+
+- **`service_area` (jsonb) ↔ `service_lat` / `service_lng` / `service_radius_km` (scalars).**
+  `service_area` is the source of truth (the editor writes it); the three scalar columns are
+  copies kept in sync on every save (`saveTutorProfile`, `lib/supabase/tutors.js`) so `/browse`
+  can filter by distance in SQL via `tutors_within_service_radius()` (0008). Filtering inside
+  jsonb isn't indexable here — hence the flattened scalars.
+- **`atar` (scalar) ↔ `credentials` (jsonb).** ATAR is stored as a scalar so `/browse` can
+  filter by `atar_min` in SQL, but is surfaced in the UI as one entry in the `credentials`
+  list. Round-tripped by `bridgeAtarIntoCredentials` / `extractAtarFromCredentials`
+  (`lib/supabase/tutors.js`).
+- **`rating` / `review_count` are static.** No reviews feature exists yet; nothing writes them.
+  They are placeholders for a future reviews table, surfaced read-only on cards/profiles.
 
 ---
 
@@ -61,7 +79,6 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `year_max` | int | NOT NULL DEFAULT `12` (0011) |
 | `bio` | text | the "tagline" shown under the name; absorbed old `headline` (0012) |
 | `bio_long` | text | long description (0002) |
-| `location_display` | text | e.g. "Lower North Shore + Online" (0002) |
 | `suburb` | text | (0002) |
 | `city` | text | indexed (0002) |
 | `avatar_bg` | text | CSS `oklch()` fallback colour when no avatar (0002) |
@@ -71,7 +88,6 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `rank` | text | renamed from `atar_rank` (0003) |
 | `rank_subject` | text | (0003) |
 | `rate` | int | AUD/hour; indexed (0002) |
-| `online` | bool | NOT NULL DEFAULT false — legacy; use `delivers_online` (0002) |
 | `delivers_in_person` | bool | NOT NULL DEFAULT true (0003) |
 | `delivers_online` | bool | NOT NULL DEFAULT true (0003) |
 | `responsive` | text | responsiveness label (0002) |
@@ -86,11 +102,9 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `rating` | numeric(2,1) | e.g. 4.9 (0002) |
 | `review_count` | int | NOT NULL DEFAULT 0 (0002) |
 | `availability` | jsonb | `{hours, days, grid}` (0002) |
-| `service_area` | jsonb | base suburb + radius; legacy after coords lifted out in 0008 |
-| `verifications` | jsonb | NOT NULL DEFAULT `'[]'` (0003) |
+| `service_area` | jsonb | source-of-truth base suburb + radius; flattened to `service_*` scalars for geo filter (0008) |
 | `visibility` | text | NOT NULL DEFAULT `'public'` (0003; default `'unlisted'`→`'public'` in 0005); CHECK `public/unlisted/hidden` |
-| `verified` | bool | NOT NULL DEFAULT false; display flag, true only on approval (0003) |
-| `verification_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/rejected` (0021) |
+| `verification_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/rejected` (0021). **Single source of truth** — the app derives the `verified` boolean from `= 'verified'`; the standalone `verified` bool was dropped in 0028 |
 | `verification_requested_at` | timestamptz | (0021) |
 | `onboarded` | bool | NOT NULL DEFAULT false; drives `/onboarding` gate (0018) |
 | `terms_agreed_at` | timestamptz | nullable; consent stamp, NULL ⇒ must (re-)agree (0025) |
@@ -228,6 +242,7 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `refund_ai_credit()` | void | Decrement floored at 0; called only on Groq failure | 0020 |
 | `request_tutor_verification()` | text | `none`/`rejected` → `pending`, idempotent; returns new status. `auth.uid()`-scoped | 0021 |
 | `accept_current_terms()` | void | Stamp caller's `terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 |
+| `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path | 0029 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
 

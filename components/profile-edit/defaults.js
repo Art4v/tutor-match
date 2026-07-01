@@ -41,13 +41,6 @@ export function defaultTutor(userId, userEmail, fullName) {
     yearMax: 12,
     serviceArea: { suburb: "", radiusKm: 5 },
     availability: buildInitialAvailability(),
-    verifications: [
-      { label: "Email verified", done: false },
-      { label: "Phone verified", done: false },
-      { label: "Government ID", done: false },
-      { label: "ATAR transcript", done: false },
-      { label: "University enrolment", done: false },
-    ],
     visibility: "public",
   };
 }

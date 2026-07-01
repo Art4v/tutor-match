@@ -335,7 +335,7 @@ export function TutorCard({ tutor }) {
           </div>
 
           {/* Tagline (one line, reserved) — no leaf icon. */}
-          <div className="text-[12.5px] font-bold text-[color:var(--accent)] mt-1 truncate shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
+          <div className="text-[13.5px] font-bold text-[color:var(--accent)] mt-1 truncate shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
             {tagline || " "}
           </div>
 

@@ -44,7 +44,7 @@ export default async function AdminVerifyPage({ searchParams }) {
 
   const { data: tutor } = await admin
     .from("tutor_profiles")
-    .select("verified, slug, suburb, city, profile:profiles!inner ( full_name )")
+    .select("verification_status, slug, suburb, city, profile:profiles!inner ( full_name )")
     .eq("id", tutorId)
     .maybeSingle();
 
@@ -59,7 +59,7 @@ export default async function AdminVerifyPage({ searchParams }) {
   const name = tutor.profile?.full_name || "This tutor";
   const location = [tutor.suburb, tutor.city].filter(Boolean).join(", ");
 
-  if (tutor.verified) {
+  if (tutor.verification_status === "verified") {
     return (
       <Shell>
         <StateCard
