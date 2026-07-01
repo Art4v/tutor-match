@@ -2,6 +2,10 @@
 
 Guidance for Claude Code when working in this repository.
 
+## Working conventions
+
+- **Explain every file edit.** For each file you create, modify, move, or delete, state which file changed and why in one line before or alongside the change. When making several edits, give a short per-file summary so the user can follow the change to the file structure without diffing.
+
 ## Commands
 
 - `npm run dev` — Next.js dev server on `http://localhost:3000`.
@@ -10,6 +14,8 @@ Guidance for Claude Code when working in this repository.
 - `npm run sync:audience` — push confirmed tutors into the Resend Audience (see Email).
 
 No tests are configured.
+
+One-off (not an npm script): `node scripts/gen-og-image.mjs` regenerates `app/opengraph-image.png` (needs `npm i sharp --no-save`; static PNG so the build never depends on `@vercel/og`). Re-run only when the brand mark/wordmark changes.
 
 ## Environment
 
@@ -77,6 +83,12 @@ Three distinct mail paths:
 - **`saveTutorProfile` deliberately never writes `verified` / `verification_status`** — server-controlled; a tutor must not self-verify.
 - `lib/notifications.js` `notifyUser()` is the single path that inserts a notification **and** emails the user (so "every notification is emailed" holds). `lib/verifyToken.js` signs/verifies the HMAC approve-link token (`VERIFICATION_APPROVE_SECRET`).
 
+**Schema reference:** `supabase/utilities/SCHEMA.md` is a hand-maintained snapshot of the full DB schema (tables, columns, RPCs, RLS) — the fastest way to see current shapes without reading all migrations. Update it when a migration changes structure.
+
+### Legal consent (Terms / Privacy)
+
+`components/PolicyConsentGate.jsx` is mounted once in `app/layout.js` (root). On every page load it checks the logged-in tutor's `terms_agreed_at` against `POLICY_EFFECTIVE_DATE` (`lib/policy.js`, `needsPolicyConsent()`); if consent is missing or predates the current policy, it shows a **blocking** modal → `accept_current_terms()` RPC (server-stamps `now()`). Logged-out visitors render nothing (no flash on public pages). To force a re-consent after a policy change, **bump `POLICY_EFFECTIVE_DATE`** in `lib/policy.js` — that's the single switch. The policy text lives at `/terms-of-service` and `/privacy-policy`.
+
 ### Migrations (`supabase/migrations/`)
 
 `0001_init` — Option B layout: shared `profiles` 1:1 with `auth.users`, plus `tutor_profiles` / `student_profiles` keyed by the same uuid. `handle_new_user()` trigger creates them atomically on signup. Self-only RLS.
@@ -103,6 +115,7 @@ Three distinct mail paths:
 `0022_education_level` — `tutor_education.level` (NOT NULL default `'high_school'`, CHECK in `{high_school, university}`). Threaded through `tutors.js`; card shows high school (falls back to university), profile `EducationTimeline` + editor `EducationSection` get a level picker.
 `0023_banner_bg` — nullable `tutor_profiles.banner_bg`, decoupling the banner fallback colour from `avatar_bg` (readers fall back to `avatar_bg` when null). Renumbered from a duplicate `0014_`; additive, safe after `0022`.
 `0024_hsc_english_extension_subjects` — seeds HSC English Extension 1 + 2 (`on conflict do nothing`, idempotent). Renumbered from a duplicate `0014_`; additive, safe after `0022`.
+`0025_terms_consent` — `tutor_profiles.terms_agreed_at` (nullable; existing rows stay NULL so they re-consent). Rewrites `handle_new_user()` (same OAuth-safe body as `0016`) to stamp `terms_agreed_at = now()` on every new tutor, so new signups never hit the modal. Adds `accept_current_terms()` `SECURITY DEFINER` RPC (scoped to `auth.uid()`, server-set `now()` — client can't backdate) that the consent modal calls. Drives the re-consent gate (see **Legal consent** below).
 `0026_schools` — seeded `schools` ref table (top 50 NSW schools, 2025 HSC ranking; public-read RLS, no write policy — like `subjects`) + nullable `tutor_education.school_id` FK (`on delete set null`). The `school` text column stays the always-present display name; `school_id` is set only when a **high-school** entry matches a listed school (the editor's `SchoolCombobox` works in slugs, `saveTutorProfile` resolves slug→id). Backfills existing high-school rows by case-insensitive name match. Drives the `/browse` School filter (`?school=` slugs → `getTutorsForBrowse` resolves slug→id→tutor ids, like subjects). Seed list is point-in-time; re-seed with a later additive migration. Additive, safe after `0025`.
 
 ### Components
