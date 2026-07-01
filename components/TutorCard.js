@@ -214,7 +214,7 @@ function SubjectChipsFill({ subjects, center = false }) {
   );
 }
 
-const CARD_HEIGHT = 458;
+const CARD_HEIGHT = 504;
 
 // Motion variants: a single source of truth for the hover behaviour. On enter,
 // y eases up to -4px while rotate plays a small back-and-forth wobble that
@@ -309,7 +309,7 @@ export function TutorCard({ tutor }) {
           )}
         </div>
 
-        <div className="px-4 pb-4 flex flex-col flex-1 min-h-0 items-center text-center">
+        <div className="px-4 pb-6 flex flex-col flex-1 min-h-0 items-center text-center">
           {/* Avatar "crown" — straddles the banner. */}
           <div className="shrink-0" style={{ marginTop: -50, marginBottom: 6 }}>
             <Avatar tutor={tutor} size={100} ring />
@@ -324,7 +324,16 @@ export function TutorCard({ tutor }) {
           </div>
 
           {/* Tagline (one line, reserved) — no leaf icon. */}
-          <div className="text-[13.5px] font-bold text-[color:var(--accent)] mt-1 truncate shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
+          <div
+            className="text-[15px] font-bold text-[color:var(--accent)] mt-1 shrink-0 max-w-full leading-[1.3]"
+            style={{
+              minHeight: "1.3em",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {tagline || " "}
           </div>
 
