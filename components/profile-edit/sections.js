@@ -963,7 +963,7 @@ export function EducationSection({ tutor, set, schoolCatalog = [], bare = false 
                 ) : (
                   <TextInput value={e.school} onChange={(v) => update(i, { school: v })} placeholder="UNSW Sydney" />
                 )}
-                <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder="B. Medical Studies — Year 3" />
+                <TextInput value={e.detail} onChange={(v) => update(i, { detail: v })} placeholder={level === "high_school" ? "Year 7 - 12" : "B. Medical Studies — Year 3"} />
               </div>
             </ReorderRow>
           );
