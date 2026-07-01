@@ -28,18 +28,6 @@ function LeafMark({ size = 28, color = "#fff", opacity = 1, style }) {
   );
 }
 
-// Compact overflow pill for credentials/achievements beyond the ATAR stat.
-function MorePill({ count }) {
-  return (
-    <span
-      className="inline-flex items-center font-medium text-[color:var(--ink-muted)] whitespace-nowrap"
-      style={{ fontSize: 12, padding: "3px 9px", borderRadius: 999, lineHeight: 1.15, background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
-    >
-      +{count} more
-    </span>
-  );
-}
-
 // Credential icon → human label for the stat-cell subtitle, mirroring the
 // editor's CREDENTIAL_TYPES (components/profile-edit/sections.js). The cell
 // uppercases it via CSS, so these stay sentence-case here.
@@ -188,7 +176,10 @@ function SubjectChipsFill({ subjects, center = false }) {
   if (subjects.length === 0) return <div ref={containerRef} className="h-full" />;
 
   const visible = subjects.slice(0, Math.max(0, visibleCount));
-  const extra = visibleCount < 0 ? 0 : subjects.length - visible.length;
+  // Never silently drop everything: when not even one full row fits
+  // (visibleCount === -1) but the tutor DOES have subjects, still surface a
+  // "+N" pill so the count is visible rather than nothing.
+  const extra = visibleCount < 0 ? subjects.length : subjects.length - visible.length;
 
   return (
     <div
@@ -271,15 +262,13 @@ export function TutorCard({ tutor }) {
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   // Headline stat: the ATAR if set, otherwise the tutor's first credential
   // stands in for it — labelled by its type (Award / Degree / State rank /
-  // Highlight). Everything past the headline collapses into a "+N more" pill so
-  // nothing they listed is silently dropped.
+  // Highlight).
   const atar = credentials.find((c) => c.icon === "atar")?.label || null;
   const otherCreds = credentials.filter((c) => c.icon !== "atar");
   const headlineCred = atar ? null : otherCreds[0] || null;
   const statValue = atar || headlineCred?.label || "—";
   const statLabel = atar ? "ATAR" : headlineCred ? captionForIcon(headlineCred.icon) : "ATAR";
   const statTone = atar || headlineCred ? "accent" : "muted";
-  const moreCount = atar ? otherCreds.length : Math.max(0, otherCreds.length - 1);
 
   const tagline = stripMarkdown(tutor.bio);
   const longBio = stripMarkdown(tutor.bioLong);
@@ -354,7 +343,7 @@ export function TutorCard({ tutor }) {
           </div>
 
           {/* Location — deliberately quieter than the ATAR / rate stats. */}
-          <div className="text-[11.5px] text-[color:var(--sage)] mt-1.5 flex items-center justify-center gap-1 shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
+          <div className="text-[11.5px] text-[color:var(--sage)] mt-1 flex items-center justify-center gap-1 shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
             {location ? (
               <>
                 <Icon name="map-pin" size={10} className="shrink-0" />
@@ -375,25 +364,20 @@ export function TutorCard({ tutor }) {
 
           {/* Stat strip: ATAR · rate. */}
           <div
-            className="w-full flex items-center mt-2.5 shrink-0"
-            style={{ padding: "10px 14px", borderRadius: 11, border: "1px solid var(--paper-line)" }}
+            className="w-full flex items-center mt-2 shrink-0"
+            style={{ padding: "8px 14px", borderRadius: 11, border: "1px solid var(--paper-line)" }}
           >
             <StatCell value={statValue} label={statLabel} tone={statTone} />
             <div className="self-stretch" style={{ width: 1, background: "var(--paper-line)" }} />
             <StatCell value={`$${tutor.rate}`} label="per hr" tone="ink" />
           </div>
 
-          {/* Other credentials the tutor listed, collapsed into a pill. */}
-          {moreCount > 0 && (
-            <div className="mt-1.5 shrink-0">
-              <MorePill count={moreCount} />
-            </div>
-          )}
-
           {/* Subjects fill the gap above the CTA — wrap across as many rows as
-              fit, then cap with a "+N" pill. This flex-1 region also absorbs
-              leftover space, pinning the CTA to the card's bottom edge. */}
-          <div className="w-full flex-1 min-h-0 mt-2.5 mb-2.5">
+              fit, then cap with a "+N" pill. This flex-1 region absorbs leftover
+              space (pinning the CTA to the bottom) but reserves a guaranteed
+              two-row minimum (minHeight) so subjects never collapse to nothing
+              on content-heavy cards; lighter cards grow it to more rows. */}
+          <div className="w-full flex-1 min-h-0 mt-1.5 mb-2" style={{ minHeight: 50 }}>
             <SubjectChipsFill subjects={subjects} center />
           </div>
 
