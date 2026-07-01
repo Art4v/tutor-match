@@ -9,12 +9,7 @@ import { SchoolPicker } from "@/components/SchoolPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
-import { EASE_OUT, DURATION_MED, makeJiggleVariants } from "@/lib/motion";
-
-// Search button hover: same jiggle wobble + accent halo language as TutorCard.
-const searchButtonVariants = makeJiggleVariants(
-  "0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)"
-);
+import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 /**
  * Single-viewport hero: an animated "neural network" constellation fills the
@@ -130,19 +125,12 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
                 placeholder="Mathematics Extension 1"
               />
               <div className="px-1.5 sm:px-2 md:px-1.5 flex items-center">
-                <motion.div
-                  initial="rest"
-                  animate="rest"
-                  whileHover="hover"
-                  variants={searchButtonVariants}
-                  className="w-full"
-                  style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
-                >
+                <div className="w-full">
                   <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>
                     {/* Icon-only on phones so all three segments fit one row. */}
                     <span className="hidden sm:inline">Search</span>
                   </Button>
-                </motion.div>
+                </div>
               </div>
             </motion.div>
 
@@ -154,17 +142,9 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
               className="mt-7 flex sm:hidden justify-center"
             >
-              <motion.div
-                initial="rest"
-                animate="rest"
-                whileHover="hover"
-                variants={searchButtonVariants}
-                style={{ borderRadius: 10, willChange: "transform, box-shadow" }}
-              >
-                <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
-                  Search Now
-                </Button>
-              </motion.div>
+              <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
+                Search Now
+              </Button>
             </motion.div>
 
             <motion.div

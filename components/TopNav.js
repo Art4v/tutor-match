@@ -186,7 +186,7 @@ export function TopNav() {
           <BookSproutMark size={30} className="nav-logo-mark shrink-0" />
           <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
             <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>match</span>
-            <span className="nav-logo-word accent-glow" style={{ color: "var(--accent)" }}>tutor</span>
+            <span className="nav-logo-word" style={{ color: "var(--accent)" }}>tutor</span>
           </span>
         </Link>
 
@@ -259,7 +259,7 @@ export function TopNav() {
                         Browse
                       </NavMenuLink>
                       <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
-                        My profile
+                        Profile
                       </NavMenuLink>
                       <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
                         <span className="flex items-center justify-between gap-2">
@@ -291,7 +291,7 @@ export function TopNav() {
                 <Button variant="ghost" size="sm">Log in</Button>
               </Link>
               <Link href="/signup">
-                <Button variant="primary" size="sm" glow>Sign Up</Button>
+                <Button variant="primary" size="sm">Sign Up</Button>
               </Link>
             </>
           )}

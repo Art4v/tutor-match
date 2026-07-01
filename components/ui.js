@@ -139,7 +139,7 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
   );
 }
 
-export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, glow }) {
+export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled }) {
   const variants = {
     primary: { bg: "var(--accent)", color: "#FBF7EC", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#FBF7EC" },
     outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)", hoverBg: "var(--paper-card)", hoverBorder: "var(--accent)", hoverColor: "var(--accent)" },
@@ -167,7 +167,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
       onMouseLeave={() => { setHover(false); setPressed(false); }}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
-      className={`inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed${glow && !disabled ? " cta-glow" : ""}`}
+      className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       style={{
         background: isHover ? v.hoverBg : v.bg,
         color: isHover ? v.hoverColor : v.color,
@@ -180,12 +180,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         cursor: disabled ? "not-allowed" : "pointer",
         letterSpacing: "-0.005em",
         transform: pressed && !disabled ? "scale(0.98)" : "scale(1)",
-        // When `glow` is on, leave box-shadow to the `.cta-glow` keyframes
-        // (an inline value would override the animation). Otherwise keep the
-        // standard hover ring for primary/dark buttons.
-        boxShadow: glow && !disabled
-          ? undefined
-          : isHover && (variant === "primary" || variant === "dark") ? "0 0 0 4px var(--accent-ring)" : "none",
+        boxShadow: isHover && (variant === "primary" || variant === "dark") ? "0 0 0 4px var(--accent-ring)" : "none",
         transition: "background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, transform 120ms ease-out",
       }}
     >

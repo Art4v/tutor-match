@@ -6,11 +6,7 @@ import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { EASE_OUT, DURATION_MED, makeJiggleVariants } from "@/lib/motion";
-
-// Button hover: same jiggle wobble + halo language as the HomeHero search button.
-const primaryJiggle = makeJiggleVariants("0 0 28px rgba(94,122,90,0.38), 0 0 10px rgba(94,122,90,0.24)");
-const outlineJiggle = makeJiggleVariants("0 0 22px rgba(94,122,90,0.14), 0 0 8px rgba(94,122,90,0.08)");
+import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 export function HomeCta() {
   const router = useRouter();
@@ -88,30 +84,16 @@ export function HomeCta() {
               transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
               className="flex flex-col sm:flex-row gap-5 w-full max-w-[480px] justify-center"
             >
-              <motion.div
-                initial="rest"
-                animate="rest"
-                whileHover="hover"
-                variants={primaryJiggle}
-                className="flex-1"
-                style={{ willChange: "transform, box-shadow" }}
-              >
-                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/profile" : "/signup")} full glow>
+              <div className="flex-1">
+                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/profile" : "/signup")} full>
                   Become a tutor
                 </Button>
-              </motion.div>
-              <motion.div
-                initial="rest"
-                animate="rest"
-                whileHover="hover"
-                variants={outlineJiggle}
-                className="flex-1"
-                style={{ willChange: "transform, box-shadow" }}
-              >
+              </div>
+              <div className="flex-1">
                 <Button variant="outline" size="lg" onClick={() => router.push("/browse")} full>
                   Browse tutors
                 </Button>
-              </motion.div>
+              </div>
             </motion.div>
           </div>
         </div>
