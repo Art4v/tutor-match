@@ -28,6 +28,7 @@ export function SubjectPicker({
   variant = "box",
   placeholder = "Add subjects",
   label = "Subject",
+  onOpenChange,
 }) {
   const groups = useMemo(() => groupByExam(catalog), [catalog]);
   const bySlug = useMemo(() => {
@@ -40,6 +41,7 @@ export function SubjectPicker({
   const [activeExam, setActiveExam] = useState(null);
   const [search, setSearch] = useState("");
   const wrapRef = useRef(null);
+  const panelRef = useRef(null);
   const dragIndexRef = useRef(null);
   const [dragging, setDragging] = useState(null); // slug being dragged
 
@@ -77,6 +79,24 @@ export function SubjectPicker({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
+  // Report open state + live panel height so a host (e.g. the /settings edit
+  // modal) can reserve exactly enough space for the open dropdown and shrink
+  // back when it closes. Read the callback through a ref so its identity churn
+  // doesn't tear down the ResizeObserver each render.
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+  useEffect(() => {
+    const cb = () => onOpenChangeRef.current;
+    if (!open) { cb()?.(false, 0); return; }
+    const el = panelRef.current;
+    if (!el) return;
+    const report = () => cb()?.(true, el.offsetHeight);
+    report();
+    const ro = new ResizeObserver(report);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
 
   const activeGroup = groups.find((g) => g.code === activeExam) ?? groups[0] ?? null;
   // When there's a query, search the ENTIRE catalog (across every exam), not
@@ -127,7 +147,7 @@ export function SubjectPicker({
             {singleLabel || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0 hidden sm:block" />
+        <Icon name="chevron-down" size={14} className={"text-slate-400 shrink-0 hidden sm:block " + (open ? "rotate-180" : "")} />
       </button>
     ) : (
       <button
@@ -142,7 +162,7 @@ export function SubjectPicker({
             ? (singleLabel || placeholder)
             : (selected.length ? `${selected.length} selected` : placeholder)}
         </span>
-        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+        <Icon name="chevron-down" size={14} className={"text-slate-400 shrink-0 " + (open ? "rotate-180" : "")} />
       </button>
     );
 
@@ -187,6 +207,7 @@ export function SubjectPicker({
 
       {open && groups.length > 0 && (
         <div
+          ref={panelRef}
           className="absolute top-full mt-2 z-50 bg-[color:var(--paper-card)] overflow-hidden"
           style={{
             ...panelWidth,

@@ -975,6 +975,10 @@ export function EducationSection({ tutor, set, schoolCatalog = [], bare = false 
 
 export function SubjectsSection({ tutor, set, catalog, bare = false }) {
   const Wrap = bare ? Fragment : Card;
+  // The dropdown is absolutely positioned, so it can't grow the host modal on
+  // its own. Reserve an in-flow spacer equal to the open panel's height so the
+  // modal expands to fit it — and collapses back (no empty space) on close.
+  const [reserve, setReserve] = useState(0);
   return (
     <Wrap>
       <SectionHeader title="Subjects" subtitle="Powers your placement in browse filters. Pick an exam, then choose the subjects you tutor." />
@@ -985,7 +989,9 @@ export function SubjectsSection({ tutor, set, catalog, bare = false }) {
         mode="multi"
         variant="box"
         placeholder="Add subjects"
+        onOpenChange={(open, height) => setReserve(open ? height + 8 : 0)}
       />
+      <div aria-hidden style={{ height: reserve }} />
     </Wrap>
   );
 }
