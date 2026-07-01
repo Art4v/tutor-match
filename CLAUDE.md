@@ -120,6 +120,7 @@ Three distinct mail paths:
 `0027_drop_dead_columns` — drops three dead `tutor_profiles` columns (read/written nowhere): `online` (superseded by `delivers_*`), `location_display`, and `verifications` (jsonb that only ever held `[]`). No backfill. Part of the tidiness restructure; see `supabase/utilities/SCHEMA.md`.
 `0028_verification_single_source` — drops the redundant `verified` bool; `verification_status` becomes the sole stored truth, and the read mappers in `tutors.js` derive `verified = (verification_status === 'verified')`. Reconciles any drift before the drop. Approve/reject routes + `verify_user.sql` now write only `verification_status`. `lib/ranking.js` is unchanged (reads the derived boolean off the card object). Apply **DB-first, then deploy code**.
 `0029_save_tutor_profile_rpc` — adds `save_tutor_profile(p_payload jsonb)` (SECURITY DEFINER, `auth.uid()`-scoped): one transaction that updates `tutor_profiles` scalars + replace-alls the four child tables, deriving `service_*` from `service_area` (0008) and resolving subject/school slugs server-side; returns `{ dropped_subjects }`. `saveTutorProfile` (`tutors.js`) now builds a jsonb payload and calls it instead of five non-transactional writes, so a mid-save failure can't leave a half-written profile.
+`0030_hsc_language_subjects` — seeds three HSC languages (`hsc-japanese`, `hsc-french`, `hsc-italian`) at positions 32–34, after the existing HSC range. `on conflict (slug) do nothing`, idempotent; additive, safe after `0029`.
 
 ### Components
 
