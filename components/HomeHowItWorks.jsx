@@ -116,6 +116,20 @@ const LEAF_STAGES = [
     [526, 816, 120, 0.9],
   ],
 ];
+// Ambient leaves along the bare trunk stretches; delays roughly track the
+// trunk draw (2.2s over y 46→1058) passing each one.
+const AMBIENT_LEAVES = [
+  [546, 638, 155, 0.85, 1.5],
+  [560, 668, 28, 0.8, 1.65],
+  [544, 892, 168, 0.85, 2.0],
+  [562, 924, 22, 0.9, 2.15],
+];
+// Doodle outlines (cloud, grass tuft) share the tree's stroke style.
+const CLOUD_D =
+  "M14 26 C 4 26 0 16 8 11 C 6 3 16 -3 24 2 C 28 -8 44 -8 48 2 C 58 -3 68 5 63 12 C 71 16 67 26 58 26 Z";
+const GRASS_D =
+  "M0 0 C -1 -6 -5 -10 -9 -13 M2 0 C 3 -8 3 -14 1 -18 M4 0 C 6 -6 10 -10 13 -14";
+
 // Card lefts keep each branch tip on the card's near edge: b1 → (492,318),
 // b2 → (604,580), b3 → (512,830).
 const CARD_W = 400;
@@ -396,7 +410,193 @@ function TreeSvg({ treeInView, cardInView }) {
           />
         )),
       )}
+      {AMBIENT_LEAVES.map(([x, y, r, s, delay], i) => (
+        <Leaf key={`amb-${i}`} x={x} y={y} r={r} s={s} on={treeInView} delay={delay} />
+      ))}
+      <SkyDoodles on={treeInView} />
+      <GroundDoodles on={treeInView} />
+      <FlyingBirds on={treeInView} />
+      <FallingLeaf x={585} y={150} drop={880} on={treeInView} delay={3.2} dur={13} />
+      <FallingLeaf x={628} y={575} drop={500} on={treeInView} delay={9} dur={10} />
     </svg>
+  );
+}
+
+// Pop-in wrapper for doodle groups: static placement on the outer <g>, the
+// inner group scales about its own bounding box (origin "bottom" makes grass
+// grow up out of the ground).
+function PopG({ x, y, s = 1, on, delay, origin = "center", children }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <motion.g
+        style={{ transformBox: "fill-box", transformOrigin: origin === "bottom" ? "50% 100%" : "center" }}
+        initial={{ scale: 0.4, opacity: 0 }}
+        animate={on ? { scale: 1, opacity: 1 } : undefined}
+        transition={{
+          scale: { duration: 0.55, ease: LEAF_POP_EASE, delay },
+          opacity: { duration: 0.45, ease: "easeOut", delay },
+        }}
+      >
+        {children}
+      </motion.g>
+    </g>
+  );
+}
+
+function SkyDoodles({ on }) {
+  return (
+    <g style={{ opacity: 0.5 }}>
+      {/* Sketch sun, top-right */}
+      <motion.g
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={on ? { scale: 1, opacity: 1 } : undefined}
+        transition={{ duration: 0.8, ease: EASE_OUT, delay: 1.4 }}
+      >
+        <circle cx={950} cy={110} r={30} fill="none" stroke={TRUNK_COLOR} strokeWidth={2.4} />
+        {[...Array(8)].map((_, i) => {
+          const a = (i * Math.PI) / 4 + 0.2;
+          return (
+            <line
+              key={i}
+              x1={950 + Math.cos(a) * 40}
+              y1={110 + Math.sin(a) * 40}
+              x2={950 + Math.cos(a) * 52}
+              y2={110 + Math.sin(a) * 52}
+              stroke={TRUNK_COLOR}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </motion.g>
+      {/* Doodle clouds, top-left, with a slow horizontal drift */}
+      <Cloud x={175} y={70} s={1} on={on} delay={1.7} drift={14} dur={9} />
+      <Cloud x={320} y={100} s={0.65} on={on} delay={1.95} drift={-10} dur={12} />
+    </g>
+  );
+}
+
+function Cloud({ x, y, s, on, delay, drift, dur }) {
+  return (
+    <motion.g
+      initial={{ opacity: 0 }}
+      animate={on ? { opacity: 1, x: [0, drift, 0] } : undefined}
+      transition={{
+        opacity: { duration: 0.9, ease: "easeOut", delay },
+        x: { duration: dur, repeat: Infinity, ease: "easeInOut", delay },
+      }}
+    >
+      <path
+        transform={`translate(${x} ${y}) scale(${s})`}
+        d={CLOUD_D}
+        fill="none"
+        stroke={TRUNK_COLOR}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </motion.g>
+  );
+}
+
+function GroundDoodles({ on }) {
+  const grass = [
+    [398, 1126, 1],
+    [492, 1144, 0.85],
+    [612, 1140, 0.9],
+    [702, 1124, 1.05],
+  ];
+  const pebbles = [
+    [462, 1148, 7, 4],
+    [646, 1150, 5, 3.2],
+    [538, 1157, 4, 2.8],
+  ];
+  return (
+    <g style={{ opacity: 0.75 }}>
+      {grass.map(([x, y, s], i) => (
+        <PopG key={`g-${i}`} x={x} y={y} s={s} on={on} delay={2.1 + i * 0.12} origin="bottom">
+          <path d={GRASS_D} fill="none" stroke={TRUNK_COLOR} strokeWidth={2} strokeLinecap="round" />
+        </PopG>
+      ))}
+      {pebbles.map(([x, y, rx, ry], i) => (
+        <PopG key={`p-${i}`} x={x} y={y} on={on} delay={2.35 + i * 0.12}>
+          <ellipse cx={0} cy={0} rx={rx} ry={ry} fill="none" stroke={TRUNK_COLOR} strokeWidth={1.8} />
+        </PopG>
+      ))}
+      {/* Mushroom — cap gets a faint wash of the washi-tape rust */}
+      <PopG x={420} y={1146} s={1.1} on={on} delay={2.55} origin="bottom">
+        <path
+          d="M-2 0 C -2 -5 -2 -8 -1 -10 M2 0 C 2 -5 2 -8 1 -10"
+          fill="none"
+          stroke={TRUNK_COLOR}
+          strokeWidth={1.8}
+          strokeLinecap="round"
+        />
+        <path
+          d="M-8 -9 C -8 -17 8 -17 8 -9 Z"
+          fill="rgba(176,94,59,0.28)"
+          stroke={TRUNK_COLOR}
+          strokeWidth={1.8}
+          strokeLinejoin="round"
+        />
+      </PopG>
+    </g>
+  );
+}
+
+// Sketch birds (two-arc gull doodles) drifting near the sun, with a slow bob.
+const BIRD_D = "M0 0 C 3 -5 8 -5 10 -1 C 12 -5 17 -5 20 0";
+const BIRDS = [
+  [820, 172, 1, -6, 2.0],
+  [884, 142, 0.8, 4, 2.15],
+  [768, 204, 0.62, 0, 2.3],
+];
+function FlyingBirds({ on }) {
+  return (
+    <g style={{ opacity: 0.55 }}>
+      {BIRDS.map(([x, y, s, r, delay], i) => (
+        <g key={i} transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+          <motion.g
+            initial={{ opacity: 0, y: 6 }}
+            animate={on ? { opacity: 1, y: [6, 0, 3, 0] } : undefined}
+            transition={{
+              opacity: { duration: 0.8, ease: "easeOut", delay },
+              y: { duration: 5 + i, repeat: Infinity, ease: "easeInOut", delay },
+            }}
+          >
+            <path d={BIRD_D} fill="none" stroke={TRUNK_COLOR} strokeWidth={2.2} strokeLinecap="round" />
+          </motion.g>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+// A leaf that breaks loose and tumbles down past the trunk on a loop.
+function FallingLeaf({ x, y, drop, on, delay, dur }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <motion.path
+        d={LEAF_D}
+        fill={LEAF_FILL}
+        stroke={LEAF_STROKE}
+        strokeWidth={1.1}
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        initial={{ opacity: 0 }}
+        animate={
+          on
+            ? {
+                y: [0, drop * 0.25, drop * 0.5, drop * 0.75, drop],
+                x: [0, -26, 14, -20, 0],
+                rotate: [0, 140, 40, 200, 120],
+                opacity: [0, 0.9, 0.9, 0.9, 0],
+              }
+            : undefined
+        }
+        transition={{ duration: dur, repeat: Infinity, repeatDelay: 5, ease: "easeInOut", delay }}
+      />
+    </g>
   );
 }
 
