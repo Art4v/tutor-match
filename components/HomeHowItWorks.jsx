@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useInView } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -59,15 +59,88 @@ const STEPS = [
   },
 ];
 
+// ── "Growing tree" desktop canvas (Claude Design: How It Works Tree) ──
+// Trunk/leaf colours are design-local like the rest of this file's inline
+// palette; card surfaces keep the shared CSS variables.
+const TRUNK_COLOR = "#556E48";
+const LEAF_FILL = "#8FAB79";
+const LEAF_STROKE = "#5f7d4e";
+const DRAW_EASE = [0.45, 0.05, 0.2, 1];
+const LEAF_POP_EASE = [0.3, 1.5, 0.5, 1];
+
+const CANVAS_W = 1100;
+const CANVAS_H = 1180;
+
+const TRUNK_D =
+  "M550 46 C 534 170 566 290 551 410 C 540 500 561 600 550 700 C 542 800 566 900 551 990 C 546 1020 550 1045 550 1058";
+// Roots kept as separate paths so all three draw simultaneously.
+const ROOT_DS = [
+  "M550 1035 C 542 1080 486 1098 448 1130",
+  "M550 1035 C 558 1082 620 1098 664 1132",
+  "M550 1045 C 549 1090 550 1122 550 1146",
+];
+const BRANCH_DS = [
+  "M551 270 C 504 282 478 300 492 318",
+  "M550 520 C 596 532 590 560 604 580",
+  "M551 770 C 506 782 486 812 512 830",
+];
+const LEAF_D = "M0 0 C 4 -8 15 -9 20 -1 C 15 6 4 5 0 0 Z";
+// [x, y, rotate, scale] per leaf. Stage 0 is the crown (fires with the trunk);
+// stages 1–3 fire with the matching card's branch.
+const LEAF_STAGES = [
+  [
+    [552, 44, -35, 1.15],
+    [562, 72, 22, 1.25],
+    [534, 66, 206, 1.1],
+    [548, 98, -72, 1],
+    [568, 108, 58, 1],
+    [532, 114, 150, 0.9],
+  ],
+  [
+    [542, 410, 162, 0.85],
+    [486, 312, 150, 1],
+    [500, 330, 202, 1.05],
+    [510, 300, 120, 0.9],
+  ],
+  [
+    [556, 460, 40, 0.9],
+    [612, 576, -20, 1],
+    [600, 592, 32, 1.05],
+    [620, 564, -58, 0.9],
+  ],
+  [
+    [560, 700, 30, 0.9],
+    [542, 770, 170, 0.85],
+    [508, 826, 150, 1],
+    [522, 842, 202, 1.05],
+    [526, 816, 120, 0.9],
+  ],
+];
+// Card lefts keep each branch tip on the card's near edge: b1 → (492,318),
+// b2 → (604,580), b3 → (512,830).
+const CARD_W = 400;
+const CARD_POS = [
+  { left: 90, top: 140 },
+  { left: 600, top: 420 },
+  { left: 110, top: 700 },
+];
+
 export function HomeHowItWorks() {
   const [openIndex, setOpenIndex] = useState(null);
   const [hiddenIndex, setHiddenIndex] = useState(null);
   const [sourceRect, setSourceRect] = useState(null);
   const [closeSignal, setCloseSignal] = useState(0);
-  const cardRefs = useRef([]);
+  // Desktop tree and mobile stack both render card i (one is display:none),
+  // so refs are keyed `d${i}` / `m${i}` and openCard measures the visible one.
+  const cardRefs = useRef({});
+  const registerEl = (key) => (el) => {
+    cardRefs.current[key] = el;
+  };
 
   const openCard = (i) => {
-    const el = cardRefs.current[i];
+    const el = [cardRefs.current[`d${i}`], cardRefs.current[`m${i}`]].find(
+      (n) => n && n.getBoundingClientRect().width > 0,
+    );
     if (el) {
       const r = el.getBoundingClientRect();
       setSourceRect({ top: r.top, left: r.left, width: r.width, height: r.height });
@@ -127,6 +200,14 @@ export function HomeHowItWorks() {
           </motion.p>
         </div>
 
+        <DesktopTree
+          openIndex={openIndex}
+          hiddenIndex={hiddenIndex}
+          onOpen={openCard}
+          registerEl={registerEl}
+        />
+
+        {/* Mobile keeps the original stacked cards — the tree canvas is desktop-only. */}
         <motion.div
           initial="hidden"
           whileInView="show"
@@ -135,7 +216,7 @@ export function HomeHowItWorks() {
             hidden: {},
             show: { transition: { staggerChildren: STAGGER, delayChildren: 0.15 } },
           }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5"
+          className="md:hidden grid grid-cols-1 gap-5"
         >
           {STEPS.map((s, i) => (
             <HowItWorksCard
@@ -145,7 +226,7 @@ export function HomeHowItWorks() {
               isOpen={openIndex === i}
               isHidden={hiddenIndex === i}
               onOpen={() => openCard(i)}
-              cardRef={(el) => (cardRefs.current[i] = el)}
+              cardRef={registerEl(`m${i}`)}
             />
           ))}
         </motion.div>
@@ -165,8 +246,159 @@ export function HomeHowItWorks() {
 
 // Scattered resting tilts + tape angles so the three step cards read as notes
 // taped to the wall (cycled by card index).
-const CARD_TILT = [-2, 1.5, -1];
+const CARD_TILT = [-2, 1.5, -1.5];
 const TAPE_TILT = [-4, 3, -2];
+
+// Desktop-only tree canvas: the design is authored in fixed 1100×1180
+// coordinates, so below that width the whole canvas (SVG + cards together) is
+// uniformly scaled — rescaling only the SVG would detach branch tips from the
+// absolutely-positioned cards.
+function DesktopTree({ openIndex, hiddenIndex, onOpen, registerEl }) {
+  const outerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const slot0 = useRef(null);
+  const slot1 = useRef(null);
+  const slot2 = useRef(null);
+  const slotRefs = [slot0, slot1, slot2];
+  const treeInView = useInView(canvasRef, { once: true, amount: 0.2 });
+  const in0 = useInView(slot0, { once: true, amount: 0.22 });
+  const in1 = useInView(slot1, { once: true, amount: 0.22 });
+  const in2 = useInView(slot2, { once: true, amount: 0.22 });
+  const cardInView = [in0, in1, in2];
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.offsetWidth;
+      // 0 while the md breakpoint keeps this layout display:none.
+      if (w > 0) setScale(Math.min(1, w / CANVAS_W));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={outerRef}
+      className="hidden md:block relative mx-auto"
+      style={{ maxWidth: CANVAS_W, marginTop: 28, height: CANVAS_H * scale }}
+    >
+      <div
+        ref={canvasRef}
+        style={{
+          width: CANVAS_W,
+          height: CANVAS_H,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        <TreeSvg treeInView={treeInView} cardInView={cardInView} />
+        {STEPS.map((s, i) => (
+          <motion.div
+            key={s.n}
+            ref={slotRefs[i]}
+            className="absolute"
+            style={{ left: CARD_POS[i].left, top: CARD_POS[i].top, width: CARD_W, zIndex: 2 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={cardInView[i] ? { opacity: 1, y: 0 } : undefined}
+            transition={{ duration: 1, ease: EASE_OUT, delay: 0.3 }}
+          >
+            <HowItWorksCard
+              step={s}
+              index={i}
+              isOpen={openIndex === i}
+              isHidden={hiddenIndex === i}
+              onOpen={() => onOpen(i)}
+              cardRef={registerEl(`d${i}`)}
+              inView={cardInView[i]}
+              emphasized={i === 1}
+            />
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DrawPath({ d, strokeWidth, on, duration, delay = 0 }) {
+  return (
+    <motion.path
+      d={d}
+      fill="none"
+      stroke={TRUNK_COLOR}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      // pathLength 0.001 + hidden opacity: a true 0 leaves a round-linecap
+      // "dot" at the path start in Safari.
+      initial={{ pathLength: 0.001, opacity: 0 }}
+      animate={on ? { pathLength: 1, opacity: 1 } : undefined}
+      transition={{
+        pathLength: { duration, ease: DRAW_EASE, delay },
+        opacity: { duration: 0.01, delay },
+      }}
+    />
+  );
+}
+
+function Leaf({ x, y, r, s, on, delay }) {
+  // Static placement on the outer <g>; only the inner path animates scale,
+  // about its own bounding box so leaves pop from their centres.
+  return (
+    <g transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+      <motion.path
+        d={LEAF_D}
+        fill={LEAF_FILL}
+        stroke={LEAF_STROKE}
+        strokeWidth={1.1}
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        initial={{ scale: 0.3, opacity: 0 }}
+        animate={on ? { scale: 1, opacity: 1 } : undefined}
+        transition={{
+          scale: { duration: 0.65, ease: LEAF_POP_EASE, delay },
+          opacity: { duration: 0.65, ease: "easeOut", delay },
+        }}
+      />
+    </g>
+  );
+}
+
+function TreeSvg({ treeInView, cardInView }) {
+  return (
+    <svg
+      viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+      width="100%"
+      height="100%"
+      aria-hidden="true"
+      className="absolute inset-0"
+      style={{ overflow: "visible", pointerEvents: "none", zIndex: 1 }}
+    >
+      <DrawPath d={TRUNK_D} strokeWidth={5} on={treeInView} duration={2.2} />
+      {ROOT_DS.map((d) => (
+        <DrawPath key={d} d={d} strokeWidth={3.4} on={treeInView} duration={1.15} delay={1.2} />
+      ))}
+      {BRANCH_DS.map((d, i) => (
+        <DrawPath key={d} d={d} strokeWidth={3.6} on={cardInView[i]} duration={0.9} />
+      ))}
+      {LEAF_STAGES.map((stage, stageIdx) =>
+        stage.map(([x, y, r, s], j) => (
+          <Leaf
+            key={`${stageIdx}-${j}`}
+            x={x}
+            y={y}
+            r={r}
+            s={s}
+            on={stageIdx === 0 ? treeInView : cardInView[stageIdx - 1]}
+            delay={(stageIdx === 0 ? 0.8 : 0.9) + j * 0.14}
+          />
+        )),
+      )}
+    </svg>
+  );
+}
 
 const cardShakeHover = {
   y: -4,
@@ -187,27 +419,36 @@ const cardShakeHover = {
   },
 };
 
-function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
+function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView, emphasized = false }) {
   const [hover, setHover] = useState(false);
   const tilt = CARD_TILT[index % CARD_TILT.length];
   const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
   // Wobble around the resting tilt (so hover doesn't snap the card straight).
   const hoverAnim = { ...cardShakeHover, rotate: cardShakeHover.rotate.map((r) => tilt + r) };
+  // Mobile stack (no inView prop): entrance via the parent grid's stagger
+  // variants, as before. Desktop tree: the slot wrapper animates the entrance,
+  // so the card root only carries its resting tilt.
+  const entrance =
+    inView === undefined
+      ? {
+          variants: {
+            hidden: { opacity: 0, y: 18, rotate: tilt },
+            show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
+          },
+        }
+      : { initial: { rotate: tilt } };
 
   return (
     <motion.div
       ref={cardRef}
-      variants={{
-        hidden: { opacity: 0, y: 18, rotate: tilt },
-        show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
-      }}
+      {...entrance}
       whileHover={isOpen || isHidden ? undefined : hoverAnim}
       onHoverStart={() => !isOpen && setHover(true)}
       onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
         border: "1px solid var(--paper-line)",
-        background: "var(--paper-card)",
+        background: emphasized ? "var(--accent-softer)" : "var(--paper-card)",
         boxShadow: "var(--card-shadow)",
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
@@ -229,7 +470,7 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
           cursor: isOpen ? "default" : "pointer",
         }}
       >
-        <CardFrontInner step={step} hover={hover} />
+        <CardFrontInner step={step} hover={hover} emphasized={emphasized} />
         <div
           className="font-display italic text-[12px] mt-4"
           style={{
@@ -246,7 +487,7 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
   );
 }
 
-function CardFrontInner({ step, hover = true }) {
+function CardFrontInner({ step, hover = true, emphasized = false }) {
   return (
     <>
       {step.image && (
@@ -300,8 +541,8 @@ function CardFrontInner({ step, hover = true }) {
             width: 34,
             height: 34,
             borderRadius: 10,
-            background: hover ? "var(--accent)" : "var(--accent-softer)",
-            color: hover ? "#FBF7EC" : "var(--accent)",
+            background: hover || emphasized ? "var(--accent)" : "var(--accent-softer)",
+            color: hover || emphasized ? "#FBF7EC" : "var(--accent)",
             border: "1px solid var(--accent-line)",
             transition: "background-color 220ms ease-out, color 220ms ease-out",
           }}

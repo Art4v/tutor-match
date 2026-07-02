@@ -100,7 +100,7 @@ export function SchoolsMarquee() {
           <Half schools={SCHOOLS} ariaHidden />
         </div>
       </div>
-      <div className="marquee-mask overflow-hidden pt-2 pb-10">
+      <div className="marquee-mask overflow-hidden pt-2 pb-6">
         <div className="marquee-track marquee-track--reverse">
           <Half schools={VIC_SCHOOLS} />
           <Half schools={VIC_SCHOOLS} ariaHidden />
