@@ -18,6 +18,8 @@ import { useEffect, useRef, useState } from "react";
  *   text   — single-line string (or use `lines`)
  *   lines  — string[] for multi-line headings (each line writes on, staggered)
  *   size   — font-size in px (responsive: scales down via CSS clamp)
+ *   minSize — px floor the clamp can shrink to (default ~0.42·size); raise it
+ *             to keep the heading larger on narrow phones
  *   color  — text colour, default graphite ink token
  *   className / style — applied to the wrapper tag
  */
@@ -26,6 +28,7 @@ export function HandwrittenHeading({
   text,
   lines,
   size = 64,
+  minSize,
   color = "var(--ink-graphite)",
   className = "",
   style,
@@ -56,7 +59,7 @@ export function HandwrittenHeading({
   // phones — a fixed rem here would equal `size` and clamp would never shrink.
   // `size/9`vw reaches the `size` cap around a ~900px viewport (desktop) and
   // floors at ~0.42·size on narrow screens.
-  const fontSize = `clamp(${Math.round(size * 0.42)}px, ${(size / 9).toFixed(2)}vw, ${size}px)`;
+  const fontSize = `clamp(${Math.round(minSize ?? size * 0.42)}px, ${(size / 9).toFixed(2)}vw, ${size}px)`;
 
   return (
     <Tag

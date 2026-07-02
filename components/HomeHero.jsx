@@ -10,6 +10,7 @@ import { SchoolPicker } from "@/components/SchoolPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { HeroTutorStack } from "@/components/HeroTutorStack";
+import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 /**
@@ -65,8 +66,12 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
         {/* Upper region: bullets/headline left, tutor carousel right. */}
         <div className="flex-1 flex items-center py-16 lg:py-0">
           <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            {/* LEFT — eyebrow + handwritten headline + feature bullets. */}
-            <div className="flex flex-col items-start text-left">
+            {/* LEFT — eyebrow + handwritten headline + feature bullets.
+                Phones (<sm) centre everything and stretch to the first screen
+                height (100svh minus the wrapper's py-16 top padding) so the
+                text block owns the viewport and the cards sit below the fold;
+                sm+ keeps the left alignment and natural height. */}
+            <div className="relative flex flex-col items-center justify-center text-center min-h-[calc(100svh-4rem)] sm:min-h-0 sm:justify-start sm:items-start sm:text-left">
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -74,7 +79,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 className="mb-4"
               >
                 <span
-                  className="uppercase text-[12px] sm:text-[13px] font-semibold"
+                  className="uppercase text-[9px] sm:text-[13px] font-semibold"
                   style={{ color: "var(--ink-muted)", letterSpacing: "0.14em" }}
                 >
                   Australia&apos;s No.1 Tutor Platform
@@ -86,7 +91,8 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 as="h1"
                 lines={["Find the perfect", "tutor for you"]}
                 size={80}
-                className="flex flex-col items-start"
+                minSize={44}
+                className="flex flex-col items-center sm:items-start"
               />
 
               {/* Feature bullets — replace the old prose + trust pills. */}
@@ -94,12 +100,12 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
-                className="mt-6 flex flex-col gap-2.5"
+                className="mt-6 grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-col sm:gap-2.5"
               >
-                <FeatureBullet icon="check">Verified ATARs and marks</FeatureBullet>
-                <FeatureBullet icon="leaf">Completely free browsing</FeatureBullet>
-                <FeatureBullet icon="graduation">Private and group tutoring</FeatureBullet>
-                <FeatureBullet icon="globe">In-person and Online</FeatureBullet>
+                <FeatureBullet icon="check" short="Verified ATARs">Verified ATARs and marks</FeatureBullet>
+                <FeatureBullet icon="leaf" short="Free browsing">Completely free browsing</FeatureBullet>
+                <FeatureBullet icon="graduation" short="Private & group">Private and group tutoring</FeatureBullet>
+                <FeatureBullet icon="globe" short="In-person & online">In-person and Online</FeatureBullet>
               </motion.div>
 
               {/* Compact search bar (School · Subject · Search) — sits within the
@@ -147,58 +153,118 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                   Search Now
                 </Button>
               </motion.div>
+
+              {/* Phones: scroll cue pinned to the bottom of the first-screen
+                  text column (the column ends exactly at the fold). */}
+              <ScrollPrompt className="flex sm:hidden absolute bottom-8 left-1/2 -translate-x-1/2" />
             </div>
 
             {/* RIGHT — stacked tutor-card carousel (omitted when no verified
-                tutors exist). On mobile this drops below the bullets. */}
+                tutors exist). Phones (<sm) swap the carousel for three plain
+                cards in normal page flow, so you scroll past them to the
+                "See all" link; sm+ is unchanged. */}
             {showcaseTutors.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
-                className="w-full flex justify-center"
-              >
-                {/* The stack is the only element in the centering flow (the link
-                    is absolutely positioned below it), so the card's vertical
-                    centre lines up with the left column's text. */}
-                <div className="relative w-full max-w-[460px]">
-                  <HeroTutorStack tutors={showcaseTutors} />
-                  <Link
-                    href="/browse"
-                    className="group absolute left-1/2 -translate-x-1/2 top-full mt-5 inline-flex items-center gap-2 text-[14px] font-medium whitespace-nowrap"
-                    style={{ color: "var(--accent)" }}
-                  >
-                    See all{typeof verifiedCount === "number" ? ` ${verifiedCount}` : ""} verified tutors
-                    <Icon name="arrow-right" size={14} />
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 right-[24px] -bottom-0.5 h-px origin-left scale-x-0 group-hover:scale-x-100"
-                      style={{ background: "var(--accent)", transition: "transform 280ms cubic-bezier(0.22,1,0.36,1)" }}
+              <>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+                  className="w-full hidden sm:flex justify-center"
+                >
+                  {/* The stack is the only element in the centering flow (the link
+                      is absolutely positioned below it), so the card's vertical
+                      centre lines up with the left column's text. */}
+                  <div className="relative w-full max-w-[460px]">
+                    <HeroTutorStack tutors={showcaseTutors} />
+                    <SeeAllTutorsLink
+                      verifiedCount={verifiedCount}
+                      className="absolute left-1/2 -translate-x-1/2 top-full mt-5"
                     />
-                  </Link>
-                </div>
-              </motion.div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+                  className="sm:hidden w-full max-w-[340px] mx-auto flex flex-col gap-6"
+                >
+                  {showcaseTutors.slice(0, 3).map((tutor) => (
+                    <TutorCard key={tutor.id ?? tutor.slug} tutor={tutor} />
+                  ))}
+                  <div className="flex justify-center">
+                    {/* `relative` anchors the underline span (desktop's variant
+                        is `absolute`, which does the same job there). */}
+                    <SeeAllTutorsLink verifiedCount={verifiedCount} className="relative" />
+                  </div>
+                </motion.div>
+              </>
             )}
           </div>
         </div>
       </div>
+
+      {/* sm+ (tablet/desktop): scroll cue at the bottom of the hero viewport.
+          z-10 sits above the backdrop but below the z-20 content overlay. */}
+      <ScrollPrompt className="hidden sm:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-10" />
     </section>
   );
 }
 
-// One feature bullet: a circular sage-on-soft badge + label. Replaces the old
-// centered "trust pill" row.
-function FeatureBullet({ icon, children }) {
+// "Scroll" cue: label + bouncing chevron (restored from the pre-rework hero).
+// Caller supplies the display class (`flex` / `hidden sm:flex`) + positioning.
+function ScrollPrompt({ className = "" }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
+      className={`flex-col items-center gap-1.5 text-[color:var(--sage)] pointer-events-none ${className}`}
+    >
+      <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
+      <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
+        <Icon name="chevron-down" size={16} />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// "See all N verified tutors" link with the animated underline. Positioning is
+// the caller's job: desktop hangs it off the carousel absolutely, phones drop
+// it in flow under the card list.
+function SeeAllTutorsLink({ verifiedCount, className = "" }) {
+  return (
+    <Link
+      href="/browse"
+      className={`group inline-flex items-center gap-2 text-[14px] font-medium whitespace-nowrap ${className}`}
+      style={{ color: "var(--accent)" }}
+    >
+      See all{typeof verifiedCount === "number" ? ` ${verifiedCount}` : ""} verified tutors
+      <Icon name="arrow-right" size={14} />
+      <span
+        aria-hidden="true"
+        className="absolute left-0 right-[24px] -bottom-0.5 h-px origin-left scale-x-0 group-hover:scale-x-100"
+        style={{ background: "var(--accent)", transition: "transform 280ms cubic-bezier(0.22,1,0.36,1)" }}
+      />
+    </Link>
+  );
+}
+
+// One feature bullet: a circular sage-on-soft badge + label. On phones the four
+// render as an app-store-style strip — badge on top, tiny label under (`short`
+// text); sm+ keeps the icon-beside-text row.
+function FeatureBullet({ icon, short, children }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 text-center sm:flex-row sm:gap-2.5 sm:text-left">
       <span
         className="w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0"
         style={{ background: "var(--accent-softer)" }}
       >
         <Icon name={icon} size={16} className="text-[color:var(--sage)]" />
       </span>
-      <span className="text-[14px] sm:text-[15px] font-medium" style={{ color: "var(--ink)" }}>
-        {children}
+      <span className="text-[11px] leading-tight sm:text-[15px] font-medium" style={{ color: "var(--ink)" }}>
+        <span className="sm:hidden">{short ?? children}</span>
+        <span className="hidden sm:inline">{children}</span>
       </span>
     </div>
   );
