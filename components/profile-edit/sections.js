@@ -544,7 +544,7 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
    Sections
    ============================================================ */
 
-function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape }) {
+function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape, maxOutputPx }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -613,6 +613,7 @@ function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hi
         file={pendingFile}
         aspect={aspect ?? 1}
         cropShape={cropShape ?? "rect"}
+        maxOutputPx={maxOutputPx}
         title={`Crop ${label.toLowerCase()}`}
         onCancel={() => setPendingFile(null)}
         onConfirm={onCropConfirm}
@@ -640,6 +641,7 @@ export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
           hint="Square works best. Falls back to your initial when empty."
           aspect={1}
           cropShape="round"
+          maxOutputPx={1024}
         />
         <ImageUploadControl
           label="Banner image"
@@ -651,6 +653,7 @@ export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
           hint="Wide image, ~1200×320. Falls back to the colour below."
           aspect={1200 / 320}
           cropShape="rect"
+          maxOutputPx={2400}
         />
       </div>
       <div className="mt-4" style={{ opacity: swatchesDisabled ? 0.5 : 1 }}>
