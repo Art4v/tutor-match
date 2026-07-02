@@ -130,8 +130,8 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                   placeholder="Any subject"
                 />
                 <div className="px-1.5 flex items-center">
-                  <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>
-                    <span className="sr-only">Search</span>
+                  <Button variant="primary" size="lg" onClick={goBrowse} full radius={16} ariaLabel="Search">
+                    <Icon name="search" size={18} />
                   </Button>
                 </div>
               </motion.div>

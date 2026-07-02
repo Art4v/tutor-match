@@ -10,8 +10,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const [focused, setFocused] = useState(false);
-  const [q, setQ] = useState("");
   const [user, setUser] = useState(null);
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
@@ -163,11 +161,6 @@ export function TopNav() {
     router.refresh();
   };
 
-  const submitSearch = () => {
-    const params = q ? `?q=${encodeURIComponent(q)}` : "";
-    router.push(`/browse${params}`);
-  };
-
   return (
     <div
       className="nav-floating fixed top-0 left-0 right-0 z-40"
@@ -189,27 +182,6 @@ export function TopNav() {
             <span className="nav-logo-word" style={{ color: "var(--accent)" }}>tutor</span>
           </span>
         </Link>
-
-        <div
-          className="flex-1 max-w-[480px] hidden md:flex items-center gap-2 px-3 h-9 rounded-lg transition-colors"
-          style={{
-            background: focused ? "#fff" : "var(--desk)",
-            border: `1px solid ${focused ? "var(--accent)" : "transparent"}`,
-            boxShadow: focused ? "0 0 0 3px var(--accent-ring)" : "none",
-          }}
-        >
-          <Icon name="search" size={15} className="text-slate-500" />
-          <input
-            placeholder="Search tutors, subjects, locations…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
-            className="flex-1 bg-transparent outline-none text-[14px] placeholder:text-slate-400"
-          />
-          <span className="text-[11px] text-slate-400 hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--paper-line)" }}>⌘K</span>
-        </div>
 
         <div className="flex items-center gap-1 ml-auto">
           {user ? (

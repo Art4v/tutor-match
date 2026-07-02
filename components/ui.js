@@ -139,7 +139,7 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
   );
 }
 
-export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled }) {
+export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, radius, ariaLabel }) {
   const variants = {
     primary: { bg: "var(--accent)", color: "#FBF7EC", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#FBF7EC" },
     outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)", hoverBg: "var(--paper-card)", hoverBorder: "var(--accent)", hoverColor: "var(--accent)" },
@@ -163,6 +163,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
       type={type || "button"}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => { setHover(false); setPressed(false); }}
       onMouseDown={() => setPressed(true)}
@@ -175,7 +176,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         padding: s.pad,
         fontSize: s.fs,
         height: s.h,
-        borderRadius: s.r,
+        borderRadius: radius ?? s.r,
         width: full ? "100%" : "auto",
         cursor: disabled ? "not-allowed" : "pointer",
         letterSpacing: "-0.005em",
