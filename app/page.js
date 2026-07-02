@@ -3,7 +3,6 @@ import { getFeaturedTutors, getSubjects, getSchools, getVerifiedTutorCount } fro
 import { rankTutors } from "@/lib/ranking";
 import { HomeHero } from "@/components/HomeHero";
 import { SchoolsMarquee } from "@/components/SchoolsMarquee";
-import { HomeFeaturedTutors } from "@/components/HomeFeaturedTutors";
 import { HomeHowItWorks } from "@/components/HomeHowItWorks";
 import { HomeCta } from "@/components/HomeCta";
 
@@ -17,16 +16,17 @@ export default async function HomePage() {
     getSchools(supabase),
     getVerifiedTutorCount(supabase),
   ]);
-  // Order the featured strip by profile completeness (same algorithm as
-  // /browse — see lib/ranking.js); equal-completeness tutors are randomized
-  // fresh each load.
+  // Hero carousel pool: rank by the same algorithm as /browse (lib/ranking.js),
+  // which floats verified tutors to the top and reshuffles equal-score ties
+  // fresh each render, then take the verified subset — a randomised set of
+  // verified tutors per page load.
   const featuredTutors = rankTutors(featuredPool).slice(0, FEATURED_SLOTS);
+  const showcaseTutors = featuredTutors.filter((t) => t.verified);
 
   return (
     <main style={{ background: "var(--paper)" }}>
-      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} />
+      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} showcaseTutors={showcaseTutors} verifiedCount={verifiedCount} />
       <SchoolsMarquee />
-      <HomeFeaturedTutors tutors={featuredTutors} verifiedCount={verifiedCount} />
       <HomeHowItWorks />
       <HomeCta />
     </main>

@@ -373,6 +373,9 @@ input[type="number"] {
   width: max-content;
   animation: marquee var(--marquee-dur, 42s) linear infinite;
 }
+.marquee-track--reverse {
+  animation-direction: reverse;
+}
 .marquee-mask {
   -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
   mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);

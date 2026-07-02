@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * Seamless marquee of top Sydney selective high schools — social proof strip
- * between the hero and the featured tutors. Pure presentation: a static list
- * scrolled with a CSS keyframe (two identical halves, translateX -50%), edge
- * fades via `.marquee-mask`, paused under reduced-motion (see globals.css).
+ * Seamless marquee of top NSW + VIC high schools — social proof strip between
+ * the hero and the featured tutors. Pure presentation: static lists scrolled
+ * with a CSS keyframe (two identical halves, translateX -50%), edge fades via
+ * `.marquee-mask`, paused under reduced-motion (see globals.css). Two rows
+ * under the one heading: NSW scrolls left, VIC scrolls right
+ * (`.marquee-track--reverse`).
  */
 // `name` is the full school name (used for the image `alt`); `short` is the
 // compact display label; `logo` is the crest under /public/images/marquee
@@ -28,10 +30,24 @@ const SCHOOLS = [
   { name: "Abbotsleigh", short: "Abbotsleigh", logo: "/images/marquee/abbotsleigh.png" },
 ];
 
-function Half({ ariaHidden }) {
+// Top 10 Victorian schools by 2025 VCE performance (% of study scores 40+).
+const VIC_SCHOOLS = [
+  { name: "Ballarat Clarendon College", short: "Ballarat Clarendon College", logo: "/images/marquee/ballarat-clarendon.png" },
+  { name: "Mac.Robertson Girls' High School", short: "Mac.Robertson Girls HS", logo: "/images/marquee/macrobertson-girls.png" },
+  { name: "Bacchus Marsh Grammar", short: "Bacchus Marsh Grammar", logo: "/images/marquee/bacchus-marsh-grammar.svg" },
+  { name: "Nossal High School", short: "Nossal HS", logo: "/images/marquee/nossal.png" },
+  { name: "Haileybury", short: "Haileybury", logo: "/images/marquee/haileybury.svg" },
+  { name: "Ruyton Girls' School", short: "Ruyton Girls' School", logo: "/images/marquee/ruyton-girls.svg" },
+  { name: "Melbourne Girls Grammar", short: "Melbourne Girls Grammar", logo: "/images/marquee/melbourne-girls-grammar.png" },
+  { name: "Melbourne High School", short: "Melbourne HS", logo: "/images/marquee/melbourne-high.png" },
+  { name: "Melbourne Grammar School", short: "Melbourne Grammar", logo: "/images/marquee/melbourne-grammar.png" },
+  { name: "Huntingtower School", short: "Huntingtower", logo: "/images/marquee/huntingtower.png" },
+];
+
+function Half({ schools, ariaHidden }) {
   return (
     <div className="flex items-center shrink-0" aria-hidden={ariaHidden}>
-      {SCHOOLS.map(({ name, short, logo }) => (
+      {schools.map(({ name, short, logo }) => (
         <span key={name} className="flex items-center shrink-0">
           <span className="flex items-center gap-3.5 px-8">
             {logo && (
@@ -78,10 +94,16 @@ export function SchoolsMarquee() {
           Trusted tutors from
         </span>
       </div>
-      <div className="marquee-mask overflow-hidden pt-2 pb-4">
+      <div className="marquee-mask overflow-hidden pt-2 pb-2">
         <div className="marquee-track">
-          <Half />
-          <Half ariaHidden />
+          <Half schools={SCHOOLS} />
+          <Half schools={SCHOOLS} ariaHidden />
+        </div>
+      </div>
+      <div className="marquee-mask overflow-hidden pt-2 pb-10">
+        <div className="marquee-track marquee-track--reverse">
+          <Half schools={VIC_SCHOOLS} />
+          <Half schools={VIC_SCHOOLS} ariaHidden />
         </div>
       </div>
     </section>
