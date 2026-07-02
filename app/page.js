@@ -21,10 +21,14 @@ export default async function HomePage() {
   // /browse — see lib/ranking.js); equal-completeness tutors are randomized
   // fresh each load.
   const featuredTutors = rankTutors(featuredPool).slice(0, FEATURED_SLOTS);
+  // Hero carousel: the verified subset of the ranked featured list. rankTutors
+  // floats verified tutors to the top and reshuffles equal-score ties fresh per
+  // render, so this is a randomised set of verified tutors each page load.
+  const showcaseTutors = featuredTutors.filter((t) => t.verified);
 
   return (
     <main style={{ background: "var(--paper)" }}>
-      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} />
+      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} showcaseTutors={showcaseTutors} />
       <SchoolsMarquee />
       <HomeFeaturedTutors tutors={featuredTutors} verifiedCount={verifiedCount} />
       <HomeHowItWorks />

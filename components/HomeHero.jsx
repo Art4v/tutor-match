@@ -8,15 +8,17 @@ import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
+import { HeroTutorStack } from "@/components/HeroTutorStack";
 import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 /**
  * Single-viewport hero: an animated "neural network" constellation fills the
- * whole hero behind the centered headline + search. The search wiring
- * (`goBrowse`) is unchanged.
+ * whole hero behind a two-column layout — headline + feature bullets on the
+ * left, a stacked tutor-card carousel on the right — with a full-width search
+ * bar pinned near the bottom. The search wiring (`goBrowse`) is unchanged.
  */
-export function HomeHero({ catalog, schoolCatalog = [] }) {
+export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [] }) {
   const router = useRouter();
   const [year, setYear] = useState("");
   const [school, setSchool] = useState(null);
@@ -33,7 +35,7 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
 
   return (
     <section
-      className="relative z-10 flex flex-col items-center justify-center text-center px-6"
+      className="relative z-10 flex flex-col px-6"
       style={{ minHeight: "100svh", marginTop: "calc(-1 * var(--nav-h))", background: "var(--paper)" }}
     >
       {/* Backdrop layers live in their own clip so the section can stay
@@ -59,127 +61,146 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
         </div>
       </div>
 
-      {/* Centered overlay — headline + search + trust pills. z-20 keeps the
-          search dropdowns above the section-level scroll indicator (z-10). */}
-      <div className="relative z-20 w-full flex flex-col items-center py-20">
-          <div className="w-full max-w-[960px] mx-auto flex flex-col items-center">
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, ease: EASE_OUT }}
-              className="mb-4 sm:mb-6 text-[12px] sm:text-[20px]"
-              style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
-            >
-              Australia&apos;s No.1 Tutor Platform
-            </motion.div>
+      {/* Overlay — two-column content up top, full-width search bar pinned near
+          the bottom. z-20 keeps the search dropdowns above the backdrop. */}
+      <div className="relative z-20 flex-1 w-full max-w-[1200px] mx-auto flex flex-col">
+        {/* Upper region: bullets/headline left, tutor carousel right. */}
+        <div className="flex-1 flex items-center py-16 lg:py-0">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            {/* LEFT — eyebrow + handwritten headline + feature bullets. */}
+            <div className="flex flex-col items-start text-left">
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: EASE_OUT }}
+                className="mb-4 flex items-center gap-2"
+              >
+                <Icon name="leaf" size={16} className="text-[color:var(--sage)] shrink-0" />
+                <span
+                  className="uppercase text-[12px] sm:text-[13px] font-semibold"
+                  style={{ color: "var(--ink-muted)", letterSpacing: "0.14em" }}
+                >
+                  Australia&apos;s No.1 Tutor Platform
+                </span>
+              </motion.div>
 
-            {/* Cursive graphite headline — writes itself in on view. */}
-            <HandwrittenHeading
-              as="h1"
-              lines={["Find the perfect", "tutor for you"]}
-              size={116}
-              className="flex flex-col items-center"
-            />
-
-            <motion.p
-              className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-5 sm:mt-7 leading-[1.5] sm:leading-[1.55] max-w-[300px] sm:max-w-[620px]"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
-            >
-              Fully verified private tutors and the leading tutoring companies. Authentic reviews, proven results, and a commitment to helping every student find the right match.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-              className="relative z-30 mt-9 w-full hidden sm:grid grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.15fr)_auto] md:grid-cols-[0.8fr_1.1fr_1.3fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[920px] hero-search-glow"
-              style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
-            >
-              <SearchField
-                icon="graduation"
-                label="Year"
-                placeholder="Year 12"
-                options={YEAR_LEVELS_DESC.map((o) => ({ label: o.label, value: o.value }))}
-                value={year}
-                displayValue={year !== "" ? yearLabel(year) : ""}
-                onChange={setYear}
+              {/* Cursive graphite headline — writes itself in on view. */}
+              <HandwrittenHeading
+                as="h1"
+                lines={["Find the perfect", "tutor for you"]}
+                size={96}
+                className="flex flex-col items-start"
               />
-              <SchoolPicker
-                catalog={schoolCatalog}
-                value={school?.slug ?? null}
-                onChange={(slug, s) => setSchool(slug ? { slug, name: s?.name } : null)}
-                mode="single"
-                variant="bar"
-                label="School"
-                placeholder="Any school"
-              />
-              <SubjectPicker
-                catalog={catalog}
-                value={subject?.slug ?? null}
-                onChange={(slug, sub) => setSubject(slug ? { slug, name: sub?.name, exam: sub?.exam } : null)}
-                mode="single"
-                variant="bar"
-                label="Subject"
-                placeholder="Mathematics Extension 1"
-              />
-              <div className="px-1.5 sm:px-2 md:px-1.5 flex items-center">
-                <div className="w-full">
-                  <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>
-                    {/* Icon-only on phones so all three segments fit one row. */}
-                    <span className="hidden sm:inline">Search</span>
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
 
-            {/* Phones: the inline Year/Subject bar is hidden; a single centered
-                "Search Now" button takes its place, routing to /browse. */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-              className="mt-7 flex sm:hidden justify-center"
-            >
-              <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
-                Search Now
-              </Button>
-            </motion.div>
+              {/* Feature bullets — replace the old prose + trust pills. */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+                className="mt-8 flex flex-col gap-4"
+              >
+                <FeatureBullet icon="check">Verified ATARs and marks</FeatureBullet>
+                <FeatureBullet icon="leaf">Completely free browsing</FeatureBullet>
+                <FeatureBullet icon="graduation">Private and group tutoring</FeatureBullet>
+                <FeatureBullet icon="globe">In-person and Online</FeatureBullet>
+              </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.9 }}
-              className="mt-6 flex items-center justify-center gap-x-6 gap-y-2 flex-wrap text-[13px]"
-              style={{ color: "var(--ink-muted)", letterSpacing: "0.01em" }}
-            >
-              <TrustPill>Verified ATARs and marks</TrustPill>
-              <TrustPill>Completely free browsing</TrustPill>
-              <TrustPill>Private and group tutoring</TrustPill>
-              <TrustPill>In-person and Online</TrustPill>
-            </motion.div>
+            {/* RIGHT — stacked tutor-card carousel (omitted when no verified
+                tutors exist). On mobile this drops below the bullets. */}
+            {showcaseTutors.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+                className="w-full flex justify-center lg:justify-end"
+              >
+                <HeroTutorStack tutors={showcaseTutors} />
+              </motion.div>
+            )}
           </div>
         </div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-[color:var(--sage)] pointer-events-none"
-      >
-        <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
-        <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
-          <Icon name="chevron-down" size={16} />
-        </motion.div>
-      </motion.div>
+        {/* Bottom region: full-width search bar. */}
+        <div className="pb-8 lg:pb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
+            className="relative z-30 w-full hidden sm:grid grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.15fr)_auto] md:grid-cols-[0.8fr_1.1fr_1.3fr_auto] items-stretch bg-[color:var(--paper-card)] max-w-[1200px] hero-search-glow"
+            style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
+          >
+            <SearchField
+              icon="graduation"
+              label="Year"
+              placeholder="Year 12"
+              options={YEAR_LEVELS_DESC.map((o) => ({ label: o.label, value: o.value }))}
+              value={year}
+              displayValue={year !== "" ? yearLabel(year) : ""}
+              onChange={setYear}
+            />
+            <SchoolPicker
+              catalog={schoolCatalog}
+              value={school?.slug ?? null}
+              onChange={(slug, s) => setSchool(slug ? { slug, name: s?.name } : null)}
+              mode="single"
+              variant="bar"
+              label="School"
+              placeholder="Any school"
+            />
+            <SubjectPicker
+              catalog={catalog}
+              value={subject?.slug ?? null}
+              onChange={(slug, sub) => setSubject(slug ? { slug, name: sub?.name, exam: sub?.exam } : null)}
+              mode="single"
+              variant="bar"
+              label="Subject"
+              placeholder="Mathematics Extension 1"
+            />
+            <div className="px-1.5 sm:px-2 md:px-1.5 flex items-center">
+              <div className="w-full">
+                <Button variant="primary" size="lg" icon="search" onClick={goBrowse} full>
+                  {/* Icon-only on phones so all three segments fit one row. */}
+                  <span className="hidden sm:inline">Search</span>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Phones: the inline Year/Subject bar is hidden; a single centered
+              "Search Now" button takes its place, routing to /browse. */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
+            className="flex sm:hidden justify-center"
+          >
+            <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
+              Search Now
+            </Button>
+          </motion.div>
+        </div>
+      </div>
     </section>
   );
 }
 
-function TrustPill({ children }) {
-  return <span className="whitespace-nowrap">{children}</span>;
+// One feature bullet: a circular sage-on-soft badge + label. Replaces the old
+// centered "trust pill" row.
+function FeatureBullet({ icon, children }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0"
+        style={{ background: "var(--accent-softer)" }}
+      >
+        <Icon name={icon} size={18} className="text-[color:var(--sage)]" />
+      </span>
+      <span className="text-[15px] sm:text-[16px] font-medium" style={{ color: "var(--ink)" }}>
+        {children}
+      </span>
+    </div>
+  );
 }
 
 function SearchField({ icon, label, placeholder, value, onChange, options = [], displayValue }) {
