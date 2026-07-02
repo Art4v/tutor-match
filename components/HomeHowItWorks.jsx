@@ -628,8 +628,9 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
   // Mobile stack (no inView prop): entrance via the parent grid's stagger
   // variants, as before. Desktop tree: the slot wrapper animates the entrance,
   // so the card root only carries its resting tilt.
+  const treeMode = inView !== undefined;
   const entrance =
-    inView === undefined
+    !treeMode
       ? {
           variants: {
             hidden: { opacity: 0, y: 18, rotate: tilt },
@@ -664,13 +665,13 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
-        className="p-6 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
+        className={`${treeMode ? "p-7" : "p-6"} block relative overflow-hidden text-left w-full focus:outline-none bg-transparent`}
         style={{
           borderRadius: "var(--radius-card)",
           cursor: isOpen ? "default" : "pointer",
         }}
       >
-        <CardFrontInner step={step} hover={hover} emphasized={emphasized} />
+        <CardFrontInner step={step} hover={hover} emphasized={emphasized} tall={treeMode} />
         <div
           className="font-display italic text-[12px] mt-4"
           style={{
@@ -687,13 +688,13 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
   );
 }
 
-function CardFrontInner({ step, hover = true, emphasized = false }) {
+function CardFrontInner({ step, hover = true, emphasized = false, tall = false }) {
   return (
     <>
       {step.image && (
         <div
           className="relative mb-4 overflow-hidden"
-          style={{ borderRadius: 12, height: 88, border: "1px solid var(--accent-line)" }}
+          style={{ borderRadius: 12, height: tall ? 122 : 88, border: "1px solid var(--accent-line)" }}
         >
           <img
             src={step.image.src}
