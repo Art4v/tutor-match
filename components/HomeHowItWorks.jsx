@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useInView } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -59,15 +59,102 @@ const STEPS = [
   },
 ];
 
+// ── "Growing tree" desktop canvas (Claude Design: How It Works Tree) ──
+// Trunk/leaf colours are design-local like the rest of this file's inline
+// palette; card surfaces keep the shared CSS variables.
+const TRUNK_COLOR = "#556E48";
+const LEAF_FILL = "#8FAB79";
+const LEAF_STROKE = "#5f7d4e";
+const DRAW_EASE = [0.45, 0.05, 0.2, 1];
+const LEAF_POP_EASE = [0.3, 1.5, 0.5, 1];
+
+const CANVAS_W = 1100;
+const CANVAS_H = 1180;
+
+const TRUNK_D =
+  "M550 46 C 534 170 566 290 551 410 C 540 500 561 600 550 700 C 542 800 566 900 551 990 C 546 1020 550 1045 550 1058";
+// Roots kept as separate paths so all three draw simultaneously.
+const ROOT_DS = [
+  "M550 1035 C 542 1080 486 1098 448 1130",
+  "M550 1035 C 558 1082 620 1098 664 1132",
+  "M550 1045 C 549 1090 550 1122 550 1146",
+];
+const BRANCH_DS = [
+  "M551 270 C 504 282 478 300 492 318",
+  "M550 520 C 596 532 590 560 604 580",
+  "M551 770 C 506 782 486 812 512 830",
+];
+const LEAF_D = "M0 0 C 4 -8 15 -9 20 -1 C 15 6 4 5 0 0 Z";
+// [x, y, rotate, scale] per leaf. Stage 0 is the crown (fires with the trunk);
+// stages 1–3 fire with the matching card's branch.
+const LEAF_STAGES = [
+  [
+    [552, 44, -35, 1.15],
+    [562, 72, 22, 1.25],
+    [534, 66, 206, 1.1],
+    [548, 98, -72, 1],
+    [568, 108, 58, 1],
+    [532, 114, 150, 0.9],
+  ],
+  [
+    [542, 410, 162, 0.85],
+    [486, 312, 150, 1],
+    [500, 330, 202, 1.05],
+    [510, 300, 120, 0.9],
+  ],
+  [
+    [556, 460, 40, 0.9],
+    [612, 576, -20, 1],
+    [600, 592, 32, 1.05],
+    [620, 564, -58, 0.9],
+  ],
+  [
+    [560, 700, 30, 0.9],
+    [542, 770, 170, 0.85],
+    [508, 826, 150, 1],
+    [522, 842, 202, 1.05],
+    [526, 816, 120, 0.9],
+  ],
+];
+// Ambient leaves along the bare trunk stretches; delays roughly track the
+// trunk draw (2.2s over y 46→1058) passing each one.
+const AMBIENT_LEAVES = [
+  [546, 638, 155, 0.85, 1.5],
+  [560, 668, 28, 0.8, 1.65],
+  [544, 892, 168, 0.85, 2.0],
+  [562, 924, 22, 0.9, 2.15],
+];
+// Doodle outlines (cloud, grass tuft) share the tree's stroke style.
+const CLOUD_D =
+  "M14 26 C 4 26 0 16 8 11 C 6 3 16 -3 24 2 C 28 -8 44 -8 48 2 C 58 -3 68 5 63 12 C 71 16 67 26 58 26 Z";
+const GRASS_D =
+  "M0 0 C -1 -6 -5 -10 -9 -13 M2 0 C 3 -8 3 -14 1 -18 M4 0 C 6 -6 10 -10 13 -14";
+
+// Card lefts keep each branch tip on the card's near edge: b1 → (492,318),
+// b2 → (604,580), b3 → (512,830).
+const CARD_W = 400;
+const CARD_POS = [
+  { left: 90, top: 140 },
+  { left: 600, top: 420 },
+  { left: 110, top: 700 },
+];
+
 export function HomeHowItWorks() {
   const [openIndex, setOpenIndex] = useState(null);
   const [hiddenIndex, setHiddenIndex] = useState(null);
   const [sourceRect, setSourceRect] = useState(null);
   const [closeSignal, setCloseSignal] = useState(0);
-  const cardRefs = useRef([]);
+  // Desktop tree and mobile stack both render card i (one is display:none),
+  // so refs are keyed `d${i}` / `m${i}` and openCard measures the visible one.
+  const cardRefs = useRef({});
+  const registerEl = (key) => (el) => {
+    cardRefs.current[key] = el;
+  };
 
   const openCard = (i) => {
-    const el = cardRefs.current[i];
+    const el = [cardRefs.current[`d${i}`], cardRefs.current[`m${i}`]].find(
+      (n) => n && n.getBoundingClientRect().width > 0,
+    );
     if (el) {
       const r = el.getBoundingClientRect();
       setSourceRect({ top: r.top, left: r.left, width: r.width, height: r.height });
@@ -127,6 +214,14 @@ export function HomeHowItWorks() {
           </motion.p>
         </div>
 
+        <DesktopTree
+          openIndex={openIndex}
+          hiddenIndex={hiddenIndex}
+          onOpen={openCard}
+          registerEl={registerEl}
+        />
+
+        {/* Mobile keeps the original stacked cards — the tree canvas is desktop-only. */}
         <motion.div
           initial="hidden"
           whileInView="show"
@@ -135,7 +230,7 @@ export function HomeHowItWorks() {
             hidden: {},
             show: { transition: { staggerChildren: STAGGER, delayChildren: 0.15 } },
           }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5"
+          className="md:hidden grid grid-cols-1 gap-5"
         >
           {STEPS.map((s, i) => (
             <HowItWorksCard
@@ -145,7 +240,7 @@ export function HomeHowItWorks() {
               isOpen={openIndex === i}
               isHidden={hiddenIndex === i}
               onOpen={() => openCard(i)}
-              cardRef={(el) => (cardRefs.current[i] = el)}
+              cardRef={registerEl(`m${i}`)}
             />
           ))}
         </motion.div>
@@ -165,8 +260,345 @@ export function HomeHowItWorks() {
 
 // Scattered resting tilts + tape angles so the three step cards read as notes
 // taped to the wall (cycled by card index).
-const CARD_TILT = [-2, 1.5, -1];
+const CARD_TILT = [-2, 1.5, -1.5];
 const TAPE_TILT = [-4, 3, -2];
+
+// Desktop-only tree canvas: the design is authored in fixed 1100×1180
+// coordinates, so below that width the whole canvas (SVG + cards together) is
+// uniformly scaled — rescaling only the SVG would detach branch tips from the
+// absolutely-positioned cards.
+function DesktopTree({ openIndex, hiddenIndex, onOpen, registerEl }) {
+  const outerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const slot0 = useRef(null);
+  const slot1 = useRef(null);
+  const slot2 = useRef(null);
+  const slotRefs = [slot0, slot1, slot2];
+  const treeInView = useInView(canvasRef, { once: true, amount: 0.2 });
+  const in0 = useInView(slot0, { once: true, amount: 0.22 });
+  const in1 = useInView(slot1, { once: true, amount: 0.22 });
+  const in2 = useInView(slot2, { once: true, amount: 0.22 });
+  const cardInView = [in0, in1, in2];
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.offsetWidth;
+      // 0 while the md breakpoint keeps this layout display:none.
+      if (w > 0) setScale(Math.min(1, w / CANVAS_W));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={outerRef}
+      className="hidden md:block relative mx-auto"
+      style={{ maxWidth: CANVAS_W, marginTop: 28, height: CANVAS_H * scale }}
+    >
+      <div
+        ref={canvasRef}
+        style={{
+          width: CANVAS_W,
+          height: CANVAS_H,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        <TreeSvg treeInView={treeInView} cardInView={cardInView} />
+        {STEPS.map((s, i) => (
+          <motion.div
+            key={s.n}
+            ref={slotRefs[i]}
+            className="absolute"
+            style={{ left: CARD_POS[i].left, top: CARD_POS[i].top, width: CARD_W, zIndex: 2 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={cardInView[i] ? { opacity: 1, y: 0 } : undefined}
+            transition={{ duration: 1, ease: EASE_OUT, delay: 0.3 }}
+          >
+            <HowItWorksCard
+              step={s}
+              index={i}
+              isOpen={openIndex === i}
+              isHidden={hiddenIndex === i}
+              onOpen={() => onOpen(i)}
+              cardRef={registerEl(`d${i}`)}
+              inView={cardInView[i]}
+              emphasized={i === 1}
+            />
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DrawPath({ d, strokeWidth, on, duration, delay = 0 }) {
+  return (
+    <motion.path
+      d={d}
+      fill="none"
+      stroke={TRUNK_COLOR}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      // pathLength 0.001 + hidden opacity: a true 0 leaves a round-linecap
+      // "dot" at the path start in Safari.
+      initial={{ pathLength: 0.001, opacity: 0 }}
+      animate={on ? { pathLength: 1, opacity: 1 } : undefined}
+      transition={{
+        pathLength: { duration, ease: DRAW_EASE, delay },
+        opacity: { duration: 0.01, delay },
+      }}
+    />
+  );
+}
+
+function Leaf({ x, y, r, s, on, delay }) {
+  // Static placement on the outer <g>; only the inner path animates scale,
+  // about its own bounding box so leaves pop from their centres.
+  return (
+    <g transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+      <motion.path
+        d={LEAF_D}
+        fill={LEAF_FILL}
+        stroke={LEAF_STROKE}
+        strokeWidth={1.1}
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        initial={{ scale: 0.3, opacity: 0 }}
+        animate={on ? { scale: 1, opacity: 1 } : undefined}
+        transition={{
+          scale: { duration: 0.65, ease: LEAF_POP_EASE, delay },
+          opacity: { duration: 0.65, ease: "easeOut", delay },
+        }}
+      />
+    </g>
+  );
+}
+
+function TreeSvg({ treeInView, cardInView }) {
+  return (
+    <svg
+      viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+      width="100%"
+      height="100%"
+      aria-hidden="true"
+      className="absolute inset-0"
+      style={{ overflow: "visible", pointerEvents: "none", zIndex: 1 }}
+    >
+      <DrawPath d={TRUNK_D} strokeWidth={5} on={treeInView} duration={2.2} />
+      {ROOT_DS.map((d) => (
+        <DrawPath key={d} d={d} strokeWidth={3.4} on={treeInView} duration={1.15} delay={1.2} />
+      ))}
+      {BRANCH_DS.map((d, i) => (
+        <DrawPath key={d} d={d} strokeWidth={3.6} on={cardInView[i]} duration={0.9} />
+      ))}
+      {LEAF_STAGES.map((stage, stageIdx) =>
+        stage.map(([x, y, r, s], j) => (
+          <Leaf
+            key={`${stageIdx}-${j}`}
+            x={x}
+            y={y}
+            r={r}
+            s={s}
+            on={stageIdx === 0 ? treeInView : cardInView[stageIdx - 1]}
+            delay={(stageIdx === 0 ? 0.8 : 0.9) + j * 0.14}
+          />
+        )),
+      )}
+      {AMBIENT_LEAVES.map(([x, y, r, s, delay], i) => (
+        <Leaf key={`amb-${i}`} x={x} y={y} r={r} s={s} on={treeInView} delay={delay} />
+      ))}
+      <SkyDoodles on={treeInView} />
+      <GroundDoodles on={treeInView} />
+      <FlyingBirds on={treeInView} />
+      <FallingLeaf x={585} y={150} drop={880} on={treeInView} delay={3.2} dur={13} />
+      <FallingLeaf x={628} y={575} drop={500} on={treeInView} delay={9} dur={10} />
+    </svg>
+  );
+}
+
+// Pop-in wrapper for doodle groups: static placement on the outer <g>, the
+// inner group scales about its own bounding box (origin "bottom" makes grass
+// grow up out of the ground).
+function PopG({ x, y, s = 1, on, delay, origin = "center", children }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <motion.g
+        style={{ transformBox: "fill-box", transformOrigin: origin === "bottom" ? "50% 100%" : "center" }}
+        initial={{ scale: 0.4, opacity: 0 }}
+        animate={on ? { scale: 1, opacity: 1 } : undefined}
+        transition={{
+          scale: { duration: 0.55, ease: LEAF_POP_EASE, delay },
+          opacity: { duration: 0.45, ease: "easeOut", delay },
+        }}
+      >
+        {children}
+      </motion.g>
+    </g>
+  );
+}
+
+function SkyDoodles({ on }) {
+  return (
+    <g style={{ opacity: 0.5 }}>
+      {/* Sketch sun, top-right */}
+      <motion.g
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={on ? { scale: 1, opacity: 1 } : undefined}
+        transition={{ duration: 0.8, ease: EASE_OUT, delay: 1.4 }}
+      >
+        <circle cx={950} cy={110} r={30} fill="none" stroke={TRUNK_COLOR} strokeWidth={2.4} />
+        {[...Array(8)].map((_, i) => {
+          const a = (i * Math.PI) / 4 + 0.2;
+          return (
+            <line
+              key={i}
+              x1={950 + Math.cos(a) * 40}
+              y1={110 + Math.sin(a) * 40}
+              x2={950 + Math.cos(a) * 52}
+              y2={110 + Math.sin(a) * 52}
+              stroke={TRUNK_COLOR}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </motion.g>
+      {/* Doodle clouds, top-left, with a slow horizontal drift */}
+      <Cloud x={175} y={70} s={1} on={on} delay={1.7} drift={14} dur={9} />
+      <Cloud x={320} y={100} s={0.65} on={on} delay={1.95} drift={-10} dur={12} />
+    </g>
+  );
+}
+
+function Cloud({ x, y, s, on, delay, drift, dur }) {
+  return (
+    <motion.g
+      initial={{ opacity: 0 }}
+      animate={on ? { opacity: 1, x: [0, drift, 0] } : undefined}
+      transition={{
+        opacity: { duration: 0.9, ease: "easeOut", delay },
+        x: { duration: dur, repeat: Infinity, ease: "easeInOut", delay },
+      }}
+    >
+      <path
+        transform={`translate(${x} ${y}) scale(${s})`}
+        d={CLOUD_D}
+        fill="none"
+        stroke={TRUNK_COLOR}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </motion.g>
+  );
+}
+
+function GroundDoodles({ on }) {
+  const grass = [
+    [398, 1126, 1],
+    [492, 1144, 0.85],
+    [612, 1140, 0.9],
+    [702, 1124, 1.05],
+  ];
+  const pebbles = [
+    [462, 1148, 7, 4],
+    [646, 1150, 5, 3.2],
+    [538, 1157, 4, 2.8],
+  ];
+  return (
+    <g style={{ opacity: 0.75 }}>
+      {grass.map(([x, y, s], i) => (
+        <PopG key={`g-${i}`} x={x} y={y} s={s} on={on} delay={2.1 + i * 0.12} origin="bottom">
+          <path d={GRASS_D} fill="none" stroke={TRUNK_COLOR} strokeWidth={2} strokeLinecap="round" />
+        </PopG>
+      ))}
+      {pebbles.map(([x, y, rx, ry], i) => (
+        <PopG key={`p-${i}`} x={x} y={y} on={on} delay={2.35 + i * 0.12}>
+          <ellipse cx={0} cy={0} rx={rx} ry={ry} fill="none" stroke={TRUNK_COLOR} strokeWidth={1.8} />
+        </PopG>
+      ))}
+      {/* Mushroom — cap gets a faint wash of the washi-tape rust */}
+      <PopG x={420} y={1146} s={1.1} on={on} delay={2.55} origin="bottom">
+        <path
+          d="M-2 0 C -2 -5 -2 -8 -1 -10 M2 0 C 2 -5 2 -8 1 -10"
+          fill="none"
+          stroke={TRUNK_COLOR}
+          strokeWidth={1.8}
+          strokeLinecap="round"
+        />
+        <path
+          d="M-8 -9 C -8 -17 8 -17 8 -9 Z"
+          fill="rgba(176,94,59,0.28)"
+          stroke={TRUNK_COLOR}
+          strokeWidth={1.8}
+          strokeLinejoin="round"
+        />
+      </PopG>
+    </g>
+  );
+}
+
+// Sketch birds (two-arc gull doodles) drifting near the sun, with a slow bob.
+const BIRD_D = "M0 0 C 3 -5 8 -5 10 -1 C 12 -5 17 -5 20 0";
+const BIRDS = [
+  [820, 172, 1, -6, 2.0],
+  [884, 142, 0.8, 4, 2.15],
+  [768, 204, 0.62, 0, 2.3],
+];
+function FlyingBirds({ on }) {
+  return (
+    <g style={{ opacity: 0.55 }}>
+      {BIRDS.map(([x, y, s, r, delay], i) => (
+        <g key={i} transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+          <motion.g
+            initial={{ opacity: 0, y: 6 }}
+            animate={on ? { opacity: 1, y: [6, 0, 3, 0] } : undefined}
+            transition={{
+              opacity: { duration: 0.8, ease: "easeOut", delay },
+              y: { duration: 5 + i, repeat: Infinity, ease: "easeInOut", delay },
+            }}
+          >
+            <path d={BIRD_D} fill="none" stroke={TRUNK_COLOR} strokeWidth={2.2} strokeLinecap="round" />
+          </motion.g>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+// A leaf that breaks loose and tumbles down past the trunk on a loop.
+function FallingLeaf({ x, y, drop, on, delay, dur }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <motion.path
+        d={LEAF_D}
+        fill={LEAF_FILL}
+        stroke={LEAF_STROKE}
+        strokeWidth={1.1}
+        style={{ transformBox: "fill-box", transformOrigin: "center" }}
+        initial={{ opacity: 0 }}
+        animate={
+          on
+            ? {
+                y: [0, drop * 0.25, drop * 0.5, drop * 0.75, drop],
+                x: [0, -26, 14, -20, 0],
+                rotate: [0, 140, 40, 200, 120],
+                opacity: [0, 0.9, 0.9, 0.9, 0],
+              }
+            : undefined
+        }
+        transition={{ duration: dur, repeat: Infinity, repeatDelay: 5, ease: "easeInOut", delay }}
+      />
+    </g>
+  );
+}
 
 const cardShakeHover = {
   y: -4,
@@ -187,27 +619,37 @@ const cardShakeHover = {
   },
 };
 
-function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
+function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView, emphasized = false }) {
   const [hover, setHover] = useState(false);
   const tilt = CARD_TILT[index % CARD_TILT.length];
   const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
   // Wobble around the resting tilt (so hover doesn't snap the card straight).
   const hoverAnim = { ...cardShakeHover, rotate: cardShakeHover.rotate.map((r) => tilt + r) };
+  // Mobile stack (no inView prop): entrance via the parent grid's stagger
+  // variants, as before. Desktop tree: the slot wrapper animates the entrance,
+  // so the card root only carries its resting tilt.
+  const treeMode = inView !== undefined;
+  const entrance =
+    !treeMode
+      ? {
+          variants: {
+            hidden: { opacity: 0, y: 18, rotate: tilt },
+            show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
+          },
+        }
+      : { initial: { rotate: tilt } };
 
   return (
     <motion.div
       ref={cardRef}
-      variants={{
-        hidden: { opacity: 0, y: 18, rotate: tilt },
-        show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
-      }}
+      {...entrance}
       whileHover={isOpen || isHidden ? undefined : hoverAnim}
       onHoverStart={() => !isOpen && setHover(true)}
       onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
         border: "1px solid var(--paper-line)",
-        background: "var(--paper-card)",
+        background: emphasized ? "var(--accent-softer)" : "var(--paper-card)",
         boxShadow: "var(--card-shadow)",
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
@@ -223,13 +665,13 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
-        className="p-6 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
+        className={`${treeMode ? "p-7" : "p-6"} block relative overflow-hidden text-left w-full focus:outline-none bg-transparent`}
         style={{
           borderRadius: "var(--radius-card)",
           cursor: isOpen ? "default" : "pointer",
         }}
       >
-        <CardFrontInner step={step} hover={hover} />
+        <CardFrontInner step={step} hover={hover} emphasized={emphasized} tall={treeMode} />
         <div
           className="font-display italic text-[12px] mt-4"
           style={{
@@ -246,13 +688,13 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
   );
 }
 
-function CardFrontInner({ step, hover = true }) {
+function CardFrontInner({ step, hover = true, emphasized = false, tall = false }) {
   return (
     <>
       {step.image && (
         <div
           className="relative mb-4 overflow-hidden"
-          style={{ borderRadius: 12, height: 88, border: "1px solid var(--accent-line)" }}
+          style={{ borderRadius: 12, height: tall ? 122 : 88, border: "1px solid var(--accent-line)" }}
         >
           <img
             src={step.image.src}
@@ -300,8 +742,8 @@ function CardFrontInner({ step, hover = true }) {
             width: 34,
             height: 34,
             borderRadius: 10,
-            background: hover ? "var(--accent)" : "var(--accent-softer)",
-            color: hover ? "#FBF7EC" : "var(--accent)",
+            background: hover || emphasized ? "var(--accent)" : "var(--accent-softer)",
+            color: hover || emphasized ? "#FBF7EC" : "var(--accent)",
             border: "1px solid var(--accent-line)",
             transition: "background-color 220ms ease-out, color 220ms ease-out",
           }}
