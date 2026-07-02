@@ -8,10 +8,26 @@ import { Button } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
+import { TypewriterWord } from "@/components/TypewriterWord";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { HeroTutorStack } from "@/components/HeroTutorStack";
 import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
+
+// Fixed word list for the cycling headline — hero copy, deliberately not tied
+// to the DB subject catalog.
+const TYPEWRITER_WORDS = [
+  "Maths",
+  "English",
+  "Chemistry",
+  "Physics",
+  "Biology",
+  "Art",
+  "Music",
+  "Languages",
+  "History",
+  "Geography",
+];
 
 /**
  * Single-viewport hero: an animated "neural network" constellation fills the
@@ -86,10 +102,22 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 </span>
               </motion.div>
 
-              {/* Cursive graphite headline — writes itself in on view. */}
+              {/* Cursive graphite headline — writes itself in on view, then a
+                  sage subject word types/erases in front of "tutor"
+                  (TypewriterWord waits out the clip-wipe via startDelay). */}
               <HandwrittenHeading
                 as="h1"
-                lines={["Find the perfect", "tutor for you"]}
+                lines={[
+                  "Trust your next",
+                  {
+                    label: "tutor",
+                    content: (
+                      <>
+                        <TypewriterWord words={TYPEWRITER_WORDS} /> tutor
+                      </>
+                    ),
+                  },
+                ]}
                 size={80}
                 minSize={44}
                 className="flex flex-col items-center sm:items-start"

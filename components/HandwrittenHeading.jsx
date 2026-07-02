@@ -16,7 +16,10 @@ import { useEffect, useRef, useState } from "react";
  * Props:
  *   as     — heading tag ("h1" | "h2" | "h3" | "span"), default "h2"
  *   text   — single-line string (or use `lines`)
- *   lines  — string[] for multi-line headings (each line writes on, staggered)
+ *   lines  — array for multi-line headings (each line writes on, staggered).
+ *            Entries are strings, or `{ label, content }` when a line needs a
+ *            React node (e.g. the hero's TypewriterWord) — `label` is the
+ *            plain text used for the aria-label and write-on duration
  *   size   — font-size in px (responsive: scales down via CSS clamp)
  *   minSize — px floor the clamp can shrink to (default ~0.42·size); raise it
  *             to keep the heading larger on narrow phones
@@ -33,8 +36,10 @@ export function HandwrittenHeading({
   className = "",
   style,
 }) {
-  const rows = (lines && lines.length ? lines : [text ?? ""]).map((s) => String(s));
-  const label = rows.join(" ");
+  const rows = (lines && lines.length ? lines : [text ?? ""]).map((s) =>
+    typeof s === "object" && s !== null ? s : { label: String(s), content: String(s) }
+  );
+  const label = rows.map((r) => r.label).join(" ");
   const wrapRef = useRef(null);
   const [inView, setInView] = useState(false);
 
@@ -82,10 +87,10 @@ export function HandwrittenHeading({
             margin: "-0.3em -0.35em -0.55em -0.2em",
             // @ts-ignore CSS custom props
             "--write-delay": `${i * 0.5}s`,
-            "--write-dur": `${Math.min(1.8, 0.6 + line.length * 0.05)}s`,
+            "--write-dur": `${Math.min(1.8, 0.6 + line.label.length * 0.05)}s`,
           }}
         >
-          {line}
+          {line.content}
         </span>
       ))}
     </Tag>

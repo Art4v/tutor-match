@@ -361,6 +361,17 @@ input[type="number"] {
   }
 }
 
+/* Blinking caret for the hero's TypewriterWord. */
+.type-caret {
+  animation: caret-blink 1.1s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .type-caret { animation: none; }
+}
+
 /* Seamless marquee (school strip). The track holds two identical halves and
    slides left by 50%, so the loop is invisible. Pauses under reduced motion. */
 @keyframes marquee {
