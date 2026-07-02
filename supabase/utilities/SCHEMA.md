@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0029_save_tutor_profile_rpc.sql`
-**Last reviewed:** 2026-07-01
+**Applied through:** `0032_melbourne_schools.sql`
+**Last reviewed:** 2026-07-03
 
 ---
 
@@ -140,7 +140,7 @@ Reference catalog of exam systems.
 | `exam_code` | text | NOT NULL → `exams(code)`; renamed from `certificate_code` (0009/0010) |
 | `position` | int | NOT NULL DEFAULT 0; order within exam group |
 
-**Seed:** ~254 subjects across the exam groups (`GENERAL` 5, `TEST` ~14, each state cert ~30). Maintained 0009; `GENERAL` group 0011; HSC English Extension 1 & 2 0024. Public-read RLS. **Index:** `(exam_code, position)`.
+**Seed:** ~260 subjects across the exam groups (`GENERAL` 8, `TEST` ~14, each state cert ~30). Maintained 0009; `GENERAL` group 0011; HSC English Extension 1 & 2 0024; HSC Japanese/French/Italian 0030; GENERAL Art/Music/Languages 0031. Public-read RLS. **Index:** `(exam_code, position)`.
 
 ### `tutor_subjects` (join)
 | Column | Type | Constraints / Notes |
@@ -196,9 +196,9 @@ Reference catalog of exam systems.
 | `id` | uuid | PK DEFAULT `gen_random_uuid()` |
 | `name` | text | NOT NULL UNIQUE |
 | `slug` | text | NOT NULL UNIQUE |
-| `position` | int | NOT NULL DEFAULT 0; 2025 HSC rank order |
+| `position` | int | NOT NULL DEFAULT 0; global rank order — NSW 1–50, Melbourne 51–100 |
 
-**Seed:** top 50 NSW schools by 2025 HSC ranking. Public-read RLS, no write policy.
+**Seed:** top 50 NSW schools by 2025 HSC ranking (0026) + top 50 Melbourne schools by 2025 VCE ranking (0032). Public-read RLS, no write policy.
 
 ### `ai_usage` (0020)
 | Column | Type | Constraints / Notes |

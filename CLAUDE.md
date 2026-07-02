@@ -75,7 +75,7 @@ Three distinct mail paths:
 - `getFeaturedTutors(supabase, limit, excludeId)` — top-N by `rating desc nulls last, review_count desc`. Used by `/` and the similar-tutors sidebar.
 - `getTutorBySlug(supabase, slug)` — detail-page shape (internal `tutorRowToDetail`), normalises `availability`. Returns null if no public match.
 - `getSubjects(supabase)` — exam-scoped catalog, flat, sorted by exam then subject position; rows `{ name, slug, exam, examName }`. Group with `groupByExam` (`lib/subjects.js`).
-- `getSchools(supabase)` — seeded school catalog (top 50 NSW HSC schools, 0026), flat, ordered by rank; rows `{ name, slug }`. Feeds the `/browse` School filter (`SchoolPicker`) and the education editor (`SchoolCombobox`).
+- `getSchools(supabase)` — seeded school catalog (top 50 NSW HSC schools 0026 + top 50 Melbourne VCE schools 0032), flat, ordered by rank; rows `{ name, slug }`. Feeds the `/browse` School filter (`SchoolPicker`) and the education editor (`SchoolCombobox`).
 - `getTutorProfile` / `getTutorProfileForEditor` / `saveTutorProfile` — `/settings`. Editor helper returns camelCase. `saveTutorProfile` updates `profiles.full_name` (+ slug on rename), then calls the **`save_tutor_profile` RPC** (migration 0029) which **atomically** updates the scalar row + replace-alls the four child tables (subjects, packages, experience, education) and resolves subject/school slugs server-side. The bulk write is transactional (only the name/slug step is outside it).
 
 **Rules:**
@@ -121,6 +121,8 @@ Three distinct mail paths:
 `0028_verification_single_source` — drops the redundant `verified` bool; `verification_status` becomes the sole stored truth, and the read mappers in `tutors.js` derive `verified = (verification_status === 'verified')`. Reconciles any drift before the drop. Approve/reject routes + `verify_user.sql` now write only `verification_status`. `lib/ranking.js` is unchanged (reads the derived boolean off the card object). Apply **DB-first, then deploy code**.
 `0029_save_tutor_profile_rpc` — adds `save_tutor_profile(p_payload jsonb)` (SECURITY DEFINER, `auth.uid()`-scoped): one transaction that updates `tutor_profiles` scalars + replace-alls the four child tables, deriving `service_*` from `service_area` (0008) and resolving subject/school slugs server-side; returns `{ dropped_subjects }`. `saveTutorProfile` (`tutors.js`) now builds a jsonb payload and calls it instead of five non-transactional writes, so a mid-save failure can't leave a half-written profile.
 `0030_hsc_language_subjects` — seeds three HSC languages (`hsc-japanese`, `hsc-french`, `hsc-italian`) at positions 32–34, after the existing HSC range. `on conflict (slug) do nothing`, idempotent; additive, safe after `0029`.
+`0031_general_music_art_languages` — seeds Art, Music and Languages (`general-art`, `general-music`, `general-languages`) as three separate GENERAL subjects at positions 6–8, after the 0011 range. `on conflict (slug) do update` (upserts position so re-runs fix ordering); additive, safe after `0030`.
+`0032_melbourne_schools` — seeds the top 50 Melbourne schools (2025 VCE ranking) at positions 51–100, after the NSW 50 from `0026`, and re-runs the free-text→`school_id` education backfill for the new names. `on conflict (slug) do nothing`, idempotent; additive, safe after `0031`.
 
 ### Components
 

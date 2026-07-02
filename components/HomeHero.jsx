@@ -82,7 +82,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                   className="uppercase text-[9px] sm:text-[13px] font-semibold"
                   style={{ color: "var(--ink-muted)", letterSpacing: "0.14em" }}
                 >
-                  Australia&apos;s No.1 Tutor Platform
+                  Australia&apos;s Most Trusted Tutor Network
                 </span>
               </motion.div>
 
