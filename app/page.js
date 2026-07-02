@@ -28,7 +28,7 @@ export default async function HomePage() {
 
   return (
     <main style={{ background: "var(--paper)" }}>
-      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} showcaseTutors={showcaseTutors} />
+      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} showcaseTutors={showcaseTutors} verifiedCount={verifiedCount} />
       <SchoolsMarquee />
       <HomeFeaturedTutors tutors={featuredTutors} verifiedCount={verifiedCount} />
       <HomeHowItWorks />
