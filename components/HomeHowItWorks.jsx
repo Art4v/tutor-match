@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { HandwrittenHeading } from "@/components/HandwrittenHeading";
+import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
 
 const STEPS = [
@@ -94,14 +95,10 @@ export function HomeHowItWorks() {
   }, [openIndex]);
 
   return (
-    <section
-      className="min-h-[60vh] flex items-center"
-      style={{
-        background:
-          "radial-gradient(45% 50% at 14% 78%, rgba(94,122,90,0.07) 0%, rgba(255,255,255,0) 60%)",
-      }}
-    >
-      <div className="max-w-[1200px] w-full mx-auto px-6 py-24">
+    <section className="relative overflow-hidden min-h-[60vh] flex items-center desk-surface">
+      {/* Same cream desk + floating stationery backdrop the featured section used. */}
+      <DeskBackdrop />
+      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-24">
         <div className="max-w-[820px] mb-14 mx-auto text-center flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
