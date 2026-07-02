@@ -95,17 +95,17 @@ export function HomeHowItWorks() {
   }, [openIndex]);
 
   return (
-    <section className="relative overflow-hidden min-h-[60vh] flex items-center desk-surface">
+    <section className="relative overflow-hidden min-h-screen flex items-center desk-surface">
       {/* Same cream desk + floating stationery backdrop the featured section used. */}
       <DeskBackdrop />
-      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-24">
-        <div className="max-w-[820px] mb-14 mx-auto text-center flex flex-col items-center">
+      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-12">
+        <div className="max-w-[820px] mb-8 mx-auto text-center flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="font-hand text-[24px] mb-2"
+            className="font-hand text-[20px] mb-1.5"
             style={{ color: "var(--accent)", fontWeight: 600 }}
           >
             How it works
@@ -113,7 +113,7 @@ export function HomeHowItWorks() {
           <HandwrittenHeading
             as="h2"
             lines={["Finding the right", "tutor is easy"]}
-            size={68}
+            size={50}
             className="flex flex-col items-center"
           />
           <motion.p
@@ -121,7 +121,7 @@ export function HomeHowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-            className="text-[13.5px] sm:text-[16.5px] md:text-[18px] text-[color:var(--ink-muted)] mt-6 leading-[1.5] sm:leading-[1.55] max-w-[560px]"
+            className="text-[13px] sm:text-[15px] md:text-[16px] text-[color:var(--ink-muted)] mt-3 leading-[1.5] max-w-[520px]"
           >
             Browsing, messaging and booking all done on one platform.
           </motion.p>
@@ -135,7 +135,7 @@ export function HomeHowItWorks() {
             hidden: {},
             show: { transition: { staggerChildren: STAGGER, delayChildren: 0.15 } },
           }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-3 gap-5"
         >
           {STEPS.map((s, i) => (
             <HowItWorksCard
@@ -223,7 +223,7 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
-        className="p-8 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
+        className="p-6 block relative overflow-hidden text-left w-full focus:outline-none bg-transparent"
         style={{
           borderRadius: "var(--radius-card)",
           cursor: isOpen ? "default" : "pointer",
@@ -231,7 +231,7 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef }) {
       >
         <CardFrontInner step={step} hover={hover} />
         <div
-          className="font-display italic text-[13px] mt-6"
+          className="font-display italic text-[12px] mt-4"
           style={{
             color: "var(--accent)",
             fontWeight: 500,
@@ -251,8 +251,8 @@ function CardFrontInner({ step, hover = true }) {
     <>
       {step.image && (
         <div
-          className="relative mb-7 overflow-hidden"
-          style={{ borderRadius: 12, height: 118, border: "1px solid var(--accent-line)" }}
+          className="relative mb-4 overflow-hidden"
+          style={{ borderRadius: 12, height: 88, border: "1px solid var(--accent-line)" }}
         >
           <img
             src={step.image.src}
@@ -281,11 +281,11 @@ function CardFrontInner({ step, hover = true }) {
           />
         </div>
       )}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-5">
         <div
           className="font-display tabular-nums"
           style={{
-            fontSize: 52,
+            fontSize: 40,
             lineHeight: 1,
             fontWeight: 500,
             color: "var(--accent)",
@@ -297,8 +297,8 @@ function CardFrontInner({ step, hover = true }) {
         <div
           className="flex items-center justify-center"
           style={{
-            width: 38,
-            height: 38,
+            width: 34,
+            height: 34,
             borderRadius: 10,
             background: hover ? "var(--accent)" : "var(--accent-softer)",
             color: hover ? "#FBF7EC" : "var(--accent)",
@@ -309,10 +309,10 @@ function CardFrontInner({ step, hover = true }) {
           <Icon name={step.icon} size={16} />
         </div>
       </div>
-      <div className="text-[19px] font-semibold text-[color:var(--ink)] mb-2.5 tracking-tight">
+      <div className="text-[17px] font-semibold text-[color:var(--ink)] mb-2 tracking-tight">
         {step.t}
       </div>
-      <p className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.6]">{step.b}</p>
+      <p className="text-[13px] text-[color:var(--ink-muted)] leading-[1.5]">{step.b}</p>
     </>
   );
 }
