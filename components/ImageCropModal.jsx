@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui";
 
-export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", title = "Crop image", onCancel, onConfirm }) {
+export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", title = "Crop image", maxOutputPx = 2400, onCancel, onConfirm }) {
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -29,9 +29,8 @@ export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", tit
     if (!imageSrc || !croppedAreaPixels) return;
     setBusy(true);
     try {
-      const blob = await getCroppedBlob(imageSrc, croppedAreaPixels, file?.type || "image/jpeg");
-      const ext = blob.type === "image/png" ? "png" : "jpg";
-      const cropped = new File([blob], `cropped.${ext}`, { type: blob.type });
+      const blob = await getCroppedBlob(imageSrc, croppedAreaPixels, maxOutputPx);
+      const cropped = new File([blob], "cropped.jpg", { type: blob.type });
       onConfirm(cropped);
     } finally {
       setBusy(false);
@@ -106,17 +105,25 @@ function loadImage(src) {
   });
 }
 
-async function getCroppedBlob(imageSrc, areaPixels, mimeType) {
+// Downscale to at most maxOutputPx on the longest side and re-encode as JPEG.
+// Anything bigger than its largest on-screen render (~1200 CSS px banner,
+// ~90 CSS px avatar) is wasted egress on every download — the multi-MB
+// originals were the main driver of the Supabase cached-egress overage.
+async function getCroppedBlob(imageSrc, areaPixels, maxOutputPx) {
   const image = await loadImage(imageSrc);
+  const scale = Math.min(1, maxOutputPx / Math.max(areaPixels.width, areaPixels.height));
   const canvas = document.createElement("canvas");
-  canvas.width = areaPixels.width;
-  canvas.height = areaPixels.height;
+  canvas.width = Math.max(1, Math.round(areaPixels.width * scale));
+  canvas.height = Math.max(1, Math.round(areaPixels.height * scale));
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingQuality = "high";
+  // JPEG has no alpha channel — backfill white so transparent PNGs don't go black.
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(
     image,
     areaPixels.x, areaPixels.y, areaPixels.width, areaPixels.height,
-    0, 0, areaPixels.width, areaPixels.height
+    0, 0, canvas.width, canvas.height
   );
-  const outType = mimeType === "image/png" ? "image/png" : "image/jpeg";
-  return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), outType, 0.92));
+  return await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", 0.85));
 }
