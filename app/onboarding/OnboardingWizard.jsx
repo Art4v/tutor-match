@@ -323,15 +323,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
         </div>
 
         {/* Nav */}
-        <div className="flex items-center justify-between gap-3 mt-8">
-          <button
-            type="button"
-            onClick={complete}
-            disabled={submitting}
-            className="text-[13px] text-slate-400 hover:text-slate-600 underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Skip everything
-          </button>
+        <div className="flex items-center justify-end gap-3 mt-8">
           <div className="flex items-center gap-2">
             {!isFirst && (
               <Button variant="ghost" size="md" icon="chevron-left" onClick={goBack} disabled={submitting}>
