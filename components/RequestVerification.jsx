@@ -3,7 +3,6 @@
 import { Fragment, useState } from "react";
 import { Icon } from "./Icon";
 import { Button, VerifiedTick } from "./ui";
-import { VerificationDocs } from "./VerificationDocs";
 
 // Shared "Request verification" card. Used in the /settings sidebar and as the
 // final /onboarding step. Owns its own status (seeded from `status`) so the UI
@@ -92,11 +91,6 @@ export function RequestVerification({ status: initialStatus = "none", completion
           {error && <p className="mt-2 text-[12px]" style={{ color: "#DC2626" }}>{error}</p>}
         </>
       )}
-
-      {/* Attach documents only while preparing a request (fresh or after a
-          rejection) — once it's pending the review is in the admin's hands,
-          and once verified the docs are already deleted. */}
-      {(status === "none" || status === "rejected") && <VerificationDocs />}
     </Wrapper>
   );
 }

@@ -75,6 +75,36 @@ export function SubjectsCard({ subjects }) {
   );
 }
 
+// Public documents the tutor has shared — rows are [{ id, title, path, url }]
+// from listTutorDocs (`tutor_documents`, migration 0034). Each opens the
+// public file in a new tab; the tutor-chosen title is the label, never the
+// raw filename.
+export function DocumentationCard({ docs }) {
+  return (
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
+      <div className="text-[14px] font-semibold text-slate-900 mb-1">Documentation</div>
+      <div className="text-[12.5px] text-slate-500 mb-3">Documents shared to back up this tutor&apos;s credentials.</div>
+      <ul className="space-y-1.5">
+        {docs.map((doc) => (
+          <li key={doc.id}>
+            <a
+              href={doc.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-2.5 py-2 text-[13px] transition-colors hover:bg-slate-100"
+              style={{ background: "var(--bg-soft)", borderRadius: 8, color: "var(--ink)" }}
+            >
+              <Icon name={doc.path.toLowerCase().endsWith(".pdf") ? "file-text" : "image"} size={13} className="shrink-0 text-slate-400" />
+              <span className="flex-1 min-w-0 truncate">{doc.title}</span>
+              <Icon name="external" size={12} className="shrink-0 text-slate-400" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </SectionReveal>
+  );
+}
+
 export function RatingsCard() {
   return (
     <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>

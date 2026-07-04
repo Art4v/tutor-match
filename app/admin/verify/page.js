@@ -1,6 +1,5 @@
 import { Icon } from "@/components/Icon";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { VERIFICATION_DOCS_BUCKET, docDisplayName, listVerificationDocs } from "@/lib/supabase/storage";
 import { verifyApproveToken } from "@/lib/verifyToken";
 import { VerifyDecision } from "./VerifyDecision";
 
@@ -74,19 +73,6 @@ export default async function AdminVerifyPage({ searchParams }) {
     );
   }
 
-  // Supporting documents the tutor attached (private bucket; the service-role
-  // client bypasses RLS). Signed URLs re-mint on every load (force-dynamic),
-  // so 1 h covers a review session without leaving long-lived links around.
-  const docs = await listVerificationDocs(admin, tutorId);
-  const documents = (
-    await Promise.all(
-      docs.map(async (doc) => {
-        const { data } = await admin.storage.from(VERIFICATION_DOCS_BUCKET).createSignedUrl(doc.path, 3600);
-        return data?.signedUrl ? { name: docDisplayName(doc.name), url: data.signedUrl, isPdf: doc.name.toLowerCase().endsWith(".pdf") } : null;
-      })
-    )
-  ).filter(Boolean);
-
   return (
     <Shell>
       <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
@@ -109,27 +95,6 @@ export default async function AdminVerifyPage({ searchParams }) {
             </a>
           )}
         </div>
-
-        {documents.length > 0 && (
-          <div className="mt-4 text-[14px]" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <Icon name="paperclip" size={14} className="text-slate-500" />
-              <span className="font-semibold text-slate-900 text-[13.5px]">Supporting documents</span>
-            </div>
-            <ul className="space-y-1.5">
-              {documents.map((doc) => (
-                <li key={doc.url}>
-                  <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px]" style={{ color: "var(--accent)" }}>
-                    <Icon name={doc.isPdf ? "file-text" : "image"} size={13} />
-                    <span className="truncate">{doc.name}</span>
-                    <Icon name="external" size={12} />
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p className="text-[11.5px] text-slate-400 mt-2.5">Links are private and expire after an hour. Documents are deleted automatically once you decide.</p>
-          </div>
-        )}
 
         <p className="text-[12.5px] text-slate-500 mt-4 mb-5">
           Approving turns on their verified badge and ranks them above unverified tutors. Rejecting lets them update their profile and request another review. Either way they'll be notified by email.

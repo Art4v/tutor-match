@@ -14,7 +14,8 @@ import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { AboutCard } from "./AboutCard";
 import { OwnerProfile } from "./OwnerProfile";
-import { Section, SubjectsCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { listTutorDocs } from "@/lib/supabase/storage";
+import { Section, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
@@ -38,6 +39,10 @@ export default async function ProfilePage({ params }) {
 
   const similarPool = await getFeaturedTutors(supabase, 50, tutor.id);
   const similar = rankTutors(similarPool).slice(0, 4);
+
+  // Public documents (`tutor_documents` is public-read, so the anon server
+  // client can read any tutor's rows).
+  const docs = await listTutorDocs(supabase, tutor.id);
 
   const deliveryLabel = formatDelivery(tutor);
   const tiles = buildCredentialTiles(tutor.credentials);
@@ -97,6 +102,7 @@ export default async function ProfilePage({ params }) {
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
+            {docs.length > 0 && <DocumentationCard docs={docs} />}
             <RatingsCard />
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}

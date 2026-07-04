@@ -9,6 +9,8 @@ import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, getSchools, saveTutorProfile } from "@/lib/supabase/tutors";
+import { listTutorDocs } from "@/lib/supabase/storage";
+import { DocumentationUploader } from "@/components/DocumentationUploader";
 import { subjectLabel } from "@/lib/subjects";
 import { editorToDisplay } from "@/lib/tutorShape";
 import {
@@ -31,7 +33,7 @@ import { CredentialsList } from "./CredentialsList";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
-import { Section, SubjectsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { Section, SubjectsCard, DocumentationCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 import { OwnerCard } from "./OwnerCard";
 
 /**
@@ -54,13 +56,20 @@ export function OwnerProfile({ editorTutor, userId }) {
   const [toast, setToast] = useState(null);             // { kind, text }
   const [subjectCatalog, setSubjectCatalog] = useState([]);
   const [schoolCatalog, setSchoolCatalog] = useState([]);
+  // Documents live in Storage + tutor_documents (not the profile row), so
+  // they're state of their own: the editor drafts changes internally and
+  // applies them via its commit() ref when this section's Save runs.
+  const [docs, setDocs] = useState([]);
+  const [docsDirty, setDocsDirty] = useState(false);
+  const docsEditorRef = useRef(null);
 
   useEffect(() => {
     let active = true;
     getSubjects(supabase).then((rows) => { if (active) setSubjectCatalog(rows); });
     getSchools(supabase).then((rows) => { if (active) setSchoolCatalog(rows); });
+    listTutorDocs(supabase, userId).then((rows) => { if (active) setDocs(rows); });
     return () => { active = false; };
-  }, [supabase]);
+  }, [supabase, userId]);
 
   const showToast = (kind, text, ms = 2200) => {
     setToast({ kind, text });
@@ -74,7 +83,10 @@ export function OwnerProfile({ editorTutor, userId }) {
     setDraft({ ...profile });
     setEditingKey(k);
   };
-  const cancel = () => setEditingKey(null);
+  const cancel = () => {
+    setEditingKey(null);
+    setDocsDirty(false); // the documentation draft unmounts with its modal
+  };
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
 
   const dirty = useMemo(
@@ -125,6 +137,28 @@ export function OwnerProfile({ editorTutor, userId }) {
     }
   };
 
+  // Documentation saves outside saveTutorProfile: the editor's commit() applies
+  // its draft (uploads / removals / renames) against Storage + tutor_documents
+  // and returns the persisted list plus any per-file failures.
+  const saveDocumentation = async () => {
+    if (savingKey) return;
+    setSavingKey("documentation");
+    const result = await docsEditorRef.current?.commit();
+    setSavingKey(null);
+    if (!result) {
+      showToast("error", "Save failed — please try again.", 4000);
+      return;
+    }
+    setDocs(result.docs);
+    setDocsDirty(false);
+    setEditingKey(null);
+    if (result.errors.length > 0) {
+      showToast("warn", `Saved, with issues: ${result.errors.map((e) => `${e.name} (${e.message})`).join("; ")}`, 6000);
+    } else {
+      showToast("ok", "Section saved", 1600);
+    }
+  };
+
   // Visibility lives in the owner card and has no section editor, so it persists
   // immediately. Keep any open draft in sync so a later section save doesn't
   // revert the visibility change.
@@ -141,10 +175,10 @@ export function OwnerProfile({ editorTutor, userId }) {
   };
 
   useEffect(() => {
-    const h = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
+    const h = (e) => { if (dirty || docsDirty) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", h);
     return () => window.removeEventListener("beforeunload", h);
-  }, [dirty]);
+  }, [dirty, docsDirty]);
 
   // While a section editor is open it renders as a modal: lock the background
   // scroll (same approach as the image lightbox in HomeHowItWorks) and let
@@ -153,7 +187,7 @@ export function OwnerProfile({ editorTutor, userId }) {
     if (!editingKey) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") setEditingKey(null); };
+    const onKey = (e) => { if (e.key === "Escape") { setEditingKey(null); setDocsDirty(false); } };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prevOverflow;
@@ -307,6 +341,19 @@ export function OwnerProfile({ editorTutor, userId }) {
                 ? <SubjectsCard subjects={display.subjects} />
                 : <MiniCard title="Subjects"><EmptyHint>Add the subjects you tutor.</EmptyHint></MiniCard>}
               edit={<SubjectsSection tutor={draft} set={set} catalog={subjectCatalog} bare />}
+            />
+
+            {/* Documentation saves to Storage + tutor_documents (not the
+                profile row), so this region overrides dirty/onSave with the
+                doc editor's own draft state and commit(). */}
+            <EditRegion
+              {...regionProps("documentation", "documentation", 520)}
+              dirty={docsDirty}
+              onSave={saveDocumentation}
+              view={docs.length > 0
+                ? <DocumentationCard docs={docs} />
+                : <MiniCard title="Documentation"><EmptyHint>Share documents that back up your credentials, like your WWCC, transcripts and certificates.</EmptyHint></MiniCard>}
+              edit={<DocumentationUploader ref={docsEditorRef} userId={userId} docs={docs} onDirtyChange={setDocsDirty} />}
             />
 
             <EditRegion
