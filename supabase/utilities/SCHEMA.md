@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0032_melbourne_schools.sql`
-**Last reviewed:** 2026-07-03
+**Applied through:** `0035_tutor_docs_owner_select.sql`
+**Last reviewed:** 2026-07-04
 
 ---
 
@@ -222,11 +222,22 @@ Self-only SELECT; **no write policy** (writes only via `consume_ai_credit()` / `
 
 Self-only SELECT + UPDATE (mark-read); **no INSERT policy** — written by the service-role client in API routes.
 
+### `tutor_documents` (0034)
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
+| `storage_path` | text | NOT NULL UNIQUE; `<uid>/<timestamp>-<name>` in `tutor-docs`; CHECK `split_part(storage_path,'/',1) = tutor_id::text` (row can only point into the owner's folder) |
+| `title` | text | NOT NULL, CHECK non-blank — tutor-chosen display title (app defaults to the cleaned filename) |
+| `uploaded_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+Index on `tutor_id`. Public SELECT (the profile page reads any tutor's rows with the anon client); owner-scoped INSERT/UPDATE/DELETE (UPDATE = retitling). This table is the source of truth for the profile "Documentation" card — the app never lists the bucket. On account deletion rows cascade; the storage files orphan (accepted, like 0015's profile-images note).
+
 ### Storage: `profile-images` bucket (0006)
 Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`.
 
-### Storage: `verification-docs` bucket (0033)
-**Private** — supporting documents (PDF/image) tutors attach to a verification request, at `<uid>/<timestamp>-<name>`. Bucket-level `file_size_limit` 10 MB + `allowed_mime_types` `{application/pdf, image/*}`. Owner-scoped SELECT/INSERT/DELETE (same folder-=-uid key); **no UPDATE policy** — files are immutable, so uploads must not use upsert. Admin review reads via the service-role client (signed URLs); the approve/reject routes wipe the folder on decision, so docs only exist while a review is pending.
+### Storage: `tutor-docs` bucket (0034; replaced the private `verification-docs` bucket from 0033)
+**Public** — the files behind `tutor_documents`, at `<uid>/<timestamp>-<name>`. Bucket-level `file_size_limit` 10 MB + `allowed_mime_types` `{application/pdf, image/*}`. Owner-scoped SELECT (0035) / INSERT / DELETE (folder = uid) — the app never lists the bucket (reads go through the table; public-bucket downloads bypass RLS), but the owner SELECT is required because the Storage API's `remove()` checks SELECT as well as DELETE (without it the owner's delete silently no-ops). **No UPDATE policy** — files are immutable, so uploads must not use upsert. Not part of the verification flow. 0034 dropped the old bucket's policies; the bucket itself is emptied + deleted in the dashboard (Supabase's `storage.protect_delete()` trigger blocks SQL DELETEs on storage tables) rather than migrating the files — they were uploaded under a private-and-deleted-after-review promise.
 
 ---
 
@@ -271,8 +282,9 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |
 | `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
+| `tutor_documents` | public | owner-scoped INSERT/UPDATE/DELETE |
 | `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid |
-| `storage.objects` (`verification-docs`) | owner only (private bucket; admin via service-role) | owner-scoped INSERT/DELETE, no UPDATE |
+| `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE |
 
 > **Invariant:** `saveTutorProfile` never writes `verified` / `verification_status` — those are
 > server-controlled so a tutor cannot self-verify.

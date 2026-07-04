@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
 import { userApprovedEmail } from "@/lib/email/send";
-import { deleteAllVerificationDocs } from "@/lib/supabase/storage";
 import { verifyApproveToken } from "@/lib/verifyToken";
 
 export const runtime = "nodejs";
@@ -41,8 +40,6 @@ export async function POST(request) {
   }
 
   if (tutor.verification_status === "verified") {
-    // Still sweep the docs folder so a retried click clears any leftovers.
-    await deleteAllVerificationDocs(admin, tutorId);
     return NextResponse.json({ ok: true, alreadyVerified: true });
   }
 
@@ -53,11 +50,6 @@ export async function POST(request) {
   if (updateErr) {
     return NextResponse.json({ error: "Could not approve — please try again." }, { status: 500 });
   }
-
-  // Decision made — the supporting documents are no longer needed (tutors are
-  // told they're deleted on approval/rejection). Best-effort, never fatal: the
-  // status change above is already committed.
-  await deleteAllVerificationDocs(admin, tutorId);
 
   const name = tutor.profile?.full_name || "";
   const origin = new URL(request.url).origin;

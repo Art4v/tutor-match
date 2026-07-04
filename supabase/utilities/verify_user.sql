@@ -20,17 +20,15 @@
 --                                                     the single source of truth
 --                                                     since 0028 (the `verified`
 --                                                     bool was dropped).
---     * wipes the tutor's verification-docs/<id>/ folder  (the approve/reject
---                                                     routes delete the supporting
---                                                     docs once a decision is made;
---                                                     0033 — docs only live while a
---                                                     review is pending).
+--   That's the whole approval since 0034: documents are public profile content
+--   (`tutor_documents` + the `tutor-docs` bucket) and are NOT part of the
+--   verification flow — a decision must not touch them.
 --   It does NOT insert a /notifications row or send the "you're verified" email
 --   (those are side effects of the approve route, not of the DB state). Requires
---   migrations 0021 + 0028 + 0033 to be applied.
+--   migrations 0021 + 0028 to be applied.
 --
 -- To UN-verify instead, set verification_status='none' on the same row (uncomment
--- the block at the bottom). Un-verifying does NOT restore deleted docs.
+-- the block at the bottom).
 -- ============================================================================
 
 begin;
@@ -42,13 +40,6 @@ update public.tutor_profiles
    set verification_status = 'verified'
  where id = current_setting('util.user_id')::uuid;
 
--- Sweep the supporting documents, mirroring deleteAllVerificationDocs() in the
--- approve route (docs are only kept while a review is pending; 0033). Files live
--- at verification-docs/<user_id>/<...>, so match on the first path segment.
-delete from storage.objects
- where bucket_id = 'verification-docs'
-   and (storage.foldername(name))[1] = current_setting('util.user_id');
-
 -- Un-verify (uncomment to use instead of the update above):
 -- update public.tutor_profiles
 --    set verification_status = 'none',
@@ -57,14 +48,9 @@ delete from storage.objects
 
 commit;
 
--- Sanity check — confirm the new state + that no docs remain for that id.
+-- Sanity check — confirm the new state.
 select p.id,
        p.verification_status,
-       p.verification_requested_at,
-       (select count(*)
-          from storage.objects o
-         where o.bucket_id = 'verification-docs'
-           and (storage.foldername(o.name))[1] = current_setting('util.user_id')
-       ) as remaining_docs
+       p.verification_requested_at
 from public.tutor_profiles p
 where p.id = current_setting('util.user_id')::uuid;
