@@ -167,6 +167,13 @@ export function OwnerProfile({ editorTutor, userId }) {
   const publicHref = `matchtutor.com.au/tutor/${profile.slug || userId}`;
   const publicUrl = `https://${publicHref}`;
 
+  // Rendered twice (mobile under the header, desktop at the top of the sidebar)
+  // so the completion/verification nudge leads on phones instead of sitting
+  // below all the profile content when the grid collapses to one column.
+  const ownerCard = (
+    <OwnerCard profile={profile} onVisibilityChange={onVisibilityChange} publicHref={publicHref} publicUrl={publicUrl} />
+  );
+
   const regionProps = (k, label, maxW = 760) => ({
     label,
     maxW,
@@ -229,6 +236,11 @@ export function OwnerProfile({ editorTutor, userId }) {
           }
         />
 
+        {/* Mobile only: "Your profile" card sits directly under the header,
+            above the profile content. On desktop it lives at the top of the
+            right sidebar (below), so it's hidden here. */}
+        <div className="lg:hidden mt-8">{ownerCard}</div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8 items-start">
           <div className="space-y-8 min-w-0">
             <EditRegion
@@ -281,7 +293,7 @@ export function OwnerProfile({ editorTutor, userId }) {
           </div>
 
           <aside className="space-y-5">
-            <OwnerCard profile={profile} onVisibilityChange={onVisibilityChange} publicHref={publicHref} publicUrl={publicUrl} />
+            <div className="hidden lg:block">{ownerCard}</div>
 
             <EditRegion
               {...regionProps("rate", "rate", 480)}

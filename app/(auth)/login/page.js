@@ -20,21 +20,39 @@ function LoginInner() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // When the sign-in failure is specifically an unconfirmed email, we surface a
+  // "resend confirmation" action inside the error banner. `resent` tracks that
+  // request: null | "sending" | "ok" | "error".
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [resent, setResent] = useState(null);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setNeedsConfirm(false);
+    setResent(null);
     setSubmitting(true);
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (error) {
       setError(error.message);
+      // Supabase returns code `email_not_confirmed` here; match the message too
+      // as a fallback in case the code isn't populated.
+      setNeedsConfirm(error.code === "email_not_confirmed" || /email not confirmed/i.test(error.message || ""));
       return;
     }
     const role = data?.user?.user_metadata?.role;
     router.push(role === "tutor" ? "/profile" : "/");
     router.refresh();
+  };
+
+  const onResendConfirmation = async () => {
+    if (resent === "sending" || !email) return;
+    setResent("sending");
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setResent(error ? "error" : "ok");
   };
 
   return (
@@ -122,6 +140,24 @@ function LoginInner() {
             style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
           >
             {error}
+            {needsConfirm && (
+              resent === "ok" ? (
+                <span className="ml-1.5 text-red-700">Sent — check your inbox.</span>
+              ) : (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    onClick={onResendConfirmation}
+                    disabled={resent === "sending"}
+                    className="font-medium underline text-red-700 disabled:opacity-60"
+                  >
+                    {resent === "sending" ? "Sending…" : "Resend?"}
+                  </button>
+                  {resent === "error" && <span className="ml-1.5 text-red-700">Couldn&rsquo;t resend.</span>}
+                </>
+              )
+            )}
           </div>
         )}
 

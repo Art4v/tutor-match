@@ -225,6 +225,9 @@ Self-only SELECT + UPDATE (mark-read); **no INSERT policy** — written by the s
 ### Storage: `profile-images` bucket (0006)
 Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`.
 
+### Storage: `verification-docs` bucket (0033)
+**Private** — supporting documents (PDF/image) tutors attach to a verification request, at `<uid>/<timestamp>-<name>`. Bucket-level `file_size_limit` 10 MB + `allowed_mime_types` `{application/pdf, image/*}`. Owner-scoped SELECT/INSERT/DELETE (same folder-=-uid key); **no UPDATE policy** — files are immutable, so uploads must not use upsert. Admin review reads via the service-role client (signed URLs); the approve/reject routes wipe the folder on decision, so docs only exist while a review is pending.
+
 ---
 
 ## Functions / RPCs
@@ -269,6 +272,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |
 | `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
 | `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid |
+| `storage.objects` (`verification-docs`) | owner only (private bucket; admin via service-role) | owner-scoped INSERT/DELETE, no UPDATE |
 
 > **Invariant:** `saveTutorProfile` never writes `verified` / `verification_status` — those are
 > server-controlled so a tutor cannot self-verify.
