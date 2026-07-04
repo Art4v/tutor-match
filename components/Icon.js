@@ -71,6 +71,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "eraser": return <svg {...props}><path d="m7 21-4.3-4.3a1.6 1.6 0 0 1 0-2.3l9.7-9.7a1.6 1.6 0 0 1 2.3 0l4.6 4.6a1.6 1.6 0 0 1 0 2.3L13 21"/><path d="M22 21H7"/><path d="m5 13 6 6"/></svg>;
     case "ruler": return <svg {...props}><path d="M21.3 15.3a1.7 1.7 0 0 1 0 2.4l-3.6 3.6a1.7 1.7 0 0 1-2.4 0L2.7 8.7a1.7 1.7 0 0 1 0-2.4l3.6-3.6a1.7 1.7 0 0 1 2.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>;
     case "paperclip": return <svg {...props}><path d="m21.4 11-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6A4 4 0 0 1 18 8.8l-8.6 8.6a2 2 0 0 1-2.8-2.9l8.5-8.4"/></svg>;
+    case "file-text": return <svg {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>;
     case "scissors": return <svg {...props}><circle cx="6" cy="6" r="3"/><path d="M8.1 8.1 12 12"/><path d="M20 4 8.1 15.9"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>;
     case "set-square": return <svg {...props}><path d="M5 4v16h16Z"/><path d="M9 16h2"/><path d="M9 13h5"/><path d="M9 10h8"/></svg>;
     case "notebook": return <svg {...props}><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M16 3v18"/><path d="M2 7h3"/><path d="M2 12h3"/><path d="M2 17h3"/></svg>;
