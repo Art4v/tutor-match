@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0039_profiles_terms_consent.sql`
+**Applied through:** `0040_drop_welcome_email_drift.sql`
 **Last reviewed:** 2026-07-05
 
 ---
