@@ -10,23 +10,27 @@
 --
 -- WARNING — this is destructive for that ONE account. Deleting the
 -- `auth.users` row cascades (via `on delete cascade`) to:
---   * public.profiles  ->  public.tutor_profiles  ->  the four child tables
---     (tutor_subjects, tutor_packages, tutor_experience, tutor_education)
+--   * public.profiles  ->  public.tutor_profiles  ->  the five child tables
+--     (tutor_subjects, tutor_packages, tutor_experience, tutor_education,
+--      tutor_documents)
 --   * public.student_profiles
 --   * public.notifications   (keyed straight off auth.users.id)
 --   * public.ai_usage        (keyed straight off auth.users.id)
 --
--- DOES NOT delete the user's uploaded avatar/banner files: Supabase blocks
--- direct DELETEs on storage tables (a `storage.protect_delete()` trigger), so
--- those must go through the Storage API. The last query below LISTS the files
--- to remove; delete the `<uid>/` folder in Studio -> Storage -> profile-images
--- (or via the Storage API). Leftover files are orphaned but harmless — nothing
--- references them once the tutor row is gone.
+-- DOES NOT delete the user's uploaded files: Supabase blocks direct DELETEs on
+-- storage tables (a `storage.protect_delete()` trigger), so those must go
+-- through the Storage API. The last queries below LIST the files to remove;
+-- delete the `<uid>/` folder in Studio -> Storage -> profile-images AND
+-- tutor-docs (or via the Storage API). Leftover files are orphaned but mostly
+-- harmless — nothing references them once the tutor row is gone (public-bucket
+-- tutor-docs files do stay fetchable by raw URL until removed, hence the
+-- listing).
 --
 -- WHAT IT PRESERVES:
 --   * Every other user and all their data.
---   * The schema, RLS policies, functions/triggers, the seeded `subjects`
---     table, and the `profile-images` bucket itself.
+--   * The schema, RLS policies, functions/triggers, the seeded `subjects` /
+--     `schools` tables, and the `profile-images` / `tutor-docs` buckets
+--     themselves.
 -- ============================================================================
 
 begin;
@@ -51,12 +55,14 @@ union all select 'tutor_subjects',    count(*) from public.tutor_subjects   wher
 union all select 'tutor_packages',    count(*) from public.tutor_packages   where tutor_id = current_setting('reset.user_id')::uuid
 union all select 'tutor_experience',  count(*) from public.tutor_experience where tutor_id = current_setting('reset.user_id')::uuid
 union all select 'tutor_education',   count(*) from public.tutor_education  where tutor_id = current_setting('reset.user_id')::uuid
+union all select 'tutor_documents',   count(*) from public.tutor_documents  where tutor_id = current_setting('reset.user_id')::uuid
 union all select 'notifications',     count(*) from public.notifications    where user_id  = current_setting('reset.user_id')::uuid
 union all select 'ai_usage',          count(*) from public.ai_usage         where user_id  = current_setting('reset.user_id')::uuid;
 
--- Storage cleanup TODO — these are the user's leftover image files (DELETE is
--- blocked in SQL; remove them via Studio -> Storage -> profile-images).
-select name, id
+-- Storage cleanup TODO — these are the user's leftover files (DELETE is
+-- blocked in SQL; remove them via Studio -> Storage, per bucket). tutor-docs
+-- is a PUBLIC bucket, so its files stay fetchable by raw URL until removed.
+select bucket_id, name, id
 from storage.objects
-where bucket_id = 'profile-images'
+where bucket_id in ('profile-images', 'tutor-docs')
   and (storage.foldername(name))[1] = current_setting('reset.user_id');
