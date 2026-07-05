@@ -80,7 +80,7 @@ function Field({ label, hint, error, children, optional, full = true, as: Tag = 
   );
 }
 
-function TextInput({ value, onChange, placeholder, type = "text", inputMode, prefix, suffix, multiline, rows = 4, maxLength }) {
+function TextInput({ value, onChange, placeholder, type = "text", inputMode, prefix, suffix, multiline, rows = 4, maxLength, onBlur }) {
   const [focus, setFocus] = useState(false);
   const Tag = multiline ? "textarea" : "input";
   return (
@@ -100,7 +100,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocus(true)}
-        onBlur={() => setFocus(false)}
+        onBlur={() => { setFocus(false); onBlur?.(); }}
         placeholder={placeholder}
         rows={multiline ? rows : undefined}
         maxLength={maxLength}
@@ -765,6 +765,19 @@ const EDUCATION_LEVELS = [
   { value: "university",  label: "University" },
 ];
 
+// Keep the ATAR label to 4 significant figures while typing — the ATAR format
+// (max 99.95) is XX.XX: at most 2 integer digits and 2 decimal digits. Strip
+// non-digits, collapse to a single dot, clamp both parts. The "exactly 2 dp"
+// normalisation happens on blur (and again on save via toFixed).
+function sanitizeAtarInput(v) {
+  const s = String(v).replace(/[^\d.]/g, "");
+  const dot = s.indexOf(".");
+  if (dot === -1) return s.slice(0, 2);
+  const intPart = s.slice(0, dot).slice(0, 2);
+  const decPart = s.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+  return intPart + "." + decPart;
+}
+
 export function CredentialsSection({ tutor, set, bare = false }) {
   const Wrap = bare ? Fragment : Card;
   const list = tutor.credentials || [];
@@ -775,17 +788,35 @@ export function CredentialsSection({ tutor, set, bare = false }) {
 
   return (
     <Wrap>
-      <SectionHeader title="Credentials" subtitle="The ATAR, awards, degrees, or state ranks that show on your profile."
+      <SectionHeader title="Credentials" subtitle="Your achievements go here. The one at the top is featured on your profile card."
         right={<Button variant="outline" size="sm" icon="plus" onClick={add}>Add credential</Button>} />
       {list.length === 0 && <div className="text-[13.5px] text-slate-500 py-6 text-center" style={{ background: "var(--bg-soft)", borderRadius: 10 }}>No credentials yet — add an ATAR, award, degree, or state rank.</div>}
       <div>
         {list.map((c, i) => {
           const t = typeForIcon(c.icon);
+          // Only one ATAR credential allowed (it doubles as the /browse filter
+          // value) — hide the option once another row already holds it.
+          const atarTaken = list.some((cc, idx) => idx !== i && cc.icon === "atar");
+          const opts = CREDENTIAL_TYPES
+            .filter((ct) => ct.value !== "atar" || !atarTaken)
+            .map(({ value, label }) => ({ value, label }));
+          // ATAR is numeric, 4 sig figs (XX.XX): sanitise while typing, then
+          // force exactly 2 dp on blur (blank + non-numeric collapse to empty).
+          const isAtar = c.icon === "atar";
           return (
             <ReorderRow key={i} index={i} count={list.length} onMove={(to) => moveTo(i, to)} onRemove={() => remove(i)}>
               <div className="grid grid-cols-[130px_1fr] gap-2">
-                <Select value={c.icon} onChange={(v) => update(i, { icon: v })} options={CREDENTIAL_TYPES.map(({ value, label }) => ({ value, label }))} />
-                <TextInput value={c.label} onChange={(v) => update(i, { label: v })} placeholder={t.placeholder} />
+                <Select value={c.icon} onChange={(v) => update(i, { icon: v })} options={opts} />
+                <TextInput
+                  value={c.label}
+                  onChange={(v) => update(i, { label: isAtar ? sanitizeAtarInput(v) : v })}
+                  onBlur={isAtar ? () => {
+                    const n = Number(c.label);
+                    update(i, { label: c.label && Number.isFinite(n) ? n.toFixed(2) : "" });
+                  } : undefined}
+                  inputMode={isAtar ? "decimal" : undefined}
+                  placeholder={t.placeholder}
+                />
               </div>
             </ReorderRow>
           );

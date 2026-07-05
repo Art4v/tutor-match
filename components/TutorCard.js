@@ -260,15 +260,13 @@ const cardVariants = {
 export function TutorCard({ tutor }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
-  // Headline stat: the ATAR if set, otherwise the tutor's first credential
-  // stands in for it — labelled by its type (Award / Degree / State rank /
-  // Highlight).
-  const atar = credentials.find((c) => c.icon === "atar")?.label || null;
-  const otherCreds = credentials.filter((c) => c.icon !== "atar");
-  const headlineCred = atar ? null : otherCreds[0] || null;
-  const statValue = atar || headlineCred?.label || "—";
-  const statLabel = atar ? "ATAR" : headlineCred ? captionForIcon(headlineCred.icon) : "ATAR";
-  const statTone = atar || headlineCred ? "accent" : "muted";
+  // Headline stat: the tutor's first credential — labelled by its type (ATAR /
+  // Award / Degree / State rank / Highlight). Tutors choose which one leads by
+  // ordering their credentials in the editor.
+  const top = credentials[0] || null;
+  const statValue = top?.label || "—";
+  const statLabel = top ? captionForIcon(top.icon) : "None";
+  const statTone = top ? "accent" : "muted";
 
   const tagline = stripMarkdown(tutor.bio);
   const longBio = stripMarkdown(tutor.bioLong);

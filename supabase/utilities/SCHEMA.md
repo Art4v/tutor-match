@@ -32,10 +32,14 @@ These duplications are **intentional** — don't "tidy them up" without understa
   copies kept in sync on every save (`saveTutorProfile`, `lib/supabase/tutors.js`) so `/browse`
   can filter by distance in SQL via `tutors_within_service_radius()` (0008). Filtering inside
   jsonb isn't indexable here — hence the flattened scalars.
-- **`atar` (scalar) ↔ `credentials` (jsonb).** ATAR is stored as a scalar so `/browse` can
-  filter by `atar_min` in SQL, but is surfaced in the UI as one entry in the `credentials`
-  list. Round-tripped by `bridgeAtarIntoCredentials` / `extractAtarFromCredentials`
-  (`lib/supabase/tutors.js`).
+- **`atar` (scalar) is a derived mirror of the `credentials` ATAR entry (0036).** The ATAR is
+  a genuine `credentials` entry (`icon="atar"`) — the single source of truth for its value AND
+  its order (the tutor controls which credential leads). The scalar `atar` column is kept only
+  as a write-derived mirror, recomputed from that credential on every save by
+  `extractAtarFromCredentials` (`lib/supabase/tutors.js`) and read ONLY by the `/browse`
+  Minimum-ATAR filter (`query.gte("atar", …)`, indexed). It is never read for display. At most
+  one credential may carry `icon="atar"` — enforced client-side (editor dropdown) and
+  server-side (the `save_tutor_profile` RPC raises on a second ATAR).
 - **`rating` / `review_count` are static.** No reviews feature exists yet; nothing writes them.
   They are placeholders for a future reviews table, surfaced read-only on cards/profiles.
 
@@ -256,7 +260,7 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `refund_ai_credit()` | void | Decrement floored at 0; called only on Groq failure | 0020 |
 | `request_tutor_verification()` | text | `none`/`rejected` → `pending`, idempotent; returns new status. `auth.uid()`-scoped | 0021 |
 | `accept_current_terms()` | void | Stamp caller's `terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 |
-| `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path | 0029 |
+| `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
 
