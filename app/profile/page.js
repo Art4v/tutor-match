@@ -28,6 +28,8 @@ export default async function ProfileRedirectPage() {
   // see their profile.
   if (me && !me.onboarded) redirect("/onboarding");
 
-  // handle_new_user() always seeds a slug, but fall back to the id just in case.
-  redirect(`/tutor/${me?.slug ?? user.id}`);
+  // No tutor row (e.g. a student) — there's no profile page to resolve to.
+  if (!me) redirect("/");
+
+  redirect(`/tutor/${me.slug}`);
 }

@@ -90,7 +90,8 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    router.push("/profile");
+    // Tutors land on their own profile; students have no profile page yet.
+    router.push(role === "student" ? "/" : "/profile");
     router.refresh();
   };
 
@@ -142,7 +143,9 @@ export default function SignupPage() {
               <Chip active={role === "tutor"} onClick={() => setRole("tutor")}>
                 Tutor
               </Chip>
-              <Chip disabled>Student · Coming soon</Chip>
+              <Chip active={role === "student"} onClick={() => setRole("student")}>
+                Student
+              </Chip>
             </div>
           </Field>
 
@@ -270,20 +273,24 @@ export default function SignupPage() {
             {submitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
-          <div className="mt-5">
-            <OAuthButtons divider="top" />
-            <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">
-              By continuing with Google, you agree to our{" "}
-              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
-                Privacy Policy
-              </Link>
-              .
-            </p>
-          </div>
+          {/* OAuth signups can't carry a role — handle_new_user() defaults them
+              to tutor — so hide the Google path while Student is selected. */}
+          {role === "tutor" && (
+            <div className="mt-5">
+              <OAuthButtons divider="top" />
+              <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">
+                By continuing with Google, you agree to our{" "}
+                <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            </div>
+          )}
         </>
       )}
 

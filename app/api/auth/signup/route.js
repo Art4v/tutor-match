@@ -64,18 +64,25 @@ export async function POST(request) {
 
   const supabase = createSupabaseServerClient();
   const origin = request.headers.get("origin") ?? new URL(request.url).origin;
+  // Allowlist the client-sent role; anything unexpected collapses to student —
+  // the least-privileged role (no slug, no public profile page). The DB-side
+  // default is the opposite: handle_new_user() coalesces a MISSING role to
+  // 'tutor', which OAuth signups (no role metadata) rely on and never hits
+  // this route.
+  const normalizedRole = role === "tutor" ? "tutor" : "student";
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
     options: {
       // The confirm-signup email link routes through /auth/callback (token_hash
       // /type=signup, mirroring the recovery flow) so confirmation mints a
-      // session and lands the user logged-in at /profile (which resolves their
-      // slug) — and gives the callback an app-side hook to send the welcome.
-      emailRedirectTo: `${origin}/auth/callback?next=/profile`,
+      // session and lands the user logged-in — tutors at /profile (which
+      // resolves their slug), students at / (no profile page yet) — and gives
+      // the callback an app-side hook to send the welcome.
+      emailRedirectTo: `${origin}/auth/callback?next=${normalizedRole === "student" ? "/" : "/profile"}`,
       // These end up in auth.users.raw_user_meta_data, where the
       // handle_new_user() trigger reads them to populate the profile rows.
-      data: { full_name: fullName ?? "", role: role === "student" ? "student" : "tutor" },
+      data: { full_name: fullName ?? "", role: normalizedRole },
     },
   });
 

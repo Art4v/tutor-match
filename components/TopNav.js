@@ -112,8 +112,11 @@ export function TopNav() {
   // We resolve the row by id (the PK) rather than gating on
   // `user_metadata.role === "tutor"`: OAuth (Google) signups never get a role
   // written to auth metadata — the DB trigger sets it — so that gate would hide
-  // the Profile link (and the live name/avatar) for every OAuth tutor. A
-  // non-tutor (e.g. student) simply has no matching row and gets null.
+  // the Profile link (and the live name/avatar) for every OAuth tutor. The
+  // inverse gate IS safe: `role === "student"` only ever comes from the email
+  // signup API, so a positive match reliably means no tutor row exists.
+  const isStudent = user?.user_metadata?.role === "student";
+
   useEffect(() => {
     if (!user) {
       setTutorSlug(null);
@@ -123,20 +126,25 @@ export function TopNav() {
     }
     const supabase = createSupabaseBrowserClient();
     let active = true;
-    supabase
-      .from("tutor_profiles")
-      .select("slug, avatar_url, profile:profiles!inner ( full_name )")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active) return;
-        setTutorSlug(data?.slug ?? null);
-        setProfile(
-          data
-            ? { name: data.profile?.full_name ?? null, avatarUrl: data.avatar_url ?? null }
-            : null
-        );
-      });
+    if (isStudent) {
+      setTutorSlug(null);
+      setProfile(null);
+    } else {
+      supabase
+        .from("tutor_profiles")
+        .select("slug, avatar_url, profile:profiles!inner ( full_name )")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!active) return;
+          setTutorSlug(data?.slug ?? null);
+          setProfile(
+            data
+              ? { name: data.profile?.full_name ?? null, avatarUrl: data.avatar_url ?? null }
+              : null
+          );
+        });
+    }
     // Unread notifications drive the dot on the avatar chip + menu item. Keyed on
     // pathname too, so visiting /notifications (which marks them read) clears it.
     supabase
@@ -230,9 +238,11 @@ export function TopNav() {
                       <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
                         Browse
                       </NavMenuLink>
-                      <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
-                        Profile
-                      </NavMenuLink>
+                      {!isStudent && (
+                        <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
+                          Profile
+                        </NavMenuLink>
+                      )}
                       <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
                         <span className="flex items-center justify-between gap-2">
                           Notifications
@@ -249,6 +259,14 @@ export function TopNav() {
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
                         Account
                       </NavMenuLink>
+                      {isStudent && (
+                        // Student v1: saved tutors + messaging aren't built yet —
+                        // visual-only placeholders, parked above Log out.
+                        <>
+                          <NavMenuDead>Saved tutors</NavMenuDead>
+                          <NavMenuDead>Messages</NavMenuDead>
+                        </>
+                      )}
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
                         {loggingOut ? "Logging out…" : "Log out"}
                       </NavMenuButton>
@@ -290,6 +308,39 @@ function NavMenuLink({ href, onClick, children }) {
     >
       {children}
     </Link>
+  );
+}
+
+// Inert placeholder row for features that exist in the menu but aren't built
+// yet. Not a link/button on purpose: clicks inside the menu don't close it, so
+// the item simply does nothing. "Soon" pill matches the disabled provider
+// button in OAuthButtons.jsx.
+function NavMenuDead({ children }) {
+  return (
+    <span
+      role="menuitem"
+      aria-disabled="true"
+      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-[13.5px] rounded-md"
+      style={{ color: "var(--sage)", cursor: "not-allowed", opacity: 0.75 }}
+    >
+      {children}
+      <span
+        style={{
+          fontSize: 10.5,
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: "var(--sage)",
+          background: "var(--desk)",
+          border: "1px solid var(--paper-line)",
+          borderRadius: 999,
+          padding: "2px 7px",
+          lineHeight: 1.2,
+        }}
+      >
+        Soon
+      </span>
+    </span>
   );
 }
 
