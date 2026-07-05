@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0037_drop_dead_profile_columns.sql`
+**Applied through:** `0038_drop_dead_package_columns.sql`
 **Last reviewed:** 2026-07-05
 
 ---
@@ -154,9 +154,7 @@ Reference catalog of exam systems.
 | `id` | uuid | PK DEFAULT `gen_random_uuid()` |
 | `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
 | `label` | text | NOT NULL |
-| `duration` | text | "60 min" / "5 × 60 min" |
 | `price` | int | NOT NULL; AUD |
-| `save_text` | text | "save $25" (nullable) |
 | `position` | int | NOT NULL DEFAULT 0 |
 
 **Index:** `(tutor_id, position)`. Public read; tutor self-write.
