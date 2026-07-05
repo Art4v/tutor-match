@@ -34,6 +34,7 @@ import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { Section, SubjectsCard, DocumentationCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { SectionReveal } from "@/components/anim/SectionReveal";
 import { OwnerCard } from "./OwnerCard";
 
 /**
@@ -468,9 +469,9 @@ function EmptyHint({ children }) {
 
 function MiniCard({ title, children }) {
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
+    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
       <div className="text-[14px] font-semibold text-slate-900 mb-4">{title}</div>
       {children}
-    </div>
+    </SectionReveal>
   );
 }
