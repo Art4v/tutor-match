@@ -28,8 +28,6 @@ export function defaultTutor(userId, userEmail, fullName) {
     bio: "",
     bioLong: "",
     atar: 0,
-    rank: "",
-    rankSubject: "",
     rating: null,
     reviews: 0,
     rate: 0,

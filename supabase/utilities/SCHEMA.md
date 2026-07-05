@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0035_tutor_docs_owner_select.sql`
-**Last reviewed:** 2026-07-04
+**Applied through:** `0037_drop_dead_profile_columns.sql`
+**Last reviewed:** 2026-07-05
 
 ---
 
@@ -88,19 +88,12 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `avatar_bg` | text | CSS `oklch()` fallback colour when no avatar (0002) |
 | `banner_bg` | text | banner fallback colour; falls back to `avatar_bg` when null (0023) |
 | `initials` | text | 2-char monogram (0002) |
-| `atar` | numeric(4,2) | e.g. 99.85 (0002) |
-| `rank` | text | renamed from `atar_rank` (0003) |
-| `rank_subject` | text | (0003) |
+| `atar` | numeric(4,2) | e.g. 99.85 (0002); write-derived mirror of the ATAR credential (0036) |
 | `rate` | int | AUD/hour; indexed (0002) |
 | `delivers_in_person` | bool | NOT NULL DEFAULT true (0003) |
 | `delivers_online` | bool | NOT NULL DEFAULT true (0003) |
 | `responsive` | text | responsiveness label (0002) |
 | `years_tutoring` | int | (0002) |
-| `school` | text | high-school name; always-present display text (0002) |
-| `school_year` | text | "Class of 2023" (0002) |
-| `university` | text | (0002) |
-| `degree` | text | (0002) |
-| `degree_year` | text | "Expected 2027" (0002) |
 | `credentials` | jsonb | NOT NULL DEFAULT `'[]'`; `{label, icon}` objects (text[]→jsonb in 0003) |
 | `languages` | text[] | NOT NULL DEFAULT `'{}'` (0002) |
 | `rating` | numeric(2,1) | e.g. 4.9 (0002) |
