@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSavedTutorIds, saveTutor, unsaveTutor } from "@/lib/supabase/saved";
 
@@ -17,6 +18,7 @@ const SavedTutorsContext = createContext({
 });
 
 export function SavedTutorsProvider({ children }) {
+  const router = useRouter();
   const [userId, setUserId] = useState(null);
   const [isStudent, setIsStudent] = useState(false);
   // A Set of saved tutor ids. Kept in a ref for the toggle's optimistic
@@ -110,9 +112,15 @@ export function SavedTutorsProvider({ children }) {
         if (wasSaved) rollback.add(tutorId);
         else rollback.delete(tutorId);
         applySaved(rollback);
+        return;
       }
+      // Invalidate the App Router client cache so a previously-visited
+      // /browse?saved=1 re-runs its server query on next navigation — otherwise
+      // the stale RSC payload omits the just-saved tutor (grid can only filter
+      // the server list down, never add a missing card).
+      router.refresh();
     },
-    [isStudent, userId, applySaved]
+    [isStudent, userId, applySaved, router]
   );
 
   return (
