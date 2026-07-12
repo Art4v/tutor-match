@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Button, Chip } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
@@ -21,7 +21,6 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [confirmTouched, setConfirmTouched] = useState(false);
-  const [role, setRole] = useState("tutor");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -65,7 +64,7 @@ export default function SignupPage() {
       res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password, role, agreed }),
+        body: JSON.stringify({ fullName, email, password, agreed }),
       });
       payload = await res.json();
     } catch {
@@ -90,8 +89,9 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    // Tutors land on their own profile; students have no profile page yet.
-    router.push(role === "student" ? "/" : "/profile");
+    // Role is chosen after signup: everyone goes through the /choose-role gate
+    // (which creates the tutor/student row) before landing anywhere else.
+    router.push("/choose-role");
     router.refresh();
   };
 
@@ -138,17 +138,6 @@ export default function SignupPage() {
       ) : (
         <>
           <form onSubmit={onSubmit} className="space-y-5">
-          <Field label="I am a">
-            <div className="flex gap-1.5">
-              <Chip active={role === "tutor"} onClick={() => setRole("tutor")}>
-                Tutor
-              </Chip>
-              <Chip active={role === "student"} onClick={() => setRole("student")}>
-                Student
-              </Chip>
-            </div>
-          </Field>
-
           <Field label="Full name">
             <Input
               type="text"
@@ -273,24 +262,22 @@ export default function SignupPage() {
             {submitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
-          {/* OAuth signups can't carry a role — handle_new_user() defaults them
-              to tutor — so hide the Google path while Student is selected. */}
-          {role === "tutor" && (
-            <div className="mt-5">
-              <OAuthButtons divider="top" />
-              <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">
-                By continuing with Google, you agree to our{" "}
-                <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
-                  Privacy Policy
-                </Link>
-                .
-              </p>
-            </div>
-          )}
+          {/* Role is chosen after auth (/choose-role), so Google works for
+              everyone now — no need to hide it behind a role selection. */}
+          <div className="mt-5">
+            <OAuthButtons divider="top" />
+            <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">
+              By continuing with Google, you agree to our{" "}
+              <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </div>
         </>
       )}
 

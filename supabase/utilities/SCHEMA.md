@@ -61,7 +61,7 @@ These duplications are **intentional** — don't "tidy them up" without understa
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
 | `id` | uuid | PK → `auth.users(id)` ON DELETE CASCADE |
-| `role` | `user_role` | NOT NULL |
+| `role` | `user_role` | **nullable** since 0041 (was NOT NULL); NULL ⇒ role not chosen yet (new user must pass `/choose-role`). Set by `choose_role()`, not the signup trigger |
 | `full_name` | text | nullable; CHECK `full_name IS NULL OR btrim(full_name) <> ''` (0017) |
 | `terms_agreed_at` | timestamptz | nullable; consent stamp for every role, NULL ⇒ must (re-)agree (0025 on `tutor_profiles`, moved here in 0039) |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
@@ -240,7 +240,8 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 
 | Function | Returns | Purpose | Migration |
 | --- | --- | --- | --- |
-| `handle_new_user()` | trigger | On signup: create `profiles` + role table; default role→`tutor` & name←Google `name` claim; placeholder slug then `_assign_tutor_slug`; mirror `email_confirmed_at`; stamp `profiles.terms_agreed_at` for every role | 0001 → 0016/0025/0039 |
+| `handle_new_user()` | trigger | On signup: create the `profiles` row only, with **role NULL** (role is deferred to `choose_role()`); name←Google `name` claim; stamp `profiles.terms_agreed_at` for every role. No longer creates the role extension table or assigns a slug | 0001 → 0016/0025/0039/0041 |
+| `choose_role(p_role)` | void | Authenticated, `auth.uid()`-scoped, one-time: set `profiles.role` and create the matching extension row (tutor → placeholder slug + `_assign_tutor_slug` + mirror `email_confirmed_at`; else `student_profiles`). Raises if a role is already set | 0041 |
 | `handle_user_email_confirmed()` | trigger | Mirror `auth.users.email_confirmed_at` onto `tutor_profiles` on confirmation | 0007 |
 | `generate_unique_slug(p_name)` | text | Name→slug with collision suffix; superseded by `_assign_tutor_slug` (0013) but still present | 0004 |
 | `_assign_tutor_slug(p_id, p_name)` | text | Race-safe slug assignment (retry on unique_violation). SECURITY DEFINER; execute revoked from anon/authenticated | 0013 |

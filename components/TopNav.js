@@ -11,6 +11,7 @@ export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null); // profiles.role — source of truth
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
   const [unread, setUnread] = useState(0);
@@ -102,23 +103,17 @@ export function TopNav() {
     };
   }, []);
 
-  // Tutors have a public profile page; fetch the slug (for the menu link) plus
-  // the saved name + avatar so the nav chip reflects the live profile rather
-  // than the name captured in auth metadata at signup (which a profile edit
-  // never updates). Keyed on pathname too, so editing in /settings shows up in
-  // the chip once the tutor navigates away — the nav persists across client
-  // navigation and wouldn't otherwise refetch.
-  //
-  // We resolve the row by id (the PK) rather than gating on
-  // `user_metadata.role === "tutor"`: OAuth (Google) signups never get a role
-  // written to auth metadata — the DB trigger sets it — so that gate would hide
-  // the Profile link (and the live name/avatar) for every OAuth tutor. The
-  // inverse gate IS safe: `role === "student"` only ever comes from the email
-  // signup API, so a positive match reliably means no tutor row exists.
-  const isStudent = user?.user_metadata?.role === "student";
+  // Role drives the menu: tutors get the Profile link, students get the (v1
+  // placeholder) student items. profiles.role is the single source of truth
+  // (0041) — we read it from the DB rather than auth metadata, which OAuth
+  // accounts never carry. A NULL role means the user hasn't passed /choose-role
+  // yet; middleware keeps them off every real page, so the nav state is moot.
+  const isStudent = role === "student";
+  const isTutor = role === "tutor";
 
   useEffect(() => {
     if (!user) {
+      setRole(null);
       setTutorSlug(null);
       setProfile(null);
       setUnread(0);
@@ -126,25 +121,36 @@ export function TopNav() {
     }
     const supabase = createSupabaseBrowserClient();
     let active = true;
-    if (isStudent) {
-      setTutorSlug(null);
-      setProfile(null);
-    } else {
-      supabase
-        .from("tutor_profiles")
-        .select("slug, avatar_url, profile:profiles!inner ( full_name )")
-        .eq("id", user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (!active) return;
-          setTutorSlug(data?.slug ?? null);
-          setProfile(
-            data
-              ? { name: data.profile?.full_name ?? null, avatarUrl: data.avatar_url ?? null }
-              : null
-          );
-        });
-    }
+    // Resolve the role first, then fetch the tutor row only for tutors. The
+    // slug + live name/avatar keep the nav chip in sync with profile edits
+    // (keyed on pathname so it refetches after navigating away from /settings).
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return;
+        const r = data?.role ?? null;
+        setRole(r);
+        if (r !== "tutor") {
+          setTutorSlug(null);
+          setProfile(null);
+          return;
+        }
+        supabase
+          .from("tutor_profiles")
+          .select("slug, avatar_url, profile:profiles!inner ( full_name )")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data: t }) => {
+            if (!active) return;
+            setTutorSlug(t?.slug ?? null);
+            setProfile(
+              t ? { name: t.profile?.full_name ?? null, avatarUrl: t.avatar_url ?? null } : null
+            );
+          });
+      });
     // Unread notifications drive the dot on the avatar chip + menu item. Keyed on
     // pathname too, so visiting /notifications (which marks them read) clears it.
     supabase
@@ -238,7 +244,7 @@ export function TopNav() {
                       <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
                         Browse
                       </NavMenuLink>
-                      {!isStudent && (
+                      {isTutor && (
                         <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
                           Profile
                         </NavMenuLink>

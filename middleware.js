@@ -32,9 +32,64 @@ export async function middleware(request) {
   );
 
   // Touching getUser() forces a token refresh when the session is near expiry.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Deferred role choice (0041): every new account is created with a NULL role
+  // and MUST pass through /choose-role before doing anything else. Enforce that
+  // here so it can't be skipped by navigating directly. profiles.role is the
+  // source of truth; we read it under the caller's own RLS (self-read).
+  if (user) {
+    const { pathname } = request.nextUrl;
+    const onChooser = pathname.startsWith("/choose-role");
+    // Paths a NULL-role (mid-signup) user must still reach: the chooser itself,
+    // auth/API routes, and the policy pages they may want to read first.
+    const exempt =
+      onChooser ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/api") ||
+      pathname.startsWith("/terms-of-service") ||
+      pathname.startsWith("/privacy-policy") ||
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/reset-password");
+
+    // We only need role when a redirect is possible: an enforceable page (to
+    // push NULL-role users to the gate) or the chooser itself (to push role-set
+    // users back out). Skip the read on other exempt paths (API/auth/...).
+    if (!exempt || onChooser) {
+      // Fail open: on any read error `role` is undefined and we don't redirect,
+      // so a transient DB blip can never trap a user.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      const role = profile?.role;
+
+      if (role === null && !exempt) {
+        // Hasn't chosen yet — send them to the gate (carry over refreshed cookies).
+        return redirectPreservingCookies(request, response, "/choose-role");
+      }
+      if (role && onChooser) {
+        // Already chose — the chooser is done for them; send them to their home.
+        return redirectPreservingCookies(request, response, role === "tutor" ? "/profile" : "/");
+      }
+    }
+  }
 
   return response;
+}
+
+// Redirect while keeping the auth cookies the session refresh just set on
+// `refreshed` — otherwise the redirect response would drop the rotated token.
+function redirectPreservingCookies(request, refreshed, path) {
+  const url = request.nextUrl.clone();
+  url.pathname = path;
+  url.search = "";
+  const redirect = NextResponse.redirect(url);
+  refreshed.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  return redirect;
 }
 
 export const config = {
