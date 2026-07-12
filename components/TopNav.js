@@ -126,30 +126,45 @@ export function TopNav() {
     // (keyed on pathname so it refetches after navigating away from /settings).
     supabase
       .from("profiles")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (!active) return;
         const r = data?.role ?? null;
+        const fullName = data?.full_name ?? null;
         setRole(r);
-        if (r !== "tutor") {
-          setTutorSlug(null);
-          setProfile(null);
+        if (r === "tutor") {
+          supabase
+            .from("tutor_profiles")
+            .select("slug, avatar_url, profile:profiles!inner ( full_name )")
+            .eq("id", user.id)
+            .maybeSingle()
+            .then(({ data: t }) => {
+              if (!active) return;
+              setTutorSlug(t?.slug ?? null);
+              setProfile(
+                t ? { name: t.profile?.full_name ?? null, avatarUrl: t.avatar_url ?? null } : null
+              );
+            });
           return;
         }
-        supabase
-          .from("tutor_profiles")
-          .select("slug, avatar_url, profile:profiles!inner ( full_name )")
-          .eq("id", user.id)
-          .maybeSingle()
-          .then(({ data: t }) => {
-            if (!active) return;
-            setTutorSlug(t?.slug ?? null);
-            setProfile(
-              t ? { name: t.profile?.full_name ?? null, avatarUrl: t.avatar_url ?? null } : null
-            );
-          });
+        setTutorSlug(null);
+        if (r === "student") {
+          // Students carry their photo on student_profiles.avatar_url (0042);
+          // surface it in the chip just like the tutor avatar.
+          supabase
+            .from("student_profiles")
+            .select("avatar_url")
+            .eq("id", user.id)
+            .maybeSingle()
+            .then(({ data: s }) => {
+              if (!active) return;
+              setProfile({ name: fullName, avatarUrl: s?.avatar_url ?? null });
+            });
+          return;
+        }
+        setProfile(null);
       });
     // Unread notifications drive the dot on the avatar chip + menu item. Keyed on
     // pathname too, so visiting /notifications (which marks them read) clears it.
@@ -263,14 +278,14 @@ export function TopNav() {
                         </span>
                       </NavMenuLink>
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
-                        Account
+                        {isStudent ? "Profile and Account" : "Account"}
                       </NavMenuLink>
                       {isStudent && (
                         // Saved tutors is live (→ /browse with the saved filter
                         // pre-applied); messaging is still a v1 placeholder.
                         <>
                           <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
-                            Saved tutors
+                            Saved Tutors
                           </NavMenuLink>
                           <NavMenuDead>Messages</NavMenuDead>
                         </>

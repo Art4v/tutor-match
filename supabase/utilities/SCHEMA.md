@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0042_saved_tutors.sql`
+**Applied through:** `0043_student_avatar.sql`
 **Last reviewed:** 2026-07-05
 
 ---
@@ -113,6 +113,7 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
 | `id` | uuid | PK → `profiles(id)` ON DELETE CASCADE |
+| `avatar_url` | text | Student profile photo — `profile-images` upload (0043); shown on `/account` + the top-nav chip |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
 ### `saved_tutors` (join, 0042)

@@ -7,10 +7,13 @@ import { Button } from "@/components/ui";
 import { validatePassword } from "@/lib/password";
 import { PasswordChecklist } from "@/components/PasswordChecklist";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadProfileImage } from "@/lib/supabase/storage";
+import { ImageCropModal } from "@/components/ImageCropModal";
 
 const DELETE_WORD = "DELETE";
 
-export function AccountSettings({ userEmail }) {
+export function AccountSettings({ userEmail, userId, role, fullName, initialAvatarUrl }) {
+  const isStudent = role === "student";
   const router = useRouter();
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
@@ -118,13 +121,29 @@ export function AccountSettings({ userEmail }) {
     <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
       <div className="max-w-[760px] mx-auto px-6 pt-10">
         <div className="mb-7">
-          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Account</h1>
+          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+            {isStudent ? "Profile & account" : "Account"}
+          </h1>
           <p className="text-[14px] text-slate-500 mt-1">
-            Manage your sign-in password and account.
+            {isStudent
+              ? "Manage your profile photo, sign-in password and account."
+              : "Manage your sign-in password and account."}
           </p>
         </div>
 
         <div className="space-y-5">
+          {/* Profile photo (students only) ---------------------------------- */}
+          {isStudent && (
+            <ProfilePhotoCard
+              supabase={supabase}
+              userId={userId}
+              fullName={fullName}
+              userEmail={userEmail}
+              initialUrl={initialAvatarUrl}
+              showToast={showToast}
+            />
+          )}
+
           {/* Change password ------------------------------------------------ */}
           <Card>
             <SectionHeader
@@ -317,6 +336,113 @@ function Input(props) {
         transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
       }}
     />
+  );
+}
+
+// Student-only profile-photo card. Reuses the same upload + round-crop pipeline
+// as the tutor avatar control (uploadProfileImage → profile-images bucket,
+// ImageCropModal), but persists immediately to student_profiles.avatar_url
+// since /account has no global Save bar. RLS scopes the write to the caller.
+function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, showToast }) {
+  const inputRef = useRef(null);
+  const [url, setUrl] = useState(initialUrl ?? null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
+
+  const initial = ((fullName || userEmail || "?").trim().slice(0, 1) || "?").toUpperCase();
+
+  const onPick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // let the same file be re-picked after a remove
+    if (!file) return;
+    if (!userId) { setErr("Sign in again to upload."); return; }
+    if (!file.type?.startsWith("image/")) { setErr("Please choose an image file."); return; }
+    setErr(null);
+    setPendingFile(file);
+  };
+
+  const persist = async (nextUrl) => {
+    const { error } = await supabase
+      .from("student_profiles")
+      .update({ avatar_url: nextUrl })
+      .eq("id", userId);
+    return error;
+  };
+
+  const onCropConfirm = async (croppedFile) => {
+    setPendingFile(null);
+    setBusy(true);
+    setErr(null);
+    const res = await uploadProfileImage(supabase, userId, "avatar", croppedFile);
+    if (!res.ok) { setBusy(false); setErr(res.error); return; }
+    const error = await persist(res.url);
+    setBusy(false);
+    if (error) { setErr(error.message || "Couldn't save your photo."); return; }
+    setUrl(res.url);
+    showToast("ok", "Profile photo updated", 2000);
+  };
+
+  const onRemove = async () => {
+    setBusy(true);
+    setErr(null);
+    const error = await persist(null);
+    setBusy(false);
+    if (error) { setErr(error.message || "Couldn't remove your photo."); return; }
+    setUrl(null);
+    showToast("ok", "Profile photo removed", 2000);
+  };
+
+  return (
+    <Card>
+      <SectionHeader
+        icon="user"
+        title="Profile photo"
+        subtitle="Add a photo so tutors recognise you. Square works best."
+      />
+      <div className="flex items-center gap-4">
+        <div
+          className="shrink-0 overflow-hidden flex items-center justify-center text-white font-semibold"
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            border: "1px solid var(--paper-line)",
+            background: url ? "var(--bg-soft)" : "var(--ink)",
+            fontSize: 24,
+          }}
+        >
+          {url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt="Profile photo preview" className="w-full h-full object-cover" />
+          ) : (
+            initial
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+            <Button variant="outline" size="sm" icon="upload" disabled={busy} onClick={() => inputRef.current?.click()}>
+              {busy ? "Saving…" : url ? "Replace" : "Upload"}
+            </Button>
+            {url && !busy && (
+              <Button variant="ghost" size="sm" onClick={onRemove}>Remove</Button>
+            )}
+          </div>
+          {err && <div className="text-[12px] text-rose-600 mt-2">{err}</div>}
+        </div>
+      </div>
+      <ImageCropModal
+        open={!!pendingFile}
+        file={pendingFile}
+        aspect={1}
+        cropShape="round"
+        maxOutputPx={1024}
+        title="Crop profile photo"
+        onCancel={() => setPendingFile(null)}
+        onConfirm={onCropConfirm}
+      />
+    </Card>
   );
 }
 
