@@ -126,7 +126,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
           </h1>
           <p className="text-[14px] text-slate-500 mt-1">
             {isStudent
-              ? "Manage your profile photo, sign-in password and account."
+              ? "Manage your profile, sign-in password and account."
               : "Manage your sign-in password and account."}
           </p>
         </div>
@@ -339,18 +339,48 @@ function Input(props) {
   );
 }
 
-// Student-only profile-photo card. Reuses the same upload + round-crop pipeline
-// as the tutor avatar control (uploadProfileImage → profile-images bucket,
-// ImageCropModal), but persists immediately to student_profiles.avatar_url
-// since /account has no global Save bar. RLS scopes the write to the caller.
+// Student-only profile card: name + photo. Both persist immediately (no global
+// Save bar on /account). The photo reuses the tutor avatar pipeline
+// (uploadProfileImage → profile-images bucket, ImageCropModal) writing to
+// student_profiles.avatar_url; the name writes profiles.full_name (the "profile
+// self update" RLS policy scopes it to the caller). router.refresh() propagates
+// a name change to the TopNav chip + greeting.
 function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, showToast }) {
+  const router = useRouter();
   const inputRef = useRef(null);
   const [url, setUrl] = useState(initialUrl ?? null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
 
-  const initial = ((fullName || userEmail || "?").trim().slice(0, 1) || "?").toUpperCase();
+  // Name editor. `savedName` tracks the committed value for the dirty check;
+  // `name` is the live input.
+  const [name, setName] = useState(fullName ?? "");
+  const [savedName, setSavedName] = useState(fullName ?? "");
+  const [savingName, setSavingName] = useState(false);
+  const [nameErr, setNameErr] = useState(null);
+  const trimmedName = name.trim();
+  const nameDirty = trimmedName !== savedName.trim();
+
+  const onSaveName = async () => {
+    if (!userId) { setNameErr("Sign in again to save."); return; }
+    if (!trimmedName) { setNameErr("Please enter your name."); return; }
+    if (!nameDirty) return;
+    setSavingName(true);
+    setNameErr(null);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: trimmedName })
+      .eq("id", userId);
+    setSavingName(false);
+    if (error) { setNameErr(error.message || "Couldn't save your name."); return; }
+    setSavedName(trimmedName);
+    setName(trimmedName);
+    showToast("ok", "Name updated", 2000);
+    router.refresh();
+  };
+
+  const initial = ((savedName || userEmail || "?").trim().slice(0, 1) || "?").toUpperCase();
 
   const onPick = (e) => {
     const file = e.target.files?.[0];
@@ -397,9 +427,36 @@ function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, s
     <Card>
       <SectionHeader
         icon="user"
-        title="Profile photo"
-        subtitle="Add a photo so tutors recognise you. Square works best."
+        title="Profile"
+        subtitle="Your name and photo. This is how tutors recognise you."
       />
+
+      <Field label="Full name">
+        <Input
+          type="text"
+          value={name}
+          onChange={(e) => { setName(e.target.value); setNameErr(null); }}
+          placeholder="Your name"
+          autoComplete="name"
+          maxLength={80}
+        />
+        {nameErr && <div className="text-[12px] text-rose-600 mt-2">{nameErr}</div>}
+      </Field>
+      <div className="mt-3 mb-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSaveName}
+          disabled={savingName || !nameDirty || !trimmedName}
+        >
+          {savingName ? "Saving…" : "Save name"}
+        </Button>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--paper-line)" }} className="pt-6">
+      <div className="text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-3">
+        Profile photo
+      </div>
       <div className="flex items-center gap-4">
         <div
           className="shrink-0 overflow-hidden flex items-center justify-center text-white font-semibold"
@@ -431,6 +488,7 @@ function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, s
           </div>
           {err && <div className="text-[12px] text-rose-600 mt-2">{err}</div>}
         </div>
+      </div>
       </div>
       <ImageCropModal
         open={!!pendingFile}
