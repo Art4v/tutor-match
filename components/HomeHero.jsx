@@ -219,7 +219,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                   className="sm:hidden w-full max-w-[340px] mx-auto flex flex-col gap-6"
                 >
                   {showcaseTutors.slice(0, 3).map((tutor) => (
-                    <TutorCard key={tutor.id ?? tutor.slug} tutor={tutor} />
+                    <TutorCard key={tutor.id ?? tutor.slug} tutor={tutor} showSave={false} />
                   ))}
                   <div className="flex justify-center">
                     {/* `relative` anchors the underline span (desktop's variant

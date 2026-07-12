@@ -5,6 +5,7 @@ import {
   getSubjects,
   getSchools,
 } from "@/lib/supabase/tutors";
+import { getSavedTutorIds } from "@/lib/supabase/saved";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -50,6 +51,19 @@ export default async function BrowsePage({ searchParams }) {
   // refresh reshuffles. Absent on the very first paint → deterministic order 0.
   const seed = parseNumber(searchParams.seed) ?? 0;
 
+  // "Saved" filter — when on, resolve the signed-in student's saved tutor ids
+  // server-side (RLS scopes them to the caller) and restrict results to them.
+  // `null` when off. A logged-out/tutor visitor resolves to `[]` → no results,
+  // matching the fact that only students can save (the toggle is student-only).
+  const savedOnly = searchParams.saved === "1";
+  let savedIds = null;
+  if (savedOnly) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    savedIds = user ? await getSavedTutorIds(supabase, user.id) : [];
+  }
+
   const [{ tutors, total }, subjectCatalog, schoolCatalog] = await Promise.all([
     getTutorsForBrowse(supabase, {
       q: q || undefined,
@@ -63,6 +77,7 @@ export default async function BrowsePage({ searchParams }) {
       yearLevels,
       modes,
       verifiedOnly,
+      savedIds,
       page,
       pageSize: PAGE_SIZE,
       seed,
@@ -85,6 +100,7 @@ export default async function BrowsePage({ searchParams }) {
     rateMax,
     yearLevels,
     verifiedOnly,
+    savedOnly,
   };
 
   return (
@@ -114,7 +130,7 @@ export default async function BrowsePage({ searchParams }) {
             {tutors.length === 0 ? (
               <EmptyState />
             ) : (
-              <BrowseResultsGrid tutors={tutors} />
+              <BrowseResultsGrid tutors={tutors} savedOnly={savedOnly} />
             )}
 
             {tutors.length > 0 && totalPages > 1 && (

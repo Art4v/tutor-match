@@ -14,6 +14,7 @@ import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { AboutCard } from "./AboutCard";
 import { OwnerProfile } from "./OwnerProfile";
+import { SaveTutorButton } from "@/components/SaveTutorButton";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { Section, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
@@ -53,6 +54,9 @@ export default async function ProfilePage({ params }) {
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">
         <SectionReveal hover className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
+          {/* Save bookmark — top-right of the banner. Public view only; the
+              owner branch above never reaches here. */}
+          <SaveTutorButton tutorId={tutor.id} variant="banner" />
           <div
             style={{
               height: 140,

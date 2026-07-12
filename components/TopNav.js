@@ -266,10 +266,12 @@ export function TopNav() {
                         Account
                       </NavMenuLink>
                       {isStudent && (
-                        // Student v1: saved tutors + messaging aren't built yet —
-                        // visual-only placeholders, parked above Log out.
+                        // Saved tutors is live (→ /browse with the saved filter
+                        // pre-applied); messaging is still a v1 placeholder.
                         <>
-                          <NavMenuDead>Saved tutors</NavMenuDead>
+                          <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
+                            Saved tutors
+                          </NavMenuLink>
                           <NavMenuDead>Messages</NavMenuDead>
                         </>
                       )}

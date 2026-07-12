@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0040_drop_welcome_email_drift.sql`
+**Applied through:** `0042_saved_tutors.sql`
 **Last reviewed:** 2026-07-05
 
 ---
@@ -114,6 +114,17 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | --- | --- | --- |
 | `id` | uuid | PK → `profiles(id)` ON DELETE CASCADE |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+### `saved_tutors` (join, 0042)
+Student bookmarks — one row per saved tutor. Read/written by the bookmark button and the `/browse ?saved=1` filter.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `student_id` | uuid | PK part → `student_profiles(id)` ON DELETE CASCADE |
+| `tutor_id` | uuid | PK part → `tutor_profiles(id)` ON DELETE CASCADE |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+**Index:** `(student_id, created_at desc)`. Self-only RLS on `student_id` (student reads/writes only their own saves).
 
 ### `exams` (renamed from `certificates` in 0010)
 Reference catalog of exam systems.
@@ -274,6 +285,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `profiles` | self; **+ public read for tutor rows** (0004, so the browse join returns names) | self UPDATE |
 | `tutor_profiles` | public | tutor self (ALL) |
 | `student_profiles` | self | self (ALL) |
+| `saved_tutors` | self (own `student_id`) | self (ALL) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |

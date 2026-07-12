@@ -7,6 +7,7 @@ import { Chip } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
+import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { subjectLabel } from "@/lib/subjects";
 import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
 
@@ -30,6 +31,8 @@ export function BrowseFilters({
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  // Saved-tutors filter is a student-only concept — hide the toggle otherwise.
+  const { isStudent } = useSavedTutors();
 
   // Local mirror so sliders feel snappy while the URL update lands.
   const [atarMin, setAtarMin] = useState(filters.atarMin ?? 90);
@@ -97,6 +100,9 @@ export function BrowseFilters({
   // opt-out, toggling back on just drops the param.
   const setVerifiedOnly = (on) => setSingle("verified", on ? null : "0", null);
 
+  // Saved-only defaults OFF; ON writes ?saved=1, OFF drops the param.
+  const setSavedOnly = (on) => setSingle("saved", on ? "1" : null, null);
+
   const toggleMode = (value) =>
     pushParams((p) => {
       const current = p.getAll("mode");
@@ -134,6 +140,7 @@ export function BrowseFilters({
     filters.atarMin != null ||
     filters.rateMax != null ||
     (filters.yearLevels?.length ?? 0) > 0 ||
+    filters.savedOnly === true ||
     filters.verifiedOnly === false;
 
   return (
@@ -154,6 +161,48 @@ export function BrowseFilters({
           </Link>
         )}
       </div>
+
+      {/* Saved-tutors filter — pinned to the top, student-only, off by default.
+          The TopNav "Saved tutors" link lands here with ?saved=1. */}
+      {isStudent && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={filters.savedOnly === true}
+          onClick={() => setSavedOnly(filters.savedOnly !== true)}
+          className="w-full flex items-center justify-between gap-3 text-left px-3 py-2.5 rounded-lg"
+          style={{
+            border: `1px solid ${filters.savedOnly ? "var(--accent-line)" : "var(--paper-line)"}`,
+            background: filters.savedOnly ? "var(--accent-softer)" : "var(--paper-card)",
+            transition: "background 160ms ease-out, border-color 160ms ease-out",
+          }}
+        >
+          <span className="inline-flex items-center gap-1.5 text-[13.5px] font-medium" style={{ color: filters.savedOnly ? "var(--accent)" : "var(--ink-muted)" }}>
+            <Icon name={filters.savedOnly ? "bookmark-fill" : "bookmark"} size={15} />
+            Saved tutors
+          </span>
+          <span
+            aria-hidden="true"
+            className="relative shrink-0 rounded-full"
+            style={{
+              width: 38,
+              height: 22,
+              background: filters.savedOnly ? "var(--accent)" : "var(--paper-line)",
+              transition: "background 160ms ease-out",
+            }}
+          >
+            <span
+              className="absolute top-1/2 rounded-full bg-white shadow-sm"
+              style={{
+                width: 16,
+                height: 16,
+                transform: `translateY(-50%) translateX(${filters.savedOnly ? 19 : 3}px)`,
+                transition: "transform 160ms ease-out",
+              }}
+            />
+          </span>
+        </button>
+      )}
 
       <FilterGroup title="Name">
         <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}>
@@ -371,6 +420,11 @@ export function BrowseSortAndChips({ filters, catalog, schoolCatalog }) {
   return (
     <div className="mb-5">
       <div className="flex flex-wrap gap-1.5">
+        {filters.savedOnly && (
+          <Chip onClick={() => pushParams((p) => p.delete("saved"))} icon="x">
+            Saved tutors
+          </Chip>
+        )}
         {filters.name && (
           <Chip onClick={() => pushParams((p) => p.delete("name"))} icon="x">
             &ldquo;{filters.name}&rdquo;
