@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Button, Chip } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
@@ -21,8 +21,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [confirmTouched, setConfirmTouched] = useState(false);
-  const [role, setRole] = useState("tutor");
   const [agreed, setAgreed] = useState(false);
+  const [isOver16, setIsOver16] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
@@ -57,6 +57,10 @@ export default function SignupPage() {
       setError("Please agree to the Terms of Service and Privacy Policy to continue.");
       return;
     }
+    if (!isOver16) {
+      setError("You must be 16 years or older to create an account.");
+      return;
+    }
 
     setSubmitting(true);
     let res;
@@ -65,7 +69,7 @@ export default function SignupPage() {
       res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password, role, agreed }),
+        body: JSON.stringify({ fullName, email, password, agreed }),
       });
       payload = await res.json();
     } catch {
@@ -90,7 +94,9 @@ export default function SignupPage() {
       setNeedsConfirm(true);
       return;
     }
-    router.push("/profile");
+    // Role is chosen after signup: everyone goes through the /choose-role gate
+    // (which creates the tutor/student row) before landing anywhere else.
+    router.push("/choose-role");
     router.refresh();
   };
 
@@ -137,15 +143,6 @@ export default function SignupPage() {
       ) : (
         <>
           <form onSubmit={onSubmit} className="space-y-5">
-          <Field label="I am a">
-            <div className="flex gap-1.5">
-              <Chip active={role === "tutor"} onClick={() => setRole("tutor")}>
-                Tutor
-              </Chip>
-              <Chip disabled>Student · Coming soon</Chip>
-            </div>
-          </Field>
-
           <Field label="Full name">
             <Input
               type="text"
@@ -257,6 +254,19 @@ export default function SignupPage() {
             </span>
           </label>
 
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isOver16}
+              onChange={(e) => setIsOver16(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+              style={{ accentColor: "var(--accent)" }}
+            />
+            <span className="text-[13px] text-slate-600 leading-[1.5]">
+              I confirm that I am 16 years of age or older.
+            </span>
+          </label>
+
           {error && (
             <div
               className="px-3 py-2 text-[13px] text-red-700"
@@ -270,6 +280,8 @@ export default function SignupPage() {
             {submitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
+          {/* Role is chosen after auth (/choose-role), so Google works for
+              everyone now — no need to hide it behind a role selection. */}
           <div className="mt-5">
             <OAuthButtons divider="top" />
             <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">

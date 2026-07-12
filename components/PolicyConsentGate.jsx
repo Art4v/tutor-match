@@ -1,14 +1,14 @@
 "use client";
 
-// Re-consent gate for already-registered tutors. Mounted once in the root
-// layout, it checks the logged-in user's stored consent timestamp against the
-// current policy version (lib/policy.js). When the user signed up before the
-// current Terms / Privacy Policy took effect (or never agreed), it shows a
-// blocking modal that must be accepted to continue.
+// Re-consent gate for already-registered users (tutors and students). Mounted
+// once in the root layout, it checks the logged-in user's stored consent
+// timestamp against the current policy version (lib/policy.js). When the user
+// signed up before the current Terms / Privacy Policy took effect (or never
+// agreed), it shows a blocking modal that must be accepted to continue.
 //
-// New signups are stamped now() by handle_new_user() (migration 0025), so they
-// pass needsPolicyConsent() and never see this. Logged-out visitors render
-// nothing — no flash on the public pages.
+// New signups are stamped now() by handle_new_user() (migrations 0025/0039),
+// so they pass needsPolicyConsent() and never see this. Logged-out visitors
+// render nothing — no flash on the public pages.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -43,13 +43,15 @@ export default function PolicyConsentGate() {
         if (!cancelled) setOpen(false);
         return;
       }
+      // The stamp lives on the shared profiles row (0039) — one self-read
+      // covers every role via the "profile self read" RLS policy.
       const { data, error: qErr } = await supabase
-        .from("tutor_profiles")
+        .from("profiles")
         .select("terms_agreed_at")
         .eq("id", user.id)
         .maybeSingle();
 
-      // No tutor row (e.g. a student) or a read error → don't gate.
+      // Missing row or a read error → don't gate.
       if (cancelled || qErr || !data) return;
       if (needsPolicyConsent(data.terms_agreed_at)) setOpen(true);
     };

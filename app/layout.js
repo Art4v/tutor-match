@@ -5,6 +5,7 @@ import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import PolicyConsentGate from "@/components/PolicyConsentGate";
 import VerificationPrompt from "@/components/VerificationPrompt";
+import { SavedTutorsProvider } from "@/components/SavedTutorsProvider";
 
 const SITE_URL = "https://www.matchtutor.com.au";
 const SITE_DESCRIPTION =
@@ -42,13 +43,17 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <SmoothScrollProvider>
-          <TopNav />
-          {/* The nav is fixed (out of flow), so reserve its height here. The home
-              hero cancels this with a negative margin to go full-bleed. */}
-          <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
-          <SiteFooter />
-          <PolicyConsentGate />
-          <VerificationPrompt />
+          {/* Saved-tutors state is shared across every TutorCard + the profile
+              banner + the /browse "Saved" filter, so load it once here. */}
+          <SavedTutorsProvider>
+            <TopNav />
+            {/* The nav is fixed (out of flow), so reserve its height here. The home
+                hero cancels this with a negative margin to go full-bleed. */}
+            <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
+            <SiteFooter />
+            <PolicyConsentGate />
+            <VerificationPrompt />
+          </SavedTutorsProvider>
         </SmoothScrollProvider>
         <Analytics />
       </body>

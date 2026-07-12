@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { Icon } from "./Icon";
 import { Avatar, VerifiedTick } from "./ui";
+import { SaveTutorButton } from "./SaveTutorButton";
 import { EASE_OUT } from "@/lib/motion";
 import { subjectLabel } from "@/lib/subjects";
 import { stripMarkdown } from "@/lib/richText";
@@ -257,7 +258,7 @@ const cardVariants = {
   },
 };
 
-export function TutorCard({ tutor }) {
+export function TutorCard({ tutor, showSave = true }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   // Headline stat: the tutor's first credential — labelled by its type (ATAR /
@@ -290,6 +291,10 @@ export function TutorCard({ tutor }) {
         willChange: "transform, box-shadow",
       }}
     >
+      {/* Bookmark overlay — a sibling of the card <Link> (not nested, so the
+          HTML stays valid) pinned to the banner's top-right corner. Suppressed
+          on the home hero showcase cards (showSave={false}). */}
+      {showSave && <SaveTutorButton tutorId={tutor.id} variant="card" />}
       <Link
         href={`/tutor/${tutor.slug}`}
         className="relative cursor-pointer flex flex-col h-full overflow-hidden"

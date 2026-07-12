@@ -19,7 +19,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { fullName, email, password, role, agreed } = body ?? {};
+  const { fullName, email, password, agreed } = body ?? {};
 
   if (!email || !password) {
     return NextResponse.json(
@@ -64,18 +64,20 @@ export async function POST(request) {
 
   const supabase = createSupabaseServerClient();
   const origin = request.headers.get("origin") ?? new URL(request.url).origin;
+  // Role is no longer chosen at signup (0041) — every new account is created
+  // with a NULL role and picks tutor/student at /choose-role after auth.
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
     options: {
       // The confirm-signup email link routes through /auth/callback (token_hash
       // /type=signup, mirroring the recovery flow) so confirmation mints a
-      // session and lands the user logged-in at /profile (which resolves their
-      // slug) — and gives the callback an app-side hook to send the welcome.
-      emailRedirectTo: `${origin}/auth/callback?next=/profile`,
-      // These end up in auth.users.raw_user_meta_data, where the
-      // handle_new_user() trigger reads them to populate the profile rows.
-      data: { full_name: fullName ?? "", role: role === "student" ? "student" : "tutor" },
+      // session and lands the user logged-in. The callback then routes a
+      // NULL-role account to /choose-role; the `next` here is just a fallback.
+      emailRedirectTo: `${origin}/auth/callback?next=/choose-role`,
+      // full_name ends up in auth.users.raw_user_meta_data, where
+      // handle_new_user() reads it to populate the profiles row.
+      data: { full_name: fullName ?? "" },
     },
   });
 

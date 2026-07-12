@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0038_drop_dead_package_columns.sql`
+**Applied through:** `0043_student_avatar.sql`
 **Last reviewed:** 2026-07-05
 
 ---
@@ -61,8 +61,9 @@ These duplications are **intentional** — don't "tidy them up" without understa
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
 | `id` | uuid | PK → `auth.users(id)` ON DELETE CASCADE |
-| `role` | `user_role` | NOT NULL |
+| `role` | `user_role` | **nullable** since 0041 (was NOT NULL); NULL ⇒ role not chosen yet (new user must pass `/choose-role`). Set by `choose_role()`, not the signup trigger |
 | `full_name` | text | nullable; CHECK `full_name IS NULL OR btrim(full_name) <> ''` (0017) |
+| `terms_agreed_at` | timestamptz | nullable; consent stamp for every role, NULL ⇒ must (re-)agree (0025 on `tutor_profiles`, moved here in 0039) |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
@@ -104,7 +105,6 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `verification_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/rejected` (0021). **Single source of truth** — the app derives the `verified` boolean from `= 'verified'`; the standalone `verified` bool was dropped in 0028 |
 | `verification_requested_at` | timestamptz | (0021) |
 | `onboarded` | bool | NOT NULL DEFAULT false; drives `/onboarding` gate (0018) |
-| `terms_agreed_at` | timestamptz | nullable; consent stamp, NULL ⇒ must (re-)agree (0025) |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` (0002) |
 
 **Indexes:** `(visibility)`, `(city)`, `(atar)`, `(rate)` (0004); `(email_confirmed_at)` (0007); `(service_lat, service_lng)` (0008).
@@ -113,7 +113,19 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
 | `id` | uuid | PK → `profiles(id)` ON DELETE CASCADE |
+| `avatar_url` | text | Student profile photo — `profile-images` upload (0043); shown on `/account` + the top-nav chip |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+### `saved_tutors` (join, 0042)
+Student bookmarks — one row per saved tutor. Read/written by the bookmark button and the `/browse ?saved=1` filter.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `student_id` | uuid | PK part → `student_profiles(id)` ON DELETE CASCADE |
+| `tutor_id` | uuid | PK part → `tutor_profiles(id)` ON DELETE CASCADE |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+**Index:** `(student_id, created_at desc)`. Self-only RLS on `student_id` (student reads/writes only their own saves).
 
 ### `exams` (renamed from `certificates` in 0010)
 Reference catalog of exam systems.
@@ -240,7 +252,8 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 
 | Function | Returns | Purpose | Migration |
 | --- | --- | --- | --- |
-| `handle_new_user()` | trigger | On signup: create `profiles` + role table; default role→`tutor` & name←Google `name` claim; placeholder slug then `_assign_tutor_slug`; mirror `email_confirmed_at`; stamp `terms_agreed_at` for tutors | 0001 → 0016/0025 |
+| `handle_new_user()` | trigger | On signup: create the `profiles` row only, with **role NULL** (role is deferred to `choose_role()`); name←Google `name` claim; stamp `profiles.terms_agreed_at` for every role. No longer creates the role extension table or assigns a slug | 0001 → 0016/0025/0039/0041 |
+| `choose_role(p_role)` | void | Authenticated, `auth.uid()`-scoped, one-time: set `profiles.role` and create the matching extension row (tutor → placeholder slug + `_assign_tutor_slug` + mirror `email_confirmed_at`; else `student_profiles`). Raises if a role is already set | 0041 |
 | `handle_user_email_confirmed()` | trigger | Mirror `auth.users.email_confirmed_at` onto `tutor_profiles` on confirmation | 0007 |
 | `generate_unique_slug(p_name)` | text | Name→slug with collision suffix; superseded by `_assign_tutor_slug` (0013) but still present | 0004 |
 | `_assign_tutor_slug(p_id, p_name)` | text | Race-safe slug assignment (retry on unique_violation). SECURITY DEFINER; execute revoked from anon/authenticated | 0013 |
@@ -250,7 +263,7 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `consume_ai_credit()` | TABLE(allowed bool, used int, day_limit int) | Atomic conditional increment of `ai_usage` (limit hardcoded 10/day) | 0020 |
 | `refund_ai_credit()` | void | Decrement floored at 0; called only on Groq failure | 0020 |
 | `request_tutor_verification()` | text | `none`/`rejected` → `pending`, idempotent; returns new status. `auth.uid()`-scoped | 0021 |
-| `accept_current_terms()` | void | Stamp caller's `terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 |
+| `accept_current_terms()` | void | Stamp caller's `profiles.terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 → 0039 |
 | `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
@@ -273,6 +286,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `profiles` | self; **+ public read for tutor rows** (0004, so the browse join returns names) | self UPDATE |
 | `tutor_profiles` | public | tutor self (ALL) |
 | `student_profiles` | self | self (ALL) |
+| `saved_tutors` | self (own `student_id`) | self (ALL) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |

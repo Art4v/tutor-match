@@ -42,8 +42,18 @@ function LoginInner() {
       setNeedsConfirm(error.code === "email_not_confirmed" || /email not confirmed/i.test(error.message || ""));
       return;
     }
-    const role = data?.user?.user_metadata?.role;
-    router.push(role === "tutor" ? "/profile" : "/");
+    // profiles.role is the source of truth (0041). A user who signed up but
+    // never picked a role (role NULL) is sent to the /choose-role gate.
+    let role = null;
+    if (data?.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      role = profile?.role ?? null;
+    }
+    router.push(role === null ? "/choose-role" : role === "tutor" ? "/profile" : "/");
     router.refresh();
   };
 

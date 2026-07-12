@@ -100,6 +100,9 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
 
   return (
     <Tag
+      // A bare <button> inside a <form> defaults to type="submit" — chips are
+      // never submit controls.
+      type={clickable ? "button" : undefined}
       onClick={clickable ? onClick : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

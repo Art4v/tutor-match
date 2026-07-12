@@ -86,7 +86,7 @@ export function HeroTutorStack({ tutors = [] }) {
             animate={target}
             transition={{ duration: 0.5, ease: EASE_OUT }}
           >
-            <TutorCard tutor={tutor} />
+            <TutorCard tutor={tutor} showSave={false} />
           </motion.div>
         );
       })}

@@ -60,6 +60,18 @@ export async function GET(request) {
           name: user.user_metadata?.full_name || user.user_metadata?.name || null,
           origin,
         });
+        // Role-aware landing (0041): profiles.role is the source of truth. A
+        // brand-new account (email confirm or OAuth) has role NULL and MUST pick
+        // one at /choose-role before continuing; a returning user lands on their
+        // role home. This makes the OAuth `next` param irrelevant for routing.
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        const role = profile?.role ?? null;
+        const dest = role === null ? "/choose-role" : role === "tutor" ? "/profile" : "/";
+        return NextResponse.redirect(`${origin}${dest}`);
       }
     }
     return NextResponse.redirect(`${origin}${next}`);

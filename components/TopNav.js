@@ -11,6 +11,7 @@ export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null); // profiles.role — source of truth
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
   const [unread, setUnread] = useState(0);
@@ -102,20 +103,17 @@ export function TopNav() {
     };
   }, []);
 
-  // Tutors have a public profile page; fetch the slug (for the menu link) plus
-  // the saved name + avatar so the nav chip reflects the live profile rather
-  // than the name captured in auth metadata at signup (which a profile edit
-  // never updates). Keyed on pathname too, so editing in /settings shows up in
-  // the chip once the tutor navigates away — the nav persists across client
-  // navigation and wouldn't otherwise refetch.
-  //
-  // We resolve the row by id (the PK) rather than gating on
-  // `user_metadata.role === "tutor"`: OAuth (Google) signups never get a role
-  // written to auth metadata — the DB trigger sets it — so that gate would hide
-  // the Profile link (and the live name/avatar) for every OAuth tutor. A
-  // non-tutor (e.g. student) simply has no matching row and gets null.
+  // Role drives the menu: tutors get the Profile link, students get the (v1
+  // placeholder) student items. profiles.role is the single source of truth
+  // (0041) — we read it from the DB rather than auth metadata, which OAuth
+  // accounts never carry. A NULL role means the user hasn't passed /choose-role
+  // yet; middleware keeps them off every real page, so the nav state is moot.
+  const isStudent = role === "student";
+  const isTutor = role === "tutor";
+
   useEffect(() => {
     if (!user) {
+      setRole(null);
       setTutorSlug(null);
       setProfile(null);
       setUnread(0);
@@ -123,19 +121,50 @@ export function TopNav() {
     }
     const supabase = createSupabaseBrowserClient();
     let active = true;
+    // Resolve the role first, then fetch the tutor row only for tutors. The
+    // slug + live name/avatar keep the nav chip in sync with profile edits
+    // (keyed on pathname so it refetches after navigating away from /settings).
     supabase
-      .from("tutor_profiles")
-      .select("slug, avatar_url, profile:profiles!inner ( full_name )")
+      .from("profiles")
+      .select("role, full_name")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (!active) return;
-        setTutorSlug(data?.slug ?? null);
-        setProfile(
-          data
-            ? { name: data.profile?.full_name ?? null, avatarUrl: data.avatar_url ?? null }
-            : null
-        );
+        const r = data?.role ?? null;
+        const fullName = data?.full_name ?? null;
+        setRole(r);
+        if (r === "tutor") {
+          supabase
+            .from("tutor_profiles")
+            .select("slug, avatar_url, profile:profiles!inner ( full_name )")
+            .eq("id", user.id)
+            .maybeSingle()
+            .then(({ data: t }) => {
+              if (!active) return;
+              setTutorSlug(t?.slug ?? null);
+              setProfile(
+                t ? { name: t.profile?.full_name ?? null, avatarUrl: t.avatar_url ?? null } : null
+              );
+            });
+          return;
+        }
+        setTutorSlug(null);
+        if (r === "student") {
+          // Students carry their photo on student_profiles.avatar_url (0042);
+          // surface it in the chip just like the tutor avatar.
+          supabase
+            .from("student_profiles")
+            .select("avatar_url")
+            .eq("id", user.id)
+            .maybeSingle()
+            .then(({ data: s }) => {
+              if (!active) return;
+              setProfile({ name: fullName, avatarUrl: s?.avatar_url ?? null });
+            });
+          return;
+        }
+        setProfile(null);
       });
     // Unread notifications drive the dot on the avatar chip + menu item. Keyed on
     // pathname too, so visiting /notifications (which marks them read) clears it.
@@ -230,9 +259,11 @@ export function TopNav() {
                       <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
                         Browse
                       </NavMenuLink>
-                      <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
-                        Profile
-                      </NavMenuLink>
+                      {isTutor && (
+                        <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
+                          Profile
+                        </NavMenuLink>
+                      )}
                       <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
                         <span className="flex items-center justify-between gap-2">
                           Notifications
@@ -247,8 +278,18 @@ export function TopNav() {
                         </span>
                       </NavMenuLink>
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
-                        Account
+                        {isStudent ? "Profile and Account" : "Account"}
                       </NavMenuLink>
+                      {isStudent && (
+                        // Saved tutors is live (→ /browse with the saved filter
+                        // pre-applied); messaging is still a v1 placeholder.
+                        <>
+                          <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
+                            Saved Tutors
+                          </NavMenuLink>
+                          <NavMenuDead>Messages</NavMenuDead>
+                        </>
+                      )}
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
                         {loggingOut ? "Logging out…" : "Log out"}
                       </NavMenuButton>
@@ -290,6 +331,39 @@ function NavMenuLink({ href, onClick, children }) {
     >
       {children}
     </Link>
+  );
+}
+
+// Inert placeholder row for features that exist in the menu but aren't built
+// yet. Not a link/button on purpose: clicks inside the menu don't close it, so
+// the item simply does nothing. "Soon" pill matches the disabled provider
+// button in OAuthButtons.jsx.
+function NavMenuDead({ children }) {
+  return (
+    <span
+      role="menuitem"
+      aria-disabled="true"
+      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-[13.5px] rounded-md"
+      style={{ color: "var(--sage)", cursor: "not-allowed", opacity: 0.75 }}
+    >
+      {children}
+      <span
+        style={{
+          fontSize: 10.5,
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: "var(--sage)",
+          background: "var(--desk)",
+          border: "1px solid var(--paper-line)",
+          borderRadius: 999,
+          padding: "2px 7px",
+          lineHeight: 1.2,
+        }}
+      >
+        Soon
+      </span>
+    </span>
   );
 }
 
