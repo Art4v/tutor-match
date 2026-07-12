@@ -11,22 +11,30 @@
 -- WARNING — this is destructive for that ONE account. Deleting the
 -- `auth.users` row cascades (via `on delete cascade`) to:
 --   * public.profiles  ->  public.tutor_profiles  ->  the four child tables
---     (tutor_subjects, tutor_packages, tutor_experience, tutor_education)
---   * public.student_profiles
+--     (tutor_subjects, tutor_packages, tutor_experience, tutor_education),
+--     plus public.tutor_documents (0034) and any public.saved_tutors rows
+--     where this account is the SAVED tutor (tutor_id)
+--   * public.student_profiles  ->  public.saved_tutors where this account is
+--     the SAVING student (student_id) (0042)
 --   * public.notifications   (keyed straight off auth.users.id)
 --   * public.ai_usage        (keyed straight off auth.users.id)
 --
--- DOES NOT delete the user's uploaded avatar/banner files: Supabase blocks
--- direct DELETEs on storage tables (a `storage.protect_delete()` trigger), so
--- those must go through the Storage API. The last query below LISTS the files
--- to remove; delete the `<uid>/` folder in Studio -> Storage -> profile-images
--- (or via the Storage API). Leftover files are orphaned but harmless — nothing
--- references them once the tutor row is gone.
+-- Since 0041 a not-yet-onboarded account may have role NULL and NO extension
+-- row (tutor/student) — deleting the `auth.users` / `profiles` row still works;
+-- the missing child tables simply have nothing to cascade to.
+--
+-- DOES NOT delete the user's uploaded files: Supabase blocks direct DELETEs on
+-- storage tables (a `storage.protect_delete()` trigger), so those must go
+-- through the Storage API. The last query below LISTS the files to remove;
+-- delete the `<uid>/` folder in Studio -> Storage for each bucket
+-- (`profile-images` avatars/banners, `tutor-docs` profile documents), or via
+-- the Storage API. Leftover files are orphaned but harmless — nothing
+-- references them once the rows are gone.
 --
 -- WHAT IT PRESERVES:
 --   * Every other user and all their data.
---   * The schema, RLS policies, functions/triggers, the seeded `subjects`
---     table, and the `profile-images` bucket itself.
+--   * The schema, RLS policies, functions/triggers, the seeded reference tables
+--     (`subjects` / `exams` / `schools`), and the Storage buckets themselves.
 -- ============================================================================
 
 begin;
@@ -51,12 +59,16 @@ union all select 'tutor_subjects',    count(*) from public.tutor_subjects   wher
 union all select 'tutor_packages',    count(*) from public.tutor_packages   where tutor_id = current_setting('reset.user_id')::uuid
 union all select 'tutor_experience',  count(*) from public.tutor_experience where tutor_id = current_setting('reset.user_id')::uuid
 union all select 'tutor_education',   count(*) from public.tutor_education  where tutor_id = current_setting('reset.user_id')::uuid
+union all select 'tutor_documents',   count(*) from public.tutor_documents  where tutor_id = current_setting('reset.user_id')::uuid
+union all select 'saved_tutors (as student)', count(*) from public.saved_tutors where student_id = current_setting('reset.user_id')::uuid
+union all select 'saved_tutors (as tutor)',   count(*) from public.saved_tutors where tutor_id   = current_setting('reset.user_id')::uuid
 union all select 'notifications',     count(*) from public.notifications    where user_id  = current_setting('reset.user_id')::uuid
 union all select 'ai_usage',          count(*) from public.ai_usage         where user_id  = current_setting('reset.user_id')::uuid;
 
--- Storage cleanup TODO — these are the user's leftover image files (DELETE is
--- blocked in SQL; remove them via Studio -> Storage -> profile-images).
-select name, id
+-- Storage cleanup TODO — these are the user's leftover files across both buckets
+-- (DELETE is blocked in SQL; remove them via Studio -> Storage). `bucket_id`
+-- tells you which bucket (`profile-images` avatars/banners, `tutor-docs` docs).
+select bucket_id, name, id
 from storage.objects
-where bucket_id = 'profile-images'
+where bucket_id in ('profile-images', 'tutor-docs')
   and (storage.foldername(name))[1] = current_setting('reset.user_id');

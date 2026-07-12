@@ -192,8 +192,7 @@ graph TD
 
     sb --> migr["migrations/ — 0001 … 0024"]
     sb --> tmpl["email-templates/ — confirm-signup · reset-password"]
-    sb --> util["utilities/ — verify_user (dev)"]
-    sb --> reset["reset/ — data_reset · delete_user (dev only)"]
+    sb --> util["utilities/ — SCHEMA · verify_user · delete_user (dev only)"]
 ```
 
 `_design/` holds the original HTML/CSS/JS prototype (gitignored) — treat it as the read-only source of truth for visual decisions.

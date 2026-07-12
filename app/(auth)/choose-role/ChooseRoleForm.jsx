@@ -23,7 +23,7 @@ const OPTIONS = [
   {
     role: "student",
     icon: "search",
-    title: "I'm a student",
+    title: "I'm a student/parent",
     blurb: "Browse tutors, compare subjects and rates, and find the right match for you.",
   },
 ];
@@ -169,10 +169,10 @@ export default function ChooseRoleForm() {
               className="font-hand text-[30px] leading-tight"
               style={{ color: "var(--ink-graphite)", fontWeight: 700 }}
             >
-              Continue as {selected === "tutor" ? "a tutor" : "a student"}?
+              Continue as {selected === "tutor" ? "a tutor" : "a student/parent"}?
             </h2>
             <p className="text-[14px] text-slate-600 mt-3 leading-[1.55]">
-              You&rsquo;re signing up as {selected === "tutor" ? "a tutor" : "a student"}. You
+              You&rsquo;re signing up as {selected === "tutor" ? "a tutor" : "a student/parent"}. You
               can&rsquo;t change this later.
             </p>
 
