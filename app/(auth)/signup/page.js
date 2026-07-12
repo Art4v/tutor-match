@@ -22,6 +22,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [confirmTouched, setConfirmTouched] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [isOver16, setIsOver16] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
@@ -54,6 +55,10 @@ export default function SignupPage() {
     }
     if (!agreed) {
       setError("Please agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
+    if (!isOver16) {
+      setError("You must be 16 years or older to create an account.");
       return;
     }
 
@@ -246,6 +251,19 @@ export default function SignupPage() {
                 Privacy Policy
               </Link>
               .
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isOver16}
+              onChange={(e) => setIsOver16(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+              style={{ accentColor: "var(--accent)" }}
+            />
+            <span className="text-[13px] text-slate-600 leading-[1.5]">
+              I confirm that I am 16 years of age or older.
             </span>
           </label>
 
