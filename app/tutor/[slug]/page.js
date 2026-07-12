@@ -14,6 +14,7 @@ import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { AboutCard } from "./AboutCard";
 import { OwnerProfile } from "./OwnerProfile";
+import { MessageTutorCard } from "./MessageTutorCard";
 import { SaveTutorButton } from "@/components/SaveTutorButton";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { Section, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
@@ -105,6 +106,7 @@ export default async function ProfilePage({ params }) {
 
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
+            <MessageTutorCard tutorSlug={tutor.slug} tutorName={tutor.name} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
             <RatingsCard />

@@ -5,6 +5,7 @@ Guidance for Claude Code when working in this repository.
 ## Working conventions
 
 - **Explain every file edit.** For each file you create, modify, move, or delete, state which file changed and why in one line before or alongside the change. When making several edits, give a short per-file summary so the user can follow the change to the file structure without diffing.
+- **Never use em dashes (—) in user-facing copy.** Rewrite the sentence, or use a comma, "before", parentheses, or a period instead. Applies to all UI text, labels, and microcopy.
 
 ## Commands
 

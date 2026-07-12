@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0043_student_avatar.sql`
-**Last reviewed:** 2026-07-05
+**Applied through:** `0044_messaging.sql`
+**Last reviewed:** 2026-07-12
 
 ---
 
@@ -126,6 +126,32 @@ Student bookmarks — one row per saved tutor. Read/written by the bookmark butt
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
 **Index:** `(student_id, created_at desc)`. Self-only RLS on `student_id` (student reads/writes only their own saves).
+
+### `conversations` (0044)
+One row per (student, tutor) pair — the direction-gated chat thread. Created lazily by `start_conversation()` on the student's first send (no client INSERT policy), so a tutor sees nothing until then.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `student_id` | uuid | NOT NULL → `student_profiles(id)` ON DELETE CASCADE |
+| `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+| `last_message_at` | timestamptz | Bumped by the `messages_bump_conversation` trigger; drives list ordering |
+| `student_last_read_at` | timestamptz | Student's read cursor (set by `mark_conversation_read`) |
+| `tutor_last_read_at` | timestamptz | Tutor's read cursor |
+
+**Unique** `(student_id, tutor_id)` (one thread per pair). **Indexes:** `(student_id, last_message_at desc)`, `(tutor_id, last_message_at desc)`. RLS: participants read; participants UPDATE (read cursors); **no INSERT policy** (created only via the RPC).
+
+### `messages` (0044)
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `conversation_id` | uuid | NOT NULL → `conversations(id)` ON DELETE CASCADE |
+| `sender_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE |
+| `body` | text | NOT NULL, CHECK non-blank |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+**Index:** `(conversation_id, created_at)`. RLS: participants read; participant INSERT with `sender_id = auth.uid()` **and** the first message must be the student's (a tutor may insert only once a message already exists — only the student can post into an empty conversation). Both `messages` and `conversations` are in the `supabase_realtime` publication (`replica identity full`) for live delivery; the change feed is RLS-filtered per subscriber.
 
 ### `exams` (renamed from `certificates` in 0010)
 Reference catalog of exam systems.
@@ -265,6 +291,9 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `request_tutor_verification()` | text | `none`/`rejected` → `pending`, idempotent; returns new status. `auth.uid()`-scoped | 0021 |
 | `accept_current_terms()` | void | Stamp caller's `profiles.terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 → 0039 |
 | `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
+| `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor, then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044 |
+| `mark_conversation_read(p_conversation_id)` | void | Set the caller's own read cursor (`student_`/`tutor_last_read_at = now()`); raises if not a participant | 0044 |
+| `unread_message_count()` | integer | Total unread across the caller's conversations (messages from the other party newer than the caller's cursor). Drives the TopNav Messages pill | 0044 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
 
@@ -276,6 +305,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | --- | --- | --- | --- | --- |
 | `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` | 0001 |
 | `on_auth_user_email_confirmed` | `auth.users` | AFTER UPDATE OF `email_confirmed_at` | `handle_user_email_confirmed()` | 0007 |
+| `messages_bump_conversation` | `messages` | AFTER INSERT | `bump_conversation_last_message()` (sets `conversations.last_message_at`) | 0044 |
 
 ---
 
@@ -283,10 +313,12 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 | Table | Read | Write |
 | --- | --- | --- |
-| `profiles` | self; **+ public read for tutor rows** (0004, so the browse join returns names) | self UPDATE |
+| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE |
 | `tutor_profiles` | public | tutor self (ALL) |
-| `student_profiles` | self | self (ALL) |
+| `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
+| `conversations` | participants (`student_id`/`tutor_id` = uid) | participants UPDATE (read cursors); no INSERT (RPC-created, 0044) |
+| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |

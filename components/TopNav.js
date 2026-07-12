@@ -15,6 +15,7 @@ export function TopNav() {
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
   const [unread, setUnread] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -117,6 +118,7 @@ export function TopNav() {
       setTutorSlug(null);
       setProfile(null);
       setUnread(0);
+      setUnreadMessages(0);
       return;
     }
     const supabase = createSupabaseBrowserClient();
@@ -175,6 +177,11 @@ export function TopNav() {
       .then(({ count }) => {
         if (active) setUnread(count ?? 0);
       });
+    // Unread messages drive the Messages menu pill. Same pathname keying, so
+    // opening /messages (which marks the read thread) refreshes the count.
+    supabase.rpc("unread_message_count").then(({ data }) => {
+      if (active) setUnreadMessages(data ?? 0);
+    });
     return () => {
       active = false;
     };
@@ -236,11 +243,11 @@ export function TopNav() {
                     </span>
                     <span className="max-w-[110px] sm:max-w-[180px] truncate">{displayName}</span>
                     <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
-                    {unread > 0 && !menuOpen && (
+                    {unread + unreadMessages > 0 && !menuOpen && (
                       <span
                         className="absolute"
                         style={{ top: 5, left: 26, width: 9, height: 9, borderRadius: 999, background: "var(--accent)", border: "2px solid #fff" }}
-                        aria-label={`${unread} unread notifications`}
+                        aria-label={`${unread + unreadMessages} unread notifications and messages`}
                       />
                     )}
                   </button>
@@ -277,18 +284,31 @@ export function TopNav() {
                           )}
                         </span>
                       </NavMenuLink>
+                      {(isStudent || isTutor) && (
+                        // Messaging is live for both roles: students initiate,
+                        // tutors reply. The pill mirrors the notifications count.
+                        <NavMenuLink href="/messages" onClick={() => setMenuOpen(false)}>
+                          <span className="flex items-center justify-between gap-2">
+                            Messages
+                            {unreadMessages > 0 && (
+                              <span
+                                className="inline-flex items-center justify-center text-[11px] font-semibold text-white tabular-nums"
+                                style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
+                              >
+                                {unreadMessages > 9 ? "9+" : unreadMessages}
+                              </span>
+                            )}
+                          </span>
+                        </NavMenuLink>
+                      )}
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
                         {isStudent ? "Profile and Account" : "Account"}
                       </NavMenuLink>
                       {isStudent && (
-                        // Saved tutors is live (→ /browse with the saved filter
-                        // pre-applied); messaging is still a v1 placeholder.
-                        <>
-                          <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
-                            Saved Tutors
-                          </NavMenuLink>
-                          <NavMenuDead>Messages</NavMenuDead>
-                        </>
+                        // Saved tutors is live (→ /browse with the saved filter pre-applied).
+                        <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
+                          Saved Tutors
+                        </NavMenuLink>
                       )}
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
                         {loggingOut ? "Logging out…" : "Log out"}
@@ -331,39 +351,6 @@ function NavMenuLink({ href, onClick, children }) {
     >
       {children}
     </Link>
-  );
-}
-
-// Inert placeholder row for features that exist in the menu but aren't built
-// yet. Not a link/button on purpose: clicks inside the menu don't close it, so
-// the item simply does nothing. "Soon" pill matches the disabled provider
-// button in OAuthButtons.jsx.
-function NavMenuDead({ children }) {
-  return (
-    <span
-      role="menuitem"
-      aria-disabled="true"
-      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-[13.5px] rounded-md"
-      style={{ color: "var(--sage)", cursor: "not-allowed", opacity: 0.75 }}
-    >
-      {children}
-      <span
-        style={{
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: "var(--sage)",
-          background: "var(--desk)",
-          border: "1px solid var(--paper-line)",
-          borderRadius: 999,
-          padding: "2px 7px",
-          lineHeight: 1.2,
-        }}
-      >
-        Soon
-      </span>
-    </span>
   );
 }
 
