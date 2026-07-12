@@ -7,9 +7,10 @@ import { Icon } from "./Icon";
 import { useSavedTutors } from "./SavedTutorsProvider";
 
 // Bookmark control shown top-right of every TutorCard banner and the tutor
-// profile banner. For a logged-in student it toggles the save; for everyone else
-// (logged-out visitors AND tutors) it's a decoy that routes to /signup, with a
-// hover tooltip explaining it's a student feature.
+// profile banner. For a logged-in student it toggles the save; for a logged-out
+// visitor it's a decoy that routes to /signup, with a hover tooltip explaining
+// it's a student feature. For a signed-in tutor it renders nothing — saving is a
+// student-only feature, so the control is hidden entirely.
 //
 // The tooltip renders in a portal (position: fixed) so it escapes the card's
 // `overflow: hidden` — otherwise it gets clipped and the text squishes into a
@@ -19,7 +20,7 @@ import { useSavedTutors } from "./SavedTutorsProvider";
 // `variant` only tunes size/offset: "card" (compact, sits in the 88px card
 // banner corner) vs "banner" (larger, the 140px profile banner corner).
 export function SaveTutorButton({ tutorId, variant = "card" }) {
-  const { isStudent, ready, isSaved, toggleSave } = useSavedTutors();
+  const { isStudent, isLoggedIn, ready, isSaved, toggleSave } = useSavedTutors();
   const [hover, setHover] = useState(false);
   const [coords, setCoords] = useState(null);
   const wrapRef = useRef(null);
@@ -112,6 +113,12 @@ export function SaveTutorButton({ tutorId, variant = "card" }) {
         </span>
       </span>
     );
+  }
+
+  // Signed-in non-student (a tutor): saving is a student-only feature, so hide
+  // the control entirely rather than showing the signup decoy.
+  if (isLoggedIn && !isStudent) {
+    return null;
   }
 
   if (isStudent) {
