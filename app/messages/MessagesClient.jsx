@@ -92,6 +92,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const [unsending, setUnsending] = useState(false);
   const [highlightId, setHighlightId] = useState(null);   // briefly-flashed original on quote-click
   const [showEmoji, setShowEmoji] = useState(false);      // composer emoji picker popover
+  const [showInfo, setShowInfo] = useState(false);        // thread-header disclaimer modal
 
   const router = useRouter();
   const sbRef = useRef(null);
@@ -512,9 +513,10 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <a href={`/tutor/${thread.slug}`} className="text-[12px] text-slate-400 hover:text-slate-600">View profile</a>
                     )}
                   </div>
-                  {/* Conversation info (visible, not yet wired). */}
+                  {/* Conversation info — opens the disclaimer modal. */}
                   <button
                     type="button"
+                    onClick={() => setShowInfo(true)}
                     className="ml-auto inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                     style={{ width: 34, height: 34 }}
                     aria-label="Conversation info"
@@ -642,6 +644,8 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
           onConfirm={confirmUnsend}
         />
       )}
+
+      {showInfo && <MessageInfoModal onClose={() => setShowInfo(false)} />}
     </div>
   );
 }
@@ -710,6 +714,67 @@ function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
             <Icon name="reply" size={14} />
             {unsending ? "Unsending…" : "Unsend"}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Disclaimer popup opened from the thread-header "i" button. Same shell as
+// UnsendConfirmModal (backdrop click + Escape close). Placeholder copy for now.
+function MessageInfoModal({ onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const linkStyle = { color: "var(--accent)", fontWeight: 500 };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(15,23,42,0.5)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="message-info-title"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[color:var(--paper-card)] w-full"
+        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className="inline-flex items-center justify-center shrink-0"
+            style={{ width: 36, height: 36, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
+          >
+            <Icon name="info" size={18} />
+          </span>
+          <div>
+            <h2 id="message-info-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
+              About these messages
+            </h2>
+            <p className="text-[13.5px] text-slate-600 mt-1.5">
+              matchtutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
+            </p>
+            <p className="text-[13.5px] text-slate-600 mt-2.5">
+              We are also not responsible for anything that happens off the platform, including if external contact methods are shared here and your communication continues elsewhere.
+            </p>
+            <p className="text-[13.5px] text-slate-600 mt-2.5">
+              Please be aware of our{" "}
+              <a href="/terms-of-service" className="hover:underline" style={linkStyle}>Terms of Service</a>
+              {" "}and{" "}
+              <a href="/privacy-policy" className="hover:underline" style={linkStyle}>Privacy Policy</a>.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 mt-6">
+          <Button variant="primary" size="md" onClick={onClose}>
+            Got it
+          </Button>
         </div>
       </div>
     </div>
