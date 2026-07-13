@@ -420,16 +420,25 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
               <h1 className="font-hand text-[26px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
                 Messages
               </h1>
-              <button
-                type="button"
-                onClick={() => router.push("/browse")}
-                className="ml-auto inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                style={{ width: 34, height: 34 }}
-                aria-label="New message"
-                title="New message"
-              >
-                <Icon name="compose" size={20} />
-              </button>
+              <div className="ml-auto relative group">
+                <button
+                  type="button"
+                  onClick={() => router.push("/browse")}
+                  className="inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  style={{ width: 34, height: 34 }}
+                  aria-label="Browse tutors to message"
+                >
+                  <Icon name="magnifier" size={20} />
+                </button>
+                {/* Instant custom tooltip (native title is too slow to appear). */}
+                <span
+                  className="pointer-events-none absolute top-full right-0 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-30"
+                  style={{ background: "var(--ink)", color: "#FBF7EC", fontSize: 11.5, padding: "4px 8px", borderRadius: 7 }}
+                  role="tooltip"
+                >
+                  Browse tutors to message
+                </span>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto">
               {rows.length === 0 ? (
