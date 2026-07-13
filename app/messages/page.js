@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorBySlug } from "@/lib/supabase/tutors";
 import { getConversations, findConversationWithTutor } from "@/lib/supabase/messaging";
+import { needsMessagesDisclaimer } from "@/lib/messagesDisclaimer";
 import { MessagesClient } from "./MessagesClient";
 
 export const metadata = { title: "Messages — matchtutor" };
@@ -29,8 +30,13 @@ export default async function MessagesPage({ searchParams }) {
 
   const conversations = await getConversations(supabase, user.id);
 
-  const { data: prof } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("role, messages_disclaimer_ack_at")
+    .eq("id", user.id)
+    .maybeSingle();
   const viewerIsTutor = prof?.role === "tutor";
+  const needsDisclaimer = needsMessagesDisclaimer(prof?.messages_disclaimer_ack_at);
 
   const cParam = typeof searchParams?.c === "string" ? searchParams.c : null;
   const toParam = typeof searchParams?.to === "string" ? searchParams.to : null;
@@ -70,6 +76,7 @@ export default async function MessagesPage({ searchParams }) {
       initialConversations={conversations}
       initialSelectedId={initialSelectedId}
       draftTutor={draftTutor}
+      needsDisclaimer={needsDisclaimer}
     />
   );
 }

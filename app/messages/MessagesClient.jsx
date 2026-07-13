@@ -74,7 +74,7 @@ function shapeMessage(m, existing) {
   return { ...m, reactions: m.reactions ?? [], replyTo };
 }
 
-export function MessagesClient({ userId, viewerIsTutor, initialConversations, initialSelectedId, draftTutor }) {
+export function MessagesClient({ userId, viewerIsTutor, initialConversations, initialSelectedId, draftTutor, needsDisclaimer }) {
   const [conversations, setConversations] = useState(initialConversations ?? []);
   const [draft, setDraft] = useState(draftTutor ?? null);
   const [openKey, setOpenKey] = useState(
@@ -93,6 +93,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const [highlightId, setHighlightId] = useState(null);   // briefly-flashed original on quote-click
   const [showEmoji, setShowEmoji] = useState(false);      // composer emoji picker popover
   const [showInfo, setShowInfo] = useState(false);        // thread-header disclaimer modal
+  const [showGate, setShowGate] = useState(!!needsDisclaimer); // first-open blocking gate
 
   const router = useRouter();
   const sbRef = useRef(null);
@@ -264,6 +265,14 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       el?.setSelectionRange(pos, pos);
     });
   }, [text]);
+
+  // Acknowledge the first-open disclaimer gate (server-stamps the timestamp so
+  // it won't reappear). Mirrors PolicyConsentGate.onAccept.
+  const acknowledgeDisclaimer = useCallback(async () => {
+    const { error: rpcErr } = await sbRef.current.rpc("acknowledge_messages_disclaimer");
+    if (rpcErr) throw rpcErr;
+    setShowGate(false);
+  }, []);
 
   // Close the composer emoji picker on outside click (same pattern as MessageRow).
   useEffect(() => {
@@ -655,6 +664,8 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       )}
 
       {showInfo && <MessageInfoModal onClose={() => setShowInfo(false)} />}
+
+      {showGate && <MessageDisclaimerGate onAcknowledge={acknowledgeDisclaimer} />}
     </div>
   );
 }
@@ -729,16 +740,48 @@ function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
   );
 }
 
+// Shared disclaimer copy (icon + heading + clauses + Terms/Privacy links), used
+// by both the "i"-button popup and the first-open gate so the two never drift.
+// Placeholder copy for now.
+function DisclaimerContent({ titleId }) {
+  const linkStyle = { color: "var(--accent)", fontWeight: 500 };
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        className="inline-flex items-center justify-center shrink-0"
+        style={{ width: 36, height: 36, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
+      >
+        <Icon name="info" size={18} />
+      </span>
+      <div>
+        <h2 id={titleId} className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
+          About these messages
+        </h2>
+        <p className="text-[13.5px] text-slate-600 mt-1.5">
+          matchtutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
+        </p>
+        <p className="text-[13.5px] text-slate-600 mt-2.5">
+          We are also not responsible for anything that happens off the platform, including if external contact methods are shared here and your communication continues elsewhere.
+        </p>
+        <p className="text-[13.5px] text-slate-600 mt-2.5">
+          Please be aware of our{" "}
+          <a href="/terms-of-service" className="hover:underline" style={linkStyle}>Terms of Service</a>
+          {" "}and{" "}
+          <a href="/privacy-policy" className="hover:underline" style={linkStyle}>Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // Disclaimer popup opened from the thread-header "i" button. Same shell as
-// UnsendConfirmModal (backdrop click + Escape close). Placeholder copy for now.
+// UnsendConfirmModal (backdrop click + Escape close). Non-blocking.
 function MessageInfoModal({ onClose }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  const linkStyle = { color: "var(--accent)", fontWeight: 500 };
 
   return (
     <div
@@ -754,35 +797,77 @@ function MessageInfoModal({ onClose }) {
         style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-3">
-          <span
-            className="inline-flex items-center justify-center shrink-0"
-            style={{ width: 36, height: 36, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
-          >
-            <Icon name="info" size={18} />
-          </span>
-          <div>
-            <h2 id="message-info-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
-              About these messages
-            </h2>
-            <p className="text-[13.5px] text-slate-600 mt-1.5">
-              matchtutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
-            </p>
-            <p className="text-[13.5px] text-slate-600 mt-2.5">
-              We are also not responsible for anything that happens off the platform, including if external contact methods are shared here and your communication continues elsewhere.
-            </p>
-            <p className="text-[13.5px] text-slate-600 mt-2.5">
-              Please be aware of our{" "}
-              <a href="/terms-of-service" className="hover:underline" style={linkStyle}>Terms of Service</a>
-              {" "}and{" "}
-              <a href="/privacy-policy" className="hover:underline" style={linkStyle}>Privacy Policy</a>.
-            </p>
-          </div>
-        </div>
+        <DisclaimerContent titleId="message-info-title" />
 
         <div className="flex items-center justify-end gap-2.5 mt-6">
           <Button variant="primary" size="md" onClick={onClose}>
             Got it
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// First-open BLOCKING gate (mirrors PolicyConsentGate): an "I understand"
+// checkbox must be ticked before "Got it" enables; backdrop click and Escape do
+// NOT dismiss. "Got it" persists the acknowledgment server-side via onAcknowledge.
+function MessageDisclaimerGate({ onAcknowledge }) {
+  const [agreed, setAgreed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const onGotIt = async () => {
+    if (!agreed || saving) return;
+    setError(null);
+    setSaving(true);
+    try {
+      await onAcknowledge();
+    } catch {
+      setSaving(false);
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(15,23,42,0.5)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="message-gate-title"
+    >
+      <div
+        className="bg-[color:var(--paper-card)] w-full"
+        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+      >
+        <DisclaimerContent titleId="message-gate-title" />
+
+        <label className="flex items-start gap-2.5 cursor-pointer mt-5">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
+            style={{ accentColor: "var(--accent)" }}
+          />
+          <span className="text-[13px] text-slate-600 leading-[1.5]">
+            I understand and agree to keep my messages respectful.
+          </span>
+        </label>
+
+        {error && (
+          <div
+            className="px-3 py-2 text-[13px] text-red-700 mt-4"
+            style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2.5 mt-6">
+          <Button variant="primary" size="md" onClick={onGotIt} disabled={!agreed || saving}>
+            {saving ? "Saving…" : "Got it"}
           </Button>
         </div>
       </div>
