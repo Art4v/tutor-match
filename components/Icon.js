@@ -49,6 +49,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "dot": return <svg {...props} fill="currentColor" stroke="none"><circle cx="12" cy="12" r="4"/></svg>;
     case "filter": return <svg {...props}><path d="M3 5h18l-7 9v6l-4-2v-4Z"/></svg>;
     case "more": return <svg {...props}><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>;
+    case "reply": return <svg {...props}><path d="M9 17 4 12l5-5"/><path d="M4 12h11a5 5 0 0 1 5 5v1"/></svg>;
+    case "copy": return <svg {...props}><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
     case "arrow-right": return <svg {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
     case "arrow-up-right": return <svg {...props}><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>;
     case "plus": return <svg {...props}><path d="M12 5v14M5 12h14"/></svg>;

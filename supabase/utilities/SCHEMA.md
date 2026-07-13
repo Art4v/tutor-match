@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0044_messaging.sql`
+**Applied through:** `0045_message_interactions.sql`
 **Last reviewed:** 2026-07-12
 
 ---
@@ -150,8 +150,22 @@ One row per (student, tutor) pair — the direction-gated chat thread. Created l
 | `sender_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE |
 | `body` | text | NOT NULL, CHECK non-blank |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+| `reply_to_id` | uuid | NULLABLE → `messages(id)` ON DELETE SET NULL (0045); the quoted message |
+| `edited_at` | timestamptz | NULLABLE (0045); non-null ⇒ show "Edited" |
+| `unsent_at` | timestamptz | NULLABLE (0045); non-null ⇒ soft-deleted, filtered out of every read (row + body kept for audit) |
 
-**Index:** `(conversation_id, created_at)`. RLS: participants read; participant INSERT with `sender_id = auth.uid()` **and** the first message must be the student's (a tutor may insert only once a message already exists — only the student can post into an empty conversation). Both `messages` and `conversations` are in the `supabase_realtime` publication (`replica identity full`) for live delivery; the change feed is RLS-filtered per subscriber.
+**Index:** `(conversation_id, created_at)`, `(reply_to_id)` (0045). RLS: participants read; participant INSERT with `sender_id = auth.uid()` **and** the first message must be the student's (a tutor may insert only once a message already exists — only the student can post into an empty conversation). No UPDATE/DELETE policy — edits/unsends go through the `edit_message`/`unsend_message` RPCs (0045). Both `messages` and `conversations` are in the `supabase_realtime` publication (`replica identity full`) for live delivery; the change feed is RLS-filtered per subscriber.
+
+### `message_reactions` (0045)
+One emoji reaction per (message, user) — the composite PK enforces at most one per person per message. Read by conversation participants; each user writes only their own row (plain self-RLS, no RPC), so the toggle is a client upsert (overwrite emoji) / delete (same emoji again). In the `supabase_realtime` publication (`replica identity full`) as its own event stream, distinct from message UPDATEs.
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `message_id` | uuid | NOT NULL → `messages(id)` ON DELETE CASCADE; part of PK |
+| `user_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE; part of PK |
+| `emoji` | text | NOT NULL, CHECK non-blank |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+**Index:** `(message_id)`. RLS: participant SELECT; `user_id = auth.uid()` (+ participant) INSERT/UPDATE/DELETE.
 
 ### `exams` (renamed from `certificates` in 0010)
 Reference catalog of exam systems.
@@ -293,7 +307,9 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
 | `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor, then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044 |
 | `mark_conversation_read(p_conversation_id)` | void | Set the caller's own read cursor (`student_`/`tutor_last_read_at = now()`); raises if not a participant | 0044 |
-| `unread_message_count()` | integer | Total unread across the caller's conversations (messages from the other party newer than the caller's cursor). Drives the TopNav Messages pill | 0044 |
+| `unread_message_count()` | integer | Total unread across the caller's conversations (messages from the other party newer than the caller's cursor, `unsent_at IS NULL`). Drives the TopNav Messages pill. Recreated in 0045 to skip unsent | 0044 (0045) |
+| `edit_message(p_message_id, p_body)` | messages | Sender rewrites their own, not-yet-unsent message: sets `body` + `edited_at = now()`; raises for non-sender / missing / unsent / blank. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
+| `unsend_message(p_message_id)` | void | Sender soft-deletes their own message (`unsent_at = now()`, body kept for audit); raises for non-sender / missing. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
 
@@ -318,7 +334,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
 | `conversations` | participants (`student_id`/`tutor_id` = uid) | participants UPDATE (read cursors); no INSERT (RPC-created, 0044) |
-| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) |
+| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044); no UPDATE/DELETE — edit/unsend via RPC (0045) |
+| `message_reactions` | participants of the reacted message's conversation (0045) | `user_id` = uid (+ participant) INSERT/UPDATE/DELETE (0045) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |

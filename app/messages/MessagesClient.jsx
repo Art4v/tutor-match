@@ -8,15 +8,32 @@
 // the first send hits /api/messages/send with { toSlug }, which creates the
 // conversation server-side (student-only) and returns its id; the draft then
 // becomes a real thread and (via Realtime) appears for the tutor.
+//
+// Instagram-style per-message interactions (0045):
+//   * hover controls    react (quick emoji bar + full picker) · reply · ⋯ menu
+//   * ⋯ menu            Copy (any) · Edit (own) · Unsend (own)
+//   * double-click      toggle 👍
+//   * reply             quoted snippet + click-to-scroll to the original
+//   * edit              loads into the composer with an "Editing" banner; "Edited" marker
+//   * unsend            soft-deletes (vanishes for both; row kept server-side)
+// Reactions are plain self-RLS writes on message_reactions; edit/unsend go
+// through the edit_message/unsend_message RPCs. All three propagate live.
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Avatar, VerifiedTick } from "@/components/ui";
+import dynamic from "next/dynamic";
+import { Avatar, VerifiedTick, Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getConversation, getConversations } from "@/lib/supabase/messaging";
 
+// Full emoji picker, reused from the profile editor's rich-text toolbar. Lazy +
+// client-only (touches window at module init).
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
+
 const DRAFT_KEY = "__draft__";
+const QUICK_EMOJI = ["❤️", "😂", "😮", "😢", "😡", "👍"];
+const THUMB = "👍";
 
 function relativeTime(iso) {
   if (!iso) return "";
@@ -33,6 +50,29 @@ function relativeTime(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+const firstName = (name) => (name || "").split(/\s+/)[0] || "";
+
+// --- pure reaction-array helpers (idempotent: safe to apply from both the
+// optimistic path and the Realtime echo) --------------------------------------
+function setReactionArr(reactions, userId, emoji) {
+  const without = (reactions ?? []).filter((r) => r.userId !== userId);
+  return [...without, { userId, emoji }];
+}
+function removeReactionArr(reactions, userId) {
+  return (reactions ?? []).filter((r) => r.userId !== userId);
+}
+
+// Attach the client-side message shape (reactions + resolved reply snippet) to a
+// raw row from the send API or a Realtime INSERT.
+function shapeMessage(m, existing) {
+  let replyTo = m.replyTo ?? null;
+  if (!replyTo && m.reply_to_id) {
+    const orig = (existing ?? []).find((x) => x.id === m.reply_to_id);
+    replyTo = { id: m.reply_to_id, senderId: orig?.sender_id ?? null, snippet: orig?.body ?? null };
+  }
+  return { ...m, reactions: m.reactions ?? [], replyTo };
+}
+
 export function MessagesClient({ userId, viewerIsTutor, initialConversations, initialSelectedId, draftTutor }) {
   const [conversations, setConversations] = useState(initialConversations ?? []);
   const [draft, setDraft] = useState(draftTutor ?? null);
@@ -44,11 +84,20 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
+  // Interaction state.
+  const [replyTarget, setReplyTarget] = useState(null);   // message being replied to
+  const [editTarget, setEditTarget] = useState(null);     // message being edited
+  const [unsendTarget, setUnsendTarget] = useState(null); // message pending unsend confirmation
+  const [unsending, setUnsending] = useState(false);
+  const [highlightId, setHighlightId] = useState(null);   // briefly-flashed original on quote-click
+
   const sbRef = useRef(null);
   if (!sbRef.current) sbRef.current = createSupabaseBrowserClient();
   const openKeyRef = useRef(openKey);
   openKeyRef.current = openKey;
   const scrollRef = useRef(null);
+  const composerRef = useRef(null);
+  const messageRefs = useRef({}); // messageId -> row element, for scroll-to
 
   const refreshList = useCallback(async () => {
     const list = await getConversations(sbRef.current, userId);
@@ -59,6 +108,8 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   // locally (no row yet); real threads are fetched + marked read.
   useEffect(() => {
     let active = true;
+    setReplyTarget(null);
+    setEditTarget(null);
     if (openKey === DRAFT_KEY) {
       setThread(draft ? { id: null, ...draft, messages: [] } : null);
       return;
@@ -81,17 +132,18 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     };
   }, [openKey, draft, userId]);
 
-  // Realtime: append incoming messages to the open thread + refresh the list
-  // (previews / unread / order). RLS scopes the feed to the user's own rows.
+  // Realtime: message INSERT (append) / UPDATE (edit + unsend), and reaction
+  // INSERT/UPDATE/DELETE. RLS scopes every feed to the user's own rows.
   useEffect(() => {
     const sb = sbRef.current;
     const channel = sb
       .channel("messages-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const m = payload.new;
+        if (m.unsent_at) return;
         setThread((prev) =>
           prev && prev.id === m.conversation_id && !prev.messages.some((x) => x.id === m.id)
-            ? { ...prev, messages: [...prev.messages, m] }
+            ? { ...prev, messages: [...prev.messages, shapeMessage(m, prev.messages)] }
             : prev
         );
         if (m.conversation_id === openKeyRef.current && m.sender_id !== userId) {
@@ -99,8 +151,44 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
         }
         refreshList();
       })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (payload) => {
+        const m = payload.new;
+        setThread((prev) => {
+          if (!prev || prev.id !== m.conversation_id) return prev;
+          if (m.unsent_at) {
+            // Unsent → vanishes for both participants.
+            return { ...prev, messages: prev.messages.filter((x) => x.id !== m.id) };
+          }
+          return {
+            ...prev,
+            messages: prev.messages.map((x) => (x.id === m.id ? { ...x, body: m.body, edited_at: m.edited_at } : x)),
+          };
+        });
+        refreshList();
+      })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversations" }, () => {
         refreshList();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, (payload) => {
+        const isDelete = payload.eventType === "DELETE";
+        const row = isDelete ? payload.old : payload.new;
+        if (!row?.message_id) return;
+        setThread((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((x) =>
+              x.id !== row.message_id
+                ? x
+                : {
+                    ...x,
+                    reactions: isDelete
+                      ? removeReactionArr(x.reactions, row.user_id)
+                      : setReactionArr(x.reactions, row.user_id, row.emoji),
+                  }
+            ),
+          };
+        });
       })
       .subscribe();
     return () => {
@@ -114,7 +202,106 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     if (el) el.scrollTop = el.scrollHeight;
   }, [thread?.id, thread?.messages?.length]);
 
-  const send = async () => {
+  // Toggle the caller's reaction on a message (one emoji per person): same emoji
+  // removes it, a different emoji replaces it. Optimistic + self-RLS write; the
+  // Realtime echo re-applies idempotently.
+  const toggleReaction = useCallback(
+    async (messageId, emoji, myEmoji) => {
+      if (!messageId) return;
+      const sb = sbRef.current;
+      if (myEmoji === emoji) {
+        setThread((prev) =>
+          prev
+            ? { ...prev, messages: prev.messages.map((m) => (m.id === messageId ? { ...m, reactions: removeReactionArr(m.reactions, userId) } : m)) }
+            : prev
+        );
+        await sb.from("message_reactions").delete().eq("message_id", messageId).eq("user_id", userId);
+      } else {
+        setThread((prev) =>
+          prev
+            ? { ...prev, messages: prev.messages.map((m) => (m.id === messageId ? { ...m, reactions: setReactionArr(m.reactions, userId, emoji) } : m)) }
+            : prev
+        );
+        await sb.from("message_reactions").upsert({ message_id: messageId, user_id: userId, emoji }, { onConflict: "message_id,user_id" });
+      }
+    },
+    [userId]
+  );
+
+  const beginReply = useCallback((m) => {
+    setEditTarget(null);
+    setReplyTarget(m);
+    composerRef.current?.focus();
+  }, []);
+
+  const beginEdit = useCallback((m) => {
+    setReplyTarget(null);
+    setEditTarget(m);
+    setText(m.body);
+    requestAnimationFrame(() => composerRef.current?.focus());
+  }, []);
+
+  const cancelCompose = useCallback(() => {
+    setReplyTarget(null);
+    if (editTarget) setText("");
+    setEditTarget(null);
+  }, [editTarget]);
+
+  // Unsend is guarded by a styled confirmation modal (same pattern as the
+  // account-deletion gate) rather than a native window.confirm.
+  const unsend = useCallback((m) => {
+    if (!m?.id) return;
+    setUnsendTarget(m);
+  }, []);
+
+  const confirmUnsend = useCallback(async () => {
+    const m = unsendTarget;
+    if (!m?.id) return;
+    setUnsending(true);
+    setThread((prev) => (prev ? { ...prev, messages: prev.messages.filter((x) => x.id !== m.id) } : prev));
+    if (editTarget?.id === m.id) cancelCompose();
+    await sbRef.current.rpc("unsend_message", { p_message_id: m.id });
+    setUnsending(false);
+    setUnsendTarget(null);
+    refreshList();
+  }, [unsendTarget, editTarget, cancelCompose, refreshList]);
+
+  const copyMessage = useCallback((m) => {
+    navigator.clipboard?.writeText(m.body ?? "").catch(() => {});
+  }, []);
+
+  // Scroll to (and briefly highlight) the original of a reply.
+  const jumpToMessage = useCallback((id) => {
+    const el = messageRefs.current[id];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(id);
+    setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1300);
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    const value = text.trim();
+    if (!value || !editTarget?.id || sending) return;
+    setSending(true);
+    setError(null);
+    const { data, error: rpcError } = await sbRef.current.rpc("edit_message", {
+      p_message_id: editTarget.id,
+      p_body: value,
+    });
+    setSending(false);
+    if (rpcError || !data) {
+      setError("Couldn't save the edit.");
+      return;
+    }
+    setThread((prev) =>
+      prev ? { ...prev, messages: prev.messages.map((m) => (m.id === data.id ? { ...m, body: data.body, edited_at: data.edited_at } : m)) } : prev
+    );
+    setEditTarget(null);
+    setText("");
+    refreshList();
+  }, [text, editTarget, sending, refreshList]);
+
+  const send = useCallback(async () => {
     const value = text.trim();
     if (!value || sending) return;
     const isDraft = openKey === DRAFT_KEY;
@@ -123,7 +310,10 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
 
     setSending(true);
     setError(null);
-    const payload = isDraft ? { toSlug: draft.slug, body: value } : { conversationId: thread.id, body: value };
+    const replyToId = replyTarget?.id ?? null;
+    const payload = isDraft
+      ? { toSlug: draft.slug, body: value, replyToId }
+      : { conversationId: thread.id, body: value, replyToId };
 
     let res;
     try {
@@ -147,26 +337,34 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     }
     const { conversationId, message } = await res.json();
     setText("");
+    setReplyTarget(null);
 
     if (isDraft) {
-      // Draft is now a real conversation.
-      setThread({ id: conversationId, ...draft, messages: [message] });
+      setThread({ id: conversationId, ...draft, messages: [shapeMessage(message, [])] });
       setDraft(null);
       setOpenKey(conversationId);
     } else {
       setThread((prev) =>
         prev && !prev.messages.some((x) => x.id === message.id)
-          ? { ...prev, messages: [...prev.messages, message] }
+          ? { ...prev, messages: [...prev.messages, shapeMessage(message, prev.messages)] }
           : prev
       );
     }
     refreshList();
-  };
+  }, [text, sending, openKey, draft, thread, replyTarget, refreshList]);
+
+  const submit = useCallback(() => {
+    if (editTarget) saveEdit();
+    else send();
+  }, [editTarget, saveEdit, send]);
 
   const onKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      send();
+      submit();
+    } else if (e.key === "Escape" && (replyTarget || editTarget)) {
+      e.preventDefault();
+      cancelCompose();
     }
   };
 
@@ -279,59 +477,78 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                 </div>
 
                 {/* Messages */}
-                <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2" style={{ background: "var(--bg-soft)" }}>
+                <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)" }}>
                   {thread.messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-center">
                       <p className="text-[13px] text-slate-400">
-                        {thread.otherIsTutor ? `Say hello to ${(thread.name || "").split(/\s+/)[0] || "your tutor"}. This is the start of your conversation.` : "No messages yet."}
+                        {thread.otherIsTutor ? `Say hello to ${firstName(thread.name) || "your tutor"}. This is the start of your conversation.` : "No messages yet."}
                       </p>
                     </div>
                   ) : (
-                    thread.messages.map((m) => {
-                      const mine = m.sender_id === userId;
-                      return (
-                        <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                          <div
-                            className="max-w-[78%] px-3.5 py-2 text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words"
-                            style={{
-                              background: mine ? "var(--accent)" : "var(--paper-card)",
-                              color: mine ? "#FBF7EC" : "var(--ink)",
-                              border: mine ? "1px solid var(--accent)" : "1px solid var(--paper-line)",
-                              borderRadius: 14,
-                              borderBottomRightRadius: mine ? 4 : 14,
-                              borderBottomLeftRadius: mine ? 14 : 4,
-                            }}
-                          >
-                            {m.body}
-                          </div>
-                        </div>
-                      );
-                    })
+                    thread.messages.map((m) => (
+                      <MessageRow
+                        key={m.id}
+                        m={m}
+                        mine={m.sender_id === userId}
+                        userId={userId}
+                        otherName={thread.name}
+                        highlighted={highlightId === m.id}
+                        registerRef={(el) => { messageRefs.current[m.id] = el; }}
+                        onReply={beginReply}
+                        onEdit={beginEdit}
+                        onUnsend={unsend}
+                        onCopy={copyMessage}
+                        onReact={toggleReaction}
+                        onQuoteClick={jumpToMessage}
+                      />
+                    ))
                   )}
                 </div>
 
                 {/* Composer */}
                 <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
                   {error && <div className="text-[12px] text-red-600 mb-1.5 px-1">{error}</div>}
+
+                  {(replyTarget || editTarget) && (
+                    <div
+                      className="flex items-center gap-2 mb-2 px-3 py-2"
+                      style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 10 }}
+                    >
+                      <span className="shrink-0" style={{ color: "var(--accent)" }}>
+                        <Icon name={editTarget ? "pencil" : "reply"} size={15} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
+                          {editTarget ? "Editing message" : `Replying to ${replyTarget.sender_id === userId ? "yourself" : firstName(thread.name) || "them"}`}
+                        </div>
+                        <div className="text-[12px] text-slate-500 truncate">{(editTarget || replyTarget).body}</div>
+                      </div>
+                      <button type="button" onClick={cancelCompose} className="shrink-0 text-slate-400 hover:text-slate-700" aria-label="Cancel">
+                        <Icon name="x" size={16} />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-end gap-2">
                     <textarea
+                      ref={composerRef}
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       onKeyDown={onKeyDown}
                       rows={1}
-                      placeholder="Write a message…"
+                      placeholder={editTarget ? "Edit your message…" : "Write a message…"}
                       className="flex-1 resize-none px-3.5 py-2.5 text-[13.5px] outline-none"
                       style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "#fff", maxHeight: 140 }}
                     />
                     <button
                       type="button"
-                      onClick={send}
+                      onClick={submit}
                       disabled={sending || !text.trim()}
                       className="inline-flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       style={{ width: 42, height: 42, borderRadius: 12, background: "var(--accent)", color: "#FBF7EC" }}
-                      aria-label="Send message"
+                      aria-label={editTarget ? "Save edit" : "Send message"}
                     >
-                      <Icon name="send" size={18} />
+                      <Icon name={editTarget ? "check" : "send"} size={18} />
                     </button>
                   </div>
                   <p className="text-[11.5px] text-slate-400 mt-2 px-1 text-center">
@@ -343,6 +560,291 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
           </div>
         </div>
       </div>
+
+      {unsendTarget && (
+        <UnsendConfirmModal
+          unsending={unsending}
+          onCancel={() => { if (!unsending) setUnsendTarget(null); }}
+          onConfirm={confirmUnsend}
+        />
+      )}
     </div>
+  );
+}
+
+// Styled "unsend?" gate — mirrors the account-deletion confirmation modal.
+// Backdrop click + Escape cancel (unless mid-unsend).
+function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape" && !unsending) onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [unsending, onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(15,23,42,0.5)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unsend-confirm-title"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-[color:var(--paper-card)] w-full"
+        style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className="inline-flex items-center justify-center shrink-0"
+            style={{ width: 36, height: 36, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}
+          >
+            <Icon name="alert-triangle" size={18} />
+          </span>
+          <div>
+            <h2 id="unsend-confirm-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "#B91C1C" }}>
+              Unsend this message?
+            </h2>
+            <p className="text-[13.5px] text-slate-600 mt-1.5">
+              It will be removed for everyone in this conversation. This cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 mt-6">
+          <Button variant="outline" size="md" onClick={onCancel} disabled={unsending}>
+            Cancel
+          </Button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={unsending}
+            className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{
+              background: "#DC2626",
+              color: "#fff",
+              border: "1px solid #DC2626",
+              padding: "9px 16px",
+              fontSize: 14,
+              height: 40,
+              borderRadius: 10,
+              cursor: unsending ? "not-allowed" : "pointer",
+              letterSpacing: "-0.005em",
+            }}
+          >
+            <Icon name="reply" size={14} />
+            {unsending ? "Unsending…" : "Unsend"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// A single message: bubble + reply quote + reaction pills + hover controls.
+// ----------------------------------------------------------------------------
+function MessageRow({ m, mine, userId, otherName, highlighted, registerRef, onReply, onEdit, onUnsend, onCopy, onReact, onQuoteClick }) {
+  const [pop, setPop] = useState(null); // "react" | "menu" | "picker" | null
+  const wrapRef = useRef(null);
+
+  // Close any open popover on outside click (same pattern as the editor toolbar).
+  useEffect(() => {
+    if (!pop) return;
+    const onDown = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setPop(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [pop]);
+
+  const myEmoji = (m.reactions ?? []).find((r) => r.userId === userId)?.emoji ?? null;
+
+  // Group reactions by emoji → { emoji, count, mine } for the pills.
+  const pills = useMemo(() => {
+    const by = {};
+    (m.reactions ?? []).forEach((r) => {
+      by[r.emoji] ??= { emoji: r.emoji, count: 0, mine: false };
+      by[r.emoji].count += 1;
+      if (r.userId === userId) by[r.emoji].mine = true;
+    });
+    return Object.values(by);
+  }, [m.reactions, userId]);
+
+  const react = (emoji) => { onReact(m.id, emoji, myEmoji); setPop(null); };
+
+  const controls = (
+    <div ref={wrapRef} className={`flex items-center gap-0.5 ${pop ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+      {/* React */}
+      <div className="relative">
+        <ControlBtn label="React" icon="smile" onClick={() => setPop(pop === "react" || pop === "picker" ? null : "react")} />
+        {pop === "react" && (
+          <div
+            className={`absolute bottom-full mb-1.5 z-30 flex items-center gap-0.5 px-1.5 py-1 ${mine ? "right-0" : "left-0"}`}
+            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 999, boxShadow: "0 8px 24px rgba(15,23,42,0.16)" }}
+          >
+            {QUICK_EMOJI.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => react(e)}
+                className="inline-flex items-center justify-center text-[18px] leading-none rounded-full hover:scale-125 transition-transform"
+                style={{ width: 30, height: 30, background: myEmoji === e ? "var(--accent-softer)" : "transparent" }}
+                aria-label={`React ${e}`}
+              >
+                {e}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPop("picker")}
+              className="inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              style={{ width: 30, height: 30 }}
+              aria-label="More emoji"
+            >
+              <Icon name="plus" size={16} />
+            </button>
+          </div>
+        )}
+        {pop === "picker" && (
+          <div className={`absolute bottom-full mb-1.5 z-30 ${mine ? "right-0" : "left-0"}`} style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.18)", borderRadius: 12 }}>
+            <EmojiPicker
+              onEmojiClick={(data) => react(data.emoji)}
+              emojiStyle="native"
+              lazyLoadEmojis
+              width={300}
+              height={360}
+              previewConfig={{ showPreview: false }}
+              skinTonesDisabled
+              searchPlaceHolder="Search emoji"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Reply */}
+      <ControlBtn label="Reply" icon="reply" onClick={() => onReply(m)} />
+
+      {/* More (⋯) menu */}
+      <div className="relative">
+        <ControlBtn label="More" icon="more" onClick={() => setPop(pop === "menu" ? null : "menu")} />
+        {pop === "menu" && (
+          <div
+            className={`absolute bottom-full mb-1.5 z-30 py-1 min-w-[168px] ${mine ? "right-0" : "left-0"}`}
+            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,0.18)" }}
+          >
+            <MenuItem icon="copy" label="Copy" onClick={() => { onCopy(m); setPop(null); }} />
+            {mine && <MenuItem icon="pencil" label="Edit" onClick={() => { onEdit(m); setPop(null); }} />}
+            {mine && <MenuItem icon="reply" label="Unsend" danger onClick={() => { setPop(null); onUnsend(m); }} />}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div ref={registerRef} className={`group flex w-full ${mine ? "justify-end" : "justify-start"}`}>
+      <div className={`flex items-end gap-1 max-w-[86%] ${mine ? "flex-row-reverse" : "flex-row"}`}>
+        {/* Bubble + quote + reaction pills */}
+        <div className={`flex flex-col ${mine ? "items-end" : "items-start"} min-w-0`}>
+          <div
+            onDoubleClick={() => onReact(m.id, THUMB, myEmoji)}
+            className="px-3.5 py-2 text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words select-text"
+            style={{
+              background: mine ? "var(--accent)" : "var(--paper-card)",
+              color: mine ? "#FBF7EC" : "var(--ink)",
+              border: mine ? "1px solid var(--accent)" : "1px solid var(--paper-line)",
+              borderRadius: 14,
+              borderBottomRightRadius: mine ? 4 : 14,
+              borderBottomLeftRadius: mine ? 14 : 4,
+              outline: highlighted ? "2px solid var(--accent)" : "none",
+              outlineOffset: 2,
+              transition: "outline-color 200ms ease",
+            }}
+          >
+            {/* Reply quote */}
+            {m.replyTo && (
+              <button
+                type="button"
+                onClick={() => m.replyTo.snippet != null && onQuoteClick(m.replyTo.id)}
+                className="block w-full text-left mb-1.5 px-2 py-1 truncate"
+                style={{
+                  borderLeft: `2px solid ${mine ? "rgba(251,247,236,0.6)" : "var(--accent)"}`,
+                  background: mine ? "rgba(251,247,236,0.12)" : "var(--bg-soft)",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: mine ? "rgba(251,247,236,0.85)" : "var(--ink-graphite)",
+                  cursor: m.replyTo.snippet != null ? "pointer" : "default",
+                }}
+              >
+                {m.replyTo.snippet != null ? m.replyTo.snippet : "Original message unavailable"}
+              </button>
+            )}
+            {m.body}
+          </div>
+
+          {/* Edited marker */}
+          {m.edited_at && <span className="text-[10.5px] text-slate-400 mt-0.5 px-1">Edited</span>}
+
+          {/* Reaction pills */}
+          {pills.length > 0 && (
+            <div className={`flex flex-wrap gap-1 mt-1 ${mine ? "justify-end" : "justify-start"}`}>
+              {pills.map((p) => (
+                <button
+                  key={p.emoji}
+                  type="button"
+                  onClick={() => onReact(m.id, p.emoji, myEmoji)}
+                  className="inline-flex items-center gap-1 leading-none"
+                  style={{
+                    padding: "2px 7px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    background: p.mine ? "var(--accent-softer)" : "var(--paper-card)",
+                    border: `1px solid ${p.mine ? "var(--accent)" : "var(--paper-line)"}`,
+                  }}
+                  aria-label={`${p.count} ${p.emoji}`}
+                >
+                  <span style={{ fontSize: 13 }}>{p.emoji}</span>
+                  {p.count > 1 && <span className="text-slate-500 tabular-nums">{p.count}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Hover controls */}
+        {controls}
+      </div>
+    </div>
+  );
+}
+
+function ControlBtn({ label, icon, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+      style={{ width: 28, height: 28 }}
+    >
+      <Icon name={icon} size={16} />
+    </button>
+  );
+}
+
+function MenuItem({ icon, label, onClick, danger }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center justify-between gap-4 px-3.5 py-2 text-[13.5px] transition-colors hover:bg-slate-50"
+      style={{ color: danger ? "#dc2626" : "var(--ink)" }}
+    >
+      <span className="font-medium">{label}</span>
+      <Icon name={icon} size={16} />
+    </button>
   );
 }

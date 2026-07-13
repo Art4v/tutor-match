@@ -38,6 +38,11 @@ export async function POST(request) {
     return NextResponse.json({ error: "Message cannot be empty." }, { status: 400 });
   }
 
+  // Optional reply pointer. RLS's participant check on the insert (via
+  // conversation_id) is the authorization; a bad/foreign reply_to_id would just
+  // resolve to no snippet on read, so we pass it through as-is.
+  const replyToId = typeof payload?.replyToId === "string" ? payload.replyToId : null;
+
   let conversationId = payload?.conversationId ?? null;
 
   // Draft first-send: resolve the tutor and (find-or-)create the conversation.
@@ -68,8 +73,8 @@ export async function POST(request) {
 
   const { data: message, error: insertError } = await supabase
     .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: user.id, body })
-    .select("id, conversation_id, sender_id, body, created_at")
+    .insert({ conversation_id: conversationId, sender_id: user.id, body, reply_to_id: replyToId })
+    .select("id, conversation_id, sender_id, body, created_at, reply_to_id, edited_at")
     .single();
 
   if (insertError) {
