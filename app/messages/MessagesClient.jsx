@@ -21,6 +21,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Avatar, VerifiedTick, Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
@@ -90,13 +91,16 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const [unsendTarget, setUnsendTarget] = useState(null); // message pending unsend confirmation
   const [unsending, setUnsending] = useState(false);
   const [highlightId, setHighlightId] = useState(null);   // briefly-flashed original on quote-click
+  const [showEmoji, setShowEmoji] = useState(false);      // composer emoji picker popover
 
+  const router = useRouter();
   const sbRef = useRef(null);
   if (!sbRef.current) sbRef.current = createSupabaseBrowserClient();
   const openKeyRef = useRef(openKey);
   openKeyRef.current = openKey;
   const scrollRef = useRef(null);
   const composerRef = useRef(null);
+  const emojiWrapRef = useRef(null); // composer emoji popover, for outside-click close
   const messageRefs = useRef({}); // messageId -> row element, for scroll-to
 
   const refreshList = useCallback(async () => {
@@ -247,6 +251,29 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     setEditTarget(null);
   }, [editTarget]);
 
+  // Insert an emoji into the composer at the caret (reuses the reactions picker).
+  const insertEmoji = useCallback((emoji) => {
+    const el = composerRef.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    setText(text.slice(0, start) + emoji + text.slice(end));
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = start + emoji.length;
+      el?.setSelectionRange(pos, pos);
+    });
+  }, [text]);
+
+  // Close the composer emoji picker on outside click (same pattern as MessageRow).
+  useEffect(() => {
+    if (!showEmoji) return;
+    const onDown = (e) => {
+      if (emojiWrapRef.current && !emojiWrapRef.current.contains(e.target)) setShowEmoji(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [showEmoji]);
+
   // Unsend is guarded by a styled confirmation modal (same pattern as the
   // account-deletion gate) rather than a native window.confirm.
   const unsend = useCallback((m) => {
@@ -377,21 +404,32 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const hasThread = !!openKey;
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen pb-16">
-      <div className="max-w-[1000px] mx-auto px-4 md:px-6 pt-8">
-        <h1 className="font-hand text-[40px] leading-none mb-5" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
-          Messages
-        </h1>
-
+    <div className="bg-[color:var(--paper-card)]">
+      <div
+        className="grid grid-cols-1 md:grid-cols-[360px_1fr] overflow-hidden"
+        style={{ borderTop: "1px solid var(--paper-line)", height: "calc(100vh - var(--nav-h))" }}
+      >
+        {/* Left: conversation list */}
         <div
-          className="grid grid-cols-1 md:grid-cols-[320px_1fr] overflow-hidden"
-          style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", height: "calc(100vh - 220px)", minHeight: 480 }}
+          className={`${hasThread ? "hidden md:flex" : "flex"} flex-col min-h-0`}
+          style={{ borderRight: "1px solid var(--paper-line)" }}
         >
-          {/* Left: conversation list */}
-          <div
-            className={`${hasThread ? "hidden md:flex" : "flex"} flex-col min-h-0`}
-            style={{ borderRight: "1px solid var(--paper-line)" }}
-          >
+            {/* List header: title + new-message (redirects to browse) */}
+            <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--paper-line)", height: 64 }}>
+              <h1 className="font-hand text-[26px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+                Messages
+              </h1>
+              <button
+                type="button"
+                onClick={() => router.push("/browse")}
+                className="ml-auto inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                style={{ width: 34, height: 34 }}
+                aria-label="New message"
+                title="New message"
+              >
+                <Icon name="compose" size={20} />
+              </button>
+            </div>
             <div className="flex-1 overflow-y-auto">
               {rows.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center px-6">
@@ -460,7 +498,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
             ) : (
               <>
                 {/* Thread header */}
-                <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--paper-line)" }}>
+                <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--paper-line)", height: 64 }}>
                   <button type="button" onClick={() => setOpenKey(null)} className="md:hidden inline-flex items-center justify-center -ml-1 text-slate-500 hover:text-slate-900" aria-label="Back to conversations">
                     <Icon name="chevron-left" size={20} />
                   </button>
@@ -474,6 +512,16 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <a href={`/tutor/${thread.slug}`} className="text-[12px] text-slate-400 hover:text-slate-600">View profile</a>
                     )}
                   </div>
+                  {/* Conversation info (visible, not yet wired). */}
+                  <button
+                    type="button"
+                    className="ml-auto inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    style={{ width: 34, height: 34 }}
+                    aria-label="Conversation info"
+                    title="Conversation info"
+                  >
+                    <Icon name="info" size={20} />
+                  </button>
                 </div>
 
                 {/* Messages */}
@@ -540,6 +588,33 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       className="flex-1 resize-none px-3.5 py-2.5 text-[13.5px] outline-none"
                       style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "#fff", maxHeight: 140 }}
                     />
+                    {/* Emoji picker — inserts into the composer at the caret. */}
+                    <div ref={emojiWrapRef} className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowEmoji((v) => !v)}
+                        className="inline-flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        style={{ width: 42, height: 42, borderRadius: 12, background: showEmoji ? "var(--accent-softer)" : "transparent" }}
+                        aria-label="Add emoji"
+                        title="Add emoji"
+                      >
+                        <Icon name="smile" size={20} />
+                      </button>
+                      {showEmoji && (
+                        <div className="absolute bottom-full right-0 mb-2 z-30" style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.18)", borderRadius: 12 }}>
+                          <EmojiPicker
+                            onEmojiClick={(data) => insertEmoji(data.emoji)}
+                            emojiStyle="native"
+                            lazyLoadEmojis
+                            width={300}
+                            height={360}
+                            previewConfig={{ showPreview: false }}
+                            skinTonesDisabled
+                            searchPlaceHolder="Search emoji"
+                          />
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={submit}
@@ -559,7 +634,6 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
             )}
           </div>
         </div>
-      </div>
 
       {unsendTarget && (
         <UnsendConfirmModal

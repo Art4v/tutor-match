@@ -67,6 +67,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "list": return <svg {...props}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>;
     case "list-ordered": return <svg {...props}><path d="M10 6h11M10 12h11M10 18h11M4 6V4l-1 .5M4 10H3h2M6 18H4c0-1 2-1.5 2-2.5S5 14 4 14.5"/></svg>;
     case "smile": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>;
+    case "info": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
+    case "compose": return <svg {...props}><path d="M12 20h9"/><path d="M4 20v-3.5L14.5 6a1.8 1.8 0 0 1 2.5 0l1 1a1.8 1.8 0 0 1 0 2.5L7.5 20Z"/></svg>;
     // Stationery accents (study-desk theme). Faint floating motifs on the
     // desk backdrop — hand-authored to match the 24×24 stroke set.
     case "pencil": return <svg {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
