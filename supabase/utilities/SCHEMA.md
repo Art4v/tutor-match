@@ -142,6 +142,8 @@ One row per (student, tutor) pair — the direction-gated chat thread. Created l
 | `tutor_last_read_at` | timestamptz | Tutor's read cursor |
 | `student_last_notified_at` | timestamptz | When the student was last notified about this thread (0047); throttles email/notifications to one per unread streak, set by `claim_message_notification` |
 | `tutor_last_notified_at` | timestamptz | Tutor's notified cursor (0047) |
+| `student_last_active_at` | timestamptz | Student's presence heartbeat while viewing this thread (0048); set by `touch_conversation_presence`, read by `claim_message_notification` to skip notifying a recipient watching live |
+| `tutor_last_active_at` | timestamptz | Tutor's presence cursor (0048) |
 
 **Unique** `(student_id, tutor_id)` (one thread per pair). **Indexes:** `(student_id, last_message_at desc)`, `(tutor_id, last_message_at desc)`. RLS: participants read; participants UPDATE (read cursors); **no INSERT policy** (created only via the RPC).
 
@@ -314,7 +316,8 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `unread_message_count()` | integer | Total unread across the caller's conversations (messages from the other party newer than the caller's cursor, `unsent_at IS NULL`). Drives the TopNav Messages pill. Recreated in 0045 to skip unsent | 0044 (0045) |
 | `edit_message(p_message_id, p_body)` | messages | Sender rewrites their own, not-yet-unsent message: sets `body` + `edited_at = now()`; raises for non-sender / missing / unsent / blank. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
 | `unsend_message(p_message_id)` | void | Sender soft-deletes their own message (`unsent_at = now()`, body kept for audit); raises for non-sender / missing. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
-| `claim_message_notification(p_conversation_id)` | uuid | Called by the sender after inserting a message: atomically (row lock) decides whether to notify the recipient, throttled to one per unread streak (`notified IS NULL OR notified <= read`), stamps the recipient's `*_last_notified_at`, and returns the recipient id to notify or NULL to skip. SECURITY DEFINER, `auth.uid()`-scoped | 0047 |
+| `claim_message_notification(p_conversation_id)` | uuid | Called by the sender after inserting a message: atomically (row lock) decides whether to notify the recipient, throttled to one per unread streak (`notified IS NULL OR notified <= read`) **and** skipped (without stamping) when the recipient is actively viewing the thread (`active_at` within 60s, 0048); stamps the recipient's `*_last_notified_at` when notifying, and returns the recipient id to notify or NULL to skip. SECURITY DEFINER, `auth.uid()`-scoped | 0047 (0048) |
+| `touch_conversation_presence(p_conversation_id)` | void | Recipient's client heartbeat (~30s while the thread is open + tab visible): sets the caller's own `*_last_active_at = now()`; no-op for non-participants. Feeds the presence skip in `claim_message_notification`. SECURITY DEFINER, `auth.uid()`-scoped | 0048 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
 

@@ -138,6 +138,27 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     };
   }, [openKey, draft, userId]);
 
+  // Presence heartbeat: while a real thread is open and the tab is visible, mark
+  // ourselves "active in this conversation" every 30s (and once immediately). The
+  // send route's claim_message_notification (0048) reads this cursor to skip the
+  // email/notification when the recipient is watching the thread live. Paused
+  // while the tab is hidden; resumes with a beat on the next visible transition.
+  useEffect(() => {
+    if (!openKey || openKey === DRAFT_KEY) return;
+    const sb = sbRef.current;
+    const beat = () => {
+      if (document.visibilityState !== "visible") return;
+      sb.rpc("touch_conversation_presence", { p_conversation_id: openKey }).then(() => {});
+    };
+    beat();
+    const interval = setInterval(beat, 30000);
+    document.addEventListener("visibilitychange", beat);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", beat);
+    };
+  }, [openKey]);
+
   // Realtime: message INSERT (append) / UPDATE (edit + unsend), and reaction
   // INSERT/UPDATE/DELETE. RLS scopes every feed to the user's own rows.
   useEffect(() => {
