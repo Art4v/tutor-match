@@ -43,6 +43,7 @@ export async function middleware(request) {
   if (user) {
     const { pathname } = request.nextUrl;
     const onChooser = pathname.startsWith("/choose-role");
+    const onDisabled = pathname.startsWith("/account-disabled");
     // Paths a NULL-role (mid-signup) user must still reach: the chooser itself,
     // auth/API routes, and the policy pages they may want to read first.
     const exempt =
@@ -54,18 +55,39 @@ export async function middleware(request) {
       pathname.startsWith("/forgot-password") ||
       pathname.startsWith("/reset-password");
 
-    // We only need role when a redirect is possible: an enforceable page (to
-    // push NULL-role users to the gate) or the chooser itself (to push role-set
-    // users back out). Skip the read on other exempt paths (API/auth/...).
-    if (!exempt || onChooser) {
-      // Fail open: on any read error `role` is undefined and we don't redirect,
-      // so a transient DB blip can never trap a user.
+    // Paths a DISABLED user must still reach: the disabled screen itself, auth
+    // routes (so Log out works), and the policy pages. Everything else (incl.
+    // /api — messaging is DB-frozen for disabled users anyway) redirects to the
+    // disabled screen.
+    const disabledExempt =
+      onDisabled ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/api") ||
+      pathname.startsWith("/terms-of-service") ||
+      pathname.startsWith("/privacy-policy");
+
+    // We only need the profile when a redirect is possible: an enforceable page
+    // (to push NULL-role/disabled users to their gate), the chooser, or the
+    // disabled screen itself (to push re-enabled users back out).
+    if (!exempt || onChooser || !disabledExempt || onDisabled) {
+      // Fail open: on any read error the fields are undefined and we don't
+      // redirect, so a transient DB blip can never trap a user.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, status")
         .eq("id", user.id)
         .maybeSingle();
       const role = profile?.role;
+      const status = profile?.status;
+
+      // Disabled gate takes precedence over the role gate.
+      if (status === "disabled" && !disabledExempt) {
+        return redirectPreservingCookies(request, response, "/account-disabled");
+      }
+      if (status && status !== "disabled" && onDisabled) {
+        // Re-enabled while sitting on the disabled screen — send them home.
+        return redirectPreservingCookies(request, response, "/");
+      }
 
       if (role === null && !exempt) {
         // Hasn't chosen yet — send them to the gate (carry over refreshed cookies).

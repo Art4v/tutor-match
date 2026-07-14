@@ -65,6 +65,7 @@ These duplications are **intentional** — don't "tidy them up" without understa
 | `full_name` | text | nullable; CHECK `full_name IS NULL OR btrim(full_name) <> ''` (0017) |
 | `terms_agreed_at` | timestamptz | nullable; consent stamp for every role, NULL ⇒ must (re-)agree (0025 on `tutor_profiles`, moved here in 0039) |
 | `messages_disclaimer_ack_at` | timestamptz | nullable; `/messages` first-open disclaimer acknowledgment, NULL/stale ⇒ show the blocking gate (versioned via `lib/messagesDisclaimer.js`). NOT stamped on signup, so new users see it once too (0046) |
+| `status` | text | NOT NULL default `'enabled'`, CHECK in (`enabled`,`disabled`) (0052). `disabled` ⇒ `middleware.js` gates the user to `/account-disabled`, hides a disabled tutor from public reads, and (structurally) freezes their messaging. Flipped by the report-resolve route; reverse manually via `supabase/utilities/enable_user.sql` |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
@@ -285,6 +286,23 @@ Self-only SELECT; **no write policy** (writes only via `consume_ai_credit()` / `
 
 Self-only SELECT + UPDATE (mark-read); **no INSERT policy** — written by the service-role client in API routes.
 
+### `reports` (0053)
+"Report and block": a user reports the other party in a conversation; an admin reviews on `/admin/report` (signed-token, no login) and resolves by disabling an account or dismissing.
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `reporter_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE |
+| `reported_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE; CHECK `reporter_id <> reported_id` |
+| `conversation_id` | uuid | → `conversations(id)` ON DELETE SET NULL |
+| `category` | text | NOT NULL, CHECK in (`harassment`,`spam`,`inappropriate`,`scam`,`other`) |
+| `details` | text | nullable; optional free-text |
+| `status` | text | NOT NULL default `'pending'`, CHECK in (`pending`,`resolved`) |
+| `resolution` | text | nullable, CHECK in (`disabled_reported`,`disabled_reporter`,`dismissed`) — set on resolve |
+| `resolved_at` | timestamptz | nullable |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+Partial unique index `reports_one_open_per_pair` on `(reporter_id, reported_id) WHERE status='pending'` (one open report per pair — re-filing while pending is a no-op). Index on `conversation_id`. RLS: reporter self-SELECT only; **no INSERT/UPDATE policy** — written by the service-role client in the report routes (like `notifications`).
+
 ### `tutor_documents` (0034)
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
@@ -322,7 +340,7 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `accept_current_terms()` | void | Stamp caller's `profiles.terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 → 0039 |
 | `acknowledge_messages_disclaimer()` | void | Stamp caller's `profiles.messages_disclaimer_ack_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0046 |
 | `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
-| `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor, **and that no block exists in either direction** (0049), then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044, 0049 |
+| `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor, **that no block exists in either direction** (0049), **and that neither party is disabled** (0052), then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044, 0049, 0052 |
 | `conversation_block_state(p_conversation_id)` | `(blocked_by_me bool, blocked_by_other bool)` | Reports the block state of a conversation the caller participates in (raises for non-participants). Lets the blocked party see a closed composer without broadening `blocked_users` RLS. SECURITY DEFINER, `auth.uid()`-scoped | 0050 |
 | `mark_conversation_read(p_conversation_id)` | void | Set the caller's own read cursor (`student_`/`tutor_last_read_at = now()`); raises if not a participant | 0044 |
 | `unread_message_count()` | integer | Total unread across the caller's conversations (messages from the other party newer than the caller's cursor, `unsent_at IS NULL`). Drives the TopNav Messages pill. Recreated in 0045 to skip unsent | 0044 (0045) |
@@ -355,12 +373,13 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
 | `blocked_users` | self (own `blocker_id`) — a block is invisible to the blocked user | self (own `blocker_id`) INSERT/DELETE (0049) |
 | `conversations` | participants (`student_id`/`tutor_id` = uid) | participants UPDATE (read cursors); no INSERT (RPC-created, 0044) |
-| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) + no block between participants (0049); no UPDATE/DELETE — edit/unsend via RPC (0045) |
+| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) + no block between participants (0049) + neither participant disabled (0052); no UPDATE/DELETE — edit/unsend via RPC (0045) |
 | `message_reactions` | participants of the reacted message's conversation (0045) | `user_id` = uid (+ participant) INSERT/UPDATE/DELETE (0045) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |
 | `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
+| `reports` | reporter self (own `reporter_id`) | none (service-role only, 0053) |
 | `tutor_documents` | public | owner-scoped INSERT/UPDATE/DELETE |
 | `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid |
 | `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE |

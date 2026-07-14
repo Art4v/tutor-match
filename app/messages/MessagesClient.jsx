@@ -28,7 +28,9 @@ import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getConversation, getConversations } from "@/lib/supabase/messaging";
 import { blockUser, unblockUser } from "@/lib/supabase/blocks";
+import { hasPendingReport } from "@/lib/supabase/reports";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { ReportModal } from "@/components/ReportModal";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 
 // Full emoji picker, reused from the profile editor's rich-text toolbar. Lazy +
@@ -101,6 +103,11 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const [blockConfirm, setBlockConfirm] = useState(false);// "are you sure?" gate before blocking
   const [unblockConfirm, setUnblockConfirm] = useState(false); // "are you sure?" gate before unblocking
   const [blockBusy, setBlockBusy] = useState(false);      // block/unblock in flight
+  const [reportOpen, setReportOpen] = useState(false);    // "report and block" modal
+  const [reportBusy, setReportBusy] = useState(false);    // report submit in flight
+  const [reportError, setReportError] = useState("");     // report submit error
+  const [reportSent, setReportSent] = useState(false);    // show the "report sent" confirmation
+  const [reportAlready, setReportAlready] = useState(false); // a prior report is still pending — block a second
 
   const router = useRouter();
   const { unsave } = useSavedTutors();
@@ -144,6 +151,80 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     setBlockConfirm(false);
     setBlockedState(conv.id, true);
     unsave(otherId); // if this is a saved tutor, drop the save (no-op otherwise)
+  }, [thread, setBlockedState, unsave]);
+
+  // Report and block — opens the report modal from the overflow menu.
+  const requestReport = useCallback(async () => {
+    setHeaderMenu(false);
+    setReportError("");
+    setReportSent(false);
+    setReportAlready(false);
+    // Proactive guard: if a report against this person is still pending, open
+    // straight into the "already reported" state so they never see the form.
+    const conv = thread;
+    const otherId = conv?.otherId;
+    const pending = otherId ? await hasPendingReport(sbRef.current, otherId) : false;
+    if (pending && otherId) {
+      // They clicked "Report and block": honor the block half even though the
+      // duplicate report is refused (matches the submit path, which blocks
+      // before it learns the report is a duplicate). Idempotent.
+      await blockUser(sbRef.current, otherId);
+      setBlockedState(conv.id, true);
+      unsave(otherId);
+    }
+    setReportAlready(pending);
+    setReportOpen(true);
+  }, [thread, setBlockedState, unsave]);
+
+  // Close + reset the report modal (used by Cancel and the "Done"/result views).
+  const closeReport = useCallback(() => {
+    setReportOpen(false);
+    setReportError("");
+    setReportSent(false);
+    setReportAlready(false);
+  }, []);
+
+  // Submit: block first (the protective action, reusing the tested flow), then
+  // file the report. If the report POST fails the block still stands and we show
+  // a retry in the modal.
+  const submitReport = useCallback(async ({ category, details }) => {
+    const conv = thread;
+    const otherId = conv?.otherId;
+    if (!otherId) { setReportOpen(false); return; }
+    setReportBusy(true);
+    setReportError("");
+
+    // 1. Block (idempotent; also drops a save if this was a saved tutor).
+    await blockUser(sbRef.current, otherId);
+    setBlockedState(conv.id, true);
+    unsave(otherId);
+
+    // 2. File the report.
+    let data;
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: conv.id, category, details }),
+      });
+      data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReportBusy(false);
+        setReportError(data?.error || "Blocked, but the report didn't send. Try again.");
+        return;
+      }
+    } catch {
+      setReportBusy(false);
+      setReportError("Blocked, but the report didn't send. Try again.");
+      return;
+    }
+
+    // Race-safety net: the route returns status "pending" when a prior report is
+    // still open (the DB no-ops the duplicate). Show the "already reported" state
+    // rather than a misleading "sent" confirmation. Otherwise it's a real send.
+    setReportBusy(false);
+    if (data?.status === "pending") setReportAlready(true);
+    else setReportSent(true);
   }, [thread, setBlockedState, unsave]);
 
   // Unblock — asks for confirmation first (like block).
@@ -644,7 +725,10 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         {thread.blocked ? (
                           <MenuItem icon="ban" label="Unblock" onClick={requestUnblock} />
                         ) : (
-                          <MenuItem icon="ban" label="Block" danger onClick={requestBlock} />
+                          <>
+                            <MenuItem icon="ban" label="Block" danger onClick={requestBlock} />
+                            <MenuItem icon="flag" label="Report and block" danger onClick={requestReport} />
+                          </>
                         )}
                       </div>
                     )}
@@ -838,6 +922,18 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
           busy={blockBusy}
           onCancel={() => { if (!blockBusy) setUnblockConfirm(false); }}
           onConfirm={confirmUnblock}
+        />
+      )}
+
+      {reportOpen && (
+        <ReportModal
+          name={firstName(thread?.name) || "this person"}
+          busy={reportBusy}
+          error={reportError}
+          sent={reportSent}
+          alreadyReported={reportAlready}
+          onCancel={() => { if (reportSent || reportAlready || !reportBusy) closeReport(); }}
+          onSubmit={submitReport}
         />
       )}
 
