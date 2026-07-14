@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getTutorBySlug } from "@/lib/supabase/tutors";
+import { notifyUser } from "@/lib/notifications";
+import { messageEmail } from "@/lib/email/send";
 
 export const runtime = "nodejs";
 
@@ -15,8 +18,10 @@ export const runtime = "nodejs";
 //                                        student-only start_conversation RPC,
 //                                        then insert the message.
 //
-// No email / notification is sent in v1 (deferred). Realtime delivers the
-// inserted row to both open clients.
+// Realtime delivers the inserted row to both open clients. After a successful
+// insert we also notify the RECIPIENT (in-app notification + email) via the
+// shared notifyUser path — one per message (throttling for active viewers is a
+// future slice).
 export async function POST(request) {
   const supabase = createSupabaseServerClient();
   const {
@@ -85,6 +90,41 @@ export async function POST(request) {
       { error: "Could not send the message.", detail: insertError.message ?? null },
       { status: 403 }
     );
+  }
+
+  // Notify the recipient (the participant that isn't the sender). Best-effort:
+  // the message is already committed, so a failed lookup or notify just logs and
+  // skips the email rather than failing the send. notifyUser never throws.
+  try {
+    const { data: convo } = await supabase
+      .from("conversations")
+      .select("student_id, tutor_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    const recipientId =
+      convo && (convo.student_id === user.id ? convo.tutor_id : convo.student_id);
+
+    if (recipientId) {
+      const { data: senderProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const senderName = senderProfile?.full_name?.trim() || "Someone";
+      const ctaUrl = `${new URL(request.url).origin}/messages?c=${conversationId}`;
+
+      await notifyUser(createSupabaseAdminClient(), recipientId, {
+        type: "message",
+        title: `New message from ${senderName}`,
+        body: "You have a new message on matchtutor.",
+        email: {
+          subject: `New message from ${senderName}`,
+          html: messageEmail({ senderName, ctaUrl }),
+        },
+      });
+    }
+  } catch (err) {
+    console.error("[messages/send] recipient notification failed:", err);
   }
 
   return NextResponse.json({ conversationId, message });
