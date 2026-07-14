@@ -19,6 +19,14 @@ import { SaveTutorButton } from "@/components/SaveTutorButton";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { Section, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
+export async function generateMetadata({ params }) {
+  const supabase = createSupabaseServerClient();
+  const tutor = await getTutorBySlug(supabase, params.slug);
+  // Plain-string title flows through the root template -> "MatchTutor · <name>".
+  // No match -> {} falls back to the "MatchTutor" default (page calls notFound).
+  return tutor?.name ? { title: tutor.name } : {};
+}
+
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
   const {

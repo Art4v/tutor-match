@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorProfileForEditor } from "@/lib/supabase/tutors";
 
-export const metadata = { title: "Your profile — matchtutor" };
+export const metadata = { title: "Your profile" };
 
 /**
  * Thin "take me to my own profile" resolver + onboarding gate. This is the

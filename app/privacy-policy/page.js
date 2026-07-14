@@ -1,4 +1,4 @@
-export const metadata = { title: "Privacy Policy — matchtutor" };
+export const metadata = { title: "Privacy Policy" };
 
 const USE_ROWS = [
   ["Create and manage your account", "Primary Purpose of Collection"],

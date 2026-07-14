@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AccountSettings } from "./AccountSettings";
 
-export const metadata = { title: "Account — matchtutor" };
+export const metadata = { title: "Account" };
 
 export default async function AccountPage() {
   const supabase = createSupabaseServerClient();

@@ -18,7 +18,7 @@ import { getConversations, findConversationWithTutor } from "@/lib/supabase/mess
 import { needsMessagesDisclaimer } from "@/lib/messagesDisclaimer";
 import { MessagesClient } from "./MessagesClient";
 
-export const metadata = { title: "Messages — matchtutor" };
+export const metadata = { title: "Messages" };
 export const dynamic = "force-dynamic";
 
 export default async function MessagesPage({ searchParams }) {
