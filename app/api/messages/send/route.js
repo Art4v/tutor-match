@@ -66,10 +66,18 @@ export async function POST(request) {
       p_tutor_id: tutor.id,
     });
     if (rpcError || !convId) {
-      // RPC raises for non-students / unavailable tutors.
+      // RPC raises for non-students / unavailable tutors / a block in either
+      // direction. Only surface the block reason when the CALLER is the blocker
+      // (they can see their own block row); a block by the other party stays
+      // silent, so it falls back to the generic message.
       console.error("[messages/send] start_conversation failed:", rpcError);
       return NextResponse.json(
-        { error: "Could not start the conversation.", detail: rpcError?.message ?? null },
+        {
+          error: (await callerBlocked(supabase, user.id, tutor.id))
+            ? "You've blocked this person. Unblock them to send a message."
+            : "Could not start the conversation.",
+          detail: rpcError?.message ?? null,
+        },
         { status: 403 }
       );
     }
@@ -84,10 +92,26 @@ export async function POST(request) {
 
   if (insertError) {
     // RLS blocks a tutor posting into a conversation with no student message yet,
-    // and non-participants entirely.
+    // non-participants, and a send while a block exists in either direction.
+    // As above, only name the block when the CALLER is the blocker.
     console.error("[messages/send] message insert failed:", insertError);
+    let callerIsBlocker = false;
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("student_id, tutor_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (conv) {
+      const otherId = conv.student_id === user.id ? conv.tutor_id : conv.student_id;
+      callerIsBlocker = await callerBlocked(supabase, user.id, otherId);
+    }
     return NextResponse.json(
-      { error: "Could not send the message.", detail: insertError.message ?? null },
+      {
+        error: callerIsBlocker
+          ? "You've blocked this person. Unblock them to send a message."
+          : "Could not send the message.",
+        detail: insertError.message ?? null,
+      },
       { status: 403 }
     );
   }
@@ -127,4 +151,18 @@ export async function POST(request) {
   }
 
   return NextResponse.json({ conversationId, message });
+}
+
+// True if the caller has blocked `otherId`. RLS on blocked_users only exposes
+// the caller's own (blocker) rows, so this can never reveal a block created by
+// the other party — that stays silent.
+async function callerBlocked(supabase, callerId, otherId) {
+  if (!otherId) return false;
+  const { data } = await supabase
+    .from("blocked_users")
+    .select("blocked_id")
+    .eq("blocker_id", callerId)
+    .eq("blocked_id", otherId)
+    .maybeSingle();
+  return !!data;
 }

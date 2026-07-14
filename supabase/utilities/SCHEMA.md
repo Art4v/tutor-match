@@ -128,6 +128,17 @@ Student bookmarks — one row per saved tutor. Read/written by the bookmark butt
 
 **Index:** `(student_id, created_at desc)`. Self-only RLS on `student_id` (student reads/writes only their own saves).
 
+### `blocked_users` (join, 0049)
+Mutual block between two accounts — one row per (blocker, blocked) pair. Written by the block/unblock controls (messages thread header + tutor profile). A block is **silent** (no policy exposes rows where you are the `blocked_id`) and **reversible** (unblock deletes the row).
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `blocker_id` | uuid | PK part → `auth.users(id)` ON DELETE CASCADE |
+| `blocked_id` | uuid | PK part → `auth.users(id)` ON DELETE CASCADE; CHECK `blocker_id <> blocked_id` |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+**Index:** `(blocked_id)` (reverse lookup). Self-only RLS on `blocker_id` (SELECT/INSERT/DELETE). **Enforcement:** the `messages` INSERT policy and `start_conversation()` were recreated in 0049 to refuse when a block exists in **either** direction between the two participants (freezes sends + blocks reopening a thread). **Blocked-party visibility:** the table's RLS stays blocker-only, but `conversation_block_state()` (0050, SECURITY DEFINER) lets a participant learn the block state of *their own* conversation (`blocked_by_me` / `blocked_by_other`) so the blocked party sees a closed "you've been blocked" composer instead of a silent failure.
+
 ### `conversations` (0044)
 One row per (student, tutor) pair — the direction-gated chat thread. Created lazily by `start_conversation()` on the student's first send (no client INSERT policy), so a tutor sees nothing until then.
 
@@ -311,7 +322,8 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `accept_current_terms()` | void | Stamp caller's `profiles.terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 → 0039 |
 | `acknowledge_messages_disclaimer()` | void | Stamp caller's `profiles.messages_disclaimer_ack_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0046 |
 | `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
-| `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor, then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044 |
+| `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor, **and that no block exists in either direction** (0049), then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044, 0049 |
+| `conversation_block_state(p_conversation_id)` | `(blocked_by_me bool, blocked_by_other bool)` | Reports the block state of a conversation the caller participates in (raises for non-participants). Lets the blocked party see a closed composer without broadening `blocked_users` RLS. SECURITY DEFINER, `auth.uid()`-scoped | 0050 |
 | `mark_conversation_read(p_conversation_id)` | void | Set the caller's own read cursor (`student_`/`tutor_last_read_at = now()`); raises if not a participant | 0044 |
 | `unread_message_count()` | integer | Total unread across the caller's conversations (messages from the other party newer than the caller's cursor, `unsent_at IS NULL`). Drives the TopNav Messages pill. Recreated in 0045 to skip unsent | 0044 (0045) |
 | `edit_message(p_message_id, p_body)` | messages | Sender rewrites their own, not-yet-unsent message: sets `body` + `edited_at = now()`; raises for non-sender / missing / unsent / blank. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
@@ -341,8 +353,9 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `tutor_profiles` | public | tutor self (ALL) |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
+| `blocked_users` | self (own `blocker_id`) — a block is invisible to the blocked user | self (own `blocker_id`) INSERT/DELETE (0049) |
 | `conversations` | participants (`student_id`/`tutor_id` = uid) | participants UPDATE (read cursors); no INSERT (RPC-created, 0044) |
-| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044); no UPDATE/DELETE — edit/unsend via RPC (0045) |
+| `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) + no block between participants (0049); no UPDATE/DELETE — edit/unsend via RPC (0045) |
 | `message_reactions` | participants of the reacted message's conversation (0045) | `user_id` = uid (+ participant) INSERT/UPDATE/DELETE (0045) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |

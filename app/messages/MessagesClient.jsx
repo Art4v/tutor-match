@@ -27,6 +27,9 @@ import { Avatar, VerifiedTick, Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getConversation, getConversations } from "@/lib/supabase/messaging";
+import { blockUser, unblockUser } from "@/lib/supabase/blocks";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { useSavedTutors } from "@/components/SavedTutorsProvider";
 
 // Full emoji picker, reused from the profile editor's rich-text toolbar. Lazy +
 // client-only (touches window at module init).
@@ -94,8 +97,13 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const [showEmoji, setShowEmoji] = useState(false);      // composer emoji picker popover
   const [showInfo, setShowInfo] = useState(false);        // thread-header disclaimer modal
   const [showGate, setShowGate] = useState(!!needsDisclaimer); // first-open blocking gate
+  const [headerMenu, setHeaderMenu] = useState(false);    // thread-header overflow menu (block/info)
+  const [blockConfirm, setBlockConfirm] = useState(false);// "are you sure?" gate before blocking
+  const [unblockConfirm, setUnblockConfirm] = useState(false); // "are you sure?" gate before unblocking
+  const [blockBusy, setBlockBusy] = useState(false);      // block/unblock in flight
 
   const router = useRouter();
+  const { unsave } = useSavedTutors();
   const sbRef = useRef(null);
   if (!sbRef.current) sbRef.current = createSupabaseBrowserClient();
   const openKeyRef = useRef(openKey);
@@ -103,12 +111,67 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   const scrollRef = useRef(null);
   const composerRef = useRef(null);
   const emojiWrapRef = useRef(null); // composer emoji popover, for outside-click close
+  const headerMenuRef = useRef(null); // thread-header overflow menu, for outside-click close
   const messageRefs = useRef({}); // messageId -> row element, for scroll-to
 
   const refreshList = useCallback(async () => {
     const list = await getConversations(sbRef.current, userId);
     setConversations(list);
   }, [userId]);
+
+  // Reflect a block/unblock in the open thread + the list row, without a reload.
+  const setBlockedState = useCallback((convId, value) => {
+    setThread((prev) => (prev && prev.id === convId ? { ...prev, blocked: value } : prev));
+    setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, blocked: value } : c)));
+  }, []);
+
+  // Block the other participant. Opens a confirm gate first; the actual write
+  // runs in confirmBlock. The DB freezes the conversation (messages INSERT
+  // policy); the thread stays visible but messaging is disabled. Silent: the
+  // blocked user is not told. Reversible via Unblock.
+  const requestBlock = useCallback(() => {
+    setHeaderMenu(false);
+    setBlockConfirm(true);
+  }, []);
+
+  const confirmBlock = useCallback(async () => {
+    const conv = thread;
+    const otherId = conv?.otherId;
+    if (!otherId) { setBlockConfirm(false); return; }
+    setBlockBusy(true);
+    await blockUser(sbRef.current, otherId);
+    setBlockBusy(false);
+    setBlockConfirm(false);
+    setBlockedState(conv.id, true);
+    unsave(otherId); // if this is a saved tutor, drop the save (no-op otherwise)
+  }, [thread, setBlockedState, unsave]);
+
+  // Unblock — asks for confirmation first (like block).
+  const requestUnblock = useCallback(() => {
+    setHeaderMenu(false);
+    setUnblockConfirm(true);
+  }, []);
+
+  const confirmUnblock = useCallback(async () => {
+    const conv = thread;
+    const otherId = conv?.otherId;
+    if (!otherId) { setUnblockConfirm(false); return; }
+    setBlockBusy(true);
+    await unblockUser(sbRef.current, otherId);
+    setBlockBusy(false);
+    setUnblockConfirm(false);
+    setBlockedState(conv.id, false);
+  }, [thread, setBlockedState]);
+
+  // Close the thread-header overflow menu on any outside click.
+  useEffect(() => {
+    if (!headerMenu) return;
+    const onDown = (e) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target)) setHeaderMenu(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [headerMenu]);
 
   // Load the open thread when the selection changes. The draft is synthesized
   // locally (no row yet); real threads are fetched + marked read.
@@ -470,7 +533,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                 </span>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
               {rows.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center px-6">
                   <span className="inline-flex items-center justify-center mb-3" style={{ width: 44, height: 44, borderRadius: 999, background: "var(--desk)", color: "var(--sage)" }}>
@@ -507,6 +570,11 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         <div className="flex items-center gap-1.5">
                           <span className="text-[13.5px] font-semibold text-slate-900 truncate">{r.name || "Unknown"}</span>
                           {r.verified && <VerifiedTick size={13} />}
+                          {r.blocked && (
+                            <span className="inline-flex items-center gap-1 shrink-0 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#DC2626" }}>
+                              <Icon name="ban" size={11} /> Blocked
+                            </span>
+                          )}
                           {!r.isDraft && r.lastAt && (
                             <span className="ml-auto text-[11px] text-slate-400 shrink-0">{relativeTime(r.lastAt)}</span>
                           )}
@@ -552,21 +620,39 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <a href={`/tutor/${thread.slug}`} className="text-[12px] text-slate-400 hover:text-slate-600">View profile</a>
                     )}
                   </div>
-                  {/* Conversation info — opens the disclaimer modal. */}
-                  <button
-                    type="button"
-                    onClick={() => setShowInfo(true)}
-                    className="ml-auto inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                    style={{ width: 34, height: 34 }}
-                    aria-label="Conversation info"
-                    title="Conversation info"
-                  >
-                    <Icon name="info" size={20} />
-                  </button>
+                  {/* Overflow menu — conversation info + block. */}
+                  <div className="ml-auto relative" ref={headerMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setHeaderMenu((v) => !v)}
+                      className="inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                      style={{ width: 34, height: 34 }}
+                      aria-label="Conversation options"
+                      title="Conversation options"
+                      aria-haspopup="menu"
+                      aria-expanded={headerMenu}
+                    >
+                      <Icon name="more" size={20} />
+                    </button>
+                    {headerMenu && (
+                      <div
+                        role="menu"
+                        className="absolute right-0 top-full mt-1.5 z-30 py-1 min-w-[190px]"
+                        style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,0.18)" }}
+                      >
+                        <MenuItem icon="info" label="Conversation info" onClick={() => { setHeaderMenu(false); setShowInfo(true); }} />
+                        {thread.blocked ? (
+                          <MenuItem icon="ban" label="Unblock" onClick={requestUnblock} />
+                        ) : (
+                          <MenuItem icon="ban" label="Block" danger onClick={requestBlock} />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Messages */}
-                <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)" }}>
+                <div ref={scrollRef} data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)", WebkitOverflowScrolling: "touch" }}>
                   {thread.messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-center">
                       <p className="text-[13px] text-slate-400">
@@ -594,7 +680,49 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                   )}
                 </div>
 
-                {/* Composer */}
+                {/* Composer — replaced by a blocked notice when either party has
+                    blocked the other (messaging disabled; DB also freezes it). */}
+                {thread.blockedByOther ? (
+                  // The caller has been blocked BY the other party — closed, no unblock.
+                  <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
+                    <div
+                      className="flex items-center gap-3 px-4 py-3"
+                      style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12 }}
+                    >
+                      <span className="inline-flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}>
+                        <Icon name="ban" size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-semibold text-slate-900">You&apos;ve been blocked</div>
+                        <div className="text-[12px] text-slate-500">You can&apos;t send messages in this conversation.</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : thread.blocked ? (
+                  <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
+                    <div
+                      className="flex items-center gap-3 px-4 py-3"
+                      style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12 }}
+                    >
+                      <span className="inline-flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}>
+                        <Icon name="ban" size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-semibold text-slate-900">You blocked {firstName(thread.name) || "this person"}</div>
+                        <div className="text-[12px] text-slate-500">You can&apos;t message each other until you unblock them.</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={requestUnblock}
+                        disabled={blockBusy}
+                        className="shrink-0 inline-flex items-center gap-1.5 font-medium text-[13px] disabled:opacity-50"
+                        style={{ color: "var(--accent)" }}
+                      >
+                        {blockBusy ? "…" : "Unblock"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                 <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
                   {error && <div className="text-[12px] text-red-600 mb-1.5 px-1">{error}</div>}
 
@@ -672,6 +800,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                     Please keep messages respectful. Treat others with courtesy.
                   </p>
                 </div>
+                )}
               </>
             )}
           </div>
@@ -682,6 +811,33 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
           unsending={unsending}
           onCancel={() => { if (!unsending) setUnsendTarget(null); }}
           onConfirm={confirmUnsend}
+        />
+      )}
+
+      {blockConfirm && (
+        <ConfirmModal
+          title={`Block ${firstName(thread?.name) || "this person"}?`}
+          body="They won't be able to message you, and you won't be able to message them, until you unblock. They aren't told they've been blocked."
+          confirmLabel="Block"
+          confirmingLabel="Blocking…"
+          icon="ban"
+          busy={blockBusy}
+          onCancel={() => { if (!blockBusy) setBlockConfirm(false); }}
+          onConfirm={confirmBlock}
+        />
+      )}
+
+      {unblockConfirm && (
+        <ConfirmModal
+          title={`Unblock ${firstName(thread?.name) || "this person"}?`}
+          body="You'll be able to message each other again."
+          confirmLabel="Unblock"
+          confirmingLabel="Unblocking…"
+          icon="ban"
+          tone="accent"
+          busy={blockBusy}
+          onCancel={() => { if (!blockBusy) setUnblockConfirm(false); }}
+          onConfirm={confirmUnblock}
         />
       )}
 

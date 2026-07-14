@@ -15,6 +15,7 @@ const SavedTutorsContext = createContext({
   ready: false,
   isSaved: () => false,
   toggleSave: () => {},
+  unsave: () => {},
 });
 
 export function SavedTutorsProvider({ children }) {
@@ -123,9 +124,31 @@ export function SavedTutorsProvider({ children }) {
     [isStudent, userId, applySaved, router]
   );
 
+  // Remove-only (idempotent): used to auto-unsave a tutor the student blocks.
+  // No-op when not saved / not a student / id isn't in the set (e.g. blocking a
+  // student, whose id is never a saved tutor id).
+  const unsave = useCallback(
+    async (tutorId) => {
+      if (!isStudent || !userId || !tutorId || !savedRef.current.has(tutorId)) return;
+      const supabase = createSupabaseBrowserClient();
+      const next = new Set(savedRef.current);
+      next.delete(tutorId);
+      applySaved(next);
+      const { ok } = await unsaveTutor(supabase, userId, tutorId);
+      if (!ok) {
+        const rollback = new Set(savedRef.current);
+        rollback.add(tutorId);
+        applySaved(rollback);
+        return;
+      }
+      router.refresh();
+    },
+    [isStudent, userId, applySaved, router]
+  );
+
   return (
     <SavedTutorsContext.Provider
-      value={{ isStudent, isLoggedIn: !!userId, ready, isSaved, toggleSave }}
+      value={{ isStudent, isLoggedIn: !!userId, ready, isSaved, toggleSave, unsave }}
     >
       {children}
     </SavedTutorsContext.Provider>
