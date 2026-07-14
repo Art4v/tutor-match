@@ -92,17 +92,16 @@ export async function POST(request) {
     );
   }
 
-  // Notify the recipient (the participant that isn't the sender). Best-effort:
-  // the message is already committed, so a failed lookup or notify just logs and
-  // skips the email rather than failing the send. notifyUser never throws.
+  // Notify the recipient (the participant that isn't the sender), throttled to
+  // ONE notification per unread streak: claim_message_notification atomically
+  // decides + stamps the recipient's notified cursor, returning the recipient id
+  // to notify or null to skip (already notified since they last read). See
+  // migration 0047. Best-effort: the message is already committed, so a failed
+  // RPC or notify just logs and skips rather than failing the send.
   try {
-    const { data: convo } = await supabase
-      .from("conversations")
-      .select("student_id, tutor_id")
-      .eq("id", conversationId)
-      .maybeSingle();
-    const recipientId =
-      convo && (convo.student_id === user.id ? convo.tutor_id : convo.student_id);
+    const { data: recipientId } = await supabase.rpc("claim_message_notification", {
+      p_conversation_id: conversationId,
+    });
 
     if (recipientId) {
       const { data: senderProfile } = await supabase
