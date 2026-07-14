@@ -115,6 +115,13 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
   if (!sbRef.current) sbRef.current = createSupabaseBrowserClient();
   const openKeyRef = useRef(openKey);
   openKeyRef.current = openKey;
+  // Latest conversations list, read (not depended on) by the load effect so the
+  // optimistic header seed doesn't re-run the fetch on every list refresh.
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
+  // Visited threads, keyed by conversation id, for instant re-open + background
+  // revalidation. Kept in step with `thread` by the sync effect below.
+  const threadCacheRef = useRef({});
   const scrollRef = useRef(null);
   const composerRef = useRef(null);
   const emojiWrapRef = useRef(null); // composer emoji popover, for outside-click close
@@ -268,7 +275,20 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       setThread(null);
       return;
     }
-    setThread(null);
+
+    // Paint something immediately so the pane never sits on the empty-state copy
+    // while we fetch. Prefer a cached thread (instant + full); otherwise seed the
+    // header from the list row we already have and show a spinner for the body
+    // (messages: null = "not loaded yet", distinct from [] = "loaded, empty").
+    const cached = threadCacheRef.current[openKey];
+    if (cached) {
+      setThread(cached);
+    } else {
+      const row = conversationsRef.current.find((c) => c.id === openKey);
+      setThread(row ? { ...row, messages: null } : { id: openKey, messages: null });
+    }
+
+    // Fetch (or, when cached, revalidate) in the background, then swap in.
     getConversation(sbRef.current, userId, openKey).then((t) => {
       if (!active) return;
       setThread(t);
@@ -281,6 +301,15 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       active = false;
     };
   }, [openKey, draft, userId]);
+
+  // Keep the in-memory thread cache in step with the latest loaded thread, so any
+  // mutation (fetch, realtime, send/edit/unsend, reaction, block) is reflected on
+  // the next open. Only cache once messages are actually loaded (not the seed).
+  useEffect(() => {
+    if (thread?.id && thread.messages != null) {
+      threadCacheRef.current[thread.id] = thread;
+    }
+  }, [thread]);
 
   // Presence heartbeat: while a real thread is open and the tab is visible, mark
   // ourselves "active in this conversation" every 30s (and once immediately). The
@@ -313,7 +342,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
         const m = payload.new;
         if (m.unsent_at) return;
         setThread((prev) =>
-          prev && prev.id === m.conversation_id && !prev.messages.some((x) => x.id === m.id)
+          prev && prev.id === m.conversation_id && prev.messages && !prev.messages.some((x) => x.id === m.id)
             ? { ...prev, messages: [...prev.messages, shapeMessage(m, prev.messages)] }
             : prev
         );
@@ -325,7 +354,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (payload) => {
         const m = payload.new;
         setThread((prev) => {
-          if (!prev || prev.id !== m.conversation_id) return prev;
+          if (!prev || prev.id !== m.conversation_id || !prev.messages) return prev;
           if (m.unsent_at) {
             // Unsent → vanishes for both participants.
             return { ...prev, messages: prev.messages.filter((x) => x.id !== m.id) };
@@ -345,7 +374,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
         const row = isDelete ? payload.old : payload.new;
         if (!row?.message_id) return;
         setThread((prev) => {
-          if (!prev) return prev;
+          if (!prev || !prev.messages) return prev;
           return {
             ...prev,
             messages: prev.messages.map((x) =>
@@ -547,7 +576,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       setOpenKey(conversationId);
     } else {
       setThread((prev) =>
-        prev && !prev.messages.some((x) => x.id === message.id)
+        prev && prev.messages && !prev.messages.some((x) => x.id === message.id)
           ? { ...prev, messages: [...prev.messages, shapeMessage(message, prev.messages)] }
           : prev
       );
@@ -680,9 +709,13 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
 
           {/* Right: thread */}
           <div className={`${hasThread ? "flex" : "hidden md:flex"} flex-col min-h-0`}>
-            {!thread ? (
+            {!openKey ? (
               <div className="flex-1 flex items-center justify-center text-center px-6">
                 <p className="text-[13.5px] text-slate-400">Select a conversation to start reading.</p>
+              </div>
+            ) : !thread ? (
+              <div className="flex-1 flex items-center justify-center text-center px-6">
+                <p className="text-[13.5px] text-slate-400">This conversation is unavailable.</p>
               </div>
             ) : (
               <>
@@ -737,7 +770,16 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
 
                 {/* Messages */}
                 <div ref={scrollRef} data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)", WebkitOverflowScrolling: "touch" }}>
-                  {thread.messages.length === 0 ? (
+                  {thread.messages == null ? (
+                    <div className="h-full flex items-center justify-center">
+                      <span
+                        role="status"
+                        aria-label="Loading messages"
+                        className="inline-block animate-spin rounded-full"
+                        style={{ width: 22, height: 22, border: "2.5px solid var(--paper-line)", borderTopColor: "var(--accent)" }}
+                      />
+                    </div>
+                  ) : thread.messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-center">
                       <p className="text-[13px] text-slate-400">
                         {thread.otherIsTutor ? `Say hello to ${firstName(thread.name) || "your tutor"}. This is the start of your conversation.` : "No messages yet."}
