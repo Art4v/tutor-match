@@ -603,9 +603,10 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       onKeyDown={onKeyDown}
+                      disabled={sending}
                       rows={1}
                       placeholder={editTarget ? "Edit your message…" : "Write a message…"}
-                      className="flex-1 resize-none px-3.5 py-2.5 text-[13.5px] outline-none"
+                      className="flex-1 resize-none px-3.5 py-2.5 text-[13.5px] outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "#fff", maxHeight: 140 }}
                     />
                     {/* Emoji picker — inserts into the composer at the caret. */}
