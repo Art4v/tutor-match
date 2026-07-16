@@ -346,7 +346,16 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
             ? { ...prev, messages: [...prev.messages, shapeMessage(m, prev.messages)] }
             : prev
         );
-        if (m.conversation_id === openKeyRef.current && m.sender_id !== userId) {
+        // Only mark read when the thread is actually on screen. Without the
+        // visibility guard a backgrounded tab advances the read cursor on every
+        // arrival, re-arming the 0047 notification throttle so the recipient is
+        // emailed for every message (and unread badges wrongly clear). Mirrors the
+        // presence heartbeat's own visibility check.
+        if (
+          m.conversation_id === openKeyRef.current &&
+          m.sender_id !== userId &&
+          document.visibilityState === "visible"
+        ) {
           sb.rpc("mark_conversation_read", { p_conversation_id: m.conversation_id }).then(() => {});
         }
         refreshList();
@@ -489,11 +498,19 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
     const m = unsendTarget;
     if (!m?.id) return;
     setUnsending(true);
-    setThread((prev) => (prev ? { ...prev, messages: prev.messages.filter((x) => x.id !== m.id) } : prev));
-    if (editTarget?.id === m.id) cancelCompose();
-    await sbRef.current.rpc("unsend_message", { p_message_id: m.id });
+    // Run the RPC first and only remove the message locally on success. Removing
+    // optimistically hid a failed unsend (offline, or a frozen conversation now that
+    // unsend_message can raise) while it still existed for both parties. The realtime
+    // UPDATE echo also removes it once the soft-delete lands.
+    const { error: rpcError } = await sbRef.current.rpc("unsend_message", { p_message_id: m.id });
     setUnsending(false);
     setUnsendTarget(null);
+    if (rpcError) {
+      setError("Couldn't unsend the message.");
+      return;
+    }
+    setThread((prev) => (prev ? { ...prev, messages: prev.messages.filter((x) => x.id !== m.id) } : prev));
+    if (editTarget?.id === m.id) cancelCompose();
     refreshList();
   }, [unsendTarget, editTarget, cancelCompose, refreshList]);
 
@@ -734,7 +751,11 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <a href={`/tutor/${thread.slug}`} className="text-[12px] text-slate-400 hover:text-slate-600">View profile</a>
                     )}
                   </div>
-                  {/* Overflow menu — conversation info + block. */}
+                  {/* Overflow menu — conversation info + block. Hidden on a draft
+                      (thread.id == null): there is no conversation to show info for,
+                      and "Report and block" would POST a null conversationId and 400.
+                      Blocking a not-yet-messaged tutor is done from their profile. */}
+                  {thread.id && (
                   <div className="ml-auto relative" ref={headerMenuRef}>
                     <button
                       type="button"
@@ -766,6 +787,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
 
                 {/* Messages */}
