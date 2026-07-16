@@ -572,7 +572,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
       });
     } catch {
       setSending(false);
-      setError("Couldn't send — check your connection.");
+      setError("Couldn't send, check your connection.");
       return;
     }
     setSending(false);

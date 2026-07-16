@@ -24,13 +24,13 @@ export function ReportDecision({ token, reporterName, reportedName }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setState("error");
-        setMessage(data?.error || "Something went wrong — please try again.");
+        setMessage(data?.error || "Something went wrong, please try again.");
         return;
       }
       setState("done");
     } catch {
       setState("error");
-      setMessage("Network error — please try again.");
+      setMessage("Network error, please try again.");
     }
   };
 

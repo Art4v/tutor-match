@@ -114,7 +114,7 @@ export async function POST(request) {
     // Admin: the review link.
     await sendEmail({
       to: ADMIN_EMAIL,
-      subject: `Report — ${reporterName} reported ${reportedName}`,
+      subject: `Report: ${reporterName} reported ${reportedName}`,
       html: adminReportEmail({ reporterName, reportedName, category, details, reviewUrl }),
     });
 

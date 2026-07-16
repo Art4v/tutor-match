@@ -61,7 +61,7 @@ export async function POST(request) {
       .eq("id", targetId);
     if (disableErr) {
       console.error("[reports] disable failed:", disableErr);
-      return NextResponse.json({ error: "Could not disable the account — please try again." }, { status: 500 });
+      return NextResponse.json({ error: "Could not disable the account, please try again." }, { status: 500 });
     }
   }
 
@@ -72,7 +72,7 @@ export async function POST(request) {
     .eq("id", reportId);
   if (resolveErr) {
     console.error("[reports] resolve update failed:", resolveErr);
-    return NextResponse.json({ error: "Could not save the decision — please try again." }, { status: 500 });
+    return NextResponse.json({ error: "Could not save the decision, please try again." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, resolution: action.resolution });
