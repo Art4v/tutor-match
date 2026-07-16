@@ -793,6 +793,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         mine={m.sender_id === userId}
                         userId={userId}
                         otherName={thread.name}
+                        frozen={thread.blocked || thread.blockedByOther}
                         highlighted={highlightId === m.id}
                         registerRef={(el) => { messageRefs.current[m.id] = el; }}
                         onReply={beginReply}
@@ -1194,7 +1195,7 @@ function MessageDisclaimerGate({ onAcknowledge }) {
 // ----------------------------------------------------------------------------
 // A single message: bubble + reply quote + reaction pills + hover controls.
 // ----------------------------------------------------------------------------
-function MessageRow({ m, mine, userId, otherName, highlighted, registerRef, onReply, onEdit, onUnsend, onCopy, onReact, onQuoteClick }) {
+function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerRef, onReply, onEdit, onUnsend, onCopy, onReact, onQuoteClick }) {
   const [pop, setPop] = useState(null); // "react" | "menu" | "picker" | null
   const wrapRef = useRef(null);
 
@@ -1223,7 +1224,10 @@ function MessageRow({ m, mine, userId, otherName, highlighted, registerRef, onRe
 
   const react = (emoji) => { onReact(m.id, emoji, myEmoji); setPop(null); };
 
-  const controls = (
+  // A blocked conversation (either direction) is frozen: hide the React / Reply /
+  // ⋯ hover controls entirely. The DB rejects these writes too (0054), so this just
+  // keeps the UI honest instead of offering actions that would silently fail.
+  const controls = frozen ? null : (
     <div ref={wrapRef} className={`flex items-center gap-0.5 ${pop ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
       {/* React */}
       <div className="relative">
@@ -1298,7 +1302,7 @@ function MessageRow({ m, mine, userId, otherName, highlighted, registerRef, onRe
         {/* Bubble + quote + reaction pills */}
         <div className={`flex flex-col ${mine ? "items-end" : "items-start"} min-w-0`}>
           <div
-            onDoubleClick={() => onReact(m.id, THUMB, myEmoji)}
+            onDoubleClick={() => { if (!frozen) onReact(m.id, THUMB, myEmoji); }}
             className="px-3.5 py-2 text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words select-text"
             style={{
               background: mine ? "var(--accent)" : "var(--paper-card)",
@@ -1343,7 +1347,7 @@ function MessageRow({ m, mine, userId, otherName, highlighted, registerRef, onRe
                 <button
                   key={p.emoji}
                   type="button"
-                  onClick={() => onReact(m.id, p.emoji, myEmoji)}
+                  onClick={() => { if (!frozen) onReact(m.id, p.emoji, myEmoji); }}
                   className="inline-flex items-center gap-1 leading-none"
                   style={{
                     padding: "2px 7px",
