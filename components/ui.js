@@ -10,7 +10,10 @@ export function Avatar({ tutor, size = 64, ring = false }) {
       style={{
         width: size,
         height: size,
-        background: tutor.avatarBg,
+        // Longhand (not the `background` shorthand): assigning the shorthand on a
+        // re-render resets background-size back to `auto`, which React then doesn't
+        // re-apply — so a switched avatar rendered hyperzoomed until remount.
+        backgroundColor: tutor.avatarBg,
         color: "var(--ink)",
         borderRadius: "50%",
         fontSize: size * 0.34,

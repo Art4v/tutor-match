@@ -14,9 +14,20 @@ import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { AboutCard } from "./AboutCard";
 import { OwnerProfile } from "./OwnerProfile";
-import { SaveTutorButton } from "@/components/SaveTutorButton";
+import { MessageTutorCard } from "./MessageTutorCard";
+import { TutorBlockProvider } from "./TutorBlockProvider";
+import { ProfileBlockBanner } from "./ProfileBlockBanner";
+import { ProfileSaveButton } from "./ProfileSaveButton";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { Section, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+
+export async function generateMetadata({ params }) {
+  const supabase = createSupabaseServerClient();
+  const tutor = await getTutorBySlug(supabase, params.slug);
+  // Plain-string title flows through the root template -> "MatchTutor · <name>".
+  // No match -> {} falls back to the "MatchTutor" default (page calls notFound).
+  return tutor?.name ? { title: tutor.name } : {};
+}
 
 export default async function ProfilePage({ params }) {
   const supabase = createSupabaseServerClient();
@@ -49,14 +60,17 @@ export default async function ProfilePage({ params }) {
   const tiles = buildCredentialTiles(tutor.credentials);
 
   return (
+    <TutorBlockProvider tutorId={tutor.id} tutorName={tutor.name}>
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden">
       {/* Same cream desk + floating stationery as the featured section. */}
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">
+        {/* Shown only when the signed-in student has blocked this tutor. */}
+        <ProfileBlockBanner tutorName={tutor.name} />
         <SectionReveal hover className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
           {/* Save bookmark — top-right of the banner. Public view only; the
               owner branch above never reaches here. */}
-          <SaveTutorButton tutorId={tutor.id} variant="banner" />
+          <ProfileSaveButton tutorId={tutor.id} variant="banner" />
           <div
             style={{
               height: 140,
@@ -105,6 +119,7 @@ export default async function ProfilePage({ params }) {
 
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
+            <MessageTutorCard tutorSlug={tutor.slug} tutorName={tutor.name} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
             <RatingsCard />
@@ -125,6 +140,7 @@ export default async function ProfilePage({ params }) {
         <Button variant="primary" size="lg" icon="calendar" disabled>Request a lesson</Button>
       </div>
     </div>
+    </TutorBlockProvider>
   );
 }
 

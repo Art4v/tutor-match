@@ -3,7 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyApproveToken } from "@/lib/verifyToken";
 import { VerifyDecision } from "./VerifyDecision";
 
-export const metadata = { title: "Review verification — matchtutor" };
+export const metadata = { title: "Review verification" };
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

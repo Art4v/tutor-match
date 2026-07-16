@@ -15,6 +15,8 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import ChooseRoleForm from "./ChooseRoleForm";
 
+export const metadata = { title: "Choose your role" };
+
 export default async function ChooseRolePage() {
   const supabase = createSupabaseServerClient();
   const {

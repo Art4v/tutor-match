@@ -10,6 +10,8 @@ const HIDDEN_PATHS = new Set([
   "/signup",
   "/forgot-password",
   "/reset-password",
+  // The full-height chat fills the viewport; the footer would sit below the fold.
+  "/messages",
 ]);
 
 // Mounted once in the root layout so the footer appears on every page. Kept as

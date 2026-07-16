@@ -13,6 +13,8 @@ import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
 import { BrowseResultsGrid } from "./BrowseResultsGrid";
 import { BrowseSeed } from "./BrowseSeed";
 
+export const metadata = { title: "Browse" };
+
 const PAGE_SIZE = 24;
 
 function asArray(v) {

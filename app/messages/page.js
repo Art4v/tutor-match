@@ -1,33 +1,82 @@
 // ============================================================================
-// Messaging is disabled for v1.
+// /messages — the two-pane chat page for both students and tutors.
 // ----------------------------------------------------------------------------
-// The original two-pane messages UI is preserved in this file's git history
-// (before lib/data.js was deleted in slice 4). When we revive this feature,
-// either restore from git or rebuild against a real `conversations` table.
-//
-// For now the route stays alive only so old saved links don't 404 — but
-// nothing in the UI links here.
+// Server component: auth-guards, RLS-fetches the caller's conversations, and
+// resolves the two selection query params:
+//   ?c=<conversationId>  preselect an existing thread
+//   ?to=<tutorSlug>      draft/compose mode (student only) — open an EMPTY draft
+//                        to that tutor. No conversation row is created here; it
+//                        is created lazily on the student's first send, so the
+//                        tutor sees nothing until then. If a thread with that
+//                        tutor already exists, we preselect it instead.
 // ============================================================================
 
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTutorBySlug } from "@/lib/supabase/tutors";
+import { getConversations, findConversationWithTutor } from "@/lib/supabase/messaging";
+import { needsMessagesDisclaimer } from "@/lib/messagesDisclaimer";
+import { MessagesClient } from "./MessagesClient";
 
-export default function MessagesDisabledPage() {
+export const metadata = { title: "Messages" };
+export const dynamic = "force-dynamic";
+
+export default async function MessagesPage({ searchParams }) {
+  const supabase = createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const conversations = await getConversations(supabase, user.id);
+
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("role, messages_disclaimer_ack_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  const viewerIsTutor = prof?.role === "tutor";
+  const needsDisclaimer = needsMessagesDisclaimer(prof?.messages_disclaimer_ack_at);
+
+  const cParam = typeof searchParams?.c === "string" ? searchParams.c : null;
+  const toParam = typeof searchParams?.to === "string" ? searchParams.to : null;
+
+  let initialSelectedId = cParam;
+  let draftTutor = null;
+
+  if (toParam) {
+    // Only a student can draft a new conversation. (A tutor hitting ?to= just
+    // sees their normal list — the RPC would reject them anyway.)
+    if (prof?.role === "student") {
+      const tutor = await getTutorBySlug(supabase, toParam);
+      if (tutor) {
+        const existing = await findConversationWithTutor(supabase, user.id, tutor.id);
+        if (existing) {
+          initialSelectedId = existing;
+        } else {
+          draftTutor = {
+            otherId: tutor.id,
+            otherIsTutor: true,
+            slug: tutor.slug,
+            name: tutor.name,
+            avatarImg: tutor.avatarImg,
+            avatarBg: tutor.avatarBg,
+            initial: tutor.initial,
+            verified: tutor.verified,
+          };
+        }
+      }
+    }
+  }
+
   return (
-    <div className="bg-[color:var(--paper-card)]">
-      <div className="max-w-[720px] mx-auto px-6 py-24 text-center">
-        <h1 className="font-hand text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
-          Messaging is coming soon
-        </h1>
-        <p className="text-[15px] text-slate-600 mt-3 leading-[1.55]">
-          We&apos;re focusing on the directory first. Until in-app messaging ships, browse tutors and reach out via the contact details on their profile.
-        </p>
-        <Link
-          href="/browse"
-          className="inline-flex items-center gap-1 mt-6 text-[14px] font-medium text-slate-900 hover:underline"
-        >
-          Browse tutors →
-        </Link>
-      </div>
-    </div>
+    <MessagesClient
+      userId={user.id}
+      viewerIsTutor={viewerIsTutor}
+      initialConversations={conversations}
+      initialSelectedId={initialSelectedId}
+      draftTutor={draftTutor}
+      needsDisclaimer={needsDisclaimer}
+    />
   );
 }

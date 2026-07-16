@@ -4,6 +4,7 @@ import { getSubjects } from "@/lib/supabase/tutors";
 import { subjectLabel } from "@/lib/subjects";
 import { yearRangeLabel } from "@/lib/yearLevels";
 import { generateProfileText } from "@/lib/groq";
+import { isAccountEnabled } from "@/lib/supabase/account";
 
 export const runtime = "nodejs";
 
@@ -76,6 +77,10 @@ export async function POST(request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+  // middleware exempts /api, so enforce "not disabled" here (0052).
+  if (!(await isAccountEnabled(supabase, user.id))) {
+    return NextResponse.json({ error: "Your account is disabled." }, { status: 403 });
   }
 
   const p = profile ?? {};

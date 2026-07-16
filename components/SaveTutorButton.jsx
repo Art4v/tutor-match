@@ -19,7 +19,7 @@ import { useSavedTutors } from "./SavedTutorsProvider";
 //
 // `variant` only tunes size/offset: "card" (compact, sits in the 88px card
 // banner corner) vs "banner" (larger, the 140px profile banner corner).
-export function SaveTutorButton({ tutorId, variant = "card" }) {
+export function SaveTutorButton({ tutorId, variant = "card", disabled = false }) {
   const { isStudent, isLoggedIn, ready, isSaved, toggleSave } = useSavedTutors();
   const [hover, setHover] = useState(false);
   const [coords, setCoords] = useState(null);
@@ -46,9 +46,11 @@ export function SaveTutorButton({ tutorId, variant = "card" }) {
   };
 
   const tooltipText = isStudent
-    ? saved
-      ? "Saved"
-      : "Save tutor"
+    ? disabled
+      ? "Unblock to save this tutor"
+      : saved
+        ? "Saved"
+        : "Save tutor"
     : "Sign up now to save this tutor!";
 
   // Measure the button relative to the viewport so the fixed-position tooltip
@@ -132,17 +134,19 @@ export function SaveTutorButton({ tutorId, variant = "card" }) {
       >
         <button
           type="button"
+          disabled={disabled}
           aria-pressed={saved}
-          aria-label={saved ? "Remove from saved tutors" : "Save tutor"}
+          aria-label={disabled ? "Unblock to save this tutor" : saved ? "Remove from saved tutors" : "Save tutor"}
           onClick={(e) => {
             // The card variant overlays a full-card <Link>; keep the click from
             // navigating.
             e.preventDefault();
             e.stopPropagation();
+            if (disabled) return;
             toggleSave(tutorId);
           }}
-          className="inline-flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-          style={pill}
+          className="inline-flex items-center justify-center transition-transform hover:scale-110 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          style={{ ...pill, opacity: disabled ? 0.5 : 1 }}
         >
           <Icon name={saved ? "bookmark-fill" : "bookmark"} size={iconSize} />
         </button>

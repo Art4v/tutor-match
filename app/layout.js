@@ -14,21 +14,21 @@ const SITE_DESCRIPTION =
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "matchtutor",
-    template: "%s · matchtutor",
+    default: "MatchTutor",
+    template: "MatchTutor · %s",
   },
   description: SITE_DESCRIPTION,
   openGraph: {
     type: "website",
-    siteName: "matchtutor",
-    title: "matchtutor — verified tutors across Australia",
+    siteName: "MatchTutor",
+    title: "MatchTutor · verified tutors across Australia",
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     locale: "en_AU",
   },
   twitter: {
     card: "summary_large_image",
-    title: "matchtutor — verified tutors across Australia",
+    title: "MatchTutor · verified tutors across Australia",
     description: SITE_DESCRIPTION,
   },
 };

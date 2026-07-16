@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorProfileForEditor } from "@/lib/supabase/tutors";
 import { OnboardingWizard } from "./OnboardingWizard";
 
-export const metadata = { title: "Welcome — matchtutor" };
+export const metadata = { title: "Welcome" };
 
 export default async function OnboardingPage() {
   const supabase = createSupabaseServerClient();

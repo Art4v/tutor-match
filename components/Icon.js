@@ -13,6 +13,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
   switch (name) {
     case "tree": return <svg {...props}><path d="M12 3.2C13.6 3.2 14.8 4.3 14.9 5.7 16.7 5.4 18.3 6.7 18 8.5 19.4 9.3 19.5 11.3 18.1 12.3 18.4 13.9 16.9 15.1 15.3 14.6 14.6 15.6 13 15.8 12 15.1 11 15.8 9.4 15.6 8.7 14.6 7.1 15.1 5.6 13.9 5.9 12.3 4.5 11.3 4.6 9.3 6 8.5 5.7 6.7 7.3 5.4 9.1 5.7 9.2 4.3 10.4 3.2 12 3.2Z"/><path d="M12 21V8"/><path d="M12 12 9.2 9.8"/><path d="m12 10.8 2.6-2"/></svg>;
     case "search": return <svg {...props}><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>;
+    case "magnifier": return <svg {...props}><circle cx="9.5" cy="9.5" r="5"/><path d="m13.2 13.2 8 8"/></svg>;
     case "check": return <svg {...props}><path d="M20 6 9 17l-5-5"/></svg>;
     case "check-circle": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>;
     case "check-badge": return <svg {...props}><path d="M12 2 14.6 4.4 17.9 3.7 18.9 6.9 22 8.2 20.9 11.4 22 14.6 18.9 16 17.9 19.2 14.6 18.5 12 21 9.4 18.5 6.1 19.2 5.1 16 2 14.6 3.1 11.4 2 8.2 5.1 6.9 6.1 3.7 9.4 4.4Z"/><path d="m9 12 2 2 4-4"/></svg>;
@@ -35,6 +36,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "alert-triangle": return <svg {...props}><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
     case "shield": return <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>;
     case "shield-check": return <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>;
+    case "ban": return <svg {...props}><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>;
+    case "flag": return <svg {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1Z"/><path d="M4 22v-7"/></svg>;
     case "id-card": return <svg {...props}><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M13 10h5M13 14h5M5 17a4 4 0 0 1 8 0"/></svg>;
     case "graduation":
     case "atar": return <svg {...props}><path d="m22 10-10-5L2 10l10 5 10-5Z"/><path d="M6 12v5a6 6 0 0 0 12 0v-5"/></svg>;
@@ -49,6 +52,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "dot": return <svg {...props} fill="currentColor" stroke="none"><circle cx="12" cy="12" r="4"/></svg>;
     case "filter": return <svg {...props}><path d="M3 5h18l-7 9v6l-4-2v-4Z"/></svg>;
     case "more": return <svg {...props}><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>;
+    case "reply": return <svg {...props}><path d="M9 17 4 12l5-5"/><path d="M4 12h11a5 5 0 0 1 5 5v1"/></svg>;
+    case "copy": return <svg {...props}><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
     case "arrow-right": return <svg {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
     case "arrow-up-right": return <svg {...props}><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>;
     case "plus": return <svg {...props}><path d="M12 5v14M5 12h14"/></svg>;
@@ -65,6 +70,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "list": return <svg {...props}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>;
     case "list-ordered": return <svg {...props}><path d="M10 6h11M10 12h11M10 18h11M4 6V4l-1 .5M4 10H3h2M6 18H4c0-1 2-1.5 2-2.5S5 14 4 14.5"/></svg>;
     case "smile": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>;
+    case "info": return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
+    case "compose": return <svg {...props}><path d="M12 20h9"/><path d="M4 20v-3.5L14.5 6a1.8 1.8 0 0 1 2.5 0l1 1a1.8 1.8 0 0 1 0 2.5L7.5 20Z"/></svg>;
     // Stationery accents (study-desk theme). Faint floating motifs on the
     // desk backdrop — hand-authored to match the 24×24 stroke set.
     case "pencil": return <svg {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
