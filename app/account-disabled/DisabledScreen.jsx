@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// Client half of /account-disabled. Log out works; "Request review" is disabled
-// (future slice). Kept deliberately minimal — a disabled user has nowhere else
-// to go from here.
+// Client half of /account-disabled. Log out is the only action. Kept deliberately
+// minimal — a disabled user has nowhere else to go from here.
 export function DisabledScreen() {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -42,26 +41,6 @@ export function DisabledScreen() {
           </p>
 
           <div className="flex flex-col gap-2.5 mt-7">
-            {/* Inert placeholder — the review-request flow ships in a later slice. */}
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              title="Coming soon"
-              className="inline-flex items-center justify-center gap-2 font-medium w-full cursor-not-allowed"
-              style={{
-                background: "var(--desk)",
-                color: "var(--ink-muted)",
-                border: "1px solid var(--paper-line)",
-                padding: "11px 20px",
-                fontSize: 15,
-                height: 44,
-                borderRadius: 10,
-                opacity: 0.6,
-              }}
-            >
-              Request review
-            </button>
             <button
               type="button"
               onClick={onLogout}
