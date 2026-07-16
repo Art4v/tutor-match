@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
 import { sendEmail, adminReportEmail, reportReceivedEmail } from "@/lib/email/send";
 import { signReportToken } from "@/lib/reportToken";
+import { isAccountEnabled } from "@/lib/supabase/account";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,10 @@ export async function POST(request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+  // middleware exempts /api, so enforce "not disabled" here (0052).
+  if (!(await isAccountEnabled(supabase, user.id))) {
+    return NextResponse.json({ error: "Your account is disabled." }, { status: 403 });
   }
 
   let body;

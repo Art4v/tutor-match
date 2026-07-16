@@ -45,9 +45,13 @@ export async function middleware(request) {
     const onChooser = pathname.startsWith("/choose-role");
     const onDisabled = pathname.startsWith("/account-disabled");
     // Paths a NULL-role (mid-signup) user must still reach: the chooser itself,
-    // auth/API routes, and the policy pages they may want to read first.
+    // auth/API routes, and the policy pages they may want to read first. Also the
+    // disabled screen — the disabled gate below takes precedence and parks them
+    // there, so the role gate must not pull a NULL-role disabled user off it to
+    // /choose-role (that ping-pong was an infinite redirect loop).
     const exempt =
       onChooser ||
+      onDisabled ||
       pathname.startsWith("/auth") ||
       pathname.startsWith("/api") ||
       pathname.startsWith("/terms-of-service") ||
