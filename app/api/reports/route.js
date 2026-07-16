@@ -59,6 +59,18 @@ export async function POST(request) {
   }
   const reportedId = conv.student_id === user.id ? conv.tutor_id : conv.student_id;
 
+  // Report => block is a server-owned invariant: ensure the block row exists here,
+  // so the "we've blocked this person" confirmation below is always true rather than
+  // relying on a separate client-side call that may fail. Idempotent (DO NOTHING via
+  // ignoreDuplicates). Placed BEFORE the report insert so the block still lands on
+  // the already-pending duplicate path (which returns early at the 23505 handler).
+  await admin
+    .from("blocked_users")
+    .upsert(
+      { blocker_id: user.id, blocked_id: reportedId },
+      { onConflict: "blocker_id,blocked_id", ignoreDuplicates: true }
+    );
+
   // Insert the report. The partial unique index (0053) makes a re-file while a
   // prior report is still pending raise 23505 — treat that as idempotent success
   // and skip the admin email so we don't spam.
@@ -76,33 +88,43 @@ export async function POST(request) {
     return NextResponse.json({ error: "Could not submit your report." }, { status: 500 });
   }
 
-  // Side effects only on a genuinely new report.
-  const origin = new URL(request.url).origin;
-  const reviewUrl = `${origin}/admin/report?token=${encodeURIComponent(signReportToken(inserted.id))}`;
+  // Side effects only on a genuinely new report. Signing the review token throws
+  // when REPORT_REVIEW_SECRET is unset; if that (or any side effect) fails, delete
+  // the just-inserted row so the report is not stranded — otherwise the 0053 partial
+  // unique index would make every retry a silent "pending" no-op, hiding it from
+  // admins forever. The block above is left in place (it's the protective action).
+  try {
+    const origin = new URL(request.url).origin;
+    const reviewUrl = `${origin}/admin/report?token=${encodeURIComponent(signReportToken(inserted.id))}`;
 
-  // Resolve display names for the admin email.
-  const { data: names } = await admin
-    .from("profiles")
-    .select("id, full_name")
-    .in("id", [user.id, reportedId]);
-  const nameOf = (id) => names?.find((n) => n.id === id)?.full_name || null;
-  const reporterName = nameOf(user.id) || "A user";
-  const reportedName = nameOf(reportedId) || "another user";
+    // Resolve display names for the admin email.
+    const { data: names } = await admin
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", [user.id, reportedId]);
+    const nameOf = (id) => names?.find((n) => n.id === id)?.full_name || null;
+    const reporterName = nameOf(user.id) || "A user";
+    const reportedName = nameOf(reportedId) || "another user";
 
-  // Admin: the review link.
-  await sendEmail({
-    to: ADMIN_EMAIL,
-    subject: `Report — ${reporterName} reported ${reportedName}`,
-    html: adminReportEmail({ reporterName, reportedName, category, details, reviewUrl }),
-  });
+    // Admin: the review link.
+    await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: `Report — ${reporterName} reported ${reportedName}`,
+      html: adminReportEmail({ reporterName, reportedName, category, details, reviewUrl }),
+    });
 
-  // Reporter: "we've got your report" (in-app notification + email).
-  await notifyUser(admin, user.id, {
-    type: "report_received",
-    title: "Report received",
-    body: "Thanks for reporting. We've blocked this person and our team will review the conversation.",
-    email: { subject: "We've received your report", html: reportReceivedEmail({ name: reporterName }) },
-  });
+    // Reporter: "we've got your report" (in-app notification + email).
+    await notifyUser(admin, user.id, {
+      type: "report_received",
+      title: "Report received",
+      body: "Thanks for reporting. We've blocked this person and our team will review the conversation.",
+      email: { subject: "We've received your report", html: reportReceivedEmail({ name: reporterName }) },
+    });
+  } catch (err) {
+    console.error("[reports] side effects failed, rolling back the report row:", err);
+    await admin.from("reports").delete().eq("id", inserted.id);
+    return NextResponse.json({ error: "Could not submit your report. Please try again." }, { status: 500 });
+  }
 
   return NextResponse.json({ status: "filed" });
 }
