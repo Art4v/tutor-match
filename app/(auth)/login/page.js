@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
+import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT } from "@/lib/motion";
@@ -18,6 +19,7 @@ function LoginInner() {
   const linkError = errorParam === "link_invalid";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   // When the sign-in failure is specifically an unconfirmed email, we surface a
@@ -125,14 +127,26 @@ function LoginInner() {
         </Field>
 
         <Field label="Password">
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password"
-            required
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Your password"
+              required
+              autoComplete="current-password"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <Icon name={showPassword ? "eye-off" : "eye"} size={17} />
+            </button>
+          </div>
           <div className="mt-2 text-right">
             <Link
               href="/forgot-password"
@@ -209,16 +223,17 @@ function Field({ label, children }) {
   );
 }
 
-function Input(props) {
+function Input({ className = "", style, ...props }) {
   return (
     <input
       {...props}
-      className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
+      className={`w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none ${className}`}
       style={{
         border: "1px solid var(--paper-line)",
         borderRadius: 8,
         background: "var(--paper-card)",
         transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
+        ...style,
       }}
     />
   );
