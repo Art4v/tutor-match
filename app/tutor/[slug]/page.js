@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTutorBySlug, getFeaturedTutors, getTutorProfileForEditor } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
-import { Avatar, Button } from "@/components/ui";
+import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { SectionReveal } from "@/components/anim/SectionReveal";
 import { RateCard } from "./RateCard";
@@ -14,7 +14,7 @@ import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { AboutCard } from "./AboutCard";
 import { OwnerProfile } from "./OwnerProfile";
-import { MessageTutorCard } from "./MessageTutorCard";
+import { MessageTutorButton } from "./MessageTutorButton";
 import { TutorBlockProvider } from "./TutorBlockProvider";
 import { ProfileBlockBanner } from "./ProfileBlockBanner";
 import { ProfileSaveButton } from "./ProfileSaveButton";
@@ -119,7 +119,6 @@ export default async function ProfilePage({ params }) {
 
           <aside className="space-y-5">
             <RateCard tutor={tutor} />
-            <MessageTutorCard tutorSlug={tutor.slug} tutorName={tutor.name} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
             <RatingsCard />
@@ -137,7 +136,7 @@ export default async function ProfilePage({ params }) {
           </div>
           <div className="text-[11.5px] text-slate-500">Online or in person</div>
         </div>
-        <Button variant="primary" size="lg" icon="calendar" disabled>Request a lesson</Button>
+        <MessageTutorButton tutor={tutor} full={false} />
       </div>
     </div>
     </TutorBlockProvider>

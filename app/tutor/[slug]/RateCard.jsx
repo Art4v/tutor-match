@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { Button } from "@/components/ui";
 import { SectionReveal } from "@/components/anim/SectionReveal";
 import { StaggerChildren, RevealItem } from "@/components/anim/CardReveal";
+import { MessageTutorButton } from "./MessageTutorButton";
 
-export function RateCard({ tutor }) {
+export function RateCard({ tutor, showMessage = true }) {
   const [pkg, setPkg] = useState(0);
   const packages = tutor.packages ?? [];
   const rateLine = "Online or in person · flexible scheduling";
@@ -48,12 +48,13 @@ export function RateCard({ tutor }) {
           </RevealItem>
         ))}
 
-        <RevealItem>
-          <div className="mt-5 space-y-1.5">
-            <Button variant="primary" size="lg" icon="calendar" full disabled>Request a lesson</Button>
-            <div className="text-center text-[12px] text-slate-400">(coming soon)</div>
-          </div>
-        </RevealItem>
+        {showMessage && (
+          <RevealItem>
+            <div className="mt-5">
+              <MessageTutorButton tutor={tutor} />
+            </div>
+          </RevealItem>
+        )}
       </StaggerChildren>
     </SectionReveal>
   );

@@ -332,7 +332,7 @@ export function OwnerProfile({ editorTutor, userId }) {
 
             <EditRegion
               {...regionProps("rate", "rate", 480)}
-              view={<RateCard tutor={display} />}
+              view={<RateCard tutor={display} showMessage={false} />}
               edit={<RateSection tutor={draft} set={set} bare />}
             />
 
