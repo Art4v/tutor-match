@@ -121,7 +121,7 @@ export default async function AdminReportPage({ searchParams }) {
             <Icon name="flag" size={20} />
           </span>
           <div>
-            <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Review report</h1>
+            <h1 className="text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Review report</h1>
             <p className="text-[13.5px] text-slate-500 mt-1">Read the conversation, then disable an account or dismiss.</p>
           </div>
         </div>
@@ -133,13 +133,13 @@ export default async function AdminReportPage({ searchParams }) {
             <Party label="Reported" person={reported} />
           </div>
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--paper-line)" }}>
-            <div className="text-slate-900"><span className="font-semibold">Reason:</span> {categoryLabel}</div>
+            <div className="text-slate-900"><span className="font-medium">Reason:</span> {categoryLabel}</div>
             {report.details && <div className="text-slate-600 text-[13.5px] mt-1.5 whitespace-pre-wrap">{report.details}</div>}
           </div>
         </div>
 
         {/* Conversation transcript */}
-        <h2 className="text-[13px] font-semibold text-slate-500 uppercase tracking-wide mt-6 mb-2">Conversation</h2>
+        <h2 className="text-[13px] font-light text-slate-500 uppercase tracking-wide mt-6 mb-2">Conversation</h2>
         <div className="space-y-2" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16, maxHeight: 360, overflowY: "auto" }}>
           {messages.length === 0 ? (
             <p className="text-[13.5px] text-slate-500">No messages were exchanged.</p>
@@ -148,7 +148,7 @@ export default async function AdminReportPage({ searchParams }) {
               const fromReporter = m.sender_id === report.reporter_id;
               return (
                 <div key={m.id} className="text-[13.5px]">
-                  <span className="font-semibold" style={{ color: fromReporter ? "var(--accent)" : "#DC2626" }}>
+                  <span className="font-medium" style={{ color: fromReporter ? "var(--accent)" : "#DC2626" }}>
                     {fromReporter ? reporter.name : reported.name}:
                   </span>{" "}
                   <span className="text-slate-700 whitespace-pre-wrap">{m.body}</span>
@@ -182,8 +182,8 @@ export default async function AdminReportPage({ searchParams }) {
 function Party({ label, person }) {
   return (
     <div>
-      <div className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-wide">{label}</div>
-      <div className="font-semibold text-slate-900">{person.name}</div>
+      <div className="text-[11.5px] font-medium text-slate-400 uppercase tracking-wide">{label}</div>
+      <div className="font-medium text-slate-900">{person.name}</div>
       {person.role && <div className="text-slate-500 text-[12.5px] capitalize">{person.role}</div>}
       {person.email && <div className="text-slate-500 text-[12.5px]">{person.email}</div>}
     </div>
@@ -208,7 +208,7 @@ function StateCard({ tone, icon, title, body }) {
       <span className="inline-flex items-center justify-center mb-4" style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}>
         <Icon name={icon} size={22} />
       </span>
-      <h1 className="font-hand text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>{title}</h1>
+      <h1 className="text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>{title}</h1>
       <p className="text-[14px] text-slate-500 mt-1.5 leading-[1.55]">{body}</p>
     </section>
   );

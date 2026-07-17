@@ -8,6 +8,7 @@ import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { postAuthDest } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
 
 function LoginInner() {
@@ -55,7 +56,7 @@ function LoginInner() {
         .maybeSingle();
       role = profile?.role ?? null;
     }
-    router.push(role === null ? "/choose-role" : role === "tutor" ? "/profile" : "/");
+    router.push(postAuthDest(role));
     router.refresh();
   };
 
@@ -77,11 +78,11 @@ function LoginInner() {
         border: "1px solid var(--paper-line)",
         borderRadius: "var(--radius-card)",
         padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
+        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
       }}
     >
       <div className="mb-6">
-        <h1 className="font-hand text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+        <h1 className="text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
           Welcome back.
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">
@@ -215,7 +216,7 @@ export default function LoginPage() {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <div className="text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-2.5">
+      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
         {label}
       </div>
       {children}

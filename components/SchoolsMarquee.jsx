@@ -52,23 +52,24 @@ function Half({ schools, ariaHidden }) {
           <span className="flex items-center gap-3.5 px-8">
             {logo && (
               // Fixed box + object-contain so every crest occupies an identical
-              // footprint regardless of its native aspect ratio.
+              // footprint regardless of its native aspect ratio. Desaturated so
+              // 25 different crest palettes read as one calm band.
               <span
                 className="flex items-center justify-center shrink-0"
-                style={{ width: 58, height: 58 }}
+                style={{ width: 48, height: 48 }}
               >
                 <img
                   src={logo}
                   alt={`${name} crest`}
                   loading="lazy"
                   draggable={false}
-                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "grayscale(1)", opacity: 0.65 }}
                 />
               </span>
             )}
             <span
-              className="text-[15px] font-medium whitespace-nowrap"
-              style={{ color: "var(--ink-graphite)" }}
+              className="text-[14px] font-medium whitespace-nowrap"
+              style={{ color: "#5E7A78" }}
             >
               {short || name}
             </span>
@@ -83,24 +84,25 @@ export function SchoolsMarquee() {
   return (
     <section
       className="border-y flex flex-col justify-center"
-      style={{ background: "var(--paper-card)", borderColor: "var(--paper-line)", minHeight: "20vh" }}
+      style={{ background: "#FAFBFB", borderColor: "#EEF2F2", padding: "48px 0" }}
       aria-label="Schools our students come from"
     >
-      <div className="w-full px-6 pt-6 pb-2 text-center">
+      <div className="w-full px-6 pb-6 text-center">
         <span
-          className="font-hand text-[22px]"
-          style={{ color: "var(--ink-graphite)" }}
+          className="text-[13px] font-medium uppercase"
+          style={{ color: "var(--sage)", letterSpacing: "0.1em" }}
         >
           Trusted tutors from
         </span>
       </div>
-      <div className="marquee-mask overflow-hidden pt-2 pb-2">
+      <div className="marquee-mask overflow-hidden">
         <div className="marquee-track">
           <Half schools={SCHOOLS} />
           <Half schools={SCHOOLS} ariaHidden />
         </div>
       </div>
-      <div className="marquee-mask overflow-hidden pt-2 pb-6">
+      {/* 22px between the two counter-scrolling rows. */}
+      <div className="marquee-mask overflow-hidden" style={{ marginTop: 22 }}>
         <div className="marquee-track marquee-track--reverse">
           <Half schools={VIC_SCHOOLS} />
           <Half schools={VIC_SCHOOLS} ariaHidden />

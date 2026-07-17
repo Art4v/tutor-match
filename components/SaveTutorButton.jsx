@@ -17,17 +17,17 @@ import { useSavedTutors } from "./SavedTutorsProvider";
 // narrow column inside the card. Its right edge anchors to the button so it
 // grows leftward and stays on screen.
 //
-// `variant` only tunes size/offset: "card" (compact, sits in the 88px card
-// banner corner) vs "banner" (larger, the 140px profile banner corner).
+// `variant` only tunes size/offset: "card" (sits in the 128px card banner
+// corner) vs "banner" (larger, the 140px profile banner corner).
 export function SaveTutorButton({ tutorId, variant = "card", disabled = false }) {
   const { isStudent, isLoggedIn, ready, isSaved, toggleSave } = useSavedTutors();
   const [hover, setHover] = useState(false);
   const [coords, setCoords] = useState(null);
   const wrapRef = useRef(null);
 
-  const size = variant === "banner" ? 40 : 32;
-  const iconSize = variant === "banner" ? 18 : 15;
-  const offset = variant === "banner" ? 16 : 8;
+  const size = variant === "banner" ? 40 : 38;
+  const iconSize = variant === "banner" ? 18 : 16;
+  const offset = variant === "banner" ? 16 : 14;
 
   const saved = isStudent && isSaved(tutorId);
 
@@ -37,11 +37,11 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false })
     width: size,
     height: size,
     borderRadius: 999,
-    background: "rgba(255,255,255,0.9)",
+    background: "rgba(255,255,255,0.92)",
     backdropFilter: "blur(6px)",
     WebkitBackdropFilter: "blur(6px)",
-    boxShadow: "0 2px 8px -2px rgba(15,23,42,0.25)",
-    color: saved ? "var(--accent)" : "var(--ink-muted)",
+    boxShadow: "0 2px 8px rgba(0,30,30,0.10)",
+    color: saved ? "var(--accent)" : "var(--ink-graphite)",
     transition: "color 160ms ease-out, background 160ms ease-out",
   };
 
@@ -88,7 +88,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false })
               borderRadius: 7,
               letterSpacing: "0.01em",
               zIndex: 1000,
-              boxShadow: "0 6px 16px -6px rgba(42,58,46,0.5)",
+              boxShadow: "0 6px 16px -6px rgba(0,49,47,0.5)",
             }}
           >
             {tooltipText}

@@ -63,11 +63,11 @@ export default function ForgotPasswordPage() {
         border: "1px solid var(--paper-line)",
         borderRadius: "var(--radius-card)",
         padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
+        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
       }}
     >
       <div className="mb-6">
-        <h1 className="font-hand text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+        <h1 className="text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
           Reset your password.
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">
@@ -144,7 +144,7 @@ export default function ForgotPasswordPage() {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <div className="text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-2.5">
+      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
         {label}
       </div>
       {children}

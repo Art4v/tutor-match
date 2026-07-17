@@ -4,14 +4,11 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence, useInView } from "motion/react";
 import { Icon } from "@/components/Icon";
-import { HandwrittenHeading } from "@/components/HandwrittenHeading";
-import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
 
 const STEPS = [
   {
     n: "01",
-    icon: "search",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
     t: "Browse verified profiles",
     b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
@@ -27,7 +24,6 @@ const STEPS = [
   },
   {
     n: "02",
-    icon: "user",
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
     t: "Pick a tutor that fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
@@ -43,7 +39,6 @@ const STEPS = [
   },
   {
     n: "03",
-    icon: "globe",
     image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
     t: "Lessons, reviews, switching",
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
@@ -62,9 +57,9 @@ const STEPS = [
 // ── "Growing tree" desktop canvas (Claude Design: How It Works Tree) ──
 // Trunk/leaf colours are design-local like the rest of this file's inline
 // palette; card surfaces keep the shared CSS variables.
-const TRUNK_COLOR = "#556E48";
-const LEAF_FILL = "#8FAB79";
-const LEAF_STROKE = "#5f7d4e";
+const TRUNK_COLOR = "#0B6B67";
+const LEAF_FILL = "#57B0AB";
+const LEAF_STROKE = "#0B7571";
 const DRAW_EASE = [0.45, 0.05, 0.2, 1];
 const LEAF_POP_EASE = [0.3, 1.5, 0.5, 1];
 
@@ -181,10 +176,11 @@ export function HomeHowItWorks() {
     };
   }, [openIndex]);
 
+  // Clean white band — the tree + sketched step cards carry this section, so it
+  // deliberately skips the desk surface / stationery backdrop that /browse and
+  // the tutor page use.
   return (
-    <section className="relative overflow-hidden min-h-screen flex items-center desk-surface">
-      {/* Same cream desk + floating stationery backdrop the featured section used. */}
-      <DeskBackdrop />
+    <section className="relative overflow-hidden min-h-screen flex items-center" style={{ background: "var(--paper)" }}>
       <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-12">
         <div className="max-w-[820px] mb-8 mx-auto text-center flex flex-col items-center">
           <motion.div
@@ -192,17 +188,26 @@ export function HomeHowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-15% 0px" }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="font-hand text-[20px] mb-1.5"
-            style={{ color: "var(--accent)", fontWeight: 600 }}
+            className="font-hand text-[26px] mb-1.5"
+            style={{ color: "var(--accent)", fontWeight: 400 }}
           >
             How it works
           </motion.div>
-          <HandwrittenHeading
-            as="h2"
-            lines={["Finding the right", "tutor is easy"]}
-            size={50}
-            className="flex flex-col items-center"
-          />
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-15% 0px" }}
+            transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.05 }}
+            style={{
+              fontSize: "clamp(32px, 4vw, 44px)",
+              fontWeight: 300,
+              lineHeight: 1.12,
+              letterSpacing: "-0.025em",
+              color: "var(--ink-graphite)",
+            }}
+          >
+            Finding the right tutor is easy
+          </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -260,8 +265,37 @@ export function HomeHowItWorks() {
 
 // Scattered resting tilts + tape angles so the three step cards read as notes
 // taped to the wall (cycled by card index).
-const CARD_TILT = [-2, 1.5, -1.5];
+const CARD_TILT = [-1.1, 1, -0.8];
 const TAPE_TILT = [-4, 3, -2];
+
+// A leafy sprig tucked against the sketched frame where the branch meets the
+// card: right edge for cards 1 & 3, left (mirrored) for card 2.
+const SPRIGS = [
+  { right: -20, top: 158, flip: false },
+  { left: -20, top: 142, flip: true },
+  { right: -22, top: 112, flip: false },
+];
+
+function CardSprig({ spec }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        zIndex: 4,
+        pointerEvents: "none",
+        top: spec.top,
+        ...(spec.flip ? { left: spec.left, transform: "scaleX(-1)" } : { right: spec.right }),
+      }}
+    >
+      <svg width="52" height="38" viewBox="0 0 52 38">
+        <path d="M50 8 C 40 15 26 20 6 22" fill="none" stroke={TRUNK_COLOR} strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M8 20 C 12 8 26 4 40 8 C 34 20 18 26 8 20 Z" fill={LEAF_FILL} stroke={LEAF_STROKE} strokeWidth="1.4" />
+        <path d="M14 30 C 18 23 27 21 34 24 C 29 32 20 34 14 30 Z" fill={LEAF_FILL} stroke={LEAF_STROKE} strokeWidth="1.3" opacity="0.85" />
+      </svg>
+    </span>
+  );
+}
 
 // Desktop-only tree canvas: the design is authored in fixed 1100×1180
 // coordinates, so below that width the whole canvas (SVG + cards together) is
@@ -535,7 +569,7 @@ function GroundDoodles({ on }) {
         />
         <path
           d="M-8 -9 C -8 -17 8 -17 8 -9 Z"
-          fill="rgba(176,94,59,0.28)"
+          fill="rgba(1,103,100,0.28)"
           stroke={TRUNK_COLOR}
           strokeWidth={1.8}
           strokeLinejoin="round"
@@ -600,35 +634,42 @@ function FallingLeaf({ x, y, drop, on, delay, dur }) {
   );
 }
 
-const cardShakeHover = {
+// Shared hover motion: a -4px lift plus the little settle-wobble.
+const CARD_LIFT = {
   y: -4,
   rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-  boxShadow: "0 18px 40px -24px rgba(60,55,45,0.28), 0 0 28px rgba(94,122,90,0.22), 0 0 10px rgba(94,122,90,0.16)",
-  borderColor: "var(--accent-line)",
-  backgroundColor: "var(--accent-softer)",
-  transition: {
-    y: { duration: 0.42, ease: EASE_OUT },
-    rotate: {
-      duration: 0.62,
-      ease: "easeOut",
-      times: [0, 0.18, 0.4, 0.62, 0.82, 1],
-    },
-    boxShadow: { duration: 0.42, ease: EASE_OUT },
-    borderColor: { duration: 0.3, ease: EASE_OUT },
-    backgroundColor: { duration: 0.3, ease: EASE_OUT },
+};
+const CARD_LIFT_TRANSITION = {
+  y: { duration: 0.42, ease: EASE_OUT },
+  rotate: {
+    duration: 0.62,
+    ease: "easeOut",
+    times: [0, 0.18, 0.4, 0.62, 0.82, 1],
   },
+};
+
+// Every card (tree and mobile stack alike) is framed by the sketched SVG path,
+// so hover is lift + wobble ONLY. Animating boxShadow/borderColor/
+// backgroundColor here would paint the rectangle the sketched outline exists to
+// avoid.
+const cardShakeHoverSketch = {
+  ...CARD_LIFT,
+  transition: { ...CARD_LIFT_TRANSITION },
 };
 
 function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView, emphasized = false }) {
   const [hover, setHover] = useState(false);
   const tilt = CARD_TILT[index % CARD_TILT.length];
   const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
-  // Wobble around the resting tilt (so hover doesn't snap the card straight).
-  const hoverAnim = { ...cardShakeHover, rotate: cardShakeHover.rotate.map((r) => tilt + r) };
   // Mobile stack (no inView prop): entrance via the parent grid's stagger
   // variants, as before. Desktop tree: the slot wrapper animates the entrance,
   // so the card root only carries its resting tilt.
   const treeMode = inView !== undefined;
+  // Wobble around the resting tilt (so hover doesn't snap the card straight).
+  const hoverAnim = {
+    ...cardShakeHoverSketch,
+    rotate: cardShakeHoverSketch.rotate.map((r) => tilt + r),
+  };
   const entrance =
     !treeMode
       ? {
@@ -648,27 +689,38 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
       onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
-        border: "1px solid var(--paper-line)",
-        background: emphasized ? "var(--accent-softer)" : "var(--paper-card)",
-        boxShadow: "var(--card-shadow)",
+        // Cards are framed by a hand-sketched SVG path (below) that supplies both
+        // the outline and the white fill, so they carry no CSS
+        // border/background/shadow of their own — a rectangular box behind the
+        // wobbly outline is exactly what the design rules out.
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
-        willChange: "transform, box-shadow",
+        willChange: "transform",
       }}
     >
-      {/* Washi tape pinning the note to the wall. */}
-      <span
-        aria-hidden="true"
-        className="washi-tape"
-        style={{ top: -9, left: "50%", transform: `translateX(-50%) rotate(${tapeTilt}deg)`, zIndex: 5 }}
-      />
+      {/* Sketched frame on both layouts. Tree cards hang a sprig off the edge
+          where the branch meets them; the mobile stack has no branch to answer
+          to, so it keeps the washi tape pinning the note to the wall. */}
+      <SketchFrame emphasized={emphasized} />
+      {treeMode ? (
+        <CardSprig spec={SPRIGS[index % SPRIGS.length]} />
+      ) : (
+        <span
+          aria-hidden="true"
+          className="washi-tape"
+          style={{ top: -9, left: "50%", transform: `translateX(-50%) rotate(${tapeTilt}deg)`, zIndex: 5 }}
+        />
+      )}
       <button
         type="button"
         onClick={isOpen ? undefined : onOpen}
-        className={`${treeMode ? "p-7" : "p-6"} block relative overflow-hidden text-left w-full focus:outline-none bg-transparent`}
+        className={`${treeMode ? "" : "p-6 overflow-hidden"} block relative text-left w-full focus:outline-none bg-transparent`}
         style={{
           borderRadius: "var(--radius-card)",
           cursor: isOpen ? "default" : "pointer",
+          // Tree cards use the design's asymmetric padding inside the sketched
+          // frame; the mobile stack keeps its uniform p-6.
+          ...(treeMode ? { padding: "34px 32px 38px" } : {}),
         }}
       >
         <CardFrontInner step={step} hover={hover} emphasized={emphasized} tall={treeMode} />
@@ -688,13 +740,48 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
   );
 }
 
+// Hand-sketched card frame: a deliberately wobbly rounded rectangle drawn as one
+// SVG path, filled white and stroked in the tree's ink. `preserveAspectRatio
+// ="none"` stretches the 400x460 path to whatever box the card occupies, and the
+// drop-shadow filters follow the sketched silhouette (a CSS box-shadow would
+// betray the rectangle the outline is pretending not to be).
+const SKETCH_D =
+  "M14 22 C 80 14 180 18 386 16 C 392 120 388 300 390 440 C 280 448 120 444 12 446 C 8 320 12 140 14 22 Z";
+
+function SketchFrame({ emphasized = false }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 400 460"
+      preserveAspectRatio="none"
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        filter: "drop-shadow(0 2px 4px rgba(0,30,30,0.05)) drop-shadow(0 18px 28px rgba(0,49,47,0.10))",
+      }}
+    >
+      <path
+        d={SKETCH_D}
+        fill={emphasized ? "var(--accent-softer)" : "#FFFFFF"}
+        stroke={TRUNK_COLOR}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeOpacity={0.55}
+      />
+    </svg>
+  );
+}
+
 function CardFrontInner({ step, hover = true, emphasized = false, tall = false }) {
   return (
     <>
       {step.image && (
         <div
-          className="relative mb-4 overflow-hidden"
-          style={{ borderRadius: 12, height: tall ? 122 : 88, border: "1px solid var(--accent-line)" }}
+          className="relative overflow-hidden"
+          style={{ borderRadius: 10, height: tall ? 140 : 88 }}
         >
           <img
             src={step.image.src}
@@ -716,45 +803,30 @@ function CardFrontInner({ step, hover = true, emphasized = false, tall = false }
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(180deg, rgba(94,122,90,0.05) 0%, rgba(94,122,90,0.12) 100%)",
+              background: "linear-gradient(180deg, rgba(1,103,100,0.05) 0%, rgba(1,103,100,0.12) 100%)",
               opacity: hover ? 0 : 1,
               transition: "opacity 360ms ease-out",
             }}
           />
         </div>
       )}
-      <div className="flex items-start justify-between mb-5">
-        <div
-          className="font-display tabular-nums"
-          style={{
-            fontSize: 40,
-            lineHeight: 1,
-            fontWeight: 500,
-            color: "var(--accent)",
-            letterSpacing: "-0.04em",
-          }}
+      {/* Caveat step number sits on the title's baseline, per the design. The
+          icon tile the old card carried is gone: the design pairs the number
+          with the title and nothing else. */}
+      <div className="flex items-baseline gap-3" style={{ marginTop: step.image ? 18 : 0 }}>
+        <span
+          className="font-hand"
+          style={{ fontSize: 40, lineHeight: 1, fontWeight: 400, color: "var(--accent)" }}
         >
-          {step.n}
-        </div>
-        <div
-          className="flex items-center justify-center"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            background: hover || emphasized ? "var(--accent)" : "var(--accent-softer)",
-            color: hover || emphasized ? "#FBF7EC" : "var(--accent)",
-            border: "1px solid var(--accent-line)",
-            transition: "background-color 220ms ease-out, color 220ms ease-out",
-          }}
+          {step.n}.
+        </span>
+        <span
+          style={{ fontSize: 19, fontWeight: 400, color: "var(--ink-graphite)", letterSpacing: "-0.015em" }}
         >
-          <Icon name={step.icon} size={16} />
-        </div>
+          {step.t}
+        </span>
       </div>
-      <div className="text-[17px] font-semibold text-[color:var(--ink)] mb-2 tracking-tight">
-        {step.t}
-      </div>
-      <p className="text-[13px] text-[color:var(--ink-muted)] leading-[1.5]">{step.b}</p>
+      <p style={{ fontSize: 14, color: "var(--ink-muted)", lineHeight: 1.55, margin: "10px 0 0" }}>{step.b}</p>
     </>
   );
 }
@@ -778,7 +850,7 @@ function ExpandedOverlay({ openIndex, sourceRect, onRequestClose, onClose, onExi
         >
           <motion.div
             className="absolute inset-0"
-            style={{ background: "rgba(40, 38, 34, 0.55)", backdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(0, 30, 30, 0.55)", backdropFilter: "blur(2px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -850,7 +922,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
     WebkitBackfaceVisibility: "hidden",
     background: "var(--paper-card)",
     border: "1px solid var(--paper-line)",
-    boxShadow: "0 40px 80px -30px rgba(40,38,34,0.45)",
+    boxShadow: "0 40px 80px -30px rgba(0,30,30,0.45)",
     overflow: "hidden",
   };
 
@@ -913,32 +985,19 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
           </button>
 
           <div className="h-full w-full p-8 sm:p-10 flex flex-col overflow-auto">
-            <div className="flex items-start justify-between mb-6 pr-12">
-              <div
-                className="font-display tabular-nums"
-                style={{
-                  fontSize: 44,
-                  lineHeight: 1,
-                  fontWeight: 500,
-                  color: "var(--accent)",
-                  letterSpacing: "-0.04em",
-                }}
-              >
-                {step.n}
-              </div>
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: "var(--accent)",
-                  color: "#FBF7EC",
-                  border: "1px solid var(--accent-line)",
-                }}
-              >
-                <Icon name={step.icon} size={16} />
-              </div>
+            {/* Number type mirrors CardFrontInner, so the flip doesn't land on a
+                different typeface. Caveat carries its own letter-spacing; don't
+                reintroduce a tracking override here. */}
+            <div
+              className="font-hand mb-6"
+              style={{
+                fontSize: 44,
+                lineHeight: 1,
+                fontWeight: 400,
+                color: "var(--accent)",
+              }}
+            >
+              {step.n}.
             </div>
 
             {step.image && (
@@ -956,8 +1015,8 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
             )}
 
             <h3
-              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink)] leading-[1.15] mb-3"
-              style={{ fontWeight: 500, letterSpacing: "-0.01em" }}
+              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink-graphite)] leading-[1.15] mb-3"
+              style={{ fontWeight: 400, letterSpacing: "-0.015em" }}
             >
               {step.backTitle}
             </h3>
@@ -994,7 +1053,7 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
                 className="inline-flex items-center gap-2 font-display"
                 style={{
                   background: "var(--accent)",
-                  color: "#FBF7EC",
+                  color: "#fff",
                   padding: "12px 18px",
                   borderRadius: 12,
                   fontWeight: 500,

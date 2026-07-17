@@ -67,7 +67,7 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
             position: "absolute",
             right: 12,
             fontSize: 10.5,
-            fontWeight: 600,
+            fontWeight: 500,
             letterSpacing: "0.04em",
             textTransform: "uppercase",
             color: "var(--sage)",

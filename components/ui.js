@@ -2,11 +2,26 @@
 import { useState } from "react";
 import { Icon } from "./Icon";
 
-export function Avatar({ tutor, size = 64, ring = false }) {
+// Optional overrides, all defaulted so existing callers (TopNav chip, profile
+// header, similar-tutor minis) render exactly as before:
+//   radius     — the frame shape; the tutor card uses a rounded square
+//   fontScale  — placeholder initial size, as a fraction of `size`
+//   weight     — placeholder initial weight; the tutor card wants a light 300
+//   ringColor / ringWidth — the surround; the card uses a solid white border
+export function Avatar({
+  tutor,
+  size = 64,
+  ring = false,
+  radius = "50%",
+  fontScale = 0.34,
+  weight = 500,
+  ringColor = "var(--paper-card)",
+  ringWidth = 4,
+}) {
   const img = tutor.avatarImg;
   return (
     <div
-      className="relative flex items-center justify-center font-medium select-none overflow-hidden"
+      className="relative flex items-center justify-center select-none overflow-hidden"
       style={{
         width: size,
         height: size,
@@ -14,11 +29,12 @@ export function Avatar({ tutor, size = 64, ring = false }) {
         // re-render resets background-size back to `auto`, which React then doesn't
         // re-apply — so a switched avatar rendered hyperzoomed until remount.
         backgroundColor: tutor.avatarBg,
-        color: "var(--ink)",
-        borderRadius: "50%",
-        fontSize: size * 0.34,
+        color: "var(--ink-graphite)",
+        borderRadius: radius,
+        fontSize: size * fontScale,
+        fontWeight: weight,
         letterSpacing: "-0.02em",
-        boxShadow: ring ? "0 0 0 4px var(--paper-card)" : "none",
+        boxShadow: ring ? `0 0 0 ${ringWidth}px ${ringColor}` : "none",
         backgroundImage: img ? `url(${img})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -30,8 +46,8 @@ export function Avatar({ tutor, size = 64, ring = false }) {
 }
 
 // Scalloped "verified badge" rosette (the familiar social-media seal shape) in
-// the brand green, with the check knocked out in card cream. The hover tooltip
-// is state-driven (not a native `title`) so it shows reliably even while the
+// deep teal, with the check knocked out in white. The hover tooltip is
+// state-driven (not a native `title`) so it shows reliably even while the
 // surrounding card runs its own hover animation — a moving element resets the
 // native tooltip timer, so it would otherwise never appear on the card.
 export function VerifiedTick({ size = 14 }) {
@@ -39,7 +55,11 @@ export function VerifiedTick({ size = 14 }) {
   return (
     <span
       className="relative inline-flex align-middle"
-      style={{ lineHeight: 0 }}
+      // Nudged down a touch: flex `items-center` centres the tick on the name's
+      // LINE box, whose ascender/descender padding sits above the glyphs, so an
+      // untouched tick reads high. The offset is in `em`, so it inherits the
+      // name's font size and stays proportional at every call site.
+      style={{ lineHeight: 0, top: "0.06em" }}
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
     >
@@ -51,11 +71,11 @@ export function VerifiedTick({ size = 14 }) {
         aria-label="Verified by hand"
       >
         <path
-          fill="var(--accent)"
+          fill="var(--ink-graphite)"
           d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"
         />
         <path
-          fill="#FBF7EC"
+          fill="#fff"
           transform="translate(12 12) scale(0.78) translate(-12 -12)"
           d="M9.8 17.3l-4.2-4.1L7 11.8l2.8 2.7L17 7.4l1.4 1.4-8.6 8.5z"
         />
@@ -73,7 +93,7 @@ export function VerifiedTick({ size = 14 }) {
             borderRadius: 6,
             letterSpacing: "0.01em",
             zIndex: 50,
-            boxShadow: "0 4px 12px -4px rgba(42,58,46,0.45)",
+            boxShadow: "0 4px 12px -4px rgba(0,49,47,0.45)",
           }}
         >
           Verified by hand
@@ -85,7 +105,7 @@ export function VerifiedTick({ size = 14 }) {
 
 export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled, radius = 999 }) {
   const tones = {
-    grey: { bg: active ? "var(--accent)" : "var(--desk)", color: active ? "#FBF7EC" : "var(--ink)", border: active ? "var(--accent)" : "transparent" },
+    grey: { bg: active ? "var(--accent)" : "var(--desk)", color: active ? "#fff" : "var(--ink)", border: active ? "var(--accent)" : "transparent" },
     line: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--paper-line)" },
     cream: { bg: "var(--bg-soft)", color: "var(--ink-muted)", border: "var(--paper-line)" },
     accent: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
@@ -147,11 +167,11 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
 
 export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, radius, ariaLabel }) {
   const variants = {
-    primary: { bg: "var(--accent)", color: "#FBF7EC", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#FBF7EC" },
+    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#fff" },
     outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)", hoverBg: "var(--paper-card)", hoverBorder: "var(--accent)", hoverColor: "var(--accent)" },
     ghost:   { bg: "transparent", color: "var(--ink)", border: "transparent", hoverBg: "var(--accent-softer)", hoverBorder: "transparent", hoverColor: "var(--accent)" },
     soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)", hoverBg: "var(--accent-soft)", hoverBorder: "var(--accent-line)", hoverColor: "var(--accent)" },
-    dark:    { bg: "var(--ink)", color: "#FBF7EC", border: "var(--ink)", hoverBg: "var(--ink-graphite-deep)", hoverBorder: "var(--ink-graphite-deep)", hoverColor: "#FBF7EC" },
+    dark:    { bg: "var(--ink)", color: "#fff", border: "var(--ink)", hoverBg: "var(--ink-graphite-deep)", hoverBorder: "var(--ink-graphite-deep)", hoverColor: "#fff" },
   };
   const sizes = {
     sm: { pad: "6px 12px", fs: 13, h: 32, r: 8 },

@@ -249,7 +249,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
       onMouseDown={(e) => e.preventDefault()} // keep textarea selection
       onClick={onClick}
       className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors"
-      style={active ? { background: "rgba(15,23,42,0.08)", color: "var(--ink)" } : undefined}
+      style={active ? { background: "rgba(0,30,30,0.08)", color: "var(--ink)" } : undefined}
     >
       <Icon name={icon} size={15} strokeWidth={2} />
     </button>
@@ -272,7 +272,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
           {emojiOpen && (
             <div
               className="absolute left-0 top-9 z-30"
-              style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.18)", borderRadius: 12 }}
+              style={{ boxShadow: "0 12px 32px rgba(0,30,30,0.18)", borderRadius: 12 }}
             >
               <EmojiPicker
                 onEmojiClick={(data) => { insert(data.emoji); setEmojiOpen(false); }}
@@ -318,7 +318,7 @@ function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, list
               onClick={runGenerate}
               disabled={genState === "loading" || ai.usage?.remaining === 0}
               className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-md text-[12.5px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition-colors disabled:opacity-60 disabled:cursor-default"
-              style={genState === "loading" || genState === "preview" ? { background: "rgba(15,23,42,0.08)", color: "var(--ink)" } : undefined}
+              style={genState === "loading" || genState === "preview" ? { background: "rgba(0,30,30,0.08)", color: "var(--ink)" } : undefined}
             >
               <Icon name="sparkle" size={15} strokeWidth={2} />
               {genState === "loading" ? "Generating…" : "Generate with AI"}
@@ -440,7 +440,7 @@ function SectionHeader({ title, subtitle, right, icon }) {
   return (
     <header className="flex items-start justify-between gap-4 mb-5">
       <div className="min-w-0">
-        <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+        <h2 className="text-[18px] font-light text-slate-800 tracking-tight flex items-center gap-2">
           {icon && <span className="text-slate-400"><Icon name={icon} size={16} /></span>}{title}
         </h2>
         {subtitle && <p className="text-[13px] text-slate-500 mt-1">{subtitle}</p>}
@@ -1045,9 +1045,9 @@ export function YearLevelsSection({ tutor, set, bare = false }) {
         <div className="relative pt-8 pb-1">
           {/* Floating value labels that track each handle (clamped in-bounds via
               the translateX(-pct%) trick so the ends don't overflow the card). */}
-          <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
+          <span className="absolute top-0 text-[13px] tabular-nums font-medium text-slate-900 whitespace-nowrap"
             style={{ left: `${minPct}%`, transform: `translateX(-${minPct}%)` }}>{yearLabel(min)}</span>
-          <span className="absolute top-0 text-[13px] tabular-nums font-semibold text-slate-900 whitespace-nowrap"
+          <span className="absolute top-0 text-[13px] tabular-nums font-medium text-slate-900 whitespace-nowrap"
             style={{ left: `${maxPct}%`, transform: `translateX(-${maxPct}%)` }}>{yearLabel(max)}</span>
           <div className="relative h-4">
             <div className="absolute left-0 right-0" style={{ top: "50%", transform: "translateY(-50%)", height: 6, borderRadius: 999, background: "var(--paper-line)", zIndex: 1 }} />
@@ -1285,7 +1285,7 @@ export function AvailabilitySection({ tutor, set, bare = false }) {
           const dayBlocks = blocks[d] || [];
           return (
             <div key={d} className="flex flex-wrap items-center gap-2 py-2.5">
-              <div className="w-10 shrink-0 text-[12px] font-semibold text-slate-700 uppercase tracking-wider">{d}</div>
+              <div className="w-10 shrink-0 text-[12px] font-medium text-slate-700 uppercase tracking-wider">{d}</div>
 
               {dayBlocks.length === 0 && (
                 <span className="text-[13px] text-slate-400">Not available</span>
@@ -1427,7 +1427,7 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       <RequestVerification status={tutor.verificationStatus} completionPct={c.pct} />
 
       <Card padding={20}>
-        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Profile visibility</h3>
+        <h3 className="text-[14px] font-light text-slate-800 tracking-tight mb-3">Profile visibility</h3>
         <div className="space-y-1.5">
           {visOptions.map((o) => (
             <button key={o.value} type="button" onClick={() => set({ visibility: o.value })}
@@ -1447,7 +1447,7 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       </Card>
 
       <Card padding={20}>
-        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-3">Public profile link</h3>
+        <h3 className="text-[14px] font-light text-slate-800 tracking-tight mb-3">Public profile link</h3>
         <button
           type="button"
           onClick={copyPublicHref}
@@ -1464,7 +1464,7 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
       </Card>
 
       <Card padding={20}>
-        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight mb-2">Profile completion</h3>
+        <h3 className="text-[14px] font-light text-slate-800 tracking-tight mb-2">Profile completion</h3>
         <div style={{ height: 6, background: "var(--desk)", borderRadius: 999, overflow: "hidden" }}>
           <div style={{ width: `${c.pct}%`, height: "100%", background: c.pct >= 80 ? "var(--accent)" : "var(--ink)", transition: "width 220ms ease" }} />
         </div>
@@ -1503,7 +1503,7 @@ export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, 
         <div className="flex items-center gap-3 min-w-0">
           <Avatar tutor={tutor} size={36} />
           <div className="min-w-0">
-            <div className="text-[14.5px] font-semibold text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your profile"}</div>
+            <div className="text-[14.5px] font-medium text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your profile"}</div>
             <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
               <span className="inline-block" style={{ width: 7, height: 7, borderRadius: "50%", background: dirty ? "#F59E0B" : "#10B981", boxShadow: dirty ? "0 0 0 3px rgba(245,158,11,0.18)" : "0 0 0 3px rgba(16,185,129,0.18)" }} />
               {dirty ? "Unsaved changes" : "All changes saved"}

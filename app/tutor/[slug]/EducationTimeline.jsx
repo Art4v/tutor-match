@@ -65,7 +65,7 @@ export function EducationTimeline({ education }) {
 
           <div className="pb-1 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="text-[14.5px] font-semibold text-slate-900">{e.school}</div>
+              <div className="text-[14.5px] font-medium text-slate-900">{e.school}</div>
               <span
                 className="text-[11px] font-medium px-2 py-0.5 rounded-full text-slate-600"
                 style={{ background: "var(--desk)" }}

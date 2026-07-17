@@ -7,20 +7,19 @@ import { useEffect, useState } from "react";
  *
  * PURELY PRESENTATIONAL — takes the word list as a prop, no data fetching.
  * Rendered `aria-hidden`: the semantic headline text is the parent's
- * `aria-label` (see HandwrittenHeading), so the churn never reaches screen
- * readers.
+ * `aria-label` (see HomeHero), so the churn never reaches screen readers.
  *
  * Props:
  *   words      — string[] to cycle through (renders nothing when empty)
- *   startDelay — ms before the first character (lets the handwritten
- *                clip-wipe finish first), default 1800
+ *   startDelay — ms before the first character (lets the hero's entrance
+ *                settle first), default 600
  *   typeMs / eraseMs / holdMs / gapMs — per-char type/erase speed, full-word
  *                hold, and empty pause between words
  *   className / style — applied to the wrapper span
  */
 export function TypewriterWord({
   words = [],
-  startDelay = 1800,
+  startDelay = 600,
   typeMs = 80,
   eraseMs = 45,
   holdMs = 1600,
@@ -94,7 +93,7 @@ export function TypewriterWord({
     <span
       aria-hidden="true"
       className={className}
-      style={{ color: "var(--sage)", whiteSpace: "nowrap", ...style }}
+      style={{ color: "var(--accent)", whiteSpace: "nowrap", ...style }}
     >
       {shown}
       {!reduced && (
@@ -105,7 +104,7 @@ export function TypewriterWord({
             width: 3,
             height: "0.9em",
             borderRadius: 2,
-            background: "var(--sage)",
+            background: "var(--accent)",
             verticalAlign: "-0.08em",
             marginLeft: 3,
           }}

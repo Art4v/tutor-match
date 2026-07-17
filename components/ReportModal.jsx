@@ -37,7 +37,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center px-4"
-        style={{ background: "rgba(15,23,42,0.5)" }}
+        style={{ background: "rgba(0,30,30,0.5)" }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-already-title"
@@ -45,7 +45,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
       >
         <div
           className="bg-[color:var(--paper-card)] w-full"
-          style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)", textAlign: "center" }}
+          style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)", textAlign: "center" }}
           onClick={(e) => e.stopPropagation()}
         >
           <span
@@ -54,7 +54,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
           >
             <Icon name="flag" size={22} />
           </span>
-          <h2 id="report-already-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
+          <h2 id="report-already-title" className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink)" }}>
             Already reported
           </h2>
           <p className="text-[13.5px] text-slate-600 mt-1.5">
@@ -95,7 +95,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center px-4"
-        style={{ background: "rgba(15,23,42,0.5)" }}
+        style={{ background: "rgba(0,30,30,0.5)" }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-sent-title"
@@ -103,7 +103,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
       >
         <div
           className="bg-[color:var(--paper-card)] w-full"
-          style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)", textAlign: "center" }}
+          style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)", textAlign: "center" }}
           onClick={(e) => e.stopPropagation()}
         >
           <span
@@ -112,7 +112,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
           >
             <Icon name="check-circle" size={22} />
           </span>
-          <h2 id="report-sent-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
+          <h2 id="report-sent-title" className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink)" }}>
             Report sent
           </h2>
           <p className="text-[13.5px] text-slate-600 mt-1.5">
@@ -146,7 +146,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(15,23,42,0.5)" }}
+      style={{ background: "rgba(0,30,30,0.5)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-modal-title"
@@ -154,7 +154,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
     >
       <div
         className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -165,7 +165,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
             <Icon name="flag" size={18} />
           </span>
           <div>
-            <h2 id="report-modal-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "#B91C1C" }}>
+            <h2 id="report-modal-title" className="text-[17px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
               Report and block {name || "this person"}?
             </h2>
             <p className="text-[13.5px] text-slate-600 mt-1.5">
@@ -176,7 +176,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
 
         {/* Category picker */}
         <fieldset className="mt-5">
-          <legend className="text-[12.5px] font-semibold text-slate-500 mb-2">Reason</legend>
+          <legend className="text-[12.5px] font-medium text-slate-500 mb-2">Reason</legend>
           <div className="flex flex-col gap-1">
             {REPORT_CATEGORIES.map((c) => (
               <label
@@ -201,7 +201,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
 
         {/* Optional details */}
         <label className="block mt-4">
-          <span className="text-[12.5px] font-semibold text-slate-500">Details (optional)</span>
+          <span className="text-[12.5px] font-medium text-slate-500">Details (optional)</span>
           <textarea
             value={details}
             onChange={(e) => setDetails(e.target.value.slice(0, MAX_DETAILS))}

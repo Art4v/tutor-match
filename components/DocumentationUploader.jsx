@@ -188,7 +188,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
   return (
     <div>
       <div className="flex items-center gap-2">
-        <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Documentation</h2>
+        <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Documentation</h2>
         <span className="ml-auto text-[11px] text-slate-400 tabular-nums">{count}/{MAX_TUTOR_DOCS}</span>
       </div>
       <p className="text-[13px] text-slate-500 mt-1 mb-5">

@@ -1,10 +1,10 @@
 import { Icon } from "@/components/Icon";
 
 /**
- * Cream "desk" backdrop — a faint paper-grain wash plus a few small stationery
- * motifs (pencil, ruler, paperclip, …) that gently sway, like odds and ends
- * scattered on a desk. Purely decorative: `aria-hidden`, `pointer-events-none`,
- * and absolutely filling its (relatively-positioned) parent.
+ * "Desk" backdrop — a few small stationery motifs (pencil, ruler, paperclip, …)
+ * that gently sway, like odds and ends scattered on a desk. Purely decorative:
+ * `aria-hidden`, `pointer-events-none`, and absolutely filling its
+ * (relatively-positioned) parent.
  *
  * No client hooks — the float is the CSS-only `.leaf-sway`, so this renders fine
  * inside server components (the tutor page) as well as client ones.
@@ -12,8 +12,7 @@ import { Icon } from "@/components/Icon";
  * Mirrors the home hero's botanical-sprig pattern (HomeHero.jsx), swapping the
  * leaves for stationery. Motifs sit toward the margins and at low opacity so
  * they stay behind the content without hurting legibility. Vertical positions
- * are percentages, so they spread across both the short featured section and
- * the tall tutor page.
+ * are percentages, so they spread across the tall tutor page as well as /browse.
  */
 const MOTIFS = [
   { name: "pencil",     top: "8%",  left: "4%",   size: 64, opacity: 0.16, dur: "7s",   delay: "0s" },
@@ -29,9 +28,6 @@ const MOTIFS = [
 export function DeskBackdrop({ className = "" }) {
   return (
     <div aria-hidden="true" className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
-      {/* Faint paper grain for a sketched-desk feel. */}
-      <div className="absolute inset-0 paper-grain opacity-[0.5]" />
-
       {/* Scattered stationery motifs, gently swaying. */}
       {MOTIFS.map((m, i) => (
         <div

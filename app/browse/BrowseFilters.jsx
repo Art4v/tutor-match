@@ -146,7 +146,7 @@ export function BrowseFilters({
   return (
     <aside className="space-y-6">
       <div>
-        <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+        <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
           {searchQuery ? <>Results for &ldquo;{searchQuery}&rdquo;</> : "All tutors"}
         </h1>
         <div className="text-[14px] text-slate-500 mt-1 tabular-nums">
@@ -470,7 +470,7 @@ function FilterGroup({ title, children }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-2.5 hover:text-slate-700"
+        className="w-full flex items-center justify-between text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5 hover:text-slate-700"
         aria-expanded={open}
       >
         <span>{title}</span>

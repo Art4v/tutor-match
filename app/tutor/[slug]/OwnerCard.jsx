@@ -73,7 +73,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
       <SectionReveal hover style={{ backgroundColor: "var(--paper-card)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)", backgroundImage: "repeating-linear-gradient(0deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(180deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(270deg, var(--line-strong) 0 10px, transparent 10px 20px)", backgroundSize: "2px 100%, 100% 2px, 2px 100%, 100% 2px", backgroundPosition: "0 0, 0 0, 100% 0, 0 100%", backgroundRepeat: "no-repeat" }}>
         <div className="flex items-center gap-2 mb-3">
           <Icon name="eye" size={15} className="text-slate-500" />
-          <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Your profile</h3>
+          <h3 className="text-[14px] font-light text-slate-800 tracking-tight">Your profile</h3>
           <span className="ml-auto text-[11.5px] text-slate-400">Only you see this</span>
         </div>
 
@@ -111,7 +111,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
         {/* Visibility */}
         <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
           <div className="flex items-center gap-2 mb-2.5">
-            <h4 className="text-[13px] font-semibold text-slate-900">Visibility</h4>
+            <h4 className="text-[13px] font-light text-slate-800">Visibility</h4>
             {savingVis && <span className="text-[11.5px] text-slate-400">Saving…</span>}
             {savedVis && !savingVis && (
               <span className="text-[11.5px] inline-flex items-center gap-1" style={{ color: "var(--accent)" }}>
@@ -142,7 +142,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
 
         {/* Share link */}
         <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
-          <h4 className="text-[13px] font-semibold text-slate-900 mb-2">Public profile link</h4>
+          <h4 className="text-[13px] font-light text-slate-800 mb-2">Public profile link</h4>
           <button type="button" onClick={copyLink} title={copied ? "Copied!" : "Click to copy"}
             className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-100"
             style={{ background: "var(--bg-soft)", borderRadius: 10 }}>

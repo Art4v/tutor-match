@@ -82,9 +82,9 @@ export function SchoolPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[64px] text-left transition-colors hover:bg-[color:var(--accent-softer)]"
+        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[52px] sm:h-[54px] text-left transition-colors rounded-[10px] hover:bg-[color:var(--accent-softer)]"
       >
-        <Icon name="graduation" size={16} className="text-[color:var(--sage)] shrink-0" />
+        <Icon name="graduation" size={16} className="text-[color:var(--accent)] shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-[10px] sm:text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
           <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (singleLabel ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
@@ -114,7 +114,7 @@ export function SchoolPicker({
     <div
       ref={wrapRef}
       className={variant === "bar" ? "relative border-r last:border-r-0" : "relative"}
-      style={variant === "bar" ? { borderColor: "var(--line)" } : undefined}
+      style={variant === "bar" ? { borderColor: "#EEF2F2" } : undefined}
     >
       {trigger}
 
@@ -136,7 +136,7 @@ export function SchoolPicker({
             ...panelWidth,
             border: "1px solid var(--paper-line)",
             borderRadius: 12,
-            boxShadow: "0 10px 24px -8px rgba(15,23,42,0.18)",
+            boxShadow: "0 10px 24px -8px rgba(0,30,30,0.18)",
           }}
         >
           {/* Search */}

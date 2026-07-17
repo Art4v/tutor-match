@@ -11,6 +11,7 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { homeFor } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
 
 const OPTIONS = [
@@ -58,8 +59,8 @@ export default function ChooseRoleForm() {
       return;
     }
     // Tutors continue into their profile (which routes on to onboarding);
-    // students land on the home page. Refresh so the nav re-reads the new role.
-    router.push(selected === "tutor" ? "/profile" : "/");
+    // students land on the tutor list. Refresh so the nav re-reads the new role.
+    router.push(homeFor(selected));
     router.refresh();
   };
 
@@ -73,11 +74,11 @@ export default function ChooseRoleForm() {
         border: "1px solid var(--paper-line)",
         borderRadius: "var(--radius-card)",
         padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(15,23,42,0.18)",
+        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
       }}
     >
       <div className="mb-6">
-        <h1 className="font-hand text-[30px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+        <h1 className="text-[30px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
           How will you use{" "}
           <span style={{ fontWeight: 500 }}>
             <span className="text-slate-700">match</span>
@@ -122,7 +123,7 @@ export default function ChooseRoleForm() {
                 <Icon name={opt.icon} size={20} strokeWidth={1.75} />
               </span>
               <span className="min-w-0">
-                <span className="block text-[15px] font-semibold" style={{ color: "var(--ink-graphite)" }}>
+                <span className="block text-[15px] font-medium" style={{ color: "var(--ink-graphite)" }}>
                   {opt.title}
                 </span>
                 <span className="block text-[13px] text-slate-500 leading-[1.5] mt-0.5">{opt.blurb}</span>
@@ -150,7 +151,7 @@ export default function ChooseRoleForm() {
       {confirming && selectedOption && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ background: "rgba(42, 58, 46, 0.45)", backdropFilter: "blur(2px)" }}
+          style={{ background: "rgba(0,49,47, 0.45)", backdropFilter: "blur(2px)" }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="choose-role-confirm-title"
@@ -161,13 +162,13 @@ export default function ChooseRoleForm() {
               border: "1px solid var(--paper-line)",
               borderRadius: "var(--radius-card)",
               padding: 32,
-              boxShadow: "0 30px 80px -40px rgba(15,23,42,0.35)",
+              boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)",
             }}
           >
             <h2
               id="choose-role-confirm-title"
-              className="font-hand text-[30px] leading-tight"
-              style={{ color: "var(--ink-graphite)", fontWeight: 700 }}
+              className="text-[30px] leading-tight"
+              style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
             >
               Continue as {selected === "tutor" ? "a tutor" : "a student/parent"}?
             </h2>

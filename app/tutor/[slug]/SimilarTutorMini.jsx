@@ -10,7 +10,7 @@ const miniVariants = {
   rest: {
     y: 0,
     rotate: 0,
-    boxShadow: "0 0 0 0 rgba(15,23,42,0)",
+    boxShadow: "0 0 0 0 rgba(0,30,30,0)",
     borderColor: "var(--paper-line)",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
@@ -22,7 +22,7 @@ const miniVariants = {
   hover: {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 18px 36px -20px rgba(15,23,42,0.22)",
+    boxShadow: "0 18px 36px -20px rgba(0,30,30,0.22)",
     borderColor: "var(--line-strong)",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
@@ -67,7 +67,10 @@ export function SimilarTutorMini({ tutor }) {
             <Avatar tutor={tutor} size={36} ring />
           </div>
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-hand text-[16px] font-semibold text-slate-900 truncate leading-tight pr-1">
+            <span
+              className="text-[16px] truncate leading-tight"
+              style={{ fontWeight: 400, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
+            >
               {tutor.name}
             </span>
             {tutor.verified && <VerifiedTick size={11} />}
@@ -83,7 +86,7 @@ export function SimilarTutorMini({ tutor }) {
             style={{ borderTop: "1px solid var(--desk)" }}
           >
             <div className="tabular-nums">
-              <span className="text-[13px] font-semibold text-slate-900">${tutor.rate}</span>
+              <span className="text-[13px] font-medium text-slate-900">${tutor.rate}</span>
               <span className="text-[11px] text-slate-400">/hr</span>
             </div>
           </div>

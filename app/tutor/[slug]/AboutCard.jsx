@@ -15,7 +15,7 @@ export function AboutCard({ text }) {
     >
       <StaggerChildren delay={0.2} step={0.1} className="text-[15px] text-slate-600 leading-[1.6]">
         <RevealItem className="mb-5">
-          <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">About</h2>
+          <h2 className="text-[18px] font-light text-slate-800 tracking-tight">About</h2>
         </RevealItem>
         {blocks.map((b, idx) => (
           <RevealItem key={idx} className="mb-3 last:mb-0">

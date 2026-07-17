@@ -637,7 +637,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
         >
             {/* List header: title + new-message (redirects to browse) */}
             <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--paper-line)", height: 64 }}>
-              <h1 className="font-hand text-[26px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+              <h1 className="text-[26px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
                 Messages
               </h1>
               <div className="ml-auto relative group">
@@ -653,7 +653,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                 {/* Instant custom tooltip (native title is too slow to appear). */}
                 <span
                   className="pointer-events-none absolute top-full right-0 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-30"
-                  style={{ background: "var(--ink)", color: "#FBF7EC", fontSize: 11.5, padding: "4px 8px", borderRadius: 7 }}
+                  style={{ background: "var(--ink)", color: "#fff", fontSize: 11.5, padding: "4px 8px", borderRadius: 7 }}
                   role="tooltip"
                 >
                   Browse tutors to message
@@ -695,10 +695,10 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <Avatar tutor={{ avatarImg: r.avatarImg, avatarBg: r.avatarBg, initial: r.initial }} size={40} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[13.5px] font-semibold text-slate-900 truncate">{r.name || "Unknown"}</span>
+                          <span className="text-[13.5px] font-medium text-slate-900 truncate">{r.name || "Unknown"}</span>
                           {r.verified && <VerifiedTick size={13} />}
                           {r.blocked && (
-                            <span className="inline-flex items-center gap-1 shrink-0 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#DC2626" }}>
+                            <span className="inline-flex items-center gap-1 shrink-0 text-[10px] font-medium uppercase tracking-wide" style={{ color: "#DC2626" }}>
                               <Icon name="ban" size={11} /> Blocked
                             </span>
                           )}
@@ -711,7 +711,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                             {r.isDraft ? "New message" : r.lastBody || "No messages yet"}
                           </span>
                           {r.unread > 0 && (
-                            <span className="ml-auto inline-flex items-center justify-center text-[10.5px] font-semibold text-white tabular-nums shrink-0" style={{ minWidth: 17, height: 17, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}>
+                            <span className="ml-auto inline-flex items-center justify-center text-[10.5px] font-medium text-white tabular-nums shrink-0" style={{ minWidth: 17, height: 17, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}>
                               {r.unread > 9 ? "9+" : r.unread}
                             </span>
                           )}
@@ -744,7 +744,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                   <Avatar tutor={{ avatarImg: thread.avatarImg, avatarBg: thread.avatarBg, initial: thread.initial }} size={36} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[14px] font-semibold text-slate-900 truncate">{thread.name || "Unknown"}</span>
+                      <span className="text-[14px] font-medium text-slate-900 truncate">{thread.name || "Unknown"}</span>
                       {thread.verified && <VerifiedTick size={13} />}
                     </div>
                     {thread.otherIsTutor && thread.slug && (
@@ -773,7 +773,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <div
                         role="menu"
                         className="absolute right-0 top-full mt-1.5 z-30 py-1 min-w-[190px]"
-                        style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,0.18)" }}
+                        style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,30,30,0.18)" }}
                       >
                         <MenuItem icon="info" label="Conversation info" onClick={() => { setHeaderMenu(false); setShowInfo(true); }} />
                         {thread.blocked ? (
@@ -842,7 +842,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         <Icon name="ban" size={16} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-semibold text-slate-900">You&apos;ve been blocked</div>
+                        <div className="text-[13px] font-medium text-slate-900">You&apos;ve been blocked</div>
                         <div className="text-[12px] text-slate-500">You can&apos;t send messages in this conversation.</div>
                       </div>
                     </div>
@@ -857,7 +857,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         <Icon name="ban" size={16} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-semibold text-slate-900">You blocked {firstName(thread.name) || "this person"}</div>
+                        <div className="text-[13px] font-medium text-slate-900">You blocked {firstName(thread.name) || "this person"}</div>
                         <div className="text-[12px] text-slate-500">You can&apos;t message each other until you unblock them.</div>
                       </div>
                       <button
@@ -884,7 +884,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         <Icon name={editTarget ? "pencil" : "reply"} size={15} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
+                        <div className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>
                           {editTarget ? "Editing message" : `Replying to ${replyTarget.sender_id === userId ? "yourself" : firstName(thread.name) || "them"}`}
                         </div>
                         <div className="text-[12px] text-slate-500 truncate">{(editTarget || replyTarget).body}</div>
@@ -920,7 +920,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         <Icon name="smile" size={20} />
                       </button>
                       {showEmoji && (
-                        <div className="absolute bottom-full right-0 mb-2 z-30" style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.18)", borderRadius: 12 }}>
+                        <div className="absolute bottom-full right-0 mb-2 z-30" style={{ boxShadow: "0 12px 32px rgba(0,30,30,0.18)", borderRadius: 12 }}>
                           <EmojiPicker
                             onEmojiClick={(data) => insertEmoji(data.emoji)}
                             emojiStyle="native"
@@ -939,7 +939,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       onClick={submit}
                       disabled={sending || !text.trim()}
                       className="inline-flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      style={{ width: 42, height: 42, borderRadius: 12, background: "var(--accent)", color: "#FBF7EC" }}
+                      style={{ width: 42, height: 42, borderRadius: 12, background: "var(--accent)", color: "#fff" }}
                       aria-label={editTarget ? "Save edit" : "Send message"}
                     >
                       <Icon name={editTarget ? "check" : "send"} size={18} />
@@ -1021,7 +1021,7 @@ function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(15,23,42,0.5)" }}
+      style={{ background: "rgba(0,30,30,0.5)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="unsend-confirm-title"
@@ -1029,7 +1029,7 @@ function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
     >
       <div
         className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+        style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -1040,7 +1040,7 @@ function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
             <Icon name="alert-triangle" size={18} />
           </span>
           <div>
-            <h2 id="unsend-confirm-title" className="text-[17px] font-semibold tracking-tight" style={{ color: "#B91C1C" }}>
+            <h2 id="unsend-confirm-title" className="text-[17px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
               Unsend this message?
             </h2>
             <p className="text-[13.5px] text-slate-600 mt-1.5">
@@ -1093,11 +1093,11 @@ function DisclaimerContent({ titleId }) {
         <Icon name="info" size={18} />
       </span>
       <div>
-        <h2 id={titleId} className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
+        <h2 id={titleId} className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink)" }}>
           About these messages
         </h2>
         <p className="text-[13.5px] text-slate-600 mt-1.5">
-          matchtutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
+          MatchTutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
         </p>
         <p className="text-[13.5px] text-slate-600 mt-2.5">
           We are also not responsible for anything that happens off the platform, including if external contact methods are shared here and your communication continues elsewhere.
@@ -1125,7 +1125,7 @@ function MessageInfoModal({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(15,23,42,0.5)" }}
+      style={{ background: "rgba(0,30,30,0.5)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="message-info-title"
@@ -1133,7 +1133,7 @@ function MessageInfoModal({ onClose }) {
     >
       <div
         className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <DisclaimerContent titleId="message-info-title" />
@@ -1171,14 +1171,14 @@ function MessageDisclaimerGate({ onAcknowledge }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(15,23,42,0.5)" }}
+      style={{ background: "rgba(0,30,30,0.5)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="message-gate-title"
     >
       <div
         className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(15,23,42,0.28)" }}
+        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
       >
         <DisclaimerContent titleId="message-gate-title" />
 
@@ -1257,7 +1257,7 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
         {pop === "react" && (
           <div
             className={`absolute bottom-full mb-1.5 z-30 flex items-center gap-0.5 px-1.5 py-1 ${mine ? "right-0" : "left-0"}`}
-            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 999, boxShadow: "0 8px 24px rgba(15,23,42,0.16)" }}
+            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 999, boxShadow: "0 8px 24px rgba(0,30,30,0.16)" }}
           >
             {QUICK_EMOJI.map((e) => (
               <button
@@ -1283,7 +1283,7 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
           </div>
         )}
         {pop === "picker" && (
-          <div className={`absolute bottom-full mb-1.5 z-30 ${mine ? "right-0" : "left-0"}`} style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.18)", borderRadius: 12 }}>
+          <div className={`absolute bottom-full mb-1.5 z-30 ${mine ? "right-0" : "left-0"}`} style={{ boxShadow: "0 12px 32px rgba(0,30,30,0.18)", borderRadius: 12 }}>
             <EmojiPicker
               onEmojiClick={(data) => react(data.emoji)}
               emojiStyle="native"
@@ -1307,7 +1307,7 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
         {pop === "menu" && (
           <div
             className={`absolute bottom-full mb-1.5 z-30 py-1 min-w-[168px] ${mine ? "right-0" : "left-0"}`}
-            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,0.18)" }}
+            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,30,30,0.18)" }}
           >
             <MenuItem icon="copy" label="Copy" onClick={() => { onCopy(m); setPop(null); }} />
             {mine && <MenuItem icon="pencil" label="Edit" onClick={() => { onEdit(m); setPop(null); }} />}
@@ -1328,7 +1328,7 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
             className="px-3.5 py-2 text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words select-text"
             style={{
               background: mine ? "var(--accent)" : "var(--paper-card)",
-              color: mine ? "#FBF7EC" : "var(--ink)",
+              color: mine ? "#fff" : "var(--ink)",
               border: mine ? "1px solid var(--accent)" : "1px solid var(--paper-line)",
               borderRadius: 14,
               borderBottomRightRadius: mine ? 4 : 14,

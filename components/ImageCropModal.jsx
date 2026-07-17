@@ -42,16 +42,16 @@ export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", tit
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(15,23,42,0.55)" }}
+      style={{ background: "rgba(0,30,30,0.55)" }}
       onClick={onCancel}
     >
       <div
         className="bg-[color:var(--paper-card)] w-full max-w-[560px] flex flex-col"
-        style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(15,23,42,0.3)" }}
+        style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,30,30,0.3)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 pt-4 pb-3" style={{ borderBottom: "1px solid var(--desk)" }}>
-          <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
+          <h3 className="text-[15px] font-light text-slate-800">{title}</h3>
           <p className="text-[12.5px] text-slate-500 mt-0.5">Drag to reposition, scroll or use the slider to zoom.</p>
         </div>
 

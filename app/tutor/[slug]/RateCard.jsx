@@ -14,7 +14,7 @@ export function RateCard({ tutor, showMessage = true }) {
       <StaggerChildren delay={0.3} step={0.12}>
         <RevealItem>
           <div className="flex items-baseline gap-1">
-            <span className="text-[34px] font-semibold text-slate-900 tabular-nums tracking-tight">
+            <span className="text-[34px] font-light text-slate-800 tabular-nums tracking-tight">
               ${tutor.rate}
             </span>
             <span className="text-[14px] text-slate-400">/hour</span>
@@ -42,7 +42,7 @@ export function RateCard({ tutor, showMessage = true }) {
                 <div>
                   <div className="text-[13.5px] font-medium">{p.label}</div>
                 </div>
-                <div className="text-[15px] font-semibold tabular-nums">${p.price}</div>
+                <div className="text-[15px] font-medium tabular-nums">${p.price}</div>
               </button>
             </div>
           </RevealItem>

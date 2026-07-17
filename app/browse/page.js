@@ -161,7 +161,7 @@ function EmptyState() {
       >
         <Icon name="search" size={20} />
       </div>
-      <div className="text-[15px] font-semibold text-slate-900 mt-4">
+      <div className="text-[15px] font-medium text-slate-900 mt-4">
         No tutors match those filters
       </div>
       <div className="text-[13.5px] text-slate-500 mt-1">

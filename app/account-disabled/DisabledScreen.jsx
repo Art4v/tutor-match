@@ -32,12 +32,12 @@ export function DisabledScreen() {
           >
             <Icon name="ban" size={24} />
           </span>
-          <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+          <h1 className="text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
             Your account has been disabled
           </h1>
           <p className="text-[14px] text-slate-500 mt-2.5 leading-[1.55]">
             An admin has disabled your account following a report. You can't browse, message, or appear on
-            matchtutor while your account is disabled.
+            MatchTutor while your account is disabled.
           </p>
 
           <div className="flex flex-col gap-2.5 mt-7">

@@ -9,26 +9,6 @@ import { EASE_OUT } from "@/lib/motion";
 import { subjectLabel } from "@/lib/subjects";
 import { stripMarkdown } from "@/lib/richText";
 
-// Brand leaf / sprout mark — decorative overlay on the banner (ported from the
-// design handoff). Absolutely positioned by the caller.
-function LeafMark({ size = 28, color = "#fff", opacity = 1, style }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      opacity={opacity}
-      aria-hidden="true"
-      style={{ position: "absolute", ...style }}
-    >
-      <path d="M32 60 C32 47 31 39 33 31" stroke={color} strokeWidth="3.4" strokeLinecap="round" />
-      <path d="M33 36 C18 35 9 25 10 11 C25 11 35 21 34 35 Z" fill={color} />
-      <path d="M34 31 C48 28 56 16 54 3 C40 5 31 17 33 30 Z" fill={color} />
-    </svg>
-  );
-}
-
 // Credential icon → human label for the stat-cell subtitle, mirroring the
 // editor's CREDENTIAL_TYPES (components/profile-edit/sections.js). The cell
 // uppercases it via CSS, so these stay sentence-case here.
@@ -84,17 +64,27 @@ function FitText({ children, max = 18, min = 10, className = "", style }) {
   );
 }
 
-// A single cell in the ATAR / rate stat strip.
-function StatCell({ value, label, tone = "accent" }) {
-  const color = tone === "accent" ? "var(--accent)" : tone === "muted" ? "var(--sage)" : "var(--ink)";
+// One of the twin stat tiles under the school/location line. `tone` picks the
+// pair from the design: "accent" is the credential tile (teal value on a teal
+// tint), "ink" is the rate tile (near-black value on a neutral tint).
+function StatTile({ value, label, tone = "accent" }) {
+  const tones = {
+    accent: { border: "#DDE9E8", bg: "#F7FBFB", color: "var(--accent)" },
+    ink: { border: "var(--paper-line)", bg: "var(--desk-deep)", color: "var(--ink)" },
+    muted: { border: "var(--paper-line)", bg: "var(--desk-deep)", color: "var(--sage)" },
+  };
+  const t = tones[tone] || tones.accent;
   return (
-    <div className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
-      <FitText max={18} min={10} className="font-extrabold tabular-nums leading-none" style={{ color }}>
+    <div
+      className="flex flex-col items-center justify-center gap-1 min-w-0"
+      style={{ border: `1px solid ${t.border}`, background: t.bg, borderRadius: 11, padding: "9px 8px" }}
+    >
+      <FitText max={21} min={11} className="tabular-nums leading-none" style={{ color: t.color, fontWeight: 300 }}>
         {value}
       </FitText>
       <span
-        className="font-bold uppercase whitespace-nowrap"
-        style={{ fontSize: 9, letterSpacing: "0.04em", color: "var(--sage)" }}
+        className="font-medium uppercase whitespace-nowrap"
+        style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--sage)" }}
       >
         {label}
       </span>
@@ -102,13 +92,13 @@ function StatCell({ value, label, tone = "accent" }) {
   );
 }
 
-// Compact subject chip — slightly smaller than the shared `Chip` so more
-// subjects fit per row on the card.
+// Compact subject pill — fully rounded teal-tint chip, smaller than the shared
+// `Chip` so more subjects fit per row on the card.
 function SubjectChip({ children }) {
   return (
     <span
       className="inline-flex items-center font-medium whitespace-nowrap"
-      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 7, lineHeight: 1.2, color: "var(--ink-2, var(--ink))", background: "var(--paper-card)", border: "1px solid var(--paper-line)" }}
+      style={{ fontSize: 12, padding: "4px 11px", borderRadius: 999, lineHeight: 1.2, color: "#015F5C", background: "var(--pill)" }}
     >
       {children}
     </span>
@@ -215,23 +205,32 @@ function SubjectChipsFill({ subjects, center = false }) {
   );
 }
 
-const CARD_HEIGHT = 504;
+// The design's card is 420x580; we keep close to the original 504px footprint
+// and let the card fill its column (browse grid / hero stack), so the vertical
+// rhythm below is the design's proportions scaled to fit. The extra 26px over
+// the original buys the subject region a guaranteed second row (see
+// SUBJECTS_MIN_H).
+const CARD_HEIGHT = 530;
+
+// Floor for the subject region. SubjectChipsFill only renders WHOLE rows, so
+// this must clear two of them or it silently drops to one: a chip is 12px text
+// at line-height 1.2 plus 4px padding top/bottom (~23px), and rows are 6px
+// apart, so two rows need >= 52px. The surplus keeps the "+N" pill in reach
+// when a tutor has more subjects than fit.
+const SUBJECTS_MIN_H = 56;
 
 // Motion variants: a single source of truth for the hover behaviour. On enter,
 // y eases up to -4px while rotate plays a small back-and-forth wobble that
 // settles on 0; the shadow + border ease in. On leave, every property
 // interpolates back to rest with the same easing — no snapping, no overlap.
 // Both boxShadow strings MUST keep the same shape (same layers, same value
-// count per layer: contact + drop + sheet + glow) — motion can only tween
-// shadows with matching templates; a mismatch makes it swap discretely
-// instead of fading. Layers that exist in only one state fade via alpha.
+// count per layer: contact + drop) — motion can only tween shadows with
+// matching templates; a mismatch makes it swap discretely instead of fading.
 const cardVariants = {
   rest: {
     y: 0,
     rotate: 0,
-    // Cream sheet: soft drop shadow + a faint offset "sheet beneath" so the card
-    // reads like a page in a small stack.
-    boxShadow: "0 1px 2px 0 rgba(60,55,45,0.05), 0 10px 26px -16px rgba(60,55,45,0.22), 5px 7px 0 -3px rgba(120,114,98,0.12), 0 0 22px 0 rgba(94,122,90,0)",
+    boxShadow: "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49,47,0.14)",
     borderColor: "var(--paper-line)",
     transition: {
       y: { duration: 0.45, ease: EASE_OUT },
@@ -243,8 +242,8 @@ const cardVariants = {
   hover: {
     y: -4,
     rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 1px 2px 0 rgba(60,55,45,0), 0 18px 36px -20px rgba(40,38,34,0.26), 7px 9px 0 -3px rgba(120,114,98,0.16), 0 0 22px 0 rgba(94,122,90,0.18)",
-    borderColor: "var(--accent-line)",
+    boxShadow: "0 2px 4px 0 rgba(0,30,30,0.05), 0 22px 48px -20px rgba(0,49,47,0.22)",
+    borderColor: "var(--line-strong)",
     transition: {
       y: { duration: 0.42, ease: EASE_OUT },
       rotate: {
@@ -273,6 +272,9 @@ export function TutorCard({ tutor, showSave = true }) {
   const longBio = stripMarkdown(tutor.bioLong);
   const location = [tutor.suburb, tutor.city].filter(Boolean).join(" · ");
   const school = tutor.highSchool || tutor.university;
+  // Design pairs school and location into one quiet line. Either side can be
+  // missing, so join only what's present rather than emitting a bare "·".
+  const schoolLocation = [school, location].filter(Boolean).join(" · ");
 
   return (
     <motion.div
@@ -280,13 +282,12 @@ export function TutorCard({ tutor, showSave = true }) {
       animate="rest"
       whileHover="hover"
       variants={cardVariants}
-      className="paper-grain"
       style={{
         position: "relative",
         height: CARD_HEIGHT,
         backgroundColor: "var(--paper-card)",
         border: "1px solid var(--paper-line)",
-        borderRadius: "var(--radius-card)",
+        borderRadius: 14,
         overflow: "hidden",
         willChange: "transform, box-shadow",
       }}
@@ -300,39 +301,52 @@ export function TutorCard({ tutor, showSave = true }) {
         className="relative cursor-pointer flex flex-col h-full overflow-hidden"
       >
         {/* Coloured banner — the tutor's uploaded banner image if present, else
-            their backdrop colour. Leaf marks are a decorative overlay. */}
+            their flat backdrop tint. The only full-bleed element on the card. */}
         <div
           className="shrink-0 relative overflow-hidden"
           style={tutor.bannerImg
-            ? { height: 88, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-            : { height: 88, background: tutor.bannerBg ?? tutor.avatarBg }}
-        >
-          {!tutor.bannerImg && (
-            <LeafMark size={84} color="#fff" opacity={0.14} style={{ right: -12, bottom: -20 }} />
-          )}
-        </div>
+            ? { height: 108, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
+            : { height: 108, background: tutor.bannerBg ?? tutor.avatarBg }}
+        />
 
-        <div className="px-4 pb-6 flex flex-col flex-1 min-h-0 items-center text-center">
-          {/* Avatar "crown" — straddles the banner. */}
-          <div className="shrink-0" style={{ marginTop: -50, marginBottom: 6 }}>
-            <Avatar tutor={tutor} size={100} ring />
+        {/* Everything below the banner carries the side padding. */}
+        <div className="flex flex-col flex-1 min-h-0 items-center text-center" style={{ padding: "0 24px 22px" }}>
+          {/* Avatar frame — a rounded square straddling the banner, half over
+              the tint and half over the white card. */}
+          <div className="shrink-0" style={{ marginTop: -58, marginBottom: 12 }}>
+            <Avatar
+              tutor={tutor}
+              size={116}
+              radius={14}
+              fontScale={0.44}
+              weight={300}
+              ring
+              ringColor="#fff"
+              ringWidth={4}
+            />
           </div>
 
-          {/* Name + verified checkmark (kept design, slightly smaller). */}
+          {/* Name + verified rosette. */}
           <div className="flex items-center justify-center gap-1.5 shrink-0 max-w-full">
-            <span className="text-[19px] font-extrabold tracking-[-0.02em] text-[color:var(--ink)] truncate leading-tight">
+            <span
+              className="truncate leading-tight"
+              style={{ fontSize: 22, fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
+            >
               {tutor.name}
             </span>
             {tutor.verified && <VerifiedTick size={15} />}
           </div>
 
-          {/* Tagline (one line, reserved) — no leaf icon. */}
+          {/* Tagline — one line, height reserved so cards stay aligned. */}
           <div
-            className="text-[15px] font-bold text-[color:var(--accent)] mt-1 shrink-0 max-w-full leading-[1.3]"
+            className="mt-1.5 shrink-0 max-w-full leading-[1.3]"
             style={{
+              fontSize: 14.5,
+              fontWeight: 500,
+              color: "var(--accent)",
               minHeight: "1.3em",
               display: "-webkit-box",
-              WebkitLineClamp: 2,
+              WebkitLineClamp: 1,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
             }}
@@ -342,9 +356,11 @@ export function TutorCard({ tutor, showSave = true }) {
 
           {/* Long bio — capped at 2 lines so the centred stack stays compact. */}
           <div
-            className="text-[11.5px] text-[color:var(--ink-muted)] mt-1 shrink-0 leading-[1.5]"
+            className="mt-1 shrink-0 leading-[1.5]"
             style={{
-              minHeight: "1.5em",
+              fontSize: 12.5,
+              color: "var(--ink-muted)",
+              minHeight: "3em",
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
@@ -354,34 +370,21 @@ export function TutorCard({ tutor, showSave = true }) {
             {longBio || " "}
           </div>
 
-          {/* Location — deliberately quieter than the ATAR / rate stats. */}
-          <div className="text-[11.5px] text-[color:var(--sage)] mt-1 flex items-center justify-center gap-1 shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
-            {location ? (
-              <>
-                <Icon name="map-pin" size={10} className="shrink-0" />
-                <span className="truncate">{location}</span>
-              </>
-            ) : (
-              " "
-            )}
-          </div>
-
-          {/* School line. */}
-          <div className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[color:var(--ink)] mt-1 shrink-0 max-w-full" style={{ minHeight: "1.3em" }}>
-            <Icon name="graduation" size={13} className="shrink-0" />
-            <span className="truncate">
-              {school || <span className="text-[color:var(--sage)] font-normal italic">School not listed</span>}
-            </span>
-          </div>
-
-          {/* Stat strip: ATAR · rate. */}
+          {/* School · Location — deliberately quieter than the stat tiles. */}
           <div
-            className="w-full flex items-center mt-2 shrink-0"
-            style={{ padding: "8px 14px", borderRadius: 11, border: "1px solid var(--paper-line)" }}
+            className="mt-1 shrink-0 max-w-full truncate"
+            style={{ fontSize: 12, color: "var(--sage)", minHeight: "1.3em" }}
           >
-            <StatCell value={statValue} label={statLabel} tone={statTone} />
-            <div className="self-stretch" style={{ width: 1, background: "var(--paper-line)" }} />
-            <StatCell value={`$${tutor.rate}`} label="per hr" tone="ink" />
+            {schoolLocation || " "}
+          </div>
+
+          {/* Twin stat tiles: top credential · rate. The left tile follows the
+              tutor's chosen lead credential (see captionForIcon), so it reads
+              "ATAR" for most tutors but "Award" / "Degree" / "State rank" when
+              they've ordered a different one first. */}
+          <div className="w-full grid grid-cols-2 gap-2.5 mt-3 shrink-0">
+            <StatTile value={statValue} label={statLabel} tone={statTone} />
+            <StatTile value={`$${tutor.rate}`} label="per hour" tone="ink" />
           </div>
 
           {/* Subjects fill the gap above the CTA — wrap across as many rows as
@@ -389,15 +392,15 @@ export function TutorCard({ tutor, showSave = true }) {
               space (pinning the CTA to the bottom) but reserves a guaranteed
               two-row minimum (minHeight) so subjects never collapse to nothing
               on content-heavy cards; lighter cards grow it to more rows. */}
-          <div className="w-full flex-1 min-h-0 mt-1.5 mb-2" style={{ minHeight: 50 }}>
+          <div className="w-full flex-1 min-h-0 mt-2.5" style={{ minHeight: SUBJECTS_MIN_H }}>
             <SubjectChipsFill subjects={subjects} center />
           </div>
 
           {/* CTA — visual only; the whole card is already the link, so this is a
               styled span (a nested <button>/<a> inside <a> is invalid). */}
           <span
-            className="w-full shrink-0 inline-flex items-center justify-center gap-1.5 font-semibold text-white"
-            style={{ background: "var(--accent)", borderRadius: 9, padding: "9px 14px", fontSize: 12.5 }}
+            className="w-full shrink-0 inline-flex items-center justify-center gap-1.5 font-medium text-white"
+            style={{ background: "var(--ink-graphite)", borderRadius: 11, padding: "11px 14px", fontSize: 13, marginTop: 12 }}
           >
             View full profile
             <Icon name="arrow-right" size={14} className="shrink-0" />

@@ -140,7 +140,7 @@ export default function VerificationPrompt() {
   return (
     <div
       className="fixed inset-0 z-[90] flex items-center justify-center p-4"
-      style={{ background: "rgba(42, 58, 46, 0.45)", backdropFilter: "blur(2px)" }}
+      style={{ background: "rgba(0,49,47, 0.45)", backdropFilter: "blur(2px)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="verify-prompt-title"
@@ -151,18 +151,18 @@ export default function VerificationPrompt() {
           border: "1px solid var(--paper-line)",
           borderRadius: "var(--radius-card)",
           padding: 32,
-          boxShadow: "0 30px 80px -40px rgba(15,23,42,0.35)",
+          boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)",
         }}
       >
         <h2
           id="verify-prompt-title"
-          className="font-hand text-[34px] leading-none"
-          style={{ color: "var(--ink-graphite)", fontWeight: 700 }}
+          className="text-[34px] leading-none"
+          style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
         >
-          Get verified on matchtutor.
+          Get verified on MatchTutor.
         </h2>
         <p className="text-[14px] text-slate-600 mt-3 leading-[1.55]">
-          Verified tutors get a badge next to their name across matchtutor and rank
+          Verified tutors get a badge next to their name across MatchTutor and rank
           higher in search. Finish your profile and request a review.
         </p>
 

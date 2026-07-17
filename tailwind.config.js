@@ -7,51 +7,51 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        display: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        hand: ["Caveat", "Inter", "cursive"],
+        sans: ["General Sans", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        display: ["General Sans", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        hand: ["Caveat", "General Sans", "cursive"],
       },
       colors: {
-        // Botanical study-journal palette (mirrors the :root tokens in
-        // globals.css so utilities and inline styles can share names).
+        // Cool teal-on-white palette (mirrors the :root tokens in globals.css so
+        // utilities and inline styles can share names).
         accent: {
-          DEFAULT: "#5E7A5A", // eucalyptus
-          hover: "#4C6549",
-          soft: "#DCE3D0", // moss
-          softer: "#EAEFE1",
-          line: "#C7D2BA",
+          DEFAULT: "#016764", // teal
+          hover: "#005958",
+          soft: "#E9F3F2",
+          softer: "#F3F8F8",
+          line: "#CCE2E0",
         },
         ink: {
-          DEFAULT: "#2A3A2E", // deepest green
-          muted: "#3D5440",
+          DEFAULT: "#001E1E", // near-black teal
+          muted: "#33514F",
         },
         paper: {
-          DEFAULT: "#F5F0E4", // warm page base
-          card: "#FBF7EC",
+          DEFAULT: "#FFFFFF", // white page base
+          card: "#FFFFFF",
         },
-        desk: "#E9E2CF", // section surface behind cards
-        stamp: "#B05E3B", // rusty ink-stamp accent
-        // Override Tailwind's default cool `slate` ramp with warm, green-tinted
+        desk: "#F7FBFB", // section surface behind cards
+        stamp: "#016764", // retired rust accent — folded into teal
+        // Override Tailwind's default `slate` ramp with cool, teal-tinted
         // neutrals so every existing `text-slate-*` / `bg-slate-*` /
         // `border-slate-*` utility across the site reads on-brand without
-        // touching each file. Light end → warm paper/desk; dark end → ink green.
+        // touching each file. Light end → white/teal-tint; dark end → teal ink.
         slate: {
-          50: "#F5F0E4",
-          100: "#E9E2CF",
-          200: "#DDD6C4",
-          300: "#C9C0A8",
-          400: "#8DA17E",
-          500: "#6E7D64",
-          600: "#51604A",
-          700: "#3D5440",
-          800: "#33493A",
-          900: "#2A3A2E",
-          950: "#1E2A22",
+          50: "#F7FBFB",
+          100: "#F0F6F6",
+          200: "#E3EAEA",
+          300: "#CCE2E0",
+          400: "#8FA9A7",
+          500: "#6B8A88",
+          600: "#4E6E6C",
+          700: "#33514F",
+          800: "#014848",
+          900: "#012E2D",
+          950: "#001E1E",
         },
       },
       boxShadow: {
-        "ring-accent": "0 0 0 3px rgba(94, 122, 90, 0.25)",
-        "glow-accent": "0 0 0 4px rgba(94, 122, 90, 0.25)",
+        "ring-accent": "0 0 0 3px rgba(1, 103, 100, 0.15)",
+        "glow-accent": "0 0 0 4px rgba(1, 103, 100, 0.15)",
       },
     },
   },
