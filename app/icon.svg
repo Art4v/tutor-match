@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- "Book + sprout" mark, recolored to site tokens (accent #016764, sage #6FA8A5). No tile. -->
-  <g transform="translate(1.7 2.8) scale(0.22)">
+  <!-- "Book + sprout" mark (same geometry as components/Logo.jsx), recolored to
+       site tokens: accent #016764, sage #6FA8A5. No tile.
+
+       The transform is derived from the artwork's real bounding box (94 x 98.9
+       source units, origin 18,13.1) so the mark fills the 32x32 box edge to edge
+       with a 1.5 margin. A favicon is rendered at 16px, so any unused padding is
+       lost detail — don't hand-tweak these numbers, re-measure with getBBox(). -->
+  <g transform="translate(-3.06 -2.34) scale(0.2932)">
     <!-- seedling -->
     <g transform="translate(5 -6)">
       <path d="M60 84 C 60 70 59 58 60 46" fill="none" stroke="#016764" stroke-width="6" stroke-linecap="round"/>
