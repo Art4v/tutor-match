@@ -145,7 +145,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.35 }}
-                className="mt-6 grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-col sm:gap-4"
+                className="mt-6 grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-col sm:gap-6"
               >
                 <FeatureBullet icon="check" short="Verified ATARs">Verified ATARs and marks</FeatureBullet>
                 <FeatureBullet icon="shield" short="Free browsing">Completely free browsing</FeatureBullet>
@@ -180,17 +180,11 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                   label="Subject"
                   placeholder="Any subject"
                 />
-                <div className="pl-1.5 flex items-stretch">
-                  <button
-                    type="button"
-                    onClick={goBrowse}
-                    aria-label="Search"
-                    className="inline-flex items-center justify-center gap-2 font-medium text-white px-5 sm:px-6 transition-colors hover:bg-[color:var(--accent-hover)]"
-                    style={{ background: "var(--accent)", borderRadius: 10, height: 60, fontSize: 14 }}
-                  >
+                {/* Icon-only search button, inset from the bar's edge. */}
+                <div className="px-1.5 flex items-center">
+                  <Button variant="primary" size="lg" onClick={goBrowse} full radius={16} ariaLabel="Search">
                     <Icon name="search" size={18} />
-                    <span className="hidden md:inline">Search Now</span>
-                  </button>
+                  </Button>
                 </div>
               </motion.div>
 
@@ -227,7 +221,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                       is absolutely positioned below it), so the card's vertical
                       centre lines up with the left column's text. The lg nudge
                       re-centres it visually within the right column. */}
-                  <div className="relative w-full max-w-[460px] lg:translate-x-8">
+                  <div className="relative w-full max-w-[460px] lg:translate-x-16">
                     <HeroTutorStack tutors={showcaseTutors} />
                     <SeeAllTutorsLink
                       verifiedCount={verifiedCount}
@@ -313,7 +307,7 @@ function FeatureBullet({ icon, short, children }) {
       <span className="inline-flex items-center justify-center shrink-0" style={{ color: "var(--accent)" }}>
         <Icon name={icon} size={15} />
       </span>
-      <span className="text-[11px] leading-tight sm:text-[15px] sm:font-normal font-medium" style={{ color: "var(--ink)" }}>
+      <span className="text-[11px] leading-tight sm:text-[14px] sm:font-normal font-medium" style={{ color: "var(--ink)" }}>
         <span className="sm:hidden">{short ?? children}</span>
         <span className="hidden sm:inline">{children}</span>
       </span>

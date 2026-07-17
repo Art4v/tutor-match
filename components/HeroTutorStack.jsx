@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Icon } from "@/components/Icon";
 import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -10,6 +9,11 @@ import { EASE_OUT } from "@/lib/motion";
 // the card or it clips.
 const CARD_HEIGHT = 530;
 const CARD_WIDTH = 340;
+// The hero shows the card a touch smaller than the /browse grid does. Done as a
+// transform on the whole stack rather than by shrinking TutorCard's CARD_HEIGHT,
+// which is shared with /browse — and which the card's internal rhythm (notably
+// SUBJECTS_MIN_H's guaranteed two chip rows) is tuned against.
+const STACK_SCALE = 0.96;
 const AUTO_MS = 4500;
 
 /**
@@ -54,10 +58,17 @@ export function HeroTutorStack({ tutors = [] }) {
   return (
     <div
       className="relative w-full max-w-[460px] mx-auto"
-      style={{ height: CARD_HEIGHT }}
+      // Reserve the SCALED height so the shrink doesn't leave a gap underneath
+      // (a transform doesn't affect layout size). The arrows live outside the
+      // scaled wrapper, so they keep their 44px hit target.
+      style={{ height: CARD_HEIGHT * STACK_SCALE }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      <div
+        className="absolute inset-x-0 top-0"
+        style={{ height: CARD_HEIGHT, transform: `scale(${STACK_SCALE})`, transformOrigin: "top center" }}
+      >
       {tutors.map((tutor, i) => {
         // Shortest signed distance from the active card (wrap-around).
         let d = i - active;
@@ -97,6 +108,7 @@ export function HeroTutorStack({ tutors = [] }) {
           </motion.div>
         );
       })}
+      </div>
 
       {n > 1 && (
         <>
@@ -108,6 +120,10 @@ export function HeroTutorStack({ tutors = [] }) {
   );
 }
 
+// Minimal arrow: a bare, vertically elongated chevron in faded grey — no pill,
+// no shadow. A soft rectangle fades in on hover to show it's a target. The
+// chevron is hand-drawn rather than the shared `chevron-left` Icon because that
+// one is on a square 24 grid and can't be stretched without thinning its stroke.
 function StackArrow({ side, onClick }) {
   const isLeft = side === "left";
   return (
@@ -115,16 +131,31 @@ function StackArrow({ side, onClick }) {
       type="button"
       onClick={onClick}
       aria-label={isLeft ? "Previous tutor" : "Next tutor"}
-      className="absolute top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full inline-flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-      style={{
-        [isLeft ? "left" : "right"]: -6,
-        background: "#fff",
-        border: "1px solid var(--line)",
-        color: "var(--ink-graphite)",
-        boxShadow: "0 6px 18px -8px rgba(0,49,47,0.28)",
-      }}
+      className="group absolute top-1/2 -translate-y-1/2 z-40 inline-flex items-center justify-center px-2 py-2 bg-transparent"
+      style={{ [isLeft ? "left" : "right"]: -8 }}
     >
-      <Icon name={isLeft ? "chevron-left" : "chevron-right"} size={20} />
+      {/* Hover rectangle, behind the chevron. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        style={{ background: "rgba(255,255,255,0.72)", border: "1px solid var(--line)", borderRadius: 6 }}
+      />
+      <svg
+        width="14"
+        height="44"
+        viewBox="0 0 14 44"
+        fill="none"
+        aria-hidden="true"
+        className="relative text-[color:var(--sage)] opacity-45 transition-opacity duration-200 group-hover:opacity-90"
+      >
+        <path
+          d={isLeft ? "M10 3 L4 22 L10 41" : "M4 3 L10 22 L4 41"}
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </button>
   );
 }

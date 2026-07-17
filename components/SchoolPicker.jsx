@@ -82,7 +82,7 @@ export function SchoolPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[56px] sm:h-[60px] text-left transition-colors rounded-[10px] hover:bg-[color:var(--accent-softer)]"
+        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[52px] sm:h-[54px] text-left transition-colors rounded-[10px] hover:bg-[color:var(--accent-softer)]"
       >
         <Icon name="graduation" size={16} className="text-[color:var(--accent)] shrink-0" />
         <div className="flex-1 min-w-0">
