@@ -23,6 +23,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendWelcomeIfNeeded } from "@/lib/notifications";
+import { postAuthDest } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
@@ -70,8 +71,7 @@ export async function GET(request) {
           .eq("id", user.id)
           .maybeSingle();
         const role = profile?.role ?? null;
-        const dest = role === null ? "/choose-role" : role === "tutor" ? "/profile" : "/";
-        return NextResponse.redirect(`${origin}${dest}`);
+        return NextResponse.redirect(`${origin}${postAuthDest(role)}`);
       }
     }
     return NextResponse.redirect(`${origin}${next}`);

@@ -13,6 +13,7 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { homeFor } from "@/lib/roles";
 import ChooseRoleForm from "./ChooseRoleForm";
 
 export const metadata = { title: "Choose your role" };
@@ -31,7 +32,7 @@ export default async function ChooseRolePage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.role) redirect(profile.role === "tutor" ? "/profile" : "/");
+  if (profile?.role) redirect(homeFor(profile.role));
 
   return <ChooseRoleForm />;
 }

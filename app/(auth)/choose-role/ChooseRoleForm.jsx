@@ -11,6 +11,7 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { homeFor } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
 
 const OPTIONS = [
@@ -58,8 +59,8 @@ export default function ChooseRoleForm() {
       return;
     }
     // Tutors continue into their profile (which routes on to onboarding);
-    // students land on the home page. Refresh so the nav re-reads the new role.
-    router.push(selected === "tutor" ? "/profile" : "/");
+    // students land on the tutor list. Refresh so the nav re-reads the new role.
+    router.push(homeFor(selected));
     router.refresh();
   };
 

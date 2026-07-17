@@ -6,6 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { homeFor } from "@/lib/roles";
 
 export async function middleware(request) {
   let response = NextResponse.next({ request });
@@ -44,6 +45,12 @@ export async function middleware(request) {
     const { pathname } = request.nextUrl;
     const onChooser = pathname.startsWith("/choose-role");
     const onDisabled = pathname.startsWith("/account-disabled");
+    // Signed-in users have no business on the sign-in/sign-up forms; they get
+    // bounced to their own home surface below. Note /forgot-password and
+    // /reset-password are deliberately NOT included: a recovery link mints a
+    // real session before landing on /reset-password, so gating them on "is
+    // logged in" would break password resets outright.
+    const onAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
     // Paths a NULL-role (mid-signup) user must still reach: the chooser itself,
     // auth/API routes, and the policy pages they may want to read first. Also the
     // disabled screen — the disabled gate below takes precedence and parks them
@@ -71,9 +78,10 @@ export async function middleware(request) {
       pathname.startsWith("/privacy-policy");
 
     // We only need the profile when a redirect is possible: an enforceable page
-    // (to push NULL-role/disabled users to their gate), the chooser, or the
-    // disabled screen itself (to push re-enabled users back out).
-    if (!exempt || onChooser || !disabledExempt || onDisabled) {
+    // (to push NULL-role/disabled users to their gate), the chooser, the auth
+    // pages (to push signed-in users off them), or the disabled screen itself
+    // (to push re-enabled users back out).
+    if (!exempt || onChooser || onAuthPage || !disabledExempt || onDisabled) {
       // Fail open: on any read error the fields are undefined and we don't
       // redirect, so a transient DB blip can never trap a user.
       const { data: profile } = await supabase
@@ -97,9 +105,12 @@ export async function middleware(request) {
         // Hasn't chosen yet — send them to the gate (carry over refreshed cookies).
         return redirectPreservingCookies(request, response, "/choose-role");
       }
-      if (role && onChooser) {
-        // Already chose — the chooser is done for them; send them to their home.
-        return redirectPreservingCookies(request, response, role === "tutor" ? "/profile" : "/");
+      // Pages that have nothing left to offer a signed-in user with a role: the
+      // chooser (they already chose) and the login/signup forms (they're already
+      // in). Send them to their home instead. Last, so the disabled and NULL-role
+      // gates above still win for the users they cover.
+      if (role && (onChooser || onAuthPage)) {
+        return redirectPreservingCookies(request, response, homeFor(role));
       }
     }
   }

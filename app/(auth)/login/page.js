@@ -8,6 +8,7 @@ import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { postAuthDest } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
 
 function LoginInner() {
@@ -55,7 +56,7 @@ function LoginInner() {
         .maybeSingle();
       role = profile?.role ?? null;
     }
-    router.push(role === null ? "/choose-role" : role === "tutor" ? "/profile" : "/");
+    router.push(postAuthDest(role));
     router.refresh();
   };
 
