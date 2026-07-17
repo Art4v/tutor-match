@@ -50,7 +50,7 @@ export function Section({ title, subtitle, children, id }) {
       style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24, boxShadow: "var(--card-shadow)" }}
     >
       <div className="mb-5">
-        <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">
+        <h2 className="text-[18px] font-light text-slate-800 tracking-tight">
           {title}
         </h2>
         {subtitle && (
@@ -65,7 +65,7 @@ export function Section({ title, subtitle, children, id }) {
 export function SubjectsCard({ subjects }) {
   return (
     <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4">Subjects</div>
+      <div className="text-[14px] font-medium text-slate-900 mb-4">Subjects</div>
       <div className="flex flex-wrap gap-1.5">
         {subjects.map((s) => (
           <Chip key={s.slug} tone="cream" icon="graduation">{subjectLabel(s)}</Chip>
@@ -82,7 +82,7 @@ export function SubjectsCard({ subjects }) {
 export function DocumentationCard({ docs }) {
   return (
     <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-1">Documentation</div>
+      <div className="text-[14px] font-medium text-slate-900 mb-1">Documentation</div>
       <div className="text-[12.5px] text-slate-500 mb-3">Documents shared to back up this tutor&apos;s credentials.</div>
       <ul className="space-y-1.5">
         {docs.map((doc) => (
@@ -109,7 +109,7 @@ export function RatingsCard() {
   return (
     <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
       <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="text-[14px] font-semibold text-slate-900">Ratings &amp; reviews</div>
+        <div className="text-[14px] font-medium text-slate-900">Ratings &amp; reviews</div>
         <span
           className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
           style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink-muted)" }}
@@ -138,7 +138,7 @@ export function ServiceAreaCard({ tutor }) {
   return (
     <SectionReveal hover className="paper-page bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
       <div className="px-5 pt-5 pb-5">
-        <div className="text-[14px] font-semibold text-slate-900">Service area</div>
+        <div className="text-[14px] font-medium text-slate-900">Service area</div>
         <div className="text-[12.5px] text-slate-500 mt-0.5">
           In-person within {radiusKm} km of {sa?.suburb || tutor.suburb}
         </div>

@@ -31,7 +31,7 @@ function DeliveryCard({ tutor, set }) {
   const online = !!tutor.deliversOnline;
   return (
     <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
-      <h3 className="text-[16px] font-semibold text-slate-900">How do you teach?</h3>
+      <h3 className="text-[16px] font-light text-slate-800">How do you teach?</h3>
       <p className="text-[13.5px] text-slate-500 mt-1 mb-4">Pick the lesson formats you offer — you can change these later.</p>
       <div className="flex flex-wrap gap-2.5">
         <Chip tone="grey" icon="map-pin" active={inPerson} onClick={() => set({ deliversInPerson: !inPerson })}>
@@ -122,7 +122,7 @@ const STEPS = [
     render: ({ tutor, set, persistProfile, showToast }) => (
       <div className="space-y-4">
         <div>
-          <h2 className="font-hand text-[28px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+          <h2 className="text-[28px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
             All done?
           </h2>
           <p className="text-[14px] text-slate-500 mt-1">
@@ -281,9 +281,9 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
         <div className="mb-6">
           <div className="inline-flex items-center gap-1.5 text-[12.5px] font-medium px-2.5 py-1 mb-3"
             style={{ background: "var(--accent-softer)", color: "var(--accent)", border: "1px solid var(--accent-line)", borderRadius: 999 }}>
-            <Icon name="sparkle" size={13} /> Welcome to matchtutor
+            <Icon name="sparkle" size={13} /> Welcome to MatchTutor
           </div>
-          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Let’s set up your profile</h1>
+          <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Let’s set up your profile</h1>
           <p className="text-[14.5px] text-slate-500 mt-1.5">
             A few quick questions to get you listed. Skip anything you’re not ready for — you can edit it all later in Settings.
           </p>
@@ -360,7 +360,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
             background: toast.kind === "error" ? "#B91C1C" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
-            boxShadow: "0 10px 30px rgba(15,23,42,0.2)",
+            boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
             maxWidth: "calc(100vw - 32px)",
           }}
         >

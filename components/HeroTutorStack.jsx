@@ -6,8 +6,10 @@ import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT } from "@/lib/motion";
 
 // Height of a TutorCard (CARD_HEIGHT in TutorCard.js) — the stack reserves this
-// so the absolutely-positioned cards have a box to live in.
-const CARD_HEIGHT = 504;
+// so the absolutely-positioned cards have a box to live in. Keep it in step with
+// the card or it clips.
+const CARD_HEIGHT = 530;
+const CARD_WIDTH = 340;
 const AUTO_MS = 4500;
 
 /**
@@ -70,9 +72,9 @@ export function HeroTutorStack({ tutors = [] }) {
         const target = isCenter
           ? { x: 0, scale: 1, opacity: 1 }
           : isLeft
-          ? { x: -64, scale: 0.9, opacity: 0.6 }
+          ? { x: -64, scale: 0.9, opacity: 0.5 }
           : isRight
-          ? { x: 64, scale: 0.9, opacity: 0.6 }
+          ? { x: 64, scale: 0.9, opacity: 0.5 }
           : { x: 0, scale: 0.8, opacity: 0 };
 
         const zIndex = isCenter ? 30 : visible ? 20 : 10;
@@ -80,8 +82,13 @@ export function HeroTutorStack({ tutors = [] }) {
         return (
           <motion.div
             key={tutor.id ?? tutor.slug ?? i}
-            className="absolute top-0 left-1/2 w-full max-w-[340px]"
-            style={{ zIndex, marginLeft: -170, pointerEvents: visible ? "auto" : "none" }}
+            className="absolute top-0 left-1/2 w-full"
+            style={{
+              zIndex,
+              maxWidth: CARD_WIDTH,
+              marginLeft: -CARD_WIDTH / 2,
+              pointerEvents: visible ? "auto" : "none",
+            }}
             initial={false}
             animate={target}
             transition={{ duration: 0.5, ease: EASE_OUT }}
@@ -111,10 +118,10 @@ function StackArrow({ side, onClick }) {
       className="absolute top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full inline-flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
       style={{
         [isLeft ? "left" : "right"]: -6,
-        background: "var(--paper-card)",
+        background: "#fff",
         border: "1px solid var(--line)",
-        color: "var(--ink)",
-        boxShadow: "0 6px 18px -8px rgba(60,55,45,0.28)",
+        color: "var(--ink-graphite)",
+        boxShadow: "0 6px 18px -8px rgba(0,49,47,0.28)",
       }}
     >
       <Icon name={isLeft ? "chevron-left" : "chevron-right"} size={20} />

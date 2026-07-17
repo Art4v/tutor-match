@@ -37,9 +37,22 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        {/* General Sans (body + headings) is Fontshare-only, not on Google
+            Fonts, so it needs its own origin. Caveat stays on Google Fonts and
+            is used only for small accents (hero subject word, eyebrows, step
+            numbers). */}
+        {/* The stylesheet is served by api.fontshare.com but the woff2 files it
+            points at live on cdn.fontshare.com, so both origins get a
+            preconnect (otherwise the fonts stall on a cold connection). */}
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600,700&display=swap"
+          rel="stylesheet"
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
         <SmoothScrollProvider>

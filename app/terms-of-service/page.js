@@ -4,13 +4,13 @@ export default function TermsOfServicePage() {
   return (
     <div className="bg-[color:var(--paper-card)]">
       <div className="max-w-[720px] mx-auto px-6 py-24">
-        <h1 className="font-hand text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+        <h1 className="text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
           Terms of Service
         </h1>
 
         <div className="mt-8 space-y-8 text-[15px] text-slate-700 leading-[1.7]">
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               1. Introduction
             </h2>
             <p>
@@ -27,7 +27,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               2. Nature of the Platform
             </h2>
             <p>
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               3. User Accounts
             </h2>
             <p>3.1 You agree to provide accurate information when creating an account.</p>
@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               4. Tutor Listings
             </h2>
             <p>
@@ -87,7 +87,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               5. Ratings &amp; Reviews
             </h2>
             <p>5.1 Reviews must be honest and based on genuine experience.</p>
@@ -98,7 +98,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               6. Prohibited Conduct
             </h2>
             <p>6.1 You must not use the Platform to:</p>
@@ -111,7 +111,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               7. Limitation of Liability
             </h2>
             <p>
@@ -132,7 +132,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               8. Indemnity
             </h2>
             <p>
@@ -142,7 +142,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               9. Privacy
             </h2>
             <p>
@@ -156,7 +156,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               10. Intellectual Property
             </h2>
             <p>
@@ -166,7 +166,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               11. Changes to Terms
             </h2>
             <p>
@@ -180,7 +180,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               12. Governing Law
             </h2>
             <p>
@@ -190,7 +190,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-semibold mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
               13. Contact
             </h2>
             <p>

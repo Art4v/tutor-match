@@ -37,7 +37,7 @@ export function CredentialsList({ tiles }) {
           <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 uppercase tracking-wider font-medium w-[120px] shrink-0">
             <Icon name={c.icon} size={12} /> {c.caption}
           </div>
-          <div className={`text-[14px] font-semibold text-slate-900 leading-snug${c.kind === "stat" ? " tabular-nums" : ""}`}>
+          <div className={`text-[14px] font-medium text-slate-900 leading-snug${c.kind === "stat" ? " tabular-nums" : ""}`}>
             {c.value}
           </div>
         </motion.div>

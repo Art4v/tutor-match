@@ -59,7 +59,7 @@ export async function POST(request) {
     type: "verification_approved",
     title: "You're verified ✓",
     body: "Your profile now shows the verified badge and ranks higher in search.",
-    email: { subject: "You're verified on matchtutor ✓", html: userApprovedEmail({ name, profileUrl }) },
+    email: { subject: "You're verified on MatchTutor ✓", html: userApprovedEmail({ name, profileUrl }) },
   });
 
   return NextResponse.json({ ok: true });

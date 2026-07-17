@@ -35,7 +35,7 @@ export function ProfileBlockBanner({ tutorName }) {
             type="button"
             onClick={requestUnblock}
             disabled={busy}
-            className="ml-auto shrink-0 text-[13px] font-semibold underline underline-offset-2 disabled:opacity-50"
+            className="ml-auto shrink-0 text-[13px] font-medium underline underline-offset-2 disabled:opacity-50"
             style={{ color: "#DC2626" }}
           >
             {busy ? "Unblocking…" : "Unblock"}

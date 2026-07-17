@@ -229,7 +229,7 @@ export function OwnerProfile({ editorTutor, userId }) {
     <motion.div
       className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden"
       style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}
-      whileHover={{ y: -2, boxShadow: "0 16px 32px -22px rgba(15,23,42,0.22)", borderColor: "var(--line-strong)" }}
+      whileHover={{ y: -2, boxShadow: "0 16px 32px -22px rgba(0,30,30,0.22)", borderColor: "var(--line-strong)" }}
       transition={{ duration: 0.32, ease: EASE_OUT }}
     >
       <div
@@ -258,7 +258,7 @@ export function OwnerProfile({ editorTutor, userId }) {
           view={headerView}
           edit={
             <div>
-              <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight">Profile header</h2>
+              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Profile header</h2>
               <p className="text-[13px] text-slate-500 mt-1 mb-5">The banner, photo and intro at the top of your profile.</p>
               <BannerAvatarSection tutor={draft} set={set} supabase={supabase} bare />
               <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
@@ -375,7 +375,7 @@ export function OwnerProfile({ editorTutor, userId }) {
             background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
-            boxShadow: "0 10px 30px rgba(15,23,42,0.2)",
+            boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
             maxWidth: "calc(100vw - 32px)",
           }}
         >
@@ -407,7 +407,7 @@ function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, v
           aria-label={`Edit ${label}`}
           title={`Edit ${label}`}
           className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
-          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", boxShadow: "0 1px 3px rgba(15,23,42,0.08)" }}
+          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", boxShadow: "0 1px 3px rgba(0,30,30,0.08)" }}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-12% 0px -8% 0px" }}
@@ -419,14 +419,14 @@ function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, v
       {editing && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-6"
-          style={{ background: "rgba(42,58,46,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
+          style={{ background: "rgba(0,49,47,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
           role="dialog"
           aria-modal="true"
           aria-label={`Edit ${label}`}
         >
           <div
             className="w-full flex flex-col bg-[color:var(--paper-card)]"
-            style={{ maxWidth: maxW, maxHeight: "88vh", border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "0 30px 80px -40px rgba(15,23,42,0.35)" }}
+            style={{ maxWidth: maxW, maxHeight: "88vh", border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)" }}
           >
             <div className="shrink-0 flex items-center justify-end gap-2 px-5 sm:px-6 py-3" style={{ borderBottom: "1px solid var(--desk)" }}>
               <button
@@ -470,7 +470,7 @@ function EmptyHint({ children }) {
 function MiniCard({ title, children }) {
   return (
     <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4">{title}</div>
+      <div className="text-[14px] font-medium text-slate-900 mb-4">{title}</div>
       {children}
     </SectionReveal>
   );

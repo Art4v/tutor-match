@@ -130,7 +130,7 @@ export default async function ProfilePage({ params }) {
 
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[color:var(--paper-card)] p-4 z-40 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
         <div>
-          <div className="text-[18px] font-semibold tabular-nums">
+          <div className="text-[18px] font-light tabular-nums">
             ${tutor.rate}
             <span className="text-[13px] text-slate-400 font-normal">/hr</span>
           </div>
@@ -146,7 +146,7 @@ export default async function ProfilePage({ params }) {
 function SimilarTutorsCard({ similar }) {
   return (
     <SectionReveal className="bg-transparent" style={{ borderRadius: 0 }}>
-      <div className="text-[14px] font-semibold text-slate-900 mb-4 px-1">Similar tutors</div>
+      <div className="text-[14px] font-medium text-slate-900 mb-4 px-1">Similar tutors</div>
       <div className="grid grid-cols-2 gap-3">
         {similar.map((t) => (
           <SimilarTutorMini key={t.id} tutor={t} />

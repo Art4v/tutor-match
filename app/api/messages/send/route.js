@@ -139,7 +139,7 @@ export async function POST(request) {
       await notifyUser(createSupabaseAdminClient(), recipientId, {
         type: "message",
         title: `New message from ${senderName}`,
-        body: "You have a new message on matchtutor.",
+        body: "You have a new message on MatchTutor.",
         email: {
           subject: `New message from ${senderName}`,
           html: messageEmail({ senderName, ctaUrl }),

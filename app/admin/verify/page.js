@@ -81,13 +81,13 @@ export default async function AdminVerifyPage({ searchParams }) {
             <Icon name="shield-check" size={20} />
           </span>
           <div>
-            <h1 className="font-hand text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>Review verification</h1>
+            <h1 className="text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Review verification</h1>
             <p className="text-[13.5px] text-slate-500 mt-1">Review this tutor's profile, then approve or reject.</p>
           </div>
         </div>
 
         <div className="text-[14px]" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
-          <div className="font-semibold text-slate-900">{name}</div>
+          <div className="font-medium text-slate-900">{name}</div>
           {location && <div className="text-slate-500 text-[13px] mt-0.5">{location}</div>}
           {tutor.slug && (
             <a href={`/tutor/${tutor.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] mt-3" style={{ color: "var(--accent)" }}>
@@ -124,7 +124,7 @@ function StateCard({ tone, icon, title, body, profileHref }) {
       <span className="inline-flex items-center justify-center mb-4" style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}>
         <Icon name={icon} size={22} />
       </span>
-      <h1 className="font-hand text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>{title}</h1>
+      <h1 className="text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>{title}</h1>
       <p className="text-[14px] text-slate-500 mt-1.5 leading-[1.55]">{body}</p>
       {profileHref && (
         <a href={profileHref} className="inline-flex items-center gap-1.5 text-[13.5px] mt-4" style={{ color: "var(--accent)" }}>

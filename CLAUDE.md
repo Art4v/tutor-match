@@ -16,7 +16,7 @@ Guidance for Claude Code when working in this repository.
 
 No tests are configured.
 
-One-off (not an npm script): `node scripts/gen-og-image.mjs` regenerates `app/opengraph-image.png` (needs `npm i sharp --no-save`; static PNG so the build never depends on `@vercel/og`). Re-run only when the brand mark/wordmark changes.
+One-off (not an npm script): `node scripts/gen-og-image.mjs` regenerates `app/opengraph-image.png` (needs `npm i sharp --no-save`; static PNG so the build never depends on `@vercel/og`). Re-run only when the brand mark/wordmark changes. Fully vector: the mark is inline SVG and the wordmark is SVG `<text>` — but sharp renders through librsvg, which only sees **locally installed** fonts, so the wordmark falls back to the system grotesque rather than General Sans (colour + lockup stay on-brand, the face is approximate). **Caveat:** `npm i sharp --no-save` prunes packages that aren't in `package.json`, so anything installed ad-hoc (e.g. `playwright`) disappears — reinstall it in the same command if you need both.
 
 ## Environment
 
@@ -40,13 +40,17 @@ Three distinct mail paths:
 
 **Styling:** intentionally mixes Tailwind utilities (layout) with inline `style={{ … }}` (colors / radii / borders from the original design). Don't refactor inline styles into a global stylesheet without reason — they keep design tokens local. The original HTML/CSS/JS prototype lives in `_design/` (gitignored, read-only reference for visual decisions).
 
+**Theme (teal-on-white).** Palette lives in `app/globals.css` `:root` **and** `tailwind.config.js` — change both together. Token NAMES are historical (`--paper`, `--sage`, `--desk`, `--ink-graphite`); only their values are teal, so most components retint without an edit. `tailwind.config.js` also **overrides the `slate` ramp** with teal-tinted neutrals, which is what silently retints every `text-slate-*` / `bg-slate-*` utility — that's why `text-slate-800` is the heading colour `#014848`.
+
+Typography: **General Sans** (Fontshare CDN, loaded in `app/layout.js`) for everything; **Caveat** (`.font-hand`) is reserved for four accents only — the hero's cycling subject word, the "How it works" eyebrow + step numbers, and the "For tutors." eyebrow. **The brand has no bold weight:** headings are light `300` in `--ink-graphite`, labels/buttons `500`, body `400`. `<strong>`/`<b>` are pinned to 500 in `globals.css` so the UA's 700 can't reintroduce bold (this also covers tutor-authored bios via `RichText`). Emails can't load General Sans, so they use the system sans at 500 rather than 300 (no light weight exists there).
+
 **Path alias:** `jsconfig.json` maps `@/*` to the project root; imports use `@/components/...`, `@/lib/...`.
 
 ### Routes
 
 | Path | File | Notes |
 | --- | --- | --- |
-| `/` | `app/page.js` | Server. `getFeaturedTutors()` + `getSubjects()`. Renders `HomeHero.jsx`, featured grid, `HomeHowItWorks.jsx`, `HomeCta.jsx`. |
+| `/` | `app/page.js` | Server. `getFeaturedTutors()` + `getSubjects()` + `getSchools()` + `getVerifiedTutorCount()`. Renders `HomeHero.jsx` (hero + `HeroTutorStack` carousel), `SchoolsMarquee.jsx`, `HomeHowItWorks.jsx`, `HomeCta.jsx`. There is no separate featured grid — the hero carousel is the only tutor surface. |
 | `/browse` | `app/browse/page.js` | Server. Parses filters from `searchParams` (q, name, subject[], lat, lng, place, atarMin, rateMax, year[], mode[], sort, page) → `getTutorsForBrowse()`. Location is geospatial via the `tutors_within_service_radius` RPC. Sidebar `BrowseFilters.jsx` (client) calls `router.replace()` on every change — URL is the source of truth, shareable, back-button-friendly. Pagination uses real `<Link>`s. |
 | `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Server. `getTutorBySlug()` → camelCase object; `notFound()` if no match or visibility ≠ `public`. Client subcomponents `RateCard.jsx`, `ServiceAreaMap.jsx`. Similar-tutors sidebar = `getFeaturedTutors(supabase, 3, tutor.id)`. |
 | `/settings` | `app/settings/...` | Tutor profile editor. `getTutorProfileForEditor()` / `saveTutorProfile()`. Visibility picker (new tutors default `public`). Avatar + banner uploads (Storage bucket `profile-images`). Location set by one `SuburbAutocomplete` in `ServiceAreaSection`; Suburb/City fields are a read-only reflection. **First-login gate:** `page.js` redirects to `/onboarding` when `onboarded === false`. **AI copy:** tagline + bio `RichTextField`s take an `ai` prop (sparkle button) → POST `/api/ai/generate-bio`, preview-then-accept (accept via `execCommand` so Ctrl+Z works); nothing persists until Save. **Verification:** the `Sidebar` renders `RequestVerification.jsx` above the visibility card — shows `verificationStatus` + a button (soft "complete your profile" hint under 100%, never a hard gate). |
@@ -148,7 +152,7 @@ Three distinct mail paths:
 - `components/Icon.js` — single-file Lucide-style SVG set (40+ icons). Add new icons here; don't import an icon library.
 - `components/TutorCard.js` — canonical hover-animated card; lift driven by `motion/react` variants (`cardVariants` rest/hover), not `useState`. Other lift cards (e.g. `HomeHowItWorks.jsx`) follow the same shape. Links to `/tutor/${tutor.slug}`. Footer credentials + subject row use `CredentialChipsRow` / `SubjectChipsRow` — render chips off-screen, measure with a `ResizeObserver`, show as many as fit + a `+N` pill. **The `recalc` closure null-guards both refs internally** (not just at effect start) because the observer can fire after unmount — otherwise `containerRef.current.offsetWidth` throws.
 - `components/HomeHero.jsx` / `HomeHowItWorks.jsx` / `HomeCta.jsx` — client subcomponents so `/` stays a server component. `HomeHero` builds a `/browse` query (`subject` slug, `lat`/`lng`/`place`, `year`) and `router.push`es it. Its headline cycles a sage subject word via `TypewriterWord` (fixed `TYPEWRITER_WORDS` list — hero copy, deliberately not tied to the DB catalog).
-- `components/TypewriterWord.jsx` — looping type/hold/erase word cycler (Wyzant-style) for the hero headline; `aria-hidden`, reduced-motion swaps whole words instead of typing. `HandwrittenHeading` `lines` entries accept `{ label, content }` so a line can embed it while keeping a plain-text aria-label.
+- `components/TypewriterWord.jsx` — looping type/hold/erase word cycler (Wyzant-style) for the hero headline; `aria-hidden`, reduced-motion swaps whole words instead of typing. The settled sentence lives in the parent `<h1>`'s `aria-label` (see `HomeHero`), so the churn never reaches screen readers.
 - `components/SubjectPicker.jsx` — shared exam-first picker fed by `getSubjects()` (`groupByExam`). `mode="single"` (hero/sidebar) or multi-select (editor); emits subject **slugs**, matching the `?subject=` URL contract.
 - `components/SchoolPicker.jsx` — flat searchable **multi-select** of seeded schools for the `/browse` School filter; emits slugs (`?school=`). Like `SubjectPicker` minus the exam tabs.
 - `components/SchoolCombobox.jsx` — education-editor school field: a suburb-picker-style typeahead over the seeded catalog that **also accepts free text** (unlisted schools → `schoolSlug` null). Shown only for High School rows in `EducationSection`; University stays a plain `TextInput`.

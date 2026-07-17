@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
-import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
@@ -27,12 +26,11 @@ export function HomeCta() {
     <section className="flex items-center">
       <div className="max-w-[1200px] w-full mx-auto px-6 py-16">
         <div
-          className="relative overflow-hidden p-10 md:p-20"
+          className="relative overflow-hidden px-8 py-14 md:px-16 md:py-[76px]"
           style={{
-            background:
-              "radial-gradient(80% 80% at 50% 0%, rgba(94,122,90,0.12) 0%, rgba(94,122,90,0) 60%), var(--paper)",
-            border: "1px solid var(--paper-line)",
-            borderRadius: "var(--radius-card)",
+            background: "linear-gradient(160deg, #E7F2F1 0%, #F5FAFA 100%)",
+            border: "1px solid #CCE2E0",
+            borderRadius: 20,
           }}
         >
           {/* Decorative tree — trunk grows from the card's bottom edge.
@@ -41,7 +39,7 @@ export function HomeCta() {
           <div
             aria-hidden="true"
             className="absolute select-none pointer-events-none"
-            style={{ bottom: -38, right: 32, color: "var(--accent)", opacity: 0.1 }}
+            style={{ bottom: -38, right: 32, color: "var(--accent)", opacity: 0.08 }}
           >
             <Icon name="tree" size={300} strokeWidth={1.1} />
           </div>
@@ -53,18 +51,27 @@ export function HomeCta() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-15% 0px" }}
                 transition={{ duration: 0.5, ease: EASE_OUT }}
-                className="font-hand text-[24px] mb-2"
-                style={{ color: "var(--accent)", fontWeight: 600 }}
+                className="font-hand text-[26px] mb-2"
+                style={{ color: "var(--accent)", fontWeight: 400 }}
               >
                 For tutors.
               </motion.div>
 
-              <HandwrittenHeading
-                as="h3"
-                lines={["Looking to tutor?"]}
-                size={72}
-                className="flex flex-col items-center"
-              />
+              <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-15% 0px" }}
+                transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.05 }}
+                style={{
+                  fontSize: "clamp(32px, 4.5vw, 54px)",
+                  fontWeight: 300,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.025em",
+                  color: "var(--ink-graphite)",
+                }}
+              >
+                Looking to tutor?
+              </motion.h3>
 
               <motion.p
                 initial={{ opacity: 0, y: 10 }}

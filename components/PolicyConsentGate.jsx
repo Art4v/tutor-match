@@ -95,7 +95,7 @@ export default function PolicyConsentGate() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: "rgba(42, 58, 46, 0.45)", backdropFilter: "blur(2px)" }}
+      style={{ background: "rgba(0,49,47, 0.45)", backdropFilter: "blur(2px)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="policy-consent-title"
@@ -106,13 +106,13 @@ export default function PolicyConsentGate() {
           border: "1px solid var(--paper-line)",
           borderRadius: "var(--radius-card)",
           padding: 32,
-          boxShadow: "0 30px 80px -40px rgba(15,23,42,0.35)",
+          boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)",
         }}
       >
         <h2
           id="policy-consent-title"
-          className="font-hand text-[34px] leading-none"
-          style={{ color: "var(--ink-graphite)", fontWeight: 700 }}
+          className="text-[34px] leading-none"
+          style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
         >
           We&rsquo;ve updated our policies.
         </h2>
@@ -125,7 +125,7 @@ export default function PolicyConsentGate() {
           <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
             Privacy Policy
           </Link>
-          . Please review and agree to continue using matchtutor.
+          . Please review and agree to continue using MatchTutor.
         </p>
 
         <label className="flex items-start gap-2.5 cursor-pointer mt-5">

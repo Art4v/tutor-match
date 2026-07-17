@@ -83,7 +83,7 @@ export function NotificationsList({ initial }) {
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[14px] font-semibold text-slate-900">{n.title}</span>
+                <span className="text-[14px] font-medium text-slate-900">{n.title}</span>
                 {unread && <span className="inline-block shrink-0" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)" }} />}
               </div>
               {n.body && <p className="text-[13px] text-slate-500 mt-0.5 leading-[1.5]">{n.body}</p>}

@@ -7,7 +7,6 @@ import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
-import { HandwrittenHeading } from "@/components/HandwrittenHeading";
 import { TypewriterWord } from "@/components/TypewriterWord";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { HeroTutorStack } from "@/components/HeroTutorStack";
@@ -51,28 +50,39 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
   return (
     <section
       className="relative z-10 flex flex-col px-6"
-      style={{ minHeight: "100svh", marginTop: "calc(-1 * var(--nav-h))", background: "var(--paper)" }}
+      style={{
+        minHeight: "100svh",
+        marginTop: "calc(-1 * var(--nav-h))",
+        background: "linear-gradient(180deg, #F7FAFA 0%, #FFFFFF 78%)",
+        borderBottom: "1px solid #EEF2F2",
+      }}
     >
       {/* Backdrop layers live in their own clip so the section can stay
           overflow-visible — that lets the search dropdowns spill below the
           hero and paint over the marquee (the section's z-10 beats it),
-          while the constellation/grain/leaves never bleed past the hero. */}
+          while the constellation/leaves never bleed past the hero. */}
       <div aria-hidden="true" className="absolute inset-0 z-0 overflow-hidden">
         {/* Neural-network constellation backdrop — fills the whole hero. */}
         <div className="absolute inset-0">
           <ParticleNetwork />
         </div>
 
-        {/* Faint paper grain for a sketched-page feel. */}
-        <div className="absolute inset-0 pointer-events-none paper-grain opacity-[0.5]" />
+        {/* Soft teal glow centred on the top edge, behind the constellation. */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(60% 50% at 50% 0%, rgba(1,103,100,0.07) 0%, rgba(1,103,100,0) 100%)" }}
+        />
 
         {/* Slow-swaying botanical sprigs in the corners — a pressed-leaf accent
-            that rocks a few degrees on a long, eased loop (see .leaf-sway). */}
-        <div className="absolute left-4 sm:left-10 top-8 pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.35 }}>
-          <Icon name="sprig" size={132} strokeWidth={1.3} />
+            that rocks a few degrees on a long, eased loop (see .leaf-sway).
+            Drawn in the same faint-teal hairline language as the CTA's tree
+            (accent at a low opacity, stroke 1.1) so they read as watermarks
+            behind the constellation rather than competing with it. */}
+        <div className="absolute left-4 sm:left-10 top-8 pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--accent)", opacity: 0.14 }}>
+          <Icon name="sprig" size={132} strokeWidth={1.1} />
         </div>
-        <div className="absolute right-4 sm:right-12 bottom-16 pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--sage)", opacity: 0.28, animationDelay: "-3s" }}>
-          <Icon name="leaf" size={150} strokeWidth={1.2} />
+        <div className="absolute right-4 sm:right-12 bottom-16 pointer-events-none leaf-sway hidden sm:block" style={{ color: "var(--accent)", opacity: 0.12, animationDelay: "-3s" }}>
+          <Icon name="leaf" size={150} strokeWidth={1.1} />
         </div>
       </div>
 
@@ -82,7 +92,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
         {/* Upper region: bullets/headline left, tutor carousel right. */}
         <div className="flex-1 flex items-center py-16 lg:py-0">
           <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            {/* LEFT — eyebrow + handwritten headline + feature bullets.
+            {/* LEFT — eyebrow + headline + trust bullets + search bar.
                 Phones (<sm) centre everything and stretch to the first screen
                 height (100svh minus the wrapper's py-16 top padding) so the
                 text block owns the viewport and the cards sit below the fold;
@@ -95,43 +105,50 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 className="mb-4"
               >
                 <span
-                  className="uppercase text-[9px] sm:text-[13px] font-semibold"
-                  style={{ color: "var(--ink-muted)", letterSpacing: "0.14em" }}
+                  className="uppercase text-[9px] sm:text-[12px] font-medium"
+                  style={{ color: "var(--accent)", letterSpacing: "0.14em" }}
                 >
                   Australia&apos;s Most Trusted Tutor Network
                 </span>
               </motion.div>
 
-              {/* Cursive graphite headline — writes itself in on view, then a
-                  sage subject word types/erases in front of "tutor"
-                  (TypewriterWord waits out the clip-wipe via startDelay). */}
-              <HandwrittenHeading
-                as="h1"
-                lines={[
-                  "Trust your next",
-                  {
-                    label: "tutor",
-                    content: (
-                      <>
-                        <TypewriterWord words={TYPEWRITER_WORDS} /> tutor
-                      </>
-                    ),
-                  },
-                ]}
-                size={80}
-                minSize={44}
+              {/* Light General Sans headline; only the cycling subject word is
+                  Caveat. `aria-label` carries the settled sentence so the
+                  typewriter's churn never reaches screen readers. */}
+              <motion.h1
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 }}
+                aria-label="Trust your next tutor"
                 className="flex flex-col items-center sm:items-start"
-              />
+                style={{
+                  fontSize: "clamp(44px, 5vw, 68px)",
+                  fontWeight: 300,
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.025em",
+                  color: "var(--ink-graphite)",
+                }}
+              >
+                <span aria-hidden="true">Trust your next</span>
+                <span aria-hidden="true">
+                  <TypewriterWord
+                    words={TYPEWRITER_WORDS}
+                    className="font-hand"
+                    style={{ fontSize: "1.14em" }}
+                  />{" "}
+                  tutor
+                </span>
+              </motion.h1>
 
               {/* Feature bullets — replace the old prose + trust pills. */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
-                className="mt-6 grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-col sm:gap-2.5"
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.35 }}
+                className="mt-6 grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-col sm:gap-4"
               >
                 <FeatureBullet icon="check" short="Verified ATARs">Verified ATARs and marks</FeatureBullet>
-                <FeatureBullet icon="leaf" short="Free browsing">Completely free browsing</FeatureBullet>
+                <FeatureBullet icon="shield" short="Free browsing">Completely free browsing</FeatureBullet>
                 <FeatureBullet icon="graduation" short="Private & group">Private and group tutoring</FeatureBullet>
                 <FeatureBullet icon="globe" short="In-person & online">In-person and Online</FeatureBullet>
               </motion.div>
@@ -141,9 +158,9 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
-                className="relative z-30 mt-7 w-full max-w-[560px] hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_auto] items-stretch bg-[color:var(--paper-card)] hero-search-glow"
-                style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-card)" }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
+                className="relative z-30 mt-7 w-full max-w-[560px] hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_auto] items-stretch hero-search-glow"
+                style={{ background: "#fff", border: "1px solid #E3EAEA", borderRadius: 14, padding: 6 }}
               >
                 <SchoolPicker
                   catalog={schoolCatalog}
@@ -163,10 +180,17 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                   label="Subject"
                   placeholder="Any subject"
                 />
-                <div className="px-1.5 flex items-center">
-                  <Button variant="primary" size="lg" onClick={goBrowse} full radius={16} ariaLabel="Search">
+                <div className="pl-1.5 flex items-stretch">
+                  <button
+                    type="button"
+                    onClick={goBrowse}
+                    aria-label="Search"
+                    className="inline-flex items-center justify-center gap-2 font-medium text-white px-5 sm:px-6 transition-colors hover:bg-[color:var(--accent-hover)]"
+                    style={{ background: "var(--accent)", borderRadius: 10, height: 60, fontSize: 14 }}
+                  >
                     <Icon name="search" size={18} />
-                  </Button>
+                    <span className="hidden md:inline">Search Now</span>
+                  </button>
                 </div>
               </motion.div>
 
@@ -174,7 +198,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.6 }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
                 className="mt-6 flex sm:hidden"
               >
                 <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
@@ -196,7 +220,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
                   className="w-full hidden sm:flex justify-center"
                 >
                   {/* The stack is the only element in the centering flow (the link
@@ -215,7 +239,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 1.4 }}
+                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
                   className="sm:hidden w-full max-w-[340px] mx-auto flex flex-col gap-6"
                 >
                   {showcaseTutors.slice(0, 3).map((tutor) => (
@@ -247,7 +271,7 @@ function ScrollPrompt({ className = "" }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.6, ease: EASE_OUT, delay: 2.2 }}
+      transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.1 }}
       className={`flex-col items-center gap-1.5 text-[color:var(--sage)] pointer-events-none ${className}`}
     >
       <span className="text-[11px] uppercase tracking-[0.18em]">Scroll</span>
@@ -279,19 +303,17 @@ function SeeAllTutorsLink({ verifiedCount, className = "" }) {
   );
 }
 
-// One feature bullet: a circular sage-on-soft badge + label. On phones the four
-// render as an app-store-style strip — badge on top, tiny label under (`short`
-// text); sm+ keeps the icon-beside-text row.
+// One trust bullet: a bare teal icon + label (no badge — the design calls for
+// the icon to sit directly against the text). On phones the four render as an
+// app-store-style strip: icon on top, tiny label under (`short` text); sm+ keeps
+// the icon-beside-text row.
 function FeatureBullet({ icon, short, children }) {
   return (
     <div className="flex flex-col items-center gap-1.5 text-center sm:flex-row sm:gap-2.5 sm:text-left">
-      <span
-        className="w-8 h-8 rounded-full inline-flex items-center justify-center shrink-0"
-        style={{ background: "var(--accent-softer)" }}
-      >
-        <Icon name={icon} size={16} className="text-[color:var(--sage)]" />
+      <span className="inline-flex items-center justify-center shrink-0" style={{ color: "var(--accent)" }}>
+        <Icon name={icon} size={15} />
       </span>
-      <span className="text-[11px] leading-tight sm:text-[15px] font-medium" style={{ color: "var(--ink)" }}>
+      <span className="text-[11px] leading-tight sm:text-[15px] sm:font-normal font-medium" style={{ color: "var(--ink)" }}>
         <span className="sm:hidden">{short ?? children}</span>
         <span className="hidden sm:inline">{children}</span>
       </span>

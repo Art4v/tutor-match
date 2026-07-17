@@ -210,12 +210,12 @@ export function TopNav() {
         borderBottom: "1px solid transparent",
       }}
     >
-      <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center gap-6">
+      <div className="max-w-[1400px] mx-auto px-6 h-[64px] flex items-center gap-6">
         <Link href="/" className="nav-logo flex items-center gap-2 group">
-          <BookSproutMark size={30} className="nav-logo-mark shrink-0" />
-          <span className="font-hand text-[27px] leading-none" style={{ fontWeight: 700 }}>
-            <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>match</span>
-            <span className="nav-logo-word" style={{ color: "var(--accent)" }}>tutor</span>
+          <BookSproutMark size={28} className="nav-logo-mark shrink-0" />
+          <span className="text-[19px] leading-none" style={{ fontWeight: 400, letterSpacing: "-0.01em" }}>
+            <span className="nav-logo-word" style={{ color: "var(--ink-graphite)" }}>Match</span>
+            <span className="nav-logo-word" style={{ color: "var(--accent)" }}>Tutor</span>
           </span>
         </Link>
 
@@ -236,7 +236,7 @@ export function TopNav() {
                     title={displayName}
                   >
                     <span
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-semibold text-white overflow-hidden bg-cover bg-center"
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-medium text-white overflow-hidden bg-cover bg-center"
                       style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : { background: "var(--ink)" }}
                     >
                       {!avatarUrl && (displayName || "?").slice(0, 1).toUpperCase()}
@@ -258,7 +258,7 @@ export function TopNav() {
                       style={{
                         border: "1px solid var(--paper-line)",
                         borderRadius: 12,
-                        boxShadow: "0 10px 24px -8px rgba(15,23,42,0.12)",
+                        boxShadow: "0 10px 24px -8px rgba(0,30,30,0.12)",
                         minWidth: 200,
                         padding: 4,
                       }}
@@ -276,7 +276,7 @@ export function TopNav() {
                           Notifications
                           {unread > 0 && (
                             <span
-                              className="inline-flex items-center justify-center text-[11px] font-semibold text-white tabular-nums"
+                              className="inline-flex items-center justify-center text-[11px] font-medium text-white tabular-nums"
                               style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
                             >
                               {unread > 9 ? "9+" : unread}
@@ -292,7 +292,7 @@ export function TopNav() {
                             Messages
                             {unreadMessages > 0 && (
                               <span
-                                className="inline-flex items-center justify-center text-[11px] font-semibold text-white tabular-nums"
+                                className="inline-flex items-center justify-center text-[11px] font-medium text-white tabular-nums"
                                 style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
                               >
                                 {unreadMessages > 9 ? "9+" : unreadMessages}

@@ -121,7 +121,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
     <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
       <div className="max-w-[760px] mx-auto px-6 pt-10">
         <div className="mb-7">
-          <h1 className="font-hand text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 700 }}>
+          <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
             {isStudent ? "Profile & account" : "Account"}
           </h1>
           <p className="text-[14px] text-slate-500 mt-1">
@@ -217,7 +217,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
                 <Icon name="alert-triangle" size={16} />
               </span>
               <div>
-                <h2 className="text-[18px] font-semibold tracking-tight" style={{ color: "#B91C1C" }}>
+                <h2 className="text-[18px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
                   Delete account
                 </h2>
                 <p className="text-[13px] text-slate-500 mt-1">
@@ -279,7 +279,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
             background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
-            boxShadow: "0 10px 30px rgba(15,23,42,0.2)",
+            boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
             maxWidth: "calc(100vw - 32px)",
           }}
         >
@@ -304,7 +304,7 @@ function Card({ children }) {
 function SectionHeader({ title, subtitle, icon }) {
   return (
     <header className="mb-5">
-      <h2 className="text-[18px] font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+      <h2 className="text-[18px] font-light text-slate-800 tracking-tight flex items-center gap-2">
         {icon && <span className="text-slate-400"><Icon name={icon} size={16} /></span>}
         {title}
       </h2>
@@ -316,7 +316,7 @@ function SectionHeader({ title, subtitle, icon }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <div className="text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-2.5">
+      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
         {label}
       </div>
       {children}
@@ -454,12 +454,12 @@ function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, s
       </div>
 
       <div style={{ borderTop: "1px solid var(--paper-line)" }} className="pt-6">
-      <div className="text-[12.5px] font-semibold text-slate-900 uppercase tracking-wider mb-3">
+      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-3">
         Profile photo
       </div>
       <div className="flex items-center gap-4">
         <div
-          className="shrink-0 overflow-hidden flex items-center justify-center text-white font-semibold"
+          className="shrink-0 overflow-hidden flex items-center justify-center text-white font-medium"
           style={{
             width: 64,
             height: 64,
@@ -516,7 +516,7 @@ function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(15,23,42,0.5)" }}
+      style={{ background: "rgba(0,30,30,0.5)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-confirm-title"
@@ -528,7 +528,7 @@ function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
           maxWidth: 420,
           borderRadius: "var(--radius-card)",
           padding: 24,
-          boxShadow: "0 24px 60px rgba(15,23,42,0.28)",
+          boxShadow: "0 24px 60px rgba(0,30,30,0.28)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -542,7 +542,7 @@ function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
           <div>
             <h2
               id="delete-confirm-title"
-              className="text-[17px] font-semibold tracking-tight"
+              className="text-[17px] font-light tracking-tight"
               style={{ color: "#B91C1C" }}
             >
               Delete your account?

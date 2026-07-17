@@ -61,7 +61,7 @@ export async function POST(request) {
     type: "verification_rejected",
     title: "Verification not approved",
     body: "An admin reviewed your profile and couldn't verify it this time. Update your profile and you can request another review.",
-    email: { subject: "Your matchtutor verification wasn't approved", html: userRejectedEmail({ name, profileUrl }) },
+    email: { subject: "Your MatchTutor verification wasn't approved", html: userRejectedEmail({ name, profileUrl }) },
   });
 
   return NextResponse.json({ ok: true });

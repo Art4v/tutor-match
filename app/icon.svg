@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- "Book + sprout" mark, recolored to site tokens (accent #5E7A5A, sage #8DA17E). No tile. -->
+  <!-- "Book + sprout" mark, recolored to site tokens (accent #016764, sage #6FA8A5). No tile. -->
   <g transform="translate(1.7 2.8) scale(0.22)">
     <!-- seedling -->
     <g transform="translate(5 -6)">
-      <path d="M60 84 C 60 70 59 58 60 46" fill="none" stroke="#5E7A5A" stroke-width="6" stroke-linecap="round"/>
+      <path d="M60 84 C 60 70 59 58 60 46" fill="none" stroke="#016764" stroke-width="6" stroke-linecap="round"/>
       <g transform="translate(60 56) rotate(36) scale(0.7)">
-        <path d="M0 0 C -15 -8 -16.5 -29 0 -46 C 16.5 -29 15 -8 0 0 Z" fill="#8DA17E"/>
+        <path d="M0 0 C -15 -8 -16.5 -29 0 -46 C 16.5 -29 15 -8 0 0 Z" fill="#6FA8A5"/>
       </g>
       <g transform="translate(60 50) rotate(-36) scale(0.7)">
-        <path d="M0 0 C -15 -8 -16.5 -29 0 -46 C 16.5 -29 15 -8 0 0 Z" fill="#5E7A5A"/>
+        <path d="M0 0 C -15 -8 -16.5 -29 0 -46 C 16.5 -29 15 -8 0 0 Z" fill="#016764"/>
       </g>
     </g>
     <!-- book — two open pages -->
-    <path d="M65 92 C 50 82 34 80 18 83 L18 104 C 34 101 50 103 65 112 Z" fill="#5E7A5A"/>
-    <path d="M65 92 C 80 82 96 80 112 83 L112 104 C 96 101 80 103 65 112 Z" fill="#8DA17E"/>
+    <path d="M65 92 C 50 82 34 80 18 83 L18 104 C 34 101 50 103 65 112 Z" fill="#016764"/>
+    <path d="M65 92 C 80 82 96 80 112 83 L112 104 C 96 101 80 103 65 112 Z" fill="#6FA8A5"/>
   </g>
 </svg>

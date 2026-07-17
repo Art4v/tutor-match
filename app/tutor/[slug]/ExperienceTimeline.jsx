@@ -63,7 +63,7 @@ export function ExperienceTimeline({ experience }) {
           </div>
 
           <div className="pb-1 flex-1">
-            <div className="text-[14.5px] font-semibold text-slate-900">{e.role}</div>
+            <div className="text-[14.5px] font-medium text-slate-900">{e.role}</div>
             <div className="text-[13.5px] text-slate-600">{e.org}</div>
             <div className="text-[12.5px] text-slate-400 mt-0.5">{e.period}</div>
             <div className="text-[13.5px] text-slate-600 mt-2 leading-[1.55]">{e.note}</div>

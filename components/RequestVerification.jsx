@@ -52,7 +52,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
   return (
     <Wrapper>
       <div className="flex items-center justify-between gap-3 mb-1">
-        <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">Get verified</h3>
+        <h3 className="text-[14px] font-light text-slate-800 tracking-tight">Get verified</h3>
         {status === "verified" && (
           <span className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "var(--accent)" }}>
             <VerifiedTick size={14} /> Verified
@@ -67,7 +67,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
 
       {status === "verified" ? (
         <p className="text-[12.5px] text-slate-500 leading-[1.5]">
-          Your account is verified. The badge shows next to your name across matchtutor, and you rank higher in search.
+          Your account is verified. The badge shows next to your name across MatchTutor, and you rank higher in search.
         </p>
       ) : status === "pending" ? (
         <p className="text-[12.5px] text-slate-500 leading-[1.5] flex items-start gap-2">
