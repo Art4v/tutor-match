@@ -9,7 +9,6 @@ import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
 const STEPS = [
   {
     n: "01",
-    icon: "search",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
     t: "Browse verified profiles",
     b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
@@ -25,7 +24,6 @@ const STEPS = [
   },
   {
     n: "02",
-    icon: "user",
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
     t: "Pick a tutor that fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
@@ -41,7 +39,6 @@ const STEPS = [
   },
   {
     n: "03",
-    icon: "globe",
     image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
     t: "Lessons, reviews, switching",
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
@@ -651,26 +648,13 @@ const CARD_LIFT_TRANSITION = {
   },
 };
 
-// Tree cards are framed by the sketched SVG path, so hover is lift + wobble
-// ONLY. Animating boxShadow/borderColor/backgroundColor here would paint the
-// rectangle the sketched outline exists to avoid.
+// Every card (tree and mobile stack alike) is framed by the sketched SVG path,
+// so hover is lift + wobble ONLY. Animating boxShadow/borderColor/
+// backgroundColor here would paint the rectangle the sketched outline exists to
+// avoid.
 const cardShakeHoverSketch = {
   ...CARD_LIFT,
   transition: { ...CARD_LIFT_TRANSITION },
-};
-
-// The mobile stack is a real bordered card, so it keeps the full treatment.
-const cardShakeHover = {
-  ...CARD_LIFT,
-  boxShadow: "0 18px 40px -24px rgba(0,49,47,0.28), 0 0 28px rgba(1,103,100,0.22), 0 0 10px rgba(1,103,100,0.16)",
-  borderColor: "var(--accent-line)",
-  backgroundColor: "var(--accent-softer)",
-  transition: {
-    ...CARD_LIFT_TRANSITION,
-    boxShadow: { duration: 0.42, ease: EASE_OUT },
-    borderColor: { duration: 0.3, ease: EASE_OUT },
-    backgroundColor: { duration: 0.3, ease: EASE_OUT },
-  },
 };
 
 function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView, emphasized = false }) {
@@ -682,8 +666,10 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
   // so the card root only carries its resting tilt.
   const treeMode = inView !== undefined;
   // Wobble around the resting tilt (so hover doesn't snap the card straight).
-  const baseHover = treeMode ? cardShakeHoverSketch : cardShakeHover;
-  const hoverAnim = { ...baseHover, rotate: baseHover.rotate.map((r) => tilt + r) };
+  const hoverAnim = {
+    ...cardShakeHoverSketch,
+    rotate: cardShakeHoverSketch.rotate.map((r) => tilt + r),
+  };
   const entrance =
     !treeMode
       ? {
@@ -703,30 +689,21 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
       onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
-        // The tree cards are framed by a hand-sketched SVG path (below), so they
-        // carry no CSS border/background/shadow of their own — a rectangular box
-        // behind the wobbly outline is exactly what the design rules out. The
-        // mobile stack keeps the plain card.
-        ...(treeMode
-          ? {}
-          : {
-              border: "1px solid var(--paper-line)",
-              background: emphasized ? "var(--accent-softer)" : "var(--paper-card)",
-              boxShadow: "var(--card-shadow)",
-            }),
+        // Cards are framed by a hand-sketched SVG path (below) that supplies both
+        // the outline and the white fill, so they carry no CSS
+        // border/background/shadow of their own — a rectangular box behind the
+        // wobbly outline is exactly what the design rules out.
         opacity: isHidden ? 0 : 1,
         pointerEvents: isHidden ? "none" : "auto",
-        willChange: "transform, box-shadow",
+        willChange: "transform",
       }}
     >
-      {/* Tree cards: sketched frame + a sprig overlapping its edge, per the
-          design. The mobile stack (not covered by the handoff) keeps the washi
-          tape pinning the note to the wall. */}
+      {/* Sketched frame on both layouts. Tree cards hang a sprig off the edge
+          where the branch meets them; the mobile stack has no branch to answer
+          to, so it keeps the washi tape pinning the note to the wall. */}
+      <SketchFrame emphasized={emphasized} />
       {treeMode ? (
-        <>
-          <SketchFrame emphasized={emphasized} />
-          <CardSprig spec={SPRIGS[index % SPRIGS.length]} />
-        </>
+        <CardSprig spec={SPRIGS[index % SPRIGS.length]} />
       ) : (
         <span
           aria-hidden="true"
@@ -1008,32 +985,19 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
           </button>
 
           <div className="h-full w-full p-8 sm:p-10 flex flex-col overflow-auto">
-            <div className="flex items-start justify-between mb-6 pr-12">
-              <div
-                className="font-display tabular-nums"
-                style={{
-                  fontSize: 44,
-                  lineHeight: 1,
-                  fontWeight: 500,
-                  color: "var(--accent)",
-                  letterSpacing: "-0.04em",
-                }}
-              >
-                {step.n}
-              </div>
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: "var(--accent)",
-                  color: "#fff",
-                  border: "1px solid var(--accent-line)",
-                }}
-              >
-                <Icon name={step.icon} size={16} />
-              </div>
+            {/* Number type mirrors CardFrontInner, so the flip doesn't land on a
+                different typeface. Caveat carries its own letter-spacing; don't
+                reintroduce a tracking override here. */}
+            <div
+              className="font-hand mb-6"
+              style={{
+                fontSize: 44,
+                lineHeight: 1,
+                fontWeight: 400,
+                color: "var(--accent)",
+              }}
+            >
+              {step.n}.
             </div>
 
             {step.image && (
@@ -1051,8 +1015,8 @@ function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }
             )}
 
             <h3
-              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink)] leading-[1.15] mb-3"
-              style={{ fontWeight: 500, letterSpacing: "-0.01em" }}
+              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink-graphite)] leading-[1.15] mb-3"
+              style={{ fontWeight: 400, letterSpacing: "-0.015em" }}
             >
               {step.backTitle}
             </h3>

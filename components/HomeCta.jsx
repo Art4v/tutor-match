@@ -78,7 +78,7 @@ export function HomeCta() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-15% 0px" }}
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
-                className="text-[16px] text-[color:var(--ink-muted)] mt-7 leading-[1.6] max-w-[560px]"
+                className="text-[13px] sm:text-[15px] md:text-[16px] text-[color:var(--ink-muted)] mt-5 sm:mt-7 leading-[1.6] max-w-[560px]"
               >
                 Matchtutor is the easiest way to advertise your skills. Set your own rate and availability, and start teaching in under 10 minutes!
               </motion.p>
