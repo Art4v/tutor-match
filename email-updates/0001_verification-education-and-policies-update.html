@@ -1,143 +1,147 @@
 <!--
-  matchtutor product update — Fresh new look + Verification + High School / University education + Terms of Service & Privacy Policy.
+  MatchTutor product update — Fresh new look + Verification + High School / University education + Terms of Service & Privacy Policy.
   Paste this whole file into a Resend Broadcast (HTML / "Code" editor).
   Merge tags used: {{{FIRST_NAME}}} (Resend Contacts) and
   {{{RESEND_UNSUBSCRIBE_URL}}} (Resend auto-provides this per recipient).
+
+  Colors mirror the app's teal-on-white theme (app/globals.css): accent #016764,
+  ink #014848, graphite #33514F, muted #6B8A88, paper #FFFFFF, desk #F7FBFB,
+  paper-line #E7EDEC. Same palette as lib/email/send.js, restated inline because
+  a broadcast body has to be self-contained.
+
+  No web font: General Sans is Fontshare-hosted and no mail client will load it,
+  so this uses the system sans stack. The brand has no bold weight, so headings
+  and labels are 500 (there is no light weight in the system stack to match the
+  site's 300). The wordmark is live text, not an image, so it survives images-off.
 -->
 <!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <!-- Caveat (the site's handwritten brand font). Loaded by clients that honour
-         web fonts (Apple Mail, iOS Mail); Gmail/Outlook strip it and fall back to
-         a system handwriting face, then cursive — see the inline font stacks. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap');
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
-  <body style="margin:0;padding:0;background:#F5F0E4;">
+  <body style="margin:0;padding:0;background:#FFFFFF;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
-      matchtutor has a fresh new look — plus get verified, add your high school + university, and our new Terms &amp; Privacy Policy.
+      MatchTutor has a fresh new look, plus get verified, add your high school and university, and our new Terms &amp; Privacy Policy.
     </div>
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E4;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFFFF;">
       <tr>
         <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="560" cellpadding="0" cellspacing="0" align="center" style="width:560px;max-width:100%;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2A3A2E;">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" align="center" style="width:560px;max-width:100%;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#001E1E;">
 
             <!-- Logo -->
             <tr>
               <td style="padding:4px 8px 22px;">
-<img src="https://matchtutor.com.au/images/email/wordmark.png" alt="matchtutor" width="165" height="34" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;width:165px;height:34px;" />
+                <div style="font-size:22px;font-weight:500;letter-spacing:-0.01em;">
+                  <span style="color:#014848;">Match</span><span style="color:#016764;">Tutor</span>
+                </div>
               </td>
             </tr>
 
             <!-- Card -->
             <tr>
-              <td style="background:#FBF7EC;border:1px solid #E4DCC6;border-radius:16px;padding:30px 30px 26px;">
+              <td style="background:#FFFFFF;border:1px solid #E7EDEC;border-radius:16px;padding:30px 30px 26px;">
 
-                <h1 style="font-family:'Caveat','Segoe Script','Bradley Hand',cursive;font-size:32px;line-height:1.15;margin:0 0 8px;color:#2A3A2E;">
-                  A fresh new look &mdash; and more ways to stand out
+                <h1 style="font-size:28px;font-weight:500;letter-spacing:-0.02em;line-height:1.2;margin:0 0 8px;color:#014848;">
+                  A fresh new look, and more ways to stand out
                 </h1>
-                <p style="font-size:14px;line-height:1.6;color:#3D5440;margin:0 0 22px;">
-                  Hi {{{FIRST_NAME}}}, matchtutor has a brand-new design, plus a couple of upgrades
+                <p style="font-size:14px;line-height:1.6;color:#33514F;margin:0 0 22px;">
+                  Hi {{{FIRST_NAME}}}, MatchTutor has a brand-new design, plus a couple of upgrades
                   to your profile. Here's what's new and how to make the most of it.
                 </p>
 
                 <!-- Feature 1: Redesign -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAEFE1;border:1px solid #C7D2BA;border-radius:12px;margin:0 0 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7FBFB;border:1px solid #E7EDEC;border-radius:12px;margin:0 0 16px;">
                   <tr>
                     <td style="padding:20px 20px 18px;">
                       <table role="presentation" cellpadding="0" cellspacing="0">
                         <tr>
                           <td style="vertical-align:middle;padding-right:10px;">
-                            <span style="display:inline-block;width:30px;height:30px;background:#5E7A5A;border-radius:8px;color:#FFFFFF;font-size:16px;font-weight:700;text-align:center;line-height:30px;">&#10022;</span>
+                            <span style="display:inline-block;width:30px;height:30px;background:#016764;border-radius:8px;color:#FFFFFF;font-size:16px;font-weight:500;text-align:center;line-height:30px;">&#10022;</span>
                           </td>
                           <td style="vertical-align:middle;">
-                            <span style="font-size:16px;font-weight:700;color:#2A3A2E;">A fresh new look</span>
+                            <span style="font-size:16px;font-weight:500;color:#014848;">A fresh new look</span>
                           </td>
                         </tr>
                       </table>
 
-                      <p style="font-size:13.5px;line-height:1.6;color:#3D5440;margin:12px 0 0;">
-                        We've completely redesigned matchtutor with a warmer, hand-crafted feel &mdash; a
-                        calmer colour palette, cursive headings, and an animated new homepage. Best of all,
-                        <strong>tutor cards have been redesigned</strong> to show off your photo, subjects,
+                      <p style="font-size:13.5px;line-height:1.6;color:#33514F;margin:12px 0 0;">
+                        We've completely redesigned MatchTutor with a cleaner, calmer feel: a crisp
+                        teal-on-white palette, lighter typography, and an animated new homepage. Best of all,
+                        <span style="font-weight:500;">tutor cards have been redesigned</span> to show off your photo, subjects,
                         school and rating front and centre.
                       </p>
-                      <p style="font-size:13.5px;line-height:1.6;color:#3D5440;margin:10px 0 0;">
-                        There's also a new <strong>&ldquo;Trusted tutors from&rdquo;</strong> strip on the
-                        homepage featuring leading schools &mdash; the kind of social proof that helps the
+                      <p style="font-size:13.5px;line-height:1.6;color:#33514F;margin:10px 0 0;">
+                        There's also a new <span style="font-weight:500;">&ldquo;Trusted tutors from&rdquo;</span> strip on the
+                        homepage featuring leading schools, the kind of social proof that helps the
                         whole directory feel more credible to students and parents.
                       </p>
-                      <p style="font-size:12.5px;line-height:1.6;color:#6A7A64;margin:16px 0 0;">
-                        Nothing for you to do &mdash; just log in to see it. While you're there, it's worth
-                        checking your <strong>photo, banner and details</strong> look their best on the new cards.
+                      <p style="font-size:12.5px;line-height:1.6;color:#6B8A88;margin:16px 0 0;">
+                        Nothing for you to do, just log in to see it. While you're there, it's worth
+                        checking your <span style="font-weight:500;">photo, banner and details</span> look their best on the new cards.
                       </p>
                     </td>
                   </tr>
                 </table>
 
                 <!-- Feature 2: Verification -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAEFE1;border:1px solid #C7D2BA;border-radius:12px;margin:0 0 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7FBFB;border:1px solid #E7EDEC;border-radius:12px;margin:0 0 16px;">
                   <tr>
                     <td style="padding:20px 20px 18px;">
                       <table role="presentation" cellpadding="0" cellspacing="0">
                         <tr>
                           <td style="vertical-align:middle;padding-right:10px;">
-                            <span style="display:inline-block;width:30px;height:30px;background:#5E7A5A;border-radius:8px;color:#FFFFFF;font-size:16px;font-weight:700;text-align:center;line-height:30px;">&#10003;</span>
+                            <span style="display:inline-block;width:30px;height:30px;background:#016764;border-radius:8px;color:#FFFFFF;font-size:16px;font-weight:500;text-align:center;line-height:30px;">&#10003;</span>
                           </td>
                           <td style="vertical-align:middle;">
-                            <span style="font-size:16px;font-weight:700;color:#2A3A2E;">Get verified</span>
+                            <span style="font-size:16px;font-weight:500;color:#014848;">Get verified</span>
                           </td>
                         </tr>
                       </table>
 
-                      <p style="font-size:13.5px;line-height:1.6;color:#3D5440;margin:12px 0 0;">
-                        Verification adds a <strong>verified tick</strong> to your name so students
+                      <p style="font-size:13.5px;line-height:1.6;color:#33514F;margin:12px 0 0;">
+                        Verification adds a <span style="font-weight:500;">verified tick</span> to your name so students
                         know you're a genuine, reviewed tutor. Profiles people can trust get more
-                        enquiries &mdash; and verified tutors are <strong>ranked above unverified ones</strong>
+                        enquiries, and verified tutors are <span style="font-weight:500;">ranked above unverified ones</span>
                         in search and browse results.
                       </p>
 
                       <!-- How it works -->
-                      <p style="font-size:11.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#5E7A5A;margin:18px 0 10px;">How it works</p>
+                      <p style="font-size:11.5px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#016764;margin:18px 0 10px;">How it works</p>
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td style="vertical-align:top;padding:0 10px 12px 0;width:24px;">
-                            <span style="display:inline-block;width:22px;height:22px;background:#5E7A5A;border-radius:50%;color:#FFFFFF;font-size:12px;font-weight:700;text-align:center;line-height:22px;">1</span>
+                            <span style="display:inline-block;width:22px;height:22px;background:#016764;border-radius:50%;color:#FFFFFF;font-size:12px;font-weight:500;text-align:center;line-height:22px;">1</span>
                           </td>
                           <td style="vertical-align:top;padding:0 0 12px;">
-                            <p style="font-size:13px;line-height:1.55;color:#3D5440;margin:0;">
-                              <strong>Request it.</strong> Open <strong>Settings</strong> (or the final step
-                              of onboarding) and click <strong>Request verification</strong>. Tip: fill out
-                              your profile first &mdash; subjects, rate, bio and education &mdash; so there's
+                            <p style="font-size:13px;line-height:1.55;color:#33514F;margin:0;">
+                              <span style="font-weight:500;">Request it.</span> Open <span style="font-weight:500;">Settings</span> (or the final step
+                              of onboarding) and click <span style="font-weight:500;">Request verification</span>. Tip: fill out
+                              your profile first (subjects, rate, bio and education) so there's
                               plenty for us to review.
                             </p>
                           </td>
                         </tr>
                         <tr>
                           <td style="vertical-align:top;padding:0 10px 12px 0;width:24px;">
-                            <span style="display:inline-block;width:22px;height:22px;background:#5E7A5A;border-radius:50%;color:#FFFFFF;font-size:12px;font-weight:700;text-align:center;line-height:22px;">2</span>
+                            <span style="display:inline-block;width:22px;height:22px;background:#016764;border-radius:50%;color:#FFFFFF;font-size:12px;font-weight:500;text-align:center;line-height:22px;">2</span>
                           </td>
                           <td style="vertical-align:top;padding:0 0 12px;">
-                            <p style="font-size:13px;line-height:1.55;color:#3D5440;margin:0;">
-                              <strong>We review.</strong> Our team checks your profile, usually within a few
-                              days. You can keep editing in the meantime &mdash; the status shows as
+                            <p style="font-size:13px;line-height:1.55;color:#33514F;margin:0;">
+                              <span style="font-weight:500;">We review.</span> Our team checks your profile, usually within a few
+                              days. You can keep editing in the meantime, and the status shows as
                               <em>pending</em> in your settings.
                             </p>
                           </td>
                         </tr>
                         <tr>
                           <td style="vertical-align:top;padding:0 10px 0 0;width:24px;">
-                            <span style="display:inline-block;width:22px;height:22px;background:#5E7A5A;border-radius:50%;color:#FFFFFF;font-size:12px;font-weight:700;text-align:center;line-height:22px;">3</span>
+                            <span style="display:inline-block;width:22px;height:22px;background:#016764;border-radius:50%;color:#FFFFFF;font-size:12px;font-weight:500;text-align:center;line-height:22px;">3</span>
                           </td>
                           <td style="vertical-align:top;padding:0;">
-                            <p style="font-size:13px;line-height:1.55;color:#3D5440;margin:0;">
-                              <strong>You're verified.</strong> Once approved, the tick appears on your
+                            <p style="font-size:13px;line-height:1.55;color:#33514F;margin:0;">
+                              <span style="font-weight:500;">You're verified.</span> Once approved, the tick appears on your
                               public profile and your browse card straight away, and we'll email you to
                               confirm.
                             </p>
@@ -145,65 +149,65 @@
                         </tr>
                       </table>
 
-                      <p style="font-size:12.5px;line-height:1.6;color:#6A7A64;margin:16px 0 0;">
-                        Verification is <strong>free</strong>, and you only need to request it once.
+                      <p style="font-size:12.5px;line-height:1.6;color:#6B8A88;margin:16px 0 0;">
+                        Verification is <span style="font-weight:500;">free</span>, and you only need to request it once.
                       </p>
                     </td>
                   </tr>
                 </table>
 
                 <!-- Feature 3: Education -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EFE9DA;border:1px solid #E4DCC6;border-radius:12px;margin:0 0 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7FBFB;border:1px solid #E7EDEC;border-radius:12px;margin:0 0 16px;">
                   <tr>
                     <td style="padding:20px 20px 18px;">
                       <table role="presentation" cellpadding="0" cellspacing="0">
                         <tr>
                           <td style="vertical-align:middle;padding-right:10px;">
-                            <span style="display:inline-block;width:30px;height:30px;background:#2A3A2E;border-radius:8px;color:#FFFFFF;font-size:15px;text-align:center;line-height:30px;">&#127891;</span>
+                            <span style="display:inline-block;width:30px;height:30px;background:#014848;border-radius:8px;color:#FFFFFF;font-size:15px;text-align:center;line-height:30px;">&#127891;</span>
                           </td>
                           <td style="vertical-align:middle;">
-                            <span style="font-size:16px;font-weight:700;color:#2A3A2E;">High school &amp; university</span>
+                            <span style="font-size:16px;font-weight:500;color:#014848;">High school &amp; university</span>
                           </td>
                         </tr>
                       </table>
-                      <p style="font-size:13.5px;line-height:1.6;color:#3D5440;margin:12px 0 0;">
-                        Education entries now distinguish between <strong>high school</strong> and
-                        <strong>university</strong>. When you add a school in Settings, pick its level
+                      <p style="font-size:13.5px;line-height:1.6;color:#33514F;margin:12px 0 0;">
+                        Education entries now distinguish between <span style="font-weight:500;">high school</span> and
+                        <span style="font-weight:500;">university</span>. When you add a school in Settings, pick its level
                         from the new dropdown. Your public profile labels each entry, and your tutor
-                        card highlights your high school (or your university if no high school is listed)
-                        &mdash; so students instantly see your background.
+                        card highlights your high school (or your university if no high school is listed),
+                        so students instantly see your background.
                       </p>
-                      <p style="font-size:13px;line-height:1.6;color:#6A7A64;margin:10px 0 0;">
-                        Your existing schools have been set to <strong>high school</strong> by default
-                        &mdash; take a moment to update any that should be university.
+                      <p style="font-size:13px;line-height:1.6;color:#6B8A88;margin:10px 0 0;">
+                        Your existing schools have been set to <span style="font-weight:500;">high school</span> by default,
+                        so take a moment to update any that should be university.
                       </p>
                     </td>
                   </tr>
                 </table>
 
                 <!-- Feature 4: Terms & Privacy -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAEFE1;border:1px solid #C7D2BA;border-radius:12px;margin:0 0 24px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7FBFB;border:1px solid #E7EDEC;border-radius:12px;margin:0 0 24px;">
                   <tr>
                     <td style="padding:20px 20px 18px;">
                       <table role="presentation" cellpadding="0" cellspacing="0">
                         <tr>
                           <td style="vertical-align:middle;padding-right:10px;">
-                            <span style="display:inline-block;width:30px;height:30px;background:#5E7A5A;border-radius:8px;color:#FFFFFF;font-size:15px;text-align:center;line-height:30px;">&#128220;</span>
+                            <span style="display:inline-block;width:30px;height:30px;background:#016764;border-radius:8px;color:#FFFFFF;font-size:15px;text-align:center;line-height:30px;">&#128220;</span>
                           </td>
                           <td style="vertical-align:middle;">
-                            <span style="font-size:16px;font-weight:700;color:#2A3A2E;">Terms of Service &amp; Privacy Policy</span>
+                            <span style="font-size:16px;font-weight:500;color:#014848;">Terms of Service &amp; Privacy Policy</span>
                           </td>
                         </tr>
                       </table>
-                      <p style="font-size:13.5px;line-height:1.6;color:#3D5440;margin:12px 0 0;">
-                        We've added a <a href="https://matchtutor.com.au/terms-of-service" style="color:#5E7A5A;font-weight:600;text-decoration:underline;">Terms of Service</a>
-                        and a <a href="https://matchtutor.com.au/privacy-policy" style="color:#5E7A5A;font-weight:600;text-decoration:underline;">Privacy Policy</a>
-                        so it's clear how matchtutor works and how we look after your information. You can read both
+                      <p style="font-size:13.5px;line-height:1.6;color:#33514F;margin:12px 0 0;">
+                        We've added a <a href="https://matchtutor.com.au/terms-of-service" style="color:#016764;font-weight:500;text-decoration:underline;">Terms of Service</a>
+                        and a <a href="https://matchtutor.com.au/privacy-policy" style="color:#016764;font-weight:500;text-decoration:underline;">Privacy Policy</a>
+                        so it's clear how MatchTutor works and how we look after your information. You can read both
                         any time from the footer of the site.
                       </p>
-                      <p style="font-size:12.5px;line-height:1.6;color:#6A7A64;margin:16px 0 0;">
-                        Next time you log in we'll ask you to give them a quick read and agree to continue &mdash;
-                        it only takes a moment.
+                      <p style="font-size:12.5px;line-height:1.6;color:#6B8A88;margin:16px 0 0;">
+                        Next time you log in we'll ask you to give them a quick read and agree to continue.
+                        It only takes a moment.
                       </p>
                     </td>
                   </tr>
@@ -212,17 +216,17 @@
                 <!-- CTA -->
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="border-radius:10px;background:#5E7A5A;">
-                      <a href="https://matchtutor.com.au/settings" style="display:inline-block;padding:12px 22px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:10px;">
+                    <td style="border-radius:10px;background:#016764;">
+                      <a href="https://matchtutor.com.au/settings" style="display:inline-block;padding:12px 22px;font-size:14px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:10px;">
                         Update your profile &rarr;
                       </a>
                     </td>
                   </tr>
                 </table>
 
-                <p style="font-size:13px;line-height:1.6;color:#6A7A64;margin:22px 0 0;">
-                  Thanks for being part of matchtutor.<br />
-                  &mdash; The matchtutor team
+                <p style="font-size:13px;line-height:1.6;color:#6B8A88;margin:22px 0 0;">
+                  Thanks for being part of MatchTutor.<br />
+                  The MatchTutor team
                 </p>
 
               </td>
@@ -231,13 +235,13 @@
             <!-- Footer -->
             <tr>
               <td style="padding:20px 8px 0;">
-                <p style="font-size:12px;line-height:1.6;color:#8DA17E;margin:0;">
-                  matchtutor &middot; Australia<br />
-                  You're receiving this because you have a tutor account on matchtutor.
-                  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#8DA17E;text-decoration:underline;">Unsubscribe</a>.<br />
-                  <a href="https://matchtutor.com.au/terms-of-service" style="color:#8DA17E;text-decoration:underline;">Terms of Service</a>
+                <p style="font-size:12px;line-height:1.6;color:#6B8A88;margin:0;">
+                  MatchTutor &middot; Australia<br />
+                  You're receiving this because you have a tutor account on MatchTutor.
+                  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#6B8A88;text-decoration:underline;">Unsubscribe</a>.<br />
+                  <a href="https://matchtutor.com.au/terms-of-service" style="color:#6B8A88;text-decoration:underline;">Terms of Service</a>
                   &middot;
-                  <a href="https://matchtutor.com.au/privacy-policy" style="color:#8DA17E;text-decoration:underline;">Privacy Policy</a>
+                  <a href="https://matchtutor.com.au/privacy-policy" style="color:#6B8A88;text-decoration:underline;">Privacy Policy</a>
                 </p>
               </td>
             </tr>

@@ -70,7 +70,7 @@ export function HomeCta() {
                   color: "var(--ink-graphite)",
                 }}
               >
-                Looking to tutor?
+                Looking to advertise?
               </motion.h3>
 
               <motion.p
@@ -80,7 +80,7 @@ export function HomeCta() {
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
                 className="text-[13px] sm:text-[15px] md:text-[16px] text-[color:var(--ink-muted)] mt-5 sm:mt-7 leading-[1.6] max-w-[560px]"
               >
-                Matchtutor is the easiest way to advertise your skills. Set your own rate and availability, and start teaching in under 10 minutes!
+                Matchtutor is the easiest way to advertise your skills. Set your own rate and availability, get verified, and reach students you can help. 
               </motion.p>
             </div>
 

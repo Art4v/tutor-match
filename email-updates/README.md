@@ -6,7 +6,7 @@ the app — you compose and send from the Resend dashboard.
 
 | File | What it is |
 | --- | --- |
-| `0001_verification-and-education-update.html` | The launch email: the **fresh new look** (redesign) + **Verification** + **High school / University** education. Paste into a Resend Broadcast. |
+| `0001_verification-education-and-policies-update.html` | The launch email: the **fresh new look** (redesign) + **Verification** + **High school / University** education. Paste into a Resend Broadcast. |
 | `README.md` | This guide. |
 
 **Naming:** each email is a numbered HTML file (`NNNN_short-description.html`, e.g.
@@ -37,7 +37,7 @@ number; `README.md` is the only unnumbered file.
 3. **From** — choose an address on your verified domain, e.g. `matchtutor <noreply@matchtutor.com.au>`.
 4. **Subject** — e.g. `matchtutor has a fresh new look — plus more ways to stand out`.
 5. **Body** — switch the editor to **HTML / "Code"**, then **paste the entire contents of** the
-   email file you're sending (e.g. `0001_verification-and-education-update.html`). (If you prefer the
+   email file you're sending (e.g. `0001_verification-education-and-policies-update.html`). (If you prefer the
    visual editor, you can rebuild it there, but the HTML file already matches the site theme.)
 6. **Personalisation (merge tags)** — the email uses:
    - `{{{FIRST_NAME}}}` — the contact's first name (set from each tutor's name during sync).
@@ -57,9 +57,14 @@ number; `README.md` is the only unnumbered file.
   re-subscribes them, so re-running `npm run sync:audience` before the next campaign is safe.
 - **Re-sync before every campaign** so new tutors are included and the list stays current.
 - **Editing the email** — keep styles **inline** (email clients strip `<style>` blocks and external
-  CSS). Match the brand (study-journal green palette): logo is `match` + `tutor` with `tutor` in
-  eucalyptus green `#5E7A5A`; headings `#2A3A2E`; body text `#3D5440`; muted text `#6A7A64` /
-  `#8DA17E`; accent / buttons `#5E7A5A`; card surface `#FBF7EC` and accent-tinted feature cards
-  `#EAEFE1` (border `#C7D2BA`) on a warm cream `#F5F0E4` page.
+  CSS). Match the brand (teal-on-white palette, mirroring `app/globals.css`): the wordmark is live
+  text, `Match` in `#014848` + `Tutor` in `#016764` (never an image, so it survives images-off);
+  headings `#014848`; body text `#33514F`; muted text `#6B8A88`; accent / buttons `#016764`; card
+  surface `#FFFFFF` and feature cards `#F7FBFB` (border `#E7EDEC`) on a white page.
+  `lib/email/send.js` holds the same palette as named constants, so copy values from there.
+- **No bold, no web font.** The brand has no bold weight: headings and labels are `500`, body `400`.
+  Emails can't load General Sans, so use the system sans stack and skip the site's light `300`
+  (no light weight exists there). Caveat is reserved for four in-app accents, so no cursive headings.
+- **No em dashes in copy** (repo-wide rule, see `CLAUDE.md`): use a comma, parentheses, or a period.
 - **New campaigns** — drop another numbered `.html` file in this folder (next number, same
   structure and theme), then repeat the steps above.
