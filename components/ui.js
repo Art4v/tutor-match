@@ -172,13 +172,16 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
   );
 }
 
+// Buttons are deliberately static on hover: no colour/border/ring shift and no
+// iconRight nudge. The only pointer feedback is the press-scale below, which is
+// click feedback rather than a hover animation.
 export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, radius, ariaLabel }) {
   const variants = {
-    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#fff" },
-    outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)", hoverBg: "var(--paper-card)", hoverBorder: "var(--accent)", hoverColor: "var(--accent)" },
-    ghost:   { bg: "transparent", color: "var(--ink)", border: "transparent", hoverBg: "var(--accent-softer)", hoverBorder: "transparent", hoverColor: "var(--accent)" },
-    soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)", hoverBg: "var(--accent-soft)", hoverBorder: "var(--accent-line)", hoverColor: "var(--accent)" },
-    dark:    { bg: "var(--ink)", color: "#fff", border: "var(--ink)", hoverBg: "var(--ink-graphite-deep)", hoverBorder: "var(--ink-graphite-deep)", hoverColor: "#fff" },
+    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)" },
+    outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)" },
+    ghost:   { bg: "transparent", color: "var(--ink)", border: "transparent" },
+    soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
+    dark:    { bg: "var(--ink)", color: "#fff", border: "var(--ink)" },
   };
   const sizes = {
     sm: { pad: "6px 12px", fs: 13, h: 32, r: 8 },
@@ -187,9 +190,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
   };
   const v = variants[variant] || variants.primary;
   const s = sizes[size];
-  const [hover, setHover] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const isHover = hover && !disabled;
 
   return (
     <button
@@ -197,15 +198,14 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => { setHover(false); setPressed(false); }}
+      onMouseLeave={() => setPressed(false)}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       style={{
-        background: isHover ? v.hoverBg : v.bg,
-        color: isHover ? v.hoverColor : v.color,
-        border: `1px solid ${isHover ? v.hoverBorder : v.border}`,
+        background: v.bg,
+        color: v.color,
+        border: `1px solid ${v.border}`,
         padding: s.pad,
         fontSize: s.fs,
         height: s.h,
@@ -214,8 +214,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         cursor: disabled ? "not-allowed" : "pointer",
         letterSpacing: "-0.005em",
         transform: pressed && !disabled ? "scale(0.98)" : "scale(1)",
-        boxShadow: isHover && (variant === "primary" || variant === "dark") ? "0 0 0 4px var(--accent-ring)" : "none",
-        transition: "background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, transform 120ms ease-out",
+        transition: "transform 120ms ease-out",
       }}
     >
       {icon && <Icon name={icon} size={s.fs + 2} />}
@@ -223,13 +222,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         {children}
       </span>
       {iconRight && (
-        <span
-          style={{
-            display: "inline-flex",
-            transition: "transform 220ms cubic-bezier(0.22,1,0.36,1)",
-            transform: isHover ? "translateX(3px)" : "translateX(0)",
-          }}
-        >
+        <span style={{ display: "inline-flex" }}>
           <Icon name={iconRight} size={s.fs + 2} />
         </span>
       )}

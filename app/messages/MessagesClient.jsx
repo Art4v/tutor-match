@@ -644,7 +644,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                 <button
                   type="button"
                   onClick={() => router.push("/browse")}
-                  className="inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  className="inline-flex items-center justify-center rounded-full text-slate-500"
                   style={{ width: 34, height: 34 }}
                   aria-label="Browse tutors to message"
                 >
@@ -912,7 +912,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <button
                         type="button"
                         onClick={() => setShowEmoji((v) => !v)}
-                        className="inline-flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        className="inline-flex items-center justify-center text-slate-400"
                         style={{ width: 42, height: 42, borderRadius: 12, background: showEmoji ? "var(--accent-softer)" : "transparent" }}
                         aria-label="Add emoji"
                         title="Add emoji"
