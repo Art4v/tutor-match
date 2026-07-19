@@ -20,12 +20,16 @@ export default async function HomePage() {
   // which floats verified tutors to the top and reshuffles equal-score ties
   // fresh each render, then take the verified subset — a randomised set of
   // verified tutors per page load.
+  //
+  // The hero carousel (components/HeroTutorStack.jsx) is currently shelved, so
+  // nothing consumes this yet. Kept so restoring it is one prop away: pass
+  // showcaseTutors + verifiedCount back into <HomeHero />.
   const featuredTutors = rankTutors(featuredPool).slice(0, FEATURED_SLOTS);
   const showcaseTutors = featuredTutors.filter((t) => t.verified);
 
   return (
     <main style={{ background: "var(--paper)" }}>
-      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} showcaseTutors={showcaseTutors} verifiedCount={verifiedCount} />
+      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} />
       <SchoolsMarquee />
       <HomeHowItWorks />
       <HomeCta />
