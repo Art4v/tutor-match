@@ -281,8 +281,11 @@ export function TutorCard({ tutor, showSave = true }) {
   const statLabel = top ? captionForIcon(top.icon) : "None";
   const statTone = top ? "accent" : "muted";
 
-  const tagline = stripMarkdown(tutor.bio);
-  const longBio = stripMarkdown(tutor.bioLong);
+  // Trimmed because these gate whether their block renders at all: rich-text
+  // fields that have been typed into and cleared can strip down to whitespace
+  // rather than "", which would pass a truthy check and render an empty block.
+  const tagline = stripMarkdown(tutor.bio).trim();
+  const longBio = stripMarkdown(tutor.bioLong).trim();
   const location = [tutor.suburb, tutor.city].filter(Boolean).join(" · ");
   const school = tutor.highSchool || tutor.university;
   // Design pairs school and location into one quiet line. Either side can be
@@ -353,47 +356,59 @@ export function TutorCard({ tutor, showSave = true }) {
               {tutor.verified && <VerifiedTick size={15} />}
             </div>
 
-            {/* Tagline — one line, height reserved so rows stay aligned. On a
-                phone the rows are tight enough that the bookmark's 38px circle
-                reaches down past the name into this line too, so it needs the
-                same clearance; by md the name alone is tall enough to clear it. */}
-            <div
-              className="mt-0.5 md:mt-1 max-w-full leading-[1.3] text-[11.5px] md:text-[14px] pr-12 md:pr-0"
-              style={{
-                fontWeight: 500,
-                color: "var(--accent)",
-                minHeight: "1.3em",
-                display: "-webkit-box",
-                WebkitLineClamp: 1,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {tagline || " "}
-            </div>
+            {/* The three blocks below are each rendered ONLY when they have
+                content, and none of them reserves height. A tutor missing a
+                tagline or bio would otherwise leave a blank gap where the empty
+                block still held its minHeight, and the rest of the text sat
+                stranded below it. Row alignment doesn't depend on these any
+                more — the body band's min-h and the rail keep every card in the
+                list the same height. */}
+
+            {/* Tagline — one line. On a phone the rows are tight enough that
+                the bookmark's 38px circle reaches down past the name into this
+                line, so it needs the same clearance; by md the name alone is
+                tall enough to clear it. */}
+            {tagline && (
+              <div
+                className="mt-0.5 md:mt-1 max-w-full leading-[1.3] text-[11.5px] md:text-[14px] pr-12 md:pr-0"
+                style={{
+                  fontWeight: 500,
+                  color: "var(--accent)",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {tagline}
+              </div>
+            )}
 
             {/* Long bio — capped at 2 lines. */}
-            <div
-              className="mt-1 md:mt-1.5 leading-[1.5] text-[10.5px] md:text-[12.5px]"
-              style={{
-                color: "var(--ink-muted)",
-                minHeight: "3em",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {longBio || " "}
-            </div>
+            {longBio && (
+              <div
+                className="mt-1 md:mt-1.5 leading-[1.5] text-[10.5px] md:text-[12.5px]"
+                style={{
+                  color: "var(--ink-muted)",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {longBio}
+              </div>
+            )}
 
             {/* School · Location — deliberately quieter than the stat tiles. */}
-            <div
-              className="mt-1 md:mt-1.5 max-w-full truncate text-[10px] md:text-[12px]"
-              style={{ color: "var(--sage)", minHeight: "1.3em" }}
-            >
-              {schoolLocation || " "}
-            </div>
+            {schoolLocation && (
+              <div
+                className="mt-1 md:mt-1.5 max-w-full truncate text-[10px] md:text-[12px]"
+                style={{ color: "var(--sage)" }}
+              >
+                {schoolLocation}
+              </div>
+            )}
           </div>
         </div>
 

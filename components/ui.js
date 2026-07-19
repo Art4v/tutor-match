@@ -50,6 +50,23 @@ export function Avatar({
 // state-driven (not a native `title`) so it shows reliably even while the
 // surrounding card runs its own hover animation — a moving element resets the
 // native tooltip timer, so it would otherwise never appear on the card.
+// Shared visual treatment for the small dark hover tooltips (the verified-tick
+// explainer, the bookmark's "Save tutor"). Box metrics only — POSITIONING is up
+// to the caller, since one sits absolutely above its trigger and the other is
+// portalled to `position: fixed` to escape the card's overflow. Kept in one
+// place because the two drifted apart once already (3px/7px/r6 vs 5px/9px/r7),
+// which reads as a mistake when both can be on screen at the same time.
+export const TOOLTIP_STYLE = {
+  background: "var(--ink)",
+  color: "var(--paper-card)",
+  fontSize: 11.5,
+  lineHeight: 1.25,
+  padding: "5px 9px",
+  borderRadius: 7,
+  letterSpacing: "0.01em",
+  boxShadow: "0 6px 16px -6px rgba(0,49,47,0.5)",
+};
+
 export function VerifiedTick({ size = 14 }) {
   const [show, setShow] = useState(false);
   return (
@@ -84,17 +101,7 @@ export function VerifiedTick({ size = 14 }) {
         <span
           role="tooltip"
           className="pointer-events-none absolute left-1/2 bottom-full mb-1.5 -translate-x-1/2 whitespace-nowrap font-medium"
-          style={{
-            background: "var(--ink)",
-            color: "var(--paper-card)",
-            fontSize: 11,
-            lineHeight: 1.2,
-            padding: "3px 7px",
-            borderRadius: 6,
-            letterSpacing: "0.01em",
-            zIndex: 50,
-            boxShadow: "0 4px 12px -4px rgba(0,49,47,0.45)",
-          }}
+          style={{ ...TOOLTIP_STYLE, zIndex: 50 }}
         >
           Verified by hand
         </span>

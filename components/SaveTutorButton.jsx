@@ -2,12 +2,12 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { motion } from "motion/react";
 import { Icon } from "./Icon";
+import { TOOLTIP_STYLE } from "./ui";
 import { useSavedTutors } from "./SavedTutorsProvider";
 
-// Bookmark control shown top-right of every TutorCard banner and the tutor
-// profile banner. For a logged-in student it toggles the save; for a logged-out
+// Bookmark control shown on every TutorCard and the tutor profile banner. For a
+// logged-in student it toggles the save; for a logged-out
 // visitor it's a decoy that routes to /signup, with a hover tooltip explaining
 // it's a student feature. For a signed-in tutor it renders nothing — saving is a
 // student-only feature, so the control is hidden entirely.
@@ -21,10 +21,11 @@ import { useSavedTutors } from "./SavedTutorsProvider";
 // "banner" (larger, the 140px profile banner corner).
 //
 // `className` overrides the placement: pass Tailwind positioning classes (e.g.
-// "top-3 right-3 md:right-[238px]") and the variant's fixed top/right offset is
-// dropped so they take effect. The row card needs this because its bookmark
-// sits at the top-right of the TEXT column on desktop and the card's own corner
-// on mobile — a responsive position an inline style can't express.
+// "top-2 right-[96px] md:top-3 md:right-[218px]") and the variant's fixed
+// top/right offset is dropped so they take effect. The row card needs this
+// because its bookmark anchors to the stat rail's divider, which sits at a
+// different offset per breakpoint — a responsive position an inline style
+// can't express.
 export function SaveTutorButton({ tutorId, variant = "card", disabled = false, className = "" }) {
   const { isStudent, isLoggedIn, ready, isSaved, toggleSave } = useSavedTutors();
   const [hover, setHover] = useState(false);
@@ -74,31 +75,22 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
   const tip =
     hover && coords && typeof document !== "undefined"
       ? createPortal(
-          <motion.span
+          // Plain span, not a motion element: the tooltip is meant to appear
+          // instantly on hover, with no fade or slide in.
+          <span
             role="tooltip"
-            initial={{ opacity: 0, y: -4, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
             className="pointer-events-none font-medium"
             style={{
+              ...TOOLTIP_STYLE,
               position: "fixed",
               top: coords.top,
               right: coords.right,
-              transformOrigin: "top right",
               whiteSpace: "nowrap",
-              background: "var(--ink)",
-              color: "var(--paper-card)",
-              fontSize: 11.5,
-              lineHeight: 1.25,
-              padding: "5px 9px",
-              borderRadius: 7,
-              letterSpacing: "0.01em",
               zIndex: 1000,
-              boxShadow: "0 6px 16px -6px rgba(0,49,47,0.5)",
             }}
           >
             {tooltipText}
-          </motion.span>,
+          </span>,
           document.body
         )
       : null;
@@ -152,7 +144,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
             if (disabled) return;
             toggleSave(tutorId);
           }}
-          className="inline-flex items-center justify-center transition-transform hover:scale-110 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center disabled:cursor-not-allowed"
           style={{ ...pill, opacity: disabled ? 0.5 : 1 }}
         >
           <Icon name={saved ? "bookmark-fill" : "bookmark"} size={iconSize} />
@@ -175,7 +167,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
       <Link
         href="/signup"
         aria-label="Sign up to save tutors"
-        className="inline-flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+        className="inline-flex items-center justify-center"
         style={pill}
         onClick={(e) => e.stopPropagation()}
       >
