@@ -183,7 +183,7 @@ export function HomeHowItWorks() {
     // competes directly with the hero's `z-10` in the root stacking context,
     // ties, and wins on DOM order — painting this section over the hero's
     // school/subject dropdowns.
-    <section className="relative z-0 overflow-hidden min-h-screen flex items-center" style={{ background: "var(--paper)" }}>
+    <section id="how-it-works" className="relative z-0 overflow-hidden min-h-[90vh] flex items-center" style={{ background: "var(--paper)" }}>
       <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 pt-12 pb-4">
         {/* `relative z-10` lifts the heading above the canvas below it, which is
             pulled up underneath by a negative margin so the sky doodles drift

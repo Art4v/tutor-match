@@ -22,6 +22,7 @@ export function HomeCta() {
 
   return (
     <section
+      id="for-tutors"
       className="relative overflow-hidden flex items-center"
       style={{ background: "linear-gradient(160deg, #E7F2F1 0%, #F5FAFA 100%)" }}
     >

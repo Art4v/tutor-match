@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { motion } from "motion/react";
+import { Icon } from "@/components/Icon";
 import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
@@ -127,6 +128,7 @@ export function FeaturedTutors({ tutors = [], verifiedCount }) {
     // dark) rather than the usual ink tokens — see the notes at each. The white
     // page above and below does the separating, so no border.
     <section
+      id="featured-tutors"
       className="relative overflow-hidden pt-10 pb-10 md:pt-12 md:pb-12"
       style={{ background: "var(--ink-graphite-deep)" }}
       aria-label="Featured tutors"
@@ -194,10 +196,9 @@ export function FeaturedTutors({ tutors = [], verifiedCount }) {
   );
 }
 
-// "Browse all N verified tutors" link with the animated underline — the same
-// control
-// that used to sit under the hero carousel, inverted to white for the green
-// band. `relative` anchors the underline span to the link itself.
+// "Browse all N verified tutors" link with the animated underline and trailing
+// arrow, the same control that used to sit under the hero carousel, inverted to
+// white for the green band. `relative` anchors the underline span to the link.
 function BrowseAllTutorsLink({ verifiedCount }) {
   return (
     <Link
@@ -206,11 +207,15 @@ function BrowseAllTutorsLink({ verifiedCount }) {
       style={{ color: "#FFFFFF" }}
     >
       Browse all{typeof verifiedCount === "number" ? ` ${verifiedCount}` : ""} verified tutors
-      {/* No trailing arrow, so the underline runs the full width of the label
-          (the original reserved right-[24px] for the icon). */}
+      <Icon
+        name="arrow-right"
+        size={14}
+        className="shrink-0 transition-transform group-hover:translate-x-0.5"
+      />
+      {/* Right inset clears the arrow, so the underline spans the label only. */}
       <span
         aria-hidden="true"
-        className="absolute left-0 right-0 -bottom-0.5 h-px origin-left scale-x-0 group-hover:scale-x-100"
+        className="absolute left-0 right-[24px] -bottom-0.5 h-px origin-left scale-x-0 group-hover:scale-x-100"
         style={{ background: "#FFFFFF", transition: "transform 280ms cubic-bezier(0.22,1,0.36,1)" }}
       />
     </Link>

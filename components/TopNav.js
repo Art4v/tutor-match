@@ -6,6 +6,17 @@ import { Icon } from "./Icon";
 import { BookSproutMark, Wordmark } from "./Logo";
 import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getLenis } from "@/lib/scrollLock";
+
+// Primary links, left of the auth cluster. Browse is a real route; the other
+// three are anchors into the home page sections (ids live on the section tags
+// in FeaturedTutors / HomeHowItWorks / HomeCta).
+const NAV_LINKS = [
+  { label: "Browse", href: "/browse" },
+  { label: "Featured tutors", href: "/#featured-tutors", hash: "featured-tutors" },
+  { label: "How it works", href: "/#how-it-works", hash: "how-it-works" },
+  { label: "For tutors", href: "/#for-tutors", hash: "for-tutors" },
+];
 
 export function TopNav() {
   const router = useRouter();
@@ -187,6 +198,26 @@ export function TopNav() {
     };
   }, [user, pathname]);
 
+  // Anchor links only need intercepting when we're already on the home page —
+  // otherwise the Link navigates home and Next's own hash handling lands the
+  // section (cleared of the fixed nav by each section's scroll-mt).
+  const onAnchorClick = (e, hash) => {
+    if (!hash || pathname !== "/") return;
+    const el = document.getElementById(hash);
+    if (!el) return;
+    e.preventDefault();
+    const lenis = getLenis();
+    // Flush to the top of the viewport, no nav-height offset: scrolling down to
+    // a section auto-hides the bar (see the scroll effect above), so reserving
+    // 64px for it would just leave a strip of the previous section on screen.
+    // No Lenis = mobile or reduced-motion; scrollIntoView honours the motion
+    // preference at the browser level.
+    if (lenis) lenis.scrollTo(el, { offset: 0 });
+    else el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // replace, not push, so Back means "previous page" and not "previous section".
+    window.history.replaceState(null, "", `/#${hash}`);
+  };
+
   const onLogout = async () => {
     setLoggingOut(true);
     const supabase = createSupabaseBrowserClient();
@@ -220,6 +251,15 @@ export function TopNav() {
             style={{ letterSpacing: "-0.01em" }}
           />
         </Link>
+
+        {/* Hidden below md: the mobile bar stays logo + auth only. */}
+        <nav className="hidden md:flex items-center gap-1">
+          {NAV_LINKS.map((link) => (
+            <NavBarLink key={link.href} href={link.href} onClick={(e) => onAnchorClick(e, link.hash)}>
+              {link.label}
+            </NavBarLink>
+          ))}
+        </nav>
 
         <div className="flex items-center gap-1 ml-auto">
           {user ? (
@@ -333,6 +373,23 @@ export function TopNav() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Bar-sized sibling of NavMenuLink: same hover tokens, laid out for the nav row.
+function NavBarLink({ href, onClick, children }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="inline-flex items-center h-9 px-3 text-[13.5px] font-medium rounded-md transition-colors whitespace-nowrap"
+      style={{ color: hover ? "var(--accent)" : "var(--ink-muted)" }}
+    >
+      {children}
+    </Link>
   );
 }
 
