@@ -26,7 +26,10 @@ import { useSavedTutors } from "./SavedTutorsProvider";
 // because its bookmark anchors to the stat rail's divider, which sits at a
 // different offset per breakpoint — a responsive position an inline style
 // can't express.
-export function SaveTutorButton({ tutorId, variant = "card", disabled = false, className = "" }) {
+// `tabIndex` is passed straight to the interactive element. The marquee's
+// duplicated cards (components/FeaturedTutors.jsx) set -1 so the copy stays
+// mouse-clickable but never lands in the tab order twice.
+export function SaveTutorButton({ tutorId, variant = "card", disabled = false, className = "", tabIndex = 0 }) {
   const { isStudent, isLoggedIn, ready, isSaved, toggleSave } = useSavedTutors();
   const [hover, setHover] = useState(false);
   const [coords, setCoords] = useState(null);
@@ -134,6 +137,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
         <button
           type="button"
           disabled={disabled}
+          tabIndex={tabIndex}
           aria-pressed={saved}
           aria-label={disabled ? "Unblock to save this tutor" : saved ? "Remove from saved tutors" : "Save tutor"}
           onClick={(e) => {
@@ -166,6 +170,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
     >
       <Link
         href="/signup"
+        tabIndex={tabIndex}
         aria-label="Sign up to save tutors"
         className="inline-flex items-center justify-center"
         style={pill}

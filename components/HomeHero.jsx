@@ -31,9 +31,8 @@ const TYPEWRITER_WORDS = [
  * search bar, scroll cue. The search wiring (`goBrowse`) filters by school +
  * subject.
  *
- * A stacked tutor-card carousel (`components/HeroTutorStack.jsx`) used to sit
- * in a right-hand column; it is shelved, not deleted. To restore it, pass
- * `showcaseTutors` from `app/page.js` again and re-add the column here.
+ * The hero carries no tutor cards: that surface is the featured-tutors marquee
+ * (`components/FeaturedTutors.jsx`), one section down.
  */
 export function HomeHero({ catalog, schoolCatalog = [] }) {
   const router = useRouter();

@@ -271,7 +271,11 @@ const SAVE_POS = "top-2 right-[96px] md:top-3 md:right-[218px]";
 // in app/browse/BrowseResultsGrid.jsx, not on the card.)
 const CARD_SHADOW = "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49,47,0.14)";
 
-export function TutorCard({ tutor, showSave = true }) {
+// `tabIndex` is forwarded to the card link and the bookmark. It exists for the
+// home marquee (components/FeaturedTutors.jsx), which renders every card twice
+// to make the loop seamless: the duplicate passes -1 so it stays clickable with
+// the mouse without putting each tutor in the tab order twice.
+export function TutorCard({ tutor, showSave = true, tabIndex = 0 }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   // Headline stat: the tutor's first credential — labelled by its type (ATAR /
@@ -307,9 +311,10 @@ export function TutorCard({ tutor, showSave = true }) {
       {/* Bookmark overlay — a sibling of the card <Link> (not nested, so the
           HTML stays valid). See SAVE_POS for why it's placed by class rather
           than the variant's own offset. Suppressed on showcase cards. */}
-      {showSave && <SaveTutorButton tutorId={tutor.id} variant="card" className={SAVE_POS} />}
+      {showSave && <SaveTutorButton tutorId={tutor.id} variant="card" className={SAVE_POS} tabIndex={tabIndex} />}
       <Link
         href={`/tutor/${tutor.slug}`}
+        tabIndex={tabIndex}
         className="relative cursor-pointer flex overflow-hidden"
       >
         {/* LEFT COLUMN — body band over the subject strip. Sits beside the rail
