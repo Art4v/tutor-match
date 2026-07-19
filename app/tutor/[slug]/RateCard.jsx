@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { MessageTutorButton } from "./MessageTutorButton";
+import { cardStyle } from "./ProfileCards";
 
 export function RateCard({ tutor, showMessage = true }) {
   const [pkg, setPkg] = useState(0);
@@ -10,7 +11,7 @@ export function RateCard({ tutor, showMessage = true }) {
   return (
     <div
       className="bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: "18px 20px" }}
+      style={{ ...cardStyle, padding: "18px 20px" }}
     >
       <div className="flex items-baseline gap-1">
         <span className="text-[40px] font-light tabular-nums" style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.02em" }}>

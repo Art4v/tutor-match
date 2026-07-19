@@ -33,6 +33,7 @@ import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 import { OwnerCard } from "./OwnerCard";
+import { RevealStack } from "./RevealStack";
 
 /**
  * Inline profile editor — the LinkedIn-style replacement for /settings. Renders
@@ -243,6 +244,7 @@ export function OwnerProfile({ editorTutor, userId }) {
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
+        <RevealStack>
         <EditRegion
           {...regionProps("header", "profile header", 1100)}
           view={headerView}
@@ -260,6 +262,7 @@ export function OwnerProfile({ editorTutor, userId }) {
             </div>
           }
         />
+        </RevealStack>
 
         {/* Mobile only: "Your profile" card sits directly under the header,
             above the profile content. On desktop it lives at the top of the
@@ -267,7 +270,7 @@ export function OwnerProfile({ editorTutor, userId }) {
         <div className="lg:hidden mt-[10px]">{ownerCard}</div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          <div className="space-y-[10px] min-w-0">
+          <RevealStack className="space-y-[10px] min-w-0" delayChildren={0.12}>
             <EditRegion
               {...regionProps("about", "about")}
               view={display.bioLong
@@ -315,9 +318,9 @@ export function OwnerProfile({ editorTutor, userId }) {
               }
               edit={<AvailabilitySection tutor={draft} set={set} bare />}
             />
-          </div>
+          </RevealStack>
 
-          <aside className="space-y-[10px]">
+          <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
             <div className="hidden lg:block">{ownerCard}</div>
 
             <EditRegion
@@ -354,7 +357,7 @@ export function OwnerProfile({ editorTutor, userId }) {
                 : <MiniCard title="Service area"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></MiniCard>}
               edit={<ServiceAreaSection tutor={draft} set={set} bare />}
             />
-          </aside>
+          </RevealStack>
         </div>
       </div>
 

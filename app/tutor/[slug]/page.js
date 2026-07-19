@@ -17,6 +17,7 @@ import { MessageTutorButton } from "./MessageTutorButton";
 import { TutorBlockProvider } from "./TutorBlockProvider";
 import { ProfileBlockBanner } from "./ProfileBlockBanner";
 import { ProfileSaveButton } from "./ProfileSaveButton";
+import { RevealStack } from "./RevealStack";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { Section, SidebarHeading, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
@@ -66,6 +67,7 @@ export default async function ProfilePage({ params }) {
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6 pb-24">
         {/* Shown only when the signed-in student has blocked this tutor. */}
         <ProfileBlockBanner tutorName={tutor.name} />
+        <RevealStack>
         <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
           {/* Save bookmark — top-right of the banner. Public view only; the
               owner branch above never reaches here. */}
@@ -86,9 +88,10 @@ export default async function ProfilePage({ params }) {
             <ProfileHeaderText tutor={tutor} deliveryLabel={deliveryLabel} />
           </div>
         </div>
+        </RevealStack>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          <div className="space-y-[10px] min-w-0">
+          <RevealStack className="space-y-[10px] min-w-0" delayChildren={0.12}>
             {tutor.bioLong && <AboutCard text={tutor.bioLong} />}
 
             {tiles.length > 0 && (
@@ -114,16 +117,16 @@ export default async function ProfilePage({ params }) {
                 <AvailabilityGrid availability={tutor.availability} />
               </Section>
             )}
-          </div>
+          </RevealStack>
 
-          <aside className="space-y-[10px]">
+          <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
             <RatingsCard />
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
-          </aside>
+          </RevealStack>
         </div>
       </div>
 

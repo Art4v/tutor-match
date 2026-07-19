@@ -12,6 +12,8 @@ import ServiceAreaMap from "./ServiceAreaMap";
 export const cardStyle = {
   border: "1px solid var(--paper-line)",
   borderRadius: "var(--radius-card)",
+  // Same resting shadow as TutorCard (components/TutorCard.js CARD_SHADOW).
+  boxShadow: "var(--card-shadow)",
 };
 
 export function formatDelivery(tutor) {

@@ -69,7 +69,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
 
   return (
     <div className="space-y-[10px]">
-      <div style={{ backgroundColor: "var(--paper-card)", borderRadius: "var(--radius-card)", padding: "18px 20px", backgroundImage: "repeating-linear-gradient(0deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(180deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(270deg, var(--line-strong) 0 10px, transparent 10px 20px)", backgroundSize: "2px 100%, 100% 2px, 2px 100%, 100% 2px", backgroundPosition: "0 0, 0 0, 100% 0, 0 100%", backgroundRepeat: "no-repeat" }}>
+      <div style={{ backgroundColor: "var(--paper-card)", borderRadius: "var(--radius-card)", padding: "18px 20px", boxShadow: "var(--card-shadow)", backgroundImage: "repeating-linear-gradient(0deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(180deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(270deg, var(--line-strong) 0 10px, transparent 10px 20px)", backgroundSize: "2px 100%, 100% 2px, 2px 100%, 100% 2px", backgroundPosition: "0 0, 0 0, 100% 0, 0 100%", backgroundRepeat: "no-repeat" }}>
         <div className="flex items-center gap-2 mb-3">
           <Icon name="eye" size={15} className="text-slate-500" />
           <h3 className="text-[19px] font-light text-slate-800 tracking-tight">Your profile</h3>
