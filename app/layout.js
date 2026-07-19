@@ -46,9 +46,16 @@ export default function RootLayout({ children }) {
             preconnect (otherwise the fonts stall on a cold connection). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
+        {/* referrerPolicy: Fontshare's CSS endpoint restricts by Referer and
+            answers a restricted origin with an HTTP 200 whose body is a comment
+            and zero @font-face rules, so the page silently falls back to
+            -apple-system and every weight renders heavier. localhost gets
+            restricted (dev-reload volume); sending no Referer sidesteps the
+            check. The woff2 files on cdn.fontshare.com are not restricted. */}
         <link
           href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500&display=swap"
           rel="stylesheet"
+          referrerPolicy="no-referrer"
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

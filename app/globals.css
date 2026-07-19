@@ -21,7 +21,7 @@
   --ink-muted: #33514F;         /* secondary text */
   --sage: #6B8A88;              /* mid tones, icons, secondary marks */
   --line: #E3EAEA;
-  --line-soft: #EEF2F2;         /* lighter hairline: hero base, search bar, marquee band */
+  --line-soft: #EEF2F2;         /* lighter hairline: hero base, search bar, schools band */
   --line-strong: #B9D5D3;
   --bg: #FFFFFF;
   --bg-soft: #F7FAFA;
@@ -314,29 +314,6 @@ input[type="number"] {
   .type-caret { animation: none; }
 }
 
-/* Seamless marquee (school strip). The track holds two identical halves and
-   slides left by 50%, so the loop is invisible. Pauses under reduced motion. */
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.marquee-track {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  width: max-content;
-  animation: marquee var(--marquee-dur, 42s) linear infinite;
-}
-.marquee-track--reverse {
-  animation-direction: reverse;
-}
-.marquee-mask {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track { animation: none; }
-}
-
 /* ───────────────────────── Botanical accents ───────────────────────── */
 
 /* Slow botanical sway — a sprig motif rocks a few degrees on a long, eased
@@ -352,6 +329,49 @@ input[type="number"] {
 
 @media (prefers-reduced-motion: reduce) {
   .leaf-sway { animation: none; }
+}
+
+/* ───────────────────────── Marquee rows ───────────────────────── */
+
+/* Featured-tutors marquee (components/FeaturedTutors.jsx). A CSS animation
+   rather than a motion/react transform on purpose: the track carries ~12
+   TutorCards, each running two ResizeObservers for its chip rows, and a
+   composited keyframe never touches the main thread the way a JS-driven
+   transform would.
+
+   The track holds EXACTLY two copies of the row, so translating one full 50%
+   lands precisely one copy along and the seam is invisible. Both directions
+   traverse the same distance; only the start/end swap. */
+@keyframes marquee-left {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes marquee-right {
+  from { transform: translate3d(-50%, 0, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+
+.marquee-track {
+  animation-duration: var(--marquee-duration, 60s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  /* linear + infinite means a paused frame is as good as any other, so the
+     pause below can be instant with no easing artefact. */
+  /* Deliberately NO `will-change: transform`: the track is ~12000px wide, and
+     promoting it by hand costs a texture that size for no gain — a running
+     transform animation is composited automatically. */
+}
+
+/* Pause on the ROW, not the track: hovering a gap between two cards is still
+   hovering the row, so the motion doesn't stutter as the pointer crosses one.
+   focus-within does the same job for keyboard users tabbing into a card. */
+.marquee-row:hover .marquee-track,
+.marquee-row:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
 }
 
 /* ───────────────────────── Desk + paper theme ───────────────────────── */

@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "motion/react";
-import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -33,9 +31,9 @@ import { CredentialsList } from "./CredentialsList";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
-import { Section, SubjectsCard, DocumentationCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
-import { SectionReveal } from "@/components/anim/SectionReveal";
+import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 import { OwnerCard } from "./OwnerCard";
+import { RevealStack } from "./RevealStack";
 
 /**
  * Inline profile editor — the LinkedIn-style replacement for /settings. Renders
@@ -222,37 +220,31 @@ export function OwnerProfile({ editorTutor, userId }) {
     onSave: () => saveSection(k),
   });
 
-  // Header view — motion.div (not SectionReveal) so opening/closing an edit
-  // doesn't re-fire the entrance reveal, but it still gets the same quiet hover
-  // lift as the other cards (whileHover only; no whileInView entrance).
+  // Header view — flat, like every other card on the page.
   const headerView = (
-    <motion.div
-      className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}
-      whileHover={{ y: -2, boxShadow: "0 16px 32px -22px rgba(0,30,30,0.22)", borderColor: "var(--line-strong)" }}
-      transition={{ duration: 0.32, ease: EASE_OUT }}
-    >
+    <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
       <div
         style={{
-          height: 140,
+          height: 150,
           background: display.bannerImg
             ? `url(${display.bannerImg}) center / cover no-repeat`
             : `linear-gradient(135deg, ${display.bannerBg ?? display.avatarBg}, oklch(0.96 0.01 250))`,
         }}
       />
-      <div className="px-7 pb-7" style={{ marginTop: -54 }}>
+      <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <Avatar tutor={display} size={108} ring />
         </div>
         <ProfileHeaderText tutor={display} deliveryLabel={formatDelivery(display)} />
       </div>
-    </motion.div>
+    </div>
   );
 
   return (
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
       <DeskBackdrop />
-      <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6">
+      <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
+        <RevealStack>
         <EditRegion
           {...regionProps("header", "profile header", 1100)}
           view={headerView}
@@ -270,14 +262,15 @@ export function OwnerProfile({ editorTutor, userId }) {
             </div>
           }
         />
+        </RevealStack>
 
         {/* Mobile only: "Your profile" card sits directly under the header,
             above the profile content. On desktop it lives at the top of the
             right sidebar (below), so it's hidden here. */}
-        <div className="lg:hidden mt-8">{ownerCard}</div>
+        <div className="lg:hidden mt-[10px]">{ownerCard}</div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8 items-start">
-          <div className="space-y-8 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
+          <RevealStack className="space-y-[10px] min-w-0" delayChildren={0.12}>
             <EditRegion
               {...regionProps("about", "about")}
               view={display.bioLong
@@ -325,9 +318,9 @@ export function OwnerProfile({ editorTutor, userId }) {
               }
               edit={<AvailabilitySection tutor={draft} set={set} bare />}
             />
-          </div>
+          </RevealStack>
 
-          <aside className="space-y-5">
+          <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
             <div className="hidden lg:block">{ownerCard}</div>
 
             <EditRegion
@@ -364,7 +357,7 @@ export function OwnerProfile({ editorTutor, userId }) {
                 : <MiniCard title="Service area"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></MiniCard>}
               edit={<ServiceAreaSection tutor={draft} set={set} bare />}
             />
-          </aside>
+          </RevealStack>
         </div>
       </div>
 
@@ -401,20 +394,16 @@ function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, v
     <div className="relative">
       {view}
       {!editing && (
-        <motion.button
+        <button
           type="button"
           onClick={onEdit}
           aria-label={`Edit ${label}`}
           title={`Edit ${label}`}
           className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
-          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", boxShadow: "0 1px 3px rgba(0,30,30,0.08)" }}
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-12% 0px -8% 0px" }}
-          transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.15 }}
+          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
         >
           <Icon name="pencil" size={14} strokeWidth={2} />
-        </motion.button>
+        </button>
       )}
       {editing && typeof document !== "undefined" && createPortal(
         <div
@@ -469,9 +458,9 @@ function EmptyHint({ children }) {
 
 function MiniCard({ title, children }) {
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
-      <div className="text-[14px] font-medium text-slate-900 mb-4">{title}</div>
-      {children}
-    </SectionReveal>
+    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+      <SidebarHeading>{title}</SidebarHeading>
+      <div className="mt-3">{children}</div>
+    </div>
   );
 }

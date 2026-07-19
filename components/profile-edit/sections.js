@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
 import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
-import { TutorCard } from "@/components/TutorCard";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolCombobox } from "@/components/SchoolCombobox";
@@ -1339,7 +1338,7 @@ export function AvailabilitySection({ tutor, set, bare = false }) {
 
 
 /* ============================================================
-   Sidebar (completion meter, visibility, public link, mini preview)
+   Sidebar (completion meter, visibility, public link)
    ============================================================ */
 
 // The completion meter and the tutor-ordering algorithm share one definition of
@@ -1348,46 +1347,7 @@ export function AvailabilitySection({ tutor, set, bare = false }) {
 // tutor's % here is exactly what drives their rank on / and /browse.
 export const calcCompletion = completionScore;
 
-function MiniPreview({ tutor, catalog = [] }) {
-  const bySlug = useMemo(() => new Map(catalog.map((s) => [s.slug, s])), [catalog]);
-  // Reshape the editor's tutor state into the camelCase, subject-object shape
-  // TutorCard expects. Subjects in editor state are slug strings; map them
-  // through the catalog so subjectLabel() returns the proper exam-prefixed
-  // label. Placeholders fill name/bio/location so empty profiles still look
-  // like a card instead of a blank.
-  const display = useMemo(() => ({
-    ...tutor,
-    name: tutor.name || "Your name",
-    initial: (tutor.name || " ").trim().charAt(0).toUpperCase() || tutor.initial,
-    bio: tutor.bio || "Your tagline",
-    suburb: tutor.suburb || "Suburb",
-    city: tutor.city || "",
-    subjects: (tutor.subjects || []).map((slug) => bySlug.get(slug) ?? { name: slug, slug }),
-    credentials: (tutor.credentials || []).filter((c) => c?.label),
-    rate: tutor.rate || 0,
-    slug: tutor.slug || "preview",
-    // Match tutorRowToCard: surface the first high school + first university (by
-    // position) so the preview stacks them the same way the live card does.
-    ...(() => {
-      const sortedEdu = (tutor.education || [])
-        .slice()
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-      return {
-        highSchool: sortedEdu.find((e) => (e.level ?? "high_school") === "high_school")?.school || "",
-        university: sortedEdu.find((e) => e.level === "university")?.school || "",
-      };
-    })(),
-  }), [tutor, bySlug]);
-  // pointer-events disabled so clicking the preview doesn't navigate; the
-  // hover animation also pauses, which is the right call for a preview.
-  return (
-    <div style={{ pointerEvents: "none" }}>
-      <TutorCard tutor={display} />
-    </div>
-  );
-}
-
-export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
+export function Sidebar({ tutor, set, publicHref, publicUrl }) {
   const c = useMemo(() => calcCompletion(tutor), [tutor]);
   const visOptions = [
     { value: "public",   label: "Public", hint: "Visible to everyone." },
@@ -1418,12 +1378,6 @@ export function Sidebar({ tutor, set, publicHref, publicUrl, catalog }) {
   };
   return (
     <aside className="space-y-5">
-      <div>
-        <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2 px-1">Live preview</div>
-        <MiniPreview tutor={tutor} catalog={catalog} />
-        <div className="text-[12px] text-slate-400 mt-2 px-1">Updates as you type — exactly how your card appears on browse and the home page.</div>
-      </div>
-
       <RequestVerification status={tutor.verificationStatus} completionPct={c.pct} />
 
       <Card padding={20}>

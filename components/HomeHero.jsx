@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
@@ -9,8 +8,6 @@ import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { TypewriterWord } from "@/components/TypewriterWord";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
-import { HeroTutorStack } from "@/components/HeroTutorStack";
-import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 // Fixed word list for the cycling headline — hero copy, deliberately not tied
@@ -29,12 +26,15 @@ const TYPEWRITER_WORDS = [
 ];
 
 /**
- * Single-viewport hero: an animated "neural network" constellation fills the
- * whole hero behind a two-column layout — a compact headline + feature bullets
- * + search bar on the left, a stacked tutor-card carousel on the right. The
- * search wiring (`goBrowse`) filters by school + subject.
+ * Hero at 90svh: an animated "neural network" constellation fills the
+ * whole hero behind one centred column — eyebrow, headline, feature bullets,
+ * search bar, scroll cue. The search wiring (`goBrowse`) filters by school +
+ * subject.
+ *
+ * The hero carries no tutor cards: that surface is the featured-tutors marquee
+ * (`components/FeaturedTutors.jsx`), one section down.
  */
-export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], verifiedCount }) {
+export function HomeHero({ catalog, schoolCatalog = [] }) {
   const router = useRouter();
   const [school, setSchool] = useState(null);
   const [subject, setSubject] = useState(null);
@@ -51,7 +51,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
     <section
       className="relative z-10 flex flex-col px-6"
       style={{
-        minHeight: "100svh",
+        minHeight: "90svh",
         marginTop: "calc(-1 * var(--nav-h))",
         background: "linear-gradient(180deg, var(--bg-soft) 0%, var(--paper) 78%)",
         borderBottom: "1px solid var(--line-soft)",
@@ -86,18 +86,18 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
         </div>
       </div>
 
-      {/* Overlay — two-column content up top, full-width search bar pinned near
-          the bottom. z-20 keeps the search dropdowns above the backdrop. */}
+      {/* Overlay — the centred content column. z-20 keeps the search dropdowns
+          above the backdrop. */}
       <div className="relative z-20 flex-1 w-full max-w-[1200px] mx-auto flex flex-col">
-        {/* Upper region: bullets/headline left, tutor carousel right. */}
+        {/* Upper region: one centred column, vertically centred in the hero. */}
         <div className="flex-1 flex items-center py-16 lg:py-0">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            {/* LEFT — eyebrow + headline + trust bullets + search bar.
-                Phones (<sm) centre everything and stretch to the first screen
-                height (100svh minus the wrapper's py-16 top padding) so the
-                text block owns the viewport and the cards sit below the fold;
-                sm+ keeps the left alignment and natural height. */}
-            <div className="relative flex flex-col items-center justify-center text-center min-h-[calc(100svh-4rem)] sm:min-h-0 sm:justify-start sm:items-start sm:text-left">
+          <div className="w-full flex justify-center">
+            {/* Eyebrow + headline + search bar + trust bullets, centred at
+                every breakpoint. Deliberately uncapped: the headline is two
+                explicit lines and the search bar carries its own max-width, so
+                the only element that wants the full 1200px is the bullet row,
+                which must stay on one line. */}
+            <div className="relative flex flex-col items-center text-center w-full">
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -120,7 +120,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 }}
                 aria-label="Trust your next tutor"
-                className="flex flex-col items-center sm:items-start"
+                className="flex flex-col items-center"
                 style={{
                   fontSize: "clamp(44px, 5vw, 68px)",
                   fontWeight: 300,
@@ -140,27 +140,14 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 </span>
               </motion.h1>
 
-              {/* Feature bullets — replace the old prose + trust pills. */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.35 }}
-                className="mt-6 grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:flex-col sm:gap-6"
-              >
-                <FeatureBullet icon="check" short="Verified ATARs">Verified ATARs and marks</FeatureBullet>
-                <FeatureBullet icon="shield" short="Free browsing">Completely free browsing</FeatureBullet>
-                <FeatureBullet icon="graduation" short="Private & group">Private and group tutoring</FeatureBullet>
-                <FeatureBullet icon="globe" short="In-person & online">In-person and Online</FeatureBullet>
-              </motion.div>
-
-              {/* Compact search bar (School · Subject · Search) — sits within the
-                  left column beneath the bullets. */}
+              {/* Compact search bar (School · Subject · Search) — centred
+                  directly beneath the headline. */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
-                className="relative z-30 mt-7 w-full max-w-[560px] hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_auto] items-stretch hero-search-glow"
-                style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, padding: 6 }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.35 }}
+                className="relative z-30 mt-8 w-full max-w-[720px] mx-auto hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_auto] items-stretch hero-search-glow"
+                style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 13, padding: 5 }}
               >
                 <SchoolPicker
                   catalog={schoolCatalog}
@@ -182,8 +169,8 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 />
                 {/* Icon-only search button, inset from the bar's edge. */}
                 <div className="px-1.5 flex items-center">
-                  <Button variant="primary" size="lg" onClick={goBrowse} full radius={16} ariaLabel="Search">
-                    <Icon name="search" size={18} />
+                  <Button variant="primary" size="md" onClick={goBrowse} full radius={14} ariaLabel="Search">
+                    <Icon name="search" size={17} />
                   </Button>
                 </div>
               </motion.div>
@@ -192,68 +179,37 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
-                className="mt-6 flex sm:hidden"
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.35 }}
+                className="mt-8 flex sm:hidden"
               >
                 <Button variant="primary" size="lg" icon="search" onClick={goBrowse}>
                   Search Now
                 </Button>
               </motion.div>
 
-              {/* Phones: scroll cue pinned to the bottom of the first-screen
-                  text column (the column ends exactly at the fold). */}
-              <ScrollPrompt className="flex sm:hidden absolute bottom-8 left-1/2 -translate-x-1/2" />
+              {/* Feature bullets — one row at every width. Phones get the
+                  four-column stacked variant (icon over a terse label), sm+ a
+                  nowrap horizontal row. */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
+                className="mt-8 grid w-full grid-cols-4 gap-2 sm:mt-9 sm:flex sm:w-auto sm:flex-nowrap sm:justify-center sm:gap-x-5 lg:gap-x-8"
+              >
+                <FeatureBullet icon="check" short="Verified ATARs">Verified ATARs and marks</FeatureBullet>
+                <FeatureBullet icon="shield" short="Free browsing">Completely free browsing</FeatureBullet>
+                <FeatureBullet icon="graduation" short="Private & group">Private and group tutoring</FeatureBullet>
+                <FeatureBullet icon="globe" short="In-person & online">In-person and Online</FeatureBullet>
+              </motion.div>
+
             </div>
-
-            {/* RIGHT — stacked tutor-card carousel (omitted when no verified
-                tutors exist). Phones (<sm) swap the carousel for three plain
-                cards in normal page flow, so you scroll past them to the
-                "See all" link; sm+ is unchanged. */}
-            {showcaseTutors.length > 0 && (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
-                  className="w-full hidden sm:flex justify-center"
-                >
-                  {/* The stack is the only element in the centering flow (the link
-                      is absolutely positioned below it), so the card's vertical
-                      centre lines up with the left column's text. The lg nudge
-                      re-centres it visually within the right column. */}
-                  <div className="relative w-full max-w-[460px] lg:translate-x-8">
-                    <HeroTutorStack tutors={showcaseTutors} />
-                    <SeeAllTutorsLink
-                      verifiedCount={verifiedCount}
-                      className="absolute left-1/2 -translate-x-1/2 top-full mt-5"
-                    />
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.25 }}
-                  className="sm:hidden w-full max-w-[340px] mx-auto flex flex-col gap-6"
-                >
-                  {showcaseTutors.slice(0, 3).map((tutor) => (
-                    <TutorCard key={tutor.id ?? tutor.slug} tutor={tutor} showSave={false} />
-                  ))}
-                  <div className="flex justify-center">
-                    {/* `relative` anchors the underline span (desktop's variant
-                        is `absolute`, which does the same job there). */}
-                    <SeeAllTutorsLink verifiedCount={verifiedCount} className="relative" />
-                  </div>
-                </motion.div>
-              </>
-            )}
           </div>
         </div>
       </div>
 
-      {/* sm+ (tablet/desktop): scroll cue at the bottom of the hero viewport.
-          z-10 sits above the backdrop but below the z-20 content overlay. */}
-      <ScrollPrompt className="hidden sm:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-10" />
+      {/* Scroll cue at the bottom of the hero viewport. z-10 sits above the
+          backdrop but below the z-20 content overlay. */}
+      <ScrollPrompt className="flex absolute bottom-6 left-1/2 -translate-x-1/2 z-10" />
     </section>
   );
 }
@@ -276,40 +232,25 @@ function ScrollPrompt({ className = "" }) {
   );
 }
 
-// "See all N verified tutors" link with the animated underline. Positioning is
-// the caller's job: desktop hangs it off the carousel absolutely, phones drop
-// it in flow under the card list.
-function SeeAllTutorsLink({ verifiedCount, className = "" }) {
-  return (
-    <Link
-      href="/browse"
-      className={`group inline-flex items-center gap-2 text-[14px] font-medium whitespace-nowrap ${className}`}
-      style={{ color: "var(--accent)" }}
-    >
-      See all{typeof verifiedCount === "number" ? ` ${verifiedCount}` : ""} verified tutors
-      <Icon name="arrow-right" size={14} />
-      <span
-        aria-hidden="true"
-        className="absolute left-0 right-[24px] -bottom-0.5 h-px origin-left scale-x-0 group-hover:scale-x-100"
-        style={{ background: "var(--accent)", transition: "transform 280ms cubic-bezier(0.22,1,0.36,1)" }}
-      />
-    </Link>
-  );
-}
-
 // One trust bullet: a bare teal icon + label (no badge — the design calls for
-// the icon to sit directly against the text). On phones the four render as an
-// app-store-style strip: icon on top, tiny label under (`short` text); sm+ keeps
-// the icon-beside-text row.
+// the icon to sit directly against the text). Phones stack the icon over the
+// label so all four fit one grid row; sm+ is the icon-beside-text row.
+//
+// The row must never wrap, so the label shortens as space tightens: the terse
+// `short` text up to lg, the full sentence only at lg+ where the four long
+// labels actually fit side by side.
 function FeatureBullet({ icon, short, children }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 text-center sm:flex-row sm:gap-2.5 sm:text-left">
+    <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-left">
       <span className="inline-flex items-center justify-center shrink-0" style={{ color: "var(--accent)" }}>
-        <Icon name={icon} size={15} />
+        <Icon name={icon} size={13} />
       </span>
-      <span className="text-[11px] leading-tight sm:text-[14px] sm:font-normal font-medium" style={{ color: "var(--ink)" }}>
-        <span className="sm:hidden">{short ?? children}</span>
-        <span className="hidden sm:inline">{children}</span>
+      <span
+        className="text-[10px] leading-tight font-medium sm:text-[12px] sm:font-normal sm:whitespace-nowrap lg:text-[13px]"
+        style={{ color: "var(--ink)" }}
+      >
+        <span className="lg:hidden">{short ?? children}</span>
+        <span className="hidden lg:inline">{children}</span>
       </span>
     </div>
   );

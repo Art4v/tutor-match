@@ -1,23 +1,12 @@
-"use client";
-import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
-import { EASE_OUT } from "@/lib/motion";
 
 /**
- * Animated availability grid.
+ * Weekly availability grid.
  *
  * The editor grid spans the full 24h, one row per hour (24 rows). On the
  * public profile we clip to the tutor's marked range — the first through last
  * row that has any Free/Booked cell — so an early-morning-to-evening tutor isn't
  * shown a wall of empty midnight rows.
- *
- * Phase 1 — the blank table fades in (every cell renders in its "unavailable"
- * baseline appearance: pale slate background, no glyph).
- * Phase 2 — cells that are Free / Booked transition into their coloured
- * backgrounds and pop their glyph in, staggered across rows and columns so
- * the grid fills in like a wave from top-left.
- * Phase 3 — the legend swatches enter in the same order their meaning appears
- * in the grid (Unavailable first with the table, then Free, then Booked).
  */
 export function AvailabilityGrid({ availability }) {
   const { hours, days, grid } = availability;
@@ -41,134 +30,73 @@ export function AvailabilityGrid({ availability }) {
   const rows = [];
   for (let hi = firstRow; hi <= lastRow; hi++) rows.push({ hi, label: hours[hi] });
 
-  // Phase timing (seconds)
-  const TABLE_FADE_DURATION = 0.4;
-  const PHASE_2_START = TABLE_FADE_DURATION + 0.1;
-  // Step per row scales down as the range grows so the wave never drags on.
-  const ROW_STEP = Math.min(0.06, 1.4 / Math.max(rows.length, 1));
-  const COL_STEP = 0.03;
-
-  // Compute the maximum cell delay so the legend can land right after the
-  // last coloured cell pops.
-  let maxCellDelay = PHASE_2_START;
-  rows.forEach(({ hi }, ri) => {
-    for (let di = 0; di < days.length; di++) {
-      const v = grid[hi]?.[di] ?? 0;
-      if (v !== 0) {
-        const d = PHASE_2_START + ri * ROW_STEP + di * COL_STEP;
-        if (d > maxCellDelay) maxCellDelay = d;
-      }
-    }
-  });
-
   return (
     <div>
-      <motion.div
-        className="overflow-x-auto"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-12% 0px" }}
-        transition={{ duration: TABLE_FADE_DURATION, ease: EASE_OUT }}
-      >
+      <div className="overflow-x-auto">
         <table
-          className="w-full text-[12px]"
-          style={{ borderCollapse: "separate", borderSpacing: 4, tableLayout: "fixed" }}
+          className="w-full"
+          style={{ borderCollapse: "separate", borderSpacing: 8, tableLayout: "fixed" }}
         >
           <thead>
             <tr>
-              <th className="text-left text-slate-400 font-normal" style={{ width: 50 }}></th>
+              <th style={{ width: 54 }}></th>
               {days.map((d) => (
-                <th key={d} className="text-center text-slate-500 font-medium">{d}</th>
+                <th key={d} className="text-center text-[13px] font-medium" style={{ color: "var(--ink-muted)" }}>{d}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ hi, label }, ri) => (
+            {rows.map(({ hi, label }) => (
               <tr key={hi}>
-                <td className="text-slate-400 tabular-nums pr-2 text-right">{label}</td>
-                {days.map((_, di) => {
-                  const v = grid[hi]?.[di] ?? 0;
-                  const cellDelay = PHASE_2_START + ri * ROW_STEP + di * COL_STEP;
-                  return (
-                    <td key={di}>
-                      <Cell v={v} delay={cellDelay} />
-                    </td>
-                  );
-                })}
+                <td className="text-[12.5px] tabular-nums text-right" style={{ color: "var(--sage)" }}>{label}</td>
+                {days.map((_, di) => (
+                  <td key={di}>
+                    <Cell v={grid[hi]?.[di] ?? 0} />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
-      </motion.div>
+      </div>
 
-      <div className="flex items-center gap-4 mt-4 text-[12px] text-slate-500 flex-wrap">
+      <div className="flex items-center gap-4 mt-3 text-[13px] flex-wrap" style={{ color: "var(--sage)" }}>
         <LegendSwatch
           label="Free"
           bg="var(--accent-soft)"
           border="var(--accent-line)"
           icon="check"
           iconColor="var(--accent)"
-          delay={maxCellDelay + 0.15}
         />
-        <LegendSwatch
-          label="Unavailable"
-          bg="var(--bg-soft)"
-          delay={TABLE_FADE_DURATION + 0.05}
-        />
+        <LegendSwatch label="Unavailable" bg="var(--bg-soft)" />
       </div>
     </div>
   );
 }
 
-function Cell({ v, delay }) {
-  // Every cell starts looking unavailable (pale slate, no glyph). Cells with
-  // real values transition to their coloured state at `delay`. v === 0 cells
-  // stay in the baseline appearance forever.
-  const baseline = { background: "var(--bg-soft)", color: "var(--line-strong)" };
-  const target =
+function Cell({ v }) {
+  const tone =
     v === 1
       ? { background: "var(--accent-soft)", color: "var(--accent)" }
       : v === 2
       ? { background: "var(--desk)", color: "var(--accent-hover)" }
-      : baseline;
+      : { background: "var(--bg-soft)", color: "var(--line-strong)" };
 
   return (
-    <motion.div
-      className="h-8 rounded-md flex items-center justify-center font-medium"
-      initial={baseline}
-      whileInView={target}
-      viewport={{ once: true, margin: "-12% 0px" }}
-      transition={{ duration: 0.32, ease: EASE_OUT, delay: v === 0 ? 0 : delay }}
+    <div
+      className="flex items-center justify-center font-medium"
+      style={{ height: 36, borderRadius: 8, ...tone }}
       title={v === 1 ? "Free" : v === 2 ? "Booked" : "—"}
     >
-      {v !== 0 && (
-        <motion.span
-          className="inline-flex"
-          initial={{ scale: 0, opacity: 0 }}
-          whileInView={{ scale: 1, opacity: 1 }}
-          viewport={{ once: true, margin: "-12% 0px" }}
-          transition={{ duration: 0.28, ease: EASE_OUT, delay: delay + 0.08 }}
-        >
-          {v === 1 ? (
-            <Icon name="check" size={12} strokeWidth={2.5} />
-          ) : (
-            <Icon name="x" size={11} strokeWidth={2.5} />
-          )}
-        </motion.span>
-      )}
-    </motion.div>
+      {v === 1 && <Icon name="check" size={13} strokeWidth={2.5} />}
+      {v === 2 && <Icon name="x" size={12} strokeWidth={2.5} />}
+    </div>
   );
 }
 
-function LegendSwatch({ label, bg, border, icon, iconColor, delay }) {
+function LegendSwatch({ label, bg, border, icon, iconColor }) {
   return (
-    <motion.span
-      className="flex items-center gap-1.5"
-      initial={{ opacity: 0, y: 6 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-12% 0px" }}
-      transition={{ duration: 0.35, ease: EASE_OUT, delay }}
-    >
+    <span className="flex items-center gap-1.5">
       <span
         className="inline-flex items-center justify-center rounded"
         style={{
@@ -182,6 +110,6 @@ function LegendSwatch({ label, bg, border, icon, iconColor, delay }) {
         {icon && <Icon name={icon} size={11} strokeWidth={2.5} />}
       </span>
       {label}
-    </motion.span>
+    </span>
   );
 }

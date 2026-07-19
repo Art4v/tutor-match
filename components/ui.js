@@ -50,6 +50,23 @@ export function Avatar({
 // state-driven (not a native `title`) so it shows reliably even while the
 // surrounding card runs its own hover animation — a moving element resets the
 // native tooltip timer, so it would otherwise never appear on the card.
+// Shared visual treatment for the small dark hover tooltips (the verified-tick
+// explainer, the bookmark's "Save tutor"). Box metrics only — POSITIONING is up
+// to the caller, since one sits absolutely above its trigger and the other is
+// portalled to `position: fixed` to escape the card's overflow. Kept in one
+// place because the two drifted apart once already (3px/7px/r6 vs 5px/9px/r7),
+// which reads as a mistake when both can be on screen at the same time.
+export const TOOLTIP_STYLE = {
+  background: "var(--ink)",
+  color: "var(--paper-card)",
+  fontSize: 11.5,
+  lineHeight: 1.25,
+  padding: "5px 9px",
+  borderRadius: 7,
+  letterSpacing: "0.01em",
+  boxShadow: "0 6px 16px -6px rgba(0,49,47,0.5)",
+};
+
 export function VerifiedTick({ size = 14 }) {
   const [show, setShow] = useState(false);
   return (
@@ -84,17 +101,7 @@ export function VerifiedTick({ size = 14 }) {
         <span
           role="tooltip"
           className="pointer-events-none absolute left-1/2 bottom-full mb-1.5 -translate-x-1/2 whitespace-nowrap font-medium"
-          style={{
-            background: "var(--ink)",
-            color: "var(--paper-card)",
-            fontSize: 11,
-            lineHeight: 1.2,
-            padding: "3px 7px",
-            borderRadius: 6,
-            letterSpacing: "0.01em",
-            zIndex: 50,
-            boxShadow: "0 4px 12px -4px rgba(0,49,47,0.45)",
-          }}
+          style={{ ...TOOLTIP_STYLE, zIndex: 50 }}
         >
           Verified by hand
         </span>
@@ -103,12 +110,17 @@ export function VerifiedTick({ size = 14 }) {
   );
 }
 
-export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled, radius = 999 }) {
+export function Chip({ children, tone = "grey", size = "md", icon, onClick, active, onRemove, disabled, radius = 999 }) {
   const tones = {
     grey: { bg: active ? "var(--accent)" : "var(--desk)", color: active ? "#fff" : "var(--ink)", border: active ? "var(--accent)" : "transparent" },
     line: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--paper-line)" },
     cream: { bg: "var(--bg-soft)", color: "var(--ink-muted)", border: "var(--paper-line)" },
     accent: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
+    pill: { bg: "var(--pill)", color: "var(--pill-ink)", border: "var(--chip-line)" },
+  };
+  const sizes = {
+    md: "gap-1.5 px-2.5 py-1 text-[12.5px]",
+    sm: "gap-[5px] px-[9px] py-1 text-[12px]",
   };
   const t = tones[tone];
   const clickable = !!onClick && !disabled;
@@ -129,7 +141,7 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
       onClick={clickable ? onClick : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12.5px] font-medium"
+      className={`inline-flex items-center font-medium ${sizes[size] || sizes.md}`}
       style={{
         background: bg,
         color,
@@ -165,24 +177,27 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
   );
 }
 
+// Buttons are deliberately static on hover: no colour/border/ring shift and no
+// iconRight nudge. The only pointer feedback is the press-scale below, which is
+// click feedback rather than a hover animation.
 export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, radius, ariaLabel }) {
   const variants = {
-    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)", hoverBg: "var(--accent-hover)", hoverBorder: "var(--accent-hover)", hoverColor: "#fff" },
-    outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)", hoverBg: "var(--paper-card)", hoverBorder: "var(--accent)", hoverColor: "var(--accent)" },
-    ghost:   { bg: "transparent", color: "var(--ink)", border: "transparent", hoverBg: "var(--accent-softer)", hoverBorder: "transparent", hoverColor: "var(--accent)" },
-    soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)", hoverBg: "var(--accent-soft)", hoverBorder: "var(--accent-line)", hoverColor: "var(--accent)" },
-    dark:    { bg: "var(--ink)", color: "#fff", border: "var(--ink)", hoverBg: "var(--ink-graphite-deep)", hoverBorder: "var(--ink-graphite-deep)", hoverColor: "#fff" },
+    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)" },
+    outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)" },
+    ghost:   { bg: "transparent", color: "var(--ink)", border: "transparent" },
+    soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
+    dark:    { bg: "var(--ink)", color: "#fff", border: "var(--ink)" },
   };
   const sizes = {
     sm: { pad: "6px 12px", fs: 13, h: 32, r: 8 },
     md: { pad: "8px 16px", fs: 14, h: 38, r: 9 },
     lg: { pad: "11px 20px", fs: 15, h: 44, r: 10 },
+    // Profile-page primary CTA (the sidebar "Message" button).
+    xl: { pad: "13px 20px", fs: 15, h: 48, r: 11 },
   };
   const v = variants[variant] || variants.primary;
   const s = sizes[size];
-  const [hover, setHover] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const isHover = hover && !disabled;
 
   return (
     <button
@@ -190,15 +205,14 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => { setHover(false); setPressed(false); }}
+      onMouseLeave={() => setPressed(false)}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       style={{
-        background: isHover ? v.hoverBg : v.bg,
-        color: isHover ? v.hoverColor : v.color,
-        border: `1px solid ${isHover ? v.hoverBorder : v.border}`,
+        background: v.bg,
+        color: v.color,
+        border: `1px solid ${v.border}`,
         padding: s.pad,
         fontSize: s.fs,
         height: s.h,
@@ -207,8 +221,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         cursor: disabled ? "not-allowed" : "pointer",
         letterSpacing: "-0.005em",
         transform: pressed && !disabled ? "scale(0.98)" : "scale(1)",
-        boxShadow: isHover && (variant === "primary" || variant === "dark") ? "0 0 0 4px var(--accent-ring)" : "none",
-        transition: "background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, transform 120ms ease-out",
+        transition: "transform 120ms ease-out",
       }}
     >
       {icon && <Icon name={icon} size={s.fs + 2} />}
@@ -216,13 +229,7 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
         {children}
       </span>
       {iconRight && (
-        <span
-          style={{
-            display: "inline-flex",
-            transition: "transform 220ms cubic-bezier(0.22,1,0.36,1)",
-            transform: isHover ? "translateX(3px)" : "translateX(0)",
-          }}
-        >
+        <span style={{ display: "inline-flex" }}>
           <Icon name={iconRight} size={s.fs + 2} />
         </span>
       )}

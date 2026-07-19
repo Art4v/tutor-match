@@ -1,28 +1,22 @@
-"use client";
-import { SectionReveal } from "@/components/anim/SectionReveal";
-import { StaggerChildren, RevealItem } from "@/components/anim/CardReveal";
 import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
+import { cardStyle } from "./ProfileCards";
 
 export function AboutCard({ text }) {
   const blocks = parseRichTextBlocks(text);
   return (
-    <SectionReveal
-      as="section"
+    <section
       id="about"
-      hover
-      className="paper-page bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}
+      className="bg-[color:var(--paper-card)]"
+      style={{ ...cardStyle, padding: "20px 24px" }}
     >
-      <StaggerChildren delay={0.2} step={0.1} className="text-[15px] text-slate-600 leading-[1.6]">
-        <RevealItem className="mb-5">
-          <h2 className="text-[18px] font-light text-slate-800 tracking-tight">About</h2>
-        </RevealItem>
+      <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-4">About</h2>
+      <div className="text-[15.5px] leading-[1.72] max-w-[70ch]" style={{ color: "var(--ink)" }}>
         {blocks.map((b, idx) => (
-          <RevealItem key={idx} className="mb-3 last:mb-0">
+          <div key={idx} className="mb-3 last:mb-0">
             <RichTextBlock block={b} idx={idx} />
-          </RevealItem>
+          </div>
         ))}
-      </StaggerChildren>
-    </SectionReveal>
+      </div>
+    </section>
   );
 }

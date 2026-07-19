@@ -1,188 +1,194 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import Link from "next/link";
-import { motion, AnimatePresence, useInView } from "motion/react";
-import { Icon } from "@/components/Icon";
-import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
+import { useLayoutEffect, useRef, useState } from "react";
+import { motion, useInView, useReducedMotion } from "motion/react";
+import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
+// Cards are static: no hover motion, no click-through. Everything a step needs
+// to say is on its face.
 const STEPS = [
   {
     n: "01",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
-    t: "Browse verified profiles",
+    t: "Browse Verified Profiles",
     b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
-    backTitle: "Browse, the way you'd want to",
-    backLead:
-      "We verify every tutor's ATAR, subject marks and identity before they appear in search. You see the people who actually have the receipts.",
-    bullets: [
-      "Every tutor independently verified. ATAR, marks, identity.",
-      "Filter by subject, year level, suburb, hourly rate, in-person or online.",
-      "Free to browse. No account needed until you want to reach out.",
-    ],
-    cta: { label: "Start browsing", href: "/browse" },
   },
   {
     n: "02",
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
-    t: "Pick a tutor that fits",
+    t: "Pick a Tutor that Fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
-    backTitle: "Reach out directly. No agency in the middle",
-    backLead:
-      "When you've found someone who fits, sign up as a student (free) and email them directly. We don't take a cut, and there's no platform fee on top of the tutor's rate.",
-    bullets: [
-      "Sign up free as a student. Takes about a minute.",
-      "Contact tutors directly by email. No agency, no booking fee.",
-      "Pick the tutor's flat hourly rate, or choose one of their listed packages.",
-    ],
-    cta: { label: "Create a free account", href: "/signup" },
   },
   {
     n: "03",
     image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
-    t: "Lessons, reviews, switching",
+    t: "Lessons and Reviews",
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
-    backTitle: "Lessons on your terms",
-    backLead:
-      "Meet in person or over video. Whatever suits the subject. After sessions, leave a review so the next student knows what they're getting. Not the right fit? Switch tutors, no questions asked.",
-    bullets: [
-      "Lessons in person or over video. Your call, their availability.",
-      "Leave a review after sessions so other students can choose well.",
-      "Switch tutors any time. You're never locked into anyone.",
-    ],
-    cta: { label: "Find your tutor", href: "/browse" },
   },
 ];
 
-// ── "Growing tree" desktop canvas (Claude Design: How It Works Tree) ──
-// Trunk/leaf colours are design-local like the rest of this file's inline
+// ── Vine canvas palette ──
+// Vine/leaf colours are design-local like the rest of this file's inline
 // palette; card surfaces keep the shared CSS variables.
-const TRUNK_COLOR = "#0B6B67";
+const VINE_COLOR = "#0B6B67";
 const LEAF_FILL = "#57B0AB";
 const LEAF_STROKE = "#0B7571";
 const DRAW_EASE = [0.45, 0.05, 0.2, 1];
 const LEAF_POP_EASE = [0.3, 1.5, 0.5, 1];
 
-const CANVAS_W = 1100;
-const CANVAS_H = 1180;
+// ── Timeline ──
+// One scroll trigger per canvas; everything below is delay-driven off it, so
+// the choreography is scripted rather than racing three separate inView flags
+// (horizontally the three cards enter the viewport at nearly the same instant,
+// which would collapse the sequencing entirely).
+const T = {
+  vineDraw: 1.2,
+  sun: 0.9,
+  clouds: [1.5, 1.7],
+  birds: 1.6,
+  // Per step: [stem start, card start]. Card lands 0.25s behind its stem tip.
+  steps: [
+    [1.0, 1.25],
+    [1.7, 1.95],
+    [2.4, 2.65],
+  ],
+  stemDraw: 0.5,
+  fall: 3.4,
+};
+
+// Reduced motion collapses every entrance to its settled state (duration and
+// delay both zero); the perpetual loops are dropped at their call sites.
+function tm(reduced, duration, delay = 0) {
+  return reduced ? { duration: 0, delay: 0 } : { duration, delay };
+}
+
+// ── Desktop canvas (1200 × 740) ──
+// Authored in fixed coordinates and scaled as one unit (SVG + absolutely
+// positioned cards together) so stem tips stay glued to card edges at every
+// width. Bands: sky 0–190, vine ~200, stems 200–300, cards 300–600. Cards are
+// content-height (~300), not the 440 the sketch frame is authored at, so the
+// canvas floor sits just under them rather than leaving a dead band.
+const D_W = 1200;
+const D_H = 640;
+
+const D_VINE_D =
+  "M36 202 C 180 182 300 214 430 198 C 560 182 690 216 820 200 C 930 187 1060 212 1164 196";
+
+// Stems drop from the vine at the card centres and run PAST the card's top
+// edge (300), ending at 360 so the tail is hidden behind the card. The SVG is
+// z-1 and the cards are z-2 with an opaque white sketch fill, so the stem
+// simply disappears under the card. Stopping short of the edge instead left a
+// visible gap between stem tip and card.
+const D_STEM_DS = [
+  "M220 198 C 214 240 228 300 220 360",
+  "M600 200 C 606 242 592 302 600 360",
+  "M980 200 C 974 240 988 300 980 360",
+];
+
+const LEAF_D = "M0 0 C 4 -8 15 -9 20 -1 C 15 6 4 5 0 0 Z";
+
+// [x, y, rotate, scale, delay] — delays track the draw head sweeping left to
+// right (1.2s over x 36→1164), so leaves pop as the line reaches them.
+const D_VINE_LEAVES = [
+  [110, 186, -40, 0.95, 0.32],
+  [300, 212, 150, 0.9, 0.5],
+  [470, 184, -30, 1.0, 0.65],
+  [700, 214, 160, 0.95, 0.85],
+  [880, 186, -46, 0.9, 1.0],
+  [1090, 210, 146, 1.0, 1.18],
+];
+
+// Leaf pairs at each stem's shoulder; fire with their stem.
+const D_STEM_LEAVES = [
+  [
+    [206, 240, 168, 0.9],
+    [236, 262, 20, 0.85],
+  ],
+  [
+    [586, 244, 166, 0.9],
+    [616, 266, 24, 0.85],
+  ],
+  [
+    [966, 242, 170, 0.9],
+    [996, 264, 18, 0.85],
+  ],
+];
+
+const CARD_W = 340;
+const CARD_TOP = 300;
+const CARD_LEFTS = [50, 430, 810];
+
+// Sun sits up in the sky band, level with the birds and clouds, clear of the
+// vine at y ~200. It no longer tucks behind a card. Sitting high and far right
+// puts it just clear of the heading copy's 820px block, so it flanks the
+// heading rather than sitting under the text.
+const SUN = { cx: 1060, cy: 60, r: 34, rayIn: 44, rayOut: 58 };
+
+// Cloud doodle outline shares the vine's stroke style.
+const CLOUD_D =
+  "M14 26 C 4 26 0 16 8 11 C 6 3 16 -3 24 2 C 28 -8 44 -8 48 2 C 58 -3 68 5 63 12 C 71 16 67 26 58 26 Z";
+
+// ── Mobile canvas (340 × 1060) ──
+// The vertical trunk from the old tree survives here: at a uniform 0.98× it is
+// ~992 units tall and ~31 wide, a close fit for a three-card stack in a narrow
+// left gutter, so it needs no re-authoring. Its old branches and leaf stages
+// do NOT survive the move (branch 1 pointed left, off-canvas; several leaves
+// landed at negative x), so those are re-authored below. Mobile carries no
+// undergrowth: the band read as a disconnected strip under a tall stack.
+const M_W = 340;
+const M_H = 1060;
+const M_CARD_W = 252;
+const M_CARD_LEFT = 72;
+const M_CARD_TOPS = [40, 380, 720];
 
 const TRUNK_D =
   "M550 46 C 534 170 566 290 551 410 C 540 500 561 600 550 700 C 542 800 566 900 551 990 C 546 1020 550 1045 550 1058";
-// Roots kept as separate paths so all three draw simultaneously.
-const ROOT_DS = [
-  "M550 1035 C 542 1080 486 1098 448 1130",
-  "M550 1035 C 558 1082 620 1098 664 1132",
-  "M550 1045 C 549 1090 550 1122 550 1146",
-];
-const BRANCH_DS = [
-  "M551 270 C 504 282 478 300 492 318",
-  "M550 520 C 596 532 590 560 604 580",
-  "M551 770 C 506 782 486 812 512 830",
-];
-const LEAF_D = "M0 0 C 4 -8 15 -9 20 -1 C 15 6 4 5 0 0 Z";
-// [x, y, rotate, scale] per leaf. Stage 0 is the crown (fires with the trunk);
-// stages 1–3 fire with the matching card's branch.
-const LEAF_STAGES = [
-  [
-    [552, 44, -35, 1.15],
-    [562, 72, 22, 1.25],
-    [534, 66, 206, 1.1],
-    [548, 98, -72, 1],
-    [568, 108, 58, 1],
-    [532, 114, 150, 0.9],
-  ],
-  [
-    [542, 410, 162, 0.85],
-    [486, 312, 150, 1],
-    [500, 330, 202, 1.05],
-    [510, 300, 120, 0.9],
-  ],
-  [
-    [556, 460, 40, 0.9],
-    [612, 576, -20, 1],
-    [600, 592, 32, 1.05],
-    [620, 564, -58, 0.9],
-  ],
-  [
-    [560, 700, 30, 0.9],
-    [542, 770, 170, 0.85],
-    [508, 826, 150, 1],
-    [522, 842, 202, 1.05],
-    [526, 816, 120, 0.9],
-  ],
-];
-// Ambient leaves along the bare trunk stretches; delays roughly track the
-// trunk draw (2.2s over y 46→1058) passing each one.
-const AMBIENT_LEAVES = [
-  [546, 638, 155, 0.85, 1.5],
-  [560, 668, 28, 0.8, 1.65],
-  [544, 892, 168, 0.85, 2.0],
-  [562, 924, 22, 0.9, 2.15],
-];
-// Doodle outlines (cloud, grass tuft) share the tree's stroke style.
-const CLOUD_D =
-  "M14 26 C 4 26 0 16 8 11 C 6 3 16 -3 24 2 C 28 -8 44 -8 48 2 C 58 -3 68 5 63 12 C 71 16 67 26 58 26 Z";
-const GRASS_D =
-  "M0 0 C -1 -6 -5 -10 -9 -13 M2 0 C 3 -8 3 -14 1 -18 M4 0 C 6 -6 10 -10 13 -14";
+// scale first, then translate: x 534–566 → ~9–41, y 46–1058 → ~45–1037.
+const M_TRUNK_TRANSFORM = "translate(-514 0) scale(0.98)";
 
-// Card lefts keep each branch tip on the card's near edge: b1 → (492,318),
-// b2 → (604,580), b3 → (512,830).
-const CARD_W = 400;
-const CARD_POS = [
-  { left: 90, top: 140 },
-  { left: 600, top: 420 },
-  { left: 110, top: 700 },
+// Stems reach right off the trunk and run PAST each card's left edge (72),
+// ending at 130 so the tail is hidden behind the card, same as desktop.
+const M_STEM_DS = [
+  "M27 95 C 50 90 90 100 130 99",
+  "M27 435 C 50 430 90 440 130 439",
+  "M27 775 C 50 770 90 780 130 779",
+];
+
+// [x, y, rotate, scale, delay] — delays track the trunk draw (1.8s over
+// y 45→1037).
+const M_VINE_LEAVES = [
+  [40, 120, -40, 0.85, 0.3],
+  [16, 200, 160, 0.8, 0.45],
+  [42, 290, -34, 0.85, 0.58],
+  [16, 360, 158, 0.8, 0.68],
+  [42, 500, -40, 0.85, 0.88],
+  [16, 580, 162, 0.8, 1.0],
+  [42, 680, -30, 0.85, 1.12],
+  [16, 830, 160, 0.8, 1.35],
+  [42, 920, -38, 0.85, 1.5],
+];
+
+const M_STEPS_T = [
+  [0.5, 0.75],
+  [1.0, 1.25],
+  [1.5, 1.75],
 ];
 
 export function HomeHowItWorks() {
-  const [openIndex, setOpenIndex] = useState(null);
-  const [hiddenIndex, setHiddenIndex] = useState(null);
-  const [sourceRect, setSourceRect] = useState(null);
-  const [closeSignal, setCloseSignal] = useState(0);
-  // Desktop tree and mobile stack both render card i (one is display:none),
-  // so refs are keyed `d${i}` / `m${i}` and openCard measures the visible one.
-  const cardRefs = useRef({});
-  const registerEl = (key) => (el) => {
-    cardRefs.current[key] = el;
-  };
-
-  const openCard = (i) => {
-    const el = [cardRefs.current[`d${i}`], cardRefs.current[`m${i}`]].find(
-      (n) => n && n.getBoundingClientRect().width > 0,
-    );
-    if (el) {
-      const r = el.getBoundingClientRect();
-      setSourceRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-    }
-    setHiddenIndex(i);
-    setOpenIndex(i);
-  };
-
-  const requestClose = () => setCloseSignal((n) => n + 1);
-  const finalClose = () => setOpenIndex(null);
-  const onExitDone = () => setHiddenIndex(null);
-
-  useEffect(() => {
-    if (openIndex === null) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") requestClose();
-    };
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [openIndex]);
-
-  // Clean white band — the tree + sketched step cards carry this section, so it
+  // Clean white band — the vine + sketched step cards carry this section, so it
   // deliberately skips the desk surface / stationery backdrop that /browse and
   // the tutor page use.
   return (
-    <section className="relative overflow-hidden min-h-screen flex items-center" style={{ background: "var(--paper)" }}>
-      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-12">
-        <div className="max-w-[820px] mb-8 mx-auto text-center flex flex-col items-center">
+    // `z-0` is load-bearing: it gives this section its own stacking context so
+    // the inner `z-10` column stays trapped inside it. Without it that column
+    // competes directly with the hero's `z-10` in the root stacking context,
+    // ties, and wins on DOM order — painting this section over the hero's
+    // school/subject dropdowns.
+    <section id="how-it-works" className="relative z-0 overflow-hidden min-h-[90vh] flex items-center" style={{ background: "var(--paper)" }}>
+      <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 pt-12 pb-4">
+        {/* `relative z-10` lifts the heading above the canvas below it, which is
+            pulled up underneath by a negative margin so the sky doodles drift
+            around and behind this copy instead of starting below it. */}
+        <div className="max-w-[820px] mb-2 mx-auto text-center flex flex-col items-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -219,165 +225,116 @@ export function HomeHowItWorks() {
           </motion.p>
         </div>
 
-        <DesktopTree
-          openIndex={openIndex}
-          hiddenIndex={hiddenIndex}
-          onOpen={openCard}
-          registerEl={registerEl}
-        />
-
-        {/* Mobile keeps the original stacked cards — the tree canvas is desktop-only. */}
-        <motion.div
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-10% 0px" }}
-          variants={{
-            hidden: {},
-            show: { transition: { staggerChildren: STAGGER, delayChildren: 0.15 } },
-          }}
-          className="md:hidden grid grid-cols-1 gap-5"
-        >
-          {STEPS.map((s, i) => (
-            <HowItWorksCard
-              key={s.n}
-              step={s}
-              index={i}
-              isOpen={openIndex === i}
-              isHidden={hiddenIndex === i}
-              onOpen={() => openCard(i)}
-              cardRef={registerEl(`m${i}`)}
-            />
-          ))}
-        </motion.div>
+        <DesktopVine />
+        <MobileVine />
       </div>
-
-      <ExpandedOverlay
-        openIndex={openIndex}
-        sourceRect={sourceRect}
-        onRequestClose={requestClose}
-        onClose={finalClose}
-        onExitDone={onExitDone}
-        closeSignal={closeSignal}
-      />
     </section>
   );
 }
 
-// Scattered resting tilts + tape angles so the three step cards read as notes
-// taped to the wall (cycled by card index).
+// Scattered resting tilts so the three step cards read as notes pinned to the
+// wall (cycled by card index).
 const CARD_TILT = [-1.1, 1, -0.8];
-const TAPE_TILT = [-4, 3, -2];
 
-// A leafy sprig tucked against the sketched frame where the branch meets the
-// card: right edge for cards 1 & 3, left (mirrored) for card 2.
-const SPRIGS = [
-  { right: -20, top: 158, flip: false },
-  { left: -20, top: 142, flip: true },
-  { right: -22, top: 112, flip: false },
-];
-
-function CardSprig({ spec }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        position: "absolute",
-        zIndex: 4,
-        pointerEvents: "none",
-        top: spec.top,
-        ...(spec.flip ? { left: spec.left, transform: "scaleX(-1)" } : { right: spec.right }),
-      }}
-    >
-      <svg width="52" height="38" viewBox="0 0 52 38">
-        <path d="M50 8 C 40 15 26 20 6 22" fill="none" stroke={TRUNK_COLOR} strokeWidth="2.4" strokeLinecap="round" />
-        <path d="M8 20 C 12 8 26 4 40 8 C 34 20 18 26 8 20 Z" fill={LEAF_FILL} stroke={LEAF_STROKE} strokeWidth="1.4" />
-        <path d="M14 30 C 18 23 27 21 34 24 C 29 32 20 34 14 30 Z" fill={LEAF_FILL} stroke={LEAF_STROKE} strokeWidth="1.3" opacity="0.85" />
-      </svg>
-    </span>
-  );
-}
-
-// Desktop-only tree canvas: the design is authored in fixed 1100×1180
-// coordinates, so below that width the whole canvas (SVG + cards together) is
-// uniformly scaled — rescaling only the SVG would detach branch tips from the
-// absolutely-positioned cards.
-function DesktopTree({ openIndex, hiddenIndex, onOpen, registerEl }) {
+// Shared canvas wrapper: the design is authored in fixed coordinates, so below
+// that width the whole canvas (SVG + cards together) is uniformly scaled —
+// rescaling only the SVG would detach stem tips from the absolutely positioned
+// cards. Children get the canvas's single "in view" flag via render prop.
+function ScaledCanvas({ w, h, className, style, children }) {
   const outerRef = useRef(null);
-  const canvasRef = useRef(null);
-  const slot0 = useRef(null);
-  const slot1 = useRef(null);
-  const slot2 = useRef(null);
-  const slotRefs = [slot0, slot1, slot2];
-  const treeInView = useInView(canvasRef, { once: true, amount: 0.2 });
-  const in0 = useInView(slot0, { once: true, amount: 0.22 });
-  const in1 = useInView(slot1, { once: true, amount: 0.22 });
-  const in2 = useInView(slot2, { once: true, amount: 0.22 });
-  const cardInView = [in0, in1, in2];
+  const innerRef = useRef(null);
   const [scale, setScale] = useState(1);
+  const on = useInView(innerRef, { once: true, amount: 0.2 });
 
   useLayoutEffect(() => {
     const el = outerRef.current;
     if (!el) return;
     const update = () => {
-      const w = el.offsetWidth;
-      // 0 while the md breakpoint keeps this layout display:none.
-      if (w > 0) setScale(Math.min(1, w / CANVAS_W));
+      const width = el.offsetWidth;
+      // 0 while the breakpoint keeps this layout display:none.
+      if (width > 0) setScale(Math.min(1, width / w));
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [w]);
 
   return (
-    <div
-      ref={outerRef}
-      className="hidden md:block relative mx-auto"
-      style={{ maxWidth: CANVAS_W, marginTop: 28, height: CANVAS_H * scale }}
-    >
+    <div ref={outerRef} className={className} style={{ maxWidth: w, height: h * scale, ...style }}>
       <div
-        ref={canvasRef}
-        style={{
-          width: CANVAS_W,
-          height: CANVAS_H,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-        }}
+        ref={innerRef}
+        style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}
       >
-        <TreeSvg treeInView={treeInView} cardInView={cardInView} />
-        {STEPS.map((s, i) => (
-          <motion.div
-            key={s.n}
-            ref={slotRefs[i]}
-            className="absolute"
-            style={{ left: CARD_POS[i].left, top: CARD_POS[i].top, width: CARD_W, zIndex: 2 }}
-            initial={{ opacity: 0, y: 30 }}
-            animate={cardInView[i] ? { opacity: 1, y: 0 } : undefined}
-            transition={{ duration: 1, ease: EASE_OUT, delay: 0.3 }}
-          >
-            <HowItWorksCard
-              step={s}
-              index={i}
-              isOpen={openIndex === i}
-              isHidden={hiddenIndex === i}
-              onOpen={() => onOpen(i)}
-              cardRef={registerEl(`d${i}`)}
-              inView={cardInView[i]}
-              emphasized={i === 1}
-            />
-          </motion.div>
-        ))}
+        {children(on)}
       </div>
     </div>
   );
 }
 
-function DrawPath({ d, strokeWidth, on, duration, delay = 0 }) {
+function DesktopVine() {
+  const reduced = useReducedMotion();
+  return (
+    <ScaledCanvas
+      w={D_W}
+      h={D_H}
+      className="hidden md:block relative mx-auto"
+      // Negative margin slides the sky band up around the heading; zIndex 0
+      // keeps the whole canvas (and its cards) behind that copy.
+      style={{ marginTop: -130, zIndex: 0 }}
+    >
+      {(on) => (
+        <>
+          <DesktopVineSvg on={on} reduced={reduced} />
+          {STEPS.map((s, i) => (
+            <motion.div
+              key={s.n}
+              className="absolute"
+              style={{ left: CARD_LEFTS[i], top: CARD_TOP, width: CARD_W, zIndex: 2 }}
+              initial={{ opacity: 0, y: 26, rotate: CARD_TILT[i] }}
+              animate={on ? { opacity: 1, y: 0, rotate: CARD_TILT[i] } : undefined}
+              transition={{ ...tm(reduced, 0.8, T.steps[i][1]), ease: EASE_OUT }}
+            >
+              <HowItWorksCard step={s} emphasized={i === 1} imgH={130} />
+            </motion.div>
+          ))}
+        </>
+      )}
+    </ScaledCanvas>
+  );
+}
+
+function MobileVine() {
+  const reduced = useReducedMotion();
+  return (
+    <ScaledCanvas w={M_W} h={M_H} className="md:hidden relative mx-auto" style={{ marginTop: 8 }}>
+      {(on) => (
+        <>
+          <MobileVineSvg on={on} reduced={reduced} />
+          {STEPS.map((s, i) => (
+            <motion.div
+              key={s.n}
+              className="absolute"
+              style={{ left: M_CARD_LEFT, top: M_CARD_TOPS[i], width: M_CARD_W, zIndex: 2 }}
+              initial={{ opacity: 0, y: 22, rotate: CARD_TILT[i] }}
+              animate={on ? { opacity: 1, y: 0, rotate: CARD_TILT[i] } : undefined}
+              transition={{ ...tm(reduced, 0.8, M_STEPS_T[i][1]), ease: EASE_OUT }}
+            >
+              <HowItWorksCard step={s} emphasized={i === 1} imgH={110} compact />
+            </motion.div>
+          ))}
+        </>
+      )}
+    </ScaledCanvas>
+  );
+}
+
+function DrawPath({ d, strokeWidth, on, duration, delay = 0, reduced }) {
   return (
     <motion.path
       d={d}
       fill="none"
-      stroke={TRUNK_COLOR}
+      stroke={VINE_COLOR}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       // pathLength 0.001 + hidden opacity: a true 0 leaves a round-linecap
@@ -385,14 +342,14 @@ function DrawPath({ d, strokeWidth, on, duration, delay = 0 }) {
       initial={{ pathLength: 0.001, opacity: 0 }}
       animate={on ? { pathLength: 1, opacity: 1 } : undefined}
       transition={{
-        pathLength: { duration, ease: DRAW_EASE, delay },
-        opacity: { duration: 0.01, delay },
+        pathLength: reduced ? { duration: 0 } : { duration, ease: DRAW_EASE, delay },
+        opacity: reduced ? { duration: 0 } : { duration: 0.01, delay },
       }}
     />
   );
 }
 
-function Leaf({ x, y, r, s, on, delay }) {
+function Leaf({ x, y, r, s, on, delay, reduced }) {
   // Static placement on the outer <g>; only the inner path animates scale,
   // about its own bounding box so leaves pop from their centres.
   return (
@@ -406,118 +363,134 @@ function Leaf({ x, y, r, s, on, delay }) {
         initial={{ scale: 0.3, opacity: 0 }}
         animate={on ? { scale: 1, opacity: 1 } : undefined}
         transition={{
-          scale: { duration: 0.65, ease: LEAF_POP_EASE, delay },
-          opacity: { duration: 0.65, ease: "easeOut", delay },
+          scale: { ...tm(reduced, 0.65, delay), ease: LEAF_POP_EASE },
+          opacity: { ...tm(reduced, 0.65, delay), ease: "easeOut" },
         }}
       />
     </g>
   );
 }
 
-function TreeSvg({ treeInView, cardInView }) {
+function DesktopVineSvg({ on, reduced }) {
   return (
     <svg
-      viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+      viewBox={`0 0 ${D_W} ${D_H}`}
       width="100%"
       height="100%"
       aria-hidden="true"
       className="absolute inset-0"
       style={{ overflow: "visible", pointerEvents: "none", zIndex: 1 }}
     >
-      <DrawPath d={TRUNK_D} strokeWidth={5} on={treeInView} duration={2.2} />
-      {ROOT_DS.map((d) => (
-        <DrawPath key={d} d={d} strokeWidth={3.4} on={treeInView} duration={1.15} delay={1.2} />
+      <Sky on={on} reduced={reduced} />
+      {/* Sibling of Sky, not a child: nesting it inside Sky's opacity 0.5 group
+          compounded with the birds' own 0.55 and rendered them at 0.275. */}
+      <FlyingBirds on={on} reduced={reduced} />
+      <DrawPath d={D_VINE_D} strokeWidth={4.6} on={on} duration={T.vineDraw} reduced={reduced} />
+      {D_VINE_LEAVES.map(([x, y, r, s, delay], i) => (
+        <Leaf key={`vl-${i}`} x={x} y={y} r={r} s={s} on={on} delay={delay} reduced={reduced} />
       ))}
-      {BRANCH_DS.map((d, i) => (
-        <DrawPath key={d} d={d} strokeWidth={3.6} on={cardInView[i]} duration={0.9} />
+      {D_STEM_DS.map((d, i) => (
+        <DrawPath
+          key={d}
+          d={d}
+          strokeWidth={3.4}
+          on={on}
+          duration={T.stemDraw}
+          delay={T.steps[i][0]}
+          reduced={reduced}
+        />
       ))}
-      {LEAF_STAGES.map((stage, stageIdx) =>
-        stage.map(([x, y, r, s], j) => (
+      {D_STEM_LEAVES.map((cluster, i) =>
+        cluster.map(([x, y, r, s], j) => (
           <Leaf
-            key={`${stageIdx}-${j}`}
+            key={`sl-${i}-${j}`}
             x={x}
             y={y}
             r={r}
             s={s}
-            on={stageIdx === 0 ? treeInView : cardInView[stageIdx - 1]}
-            delay={(stageIdx === 0 ? 0.8 : 0.9) + j * 0.14}
+            on={on}
+            delay={T.steps[i][0] + 0.3 + j * 0.12}
+            reduced={reduced}
           />
         )),
       )}
-      {AMBIENT_LEAVES.map(([x, y, r, s, delay], i) => (
-        <Leaf key={`amb-${i}`} x={x} y={y} r={r} s={s} on={treeInView} delay={delay} />
-      ))}
-      <SkyDoodles on={treeInView} />
-      <GroundDoodles on={treeInView} />
-      <FlyingBirds on={treeInView} />
-      <FallingLeaf x={585} y={150} drop={880} on={treeInView} delay={3.2} dur={13} />
-      <FallingLeaf x={628} y={575} drop={500} on={treeInView} delay={9} dur={10} />
+      <FallingLeaf x={300} y={215} drop={400} on={on} delay={T.fall} dur={13} reduced={reduced} />
+      <FallingLeaf x={640} y={220} drop={380} on={on} delay={T.fall + 5} dur={11} reduced={reduced} />
     </svg>
   );
 }
 
-// Pop-in wrapper for doodle groups: static placement on the outer <g>, the
-// inner group scales about its own bounding box (origin "bottom" makes grass
-// grow up out of the ground).
-function PopG({ x, y, s = 1, on, delay, origin = "center", children }) {
+function MobileVineSvg({ on, reduced }) {
   return (
-    <g transform={`translate(${x} ${y}) scale(${s})`}>
-      <motion.g
-        style={{ transformBox: "fill-box", transformOrigin: origin === "bottom" ? "50% 100%" : "center" }}
-        initial={{ scale: 0.4, opacity: 0 }}
-        animate={on ? { scale: 1, opacity: 1 } : undefined}
-        transition={{
-          scale: { duration: 0.55, ease: LEAF_POP_EASE, delay },
-          opacity: { duration: 0.45, ease: "easeOut", delay },
-        }}
-      >
-        {children}
-      </motion.g>
-    </g>
+    <svg
+      viewBox={`0 0 ${M_W} ${M_H}`}
+      width="100%"
+      height="100%"
+      aria-hidden="true"
+      className="absolute inset-0"
+      style={{ overflow: "visible", pointerEvents: "none", zIndex: 1 }}
+    >
+      <g transform={M_TRUNK_TRANSFORM}>
+        <DrawPath d={TRUNK_D} strokeWidth={3.4} on={on} duration={1.8} reduced={reduced} />
+      </g>
+      {M_VINE_LEAVES.map(([x, y, r, s, delay], i) => (
+        <Leaf key={`ml-${i}`} x={x} y={y} r={r} s={s} on={on} delay={delay} reduced={reduced} />
+      ))}
+      {M_STEM_DS.map((d, i) => (
+        <DrawPath
+          key={d}
+          d={d}
+          strokeWidth={2.8}
+          on={on}
+          duration={0.4}
+          delay={M_STEPS_T[i][0]}
+          reduced={reduced}
+        />
+      ))}
+    </svg>
   );
 }
 
-function SkyDoodles({ on }) {
+function Sky({ on, reduced }) {
   return (
     <g style={{ opacity: 0.5 }}>
-      {/* Sketch sun, top-right */}
+      {/* Sketch sun, cropped by card 3's top edge */}
       <motion.g
         style={{ transformBox: "fill-box", transformOrigin: "center" }}
         initial={{ scale: 0.6, opacity: 0 }}
         animate={on ? { scale: 1, opacity: 1 } : undefined}
-        transition={{ duration: 0.8, ease: EASE_OUT, delay: 1.4 }}
+        transition={{ ...tm(reduced, 0.8, T.sun), ease: EASE_OUT }}
       >
-        <circle cx={950} cy={110} r={30} fill="none" stroke={TRUNK_COLOR} strokeWidth={2.4} />
+        <circle cx={SUN.cx} cy={SUN.cy} r={SUN.r} fill="none" stroke={VINE_COLOR} strokeWidth={2.4} />
         {[...Array(8)].map((_, i) => {
           const a = (i * Math.PI) / 4 + 0.2;
           return (
             <line
               key={i}
-              x1={950 + Math.cos(a) * 40}
-              y1={110 + Math.sin(a) * 40}
-              x2={950 + Math.cos(a) * 52}
-              y2={110 + Math.sin(a) * 52}
-              stroke={TRUNK_COLOR}
+              x1={SUN.cx + Math.cos(a) * SUN.rayIn}
+              y1={SUN.cy + Math.sin(a) * SUN.rayIn}
+              x2={SUN.cx + Math.cos(a) * SUN.rayOut}
+              y2={SUN.cy + Math.sin(a) * SUN.rayOut}
+              stroke={VINE_COLOR}
               strokeWidth={2.4}
               strokeLinecap="round"
             />
           );
         })}
       </motion.g>
-      {/* Doodle clouds, top-left, with a slow horizontal drift */}
-      <Cloud x={175} y={70} s={1} on={on} delay={1.7} drift={14} dur={9} />
-      <Cloud x={320} y={100} s={0.65} on={on} delay={1.95} drift={-10} dur={12} />
+      <Cloud x={60} y={30} s={1} on={on} delay={T.clouds[0]} drift={14} dur={9} reduced={reduced} />
+      <Cloud x={215} y={100} s={0.65} on={on} delay={T.clouds[1]} drift={-10} dur={12} reduced={reduced} />
     </g>
   );
 }
 
-function Cloud({ x, y, s, on, delay, drift, dur }) {
+function Cloud({ x, y, s, on, delay, drift, dur, reduced }) {
   return (
     <motion.g
       initial={{ opacity: 0 }}
-      animate={on ? { opacity: 1, x: [0, drift, 0] } : undefined}
+      animate={on ? (reduced ? { opacity: 1 } : { opacity: 1, x: [0, drift, 0] }) : undefined}
       transition={{
-        opacity: { duration: 0.9, ease: "easeOut", delay },
+        opacity: { ...tm(reduced, 0.9, delay), ease: "easeOut" },
         x: { duration: dur, repeat: Infinity, ease: "easeInOut", delay },
       }}
     >
@@ -525,7 +498,7 @@ function Cloud({ x, y, s, on, delay, drift, dur }) {
         transform={`translate(${x} ${y}) scale(${s})`}
         d={CLOUD_D}
         fill="none"
-        stroke={TRUNK_COLOR}
+        stroke={VINE_COLOR}
         strokeWidth={2.2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -534,81 +507,49 @@ function Cloud({ x, y, s, on, delay, drift, dur }) {
   );
 }
 
-function GroundDoodles({ on }) {
-  const grass = [
-    [398, 1126, 1],
-    [492, 1144, 0.85],
-    [612, 1140, 0.9],
-    [702, 1124, 1.05],
-  ];
-  const pebbles = [
-    [462, 1148, 7, 4],
-    [646, 1150, 5, 3.2],
-    [538, 1157, 4, 2.8],
-  ];
-  return (
-    <g style={{ opacity: 0.75 }}>
-      {grass.map(([x, y, s], i) => (
-        <PopG key={`g-${i}`} x={x} y={y} s={s} on={on} delay={2.1 + i * 0.12} origin="bottom">
-          <path d={GRASS_D} fill="none" stroke={TRUNK_COLOR} strokeWidth={2} strokeLinecap="round" />
-        </PopG>
-      ))}
-      {pebbles.map(([x, y, rx, ry], i) => (
-        <PopG key={`p-${i}`} x={x} y={y} on={on} delay={2.35 + i * 0.12}>
-          <ellipse cx={0} cy={0} rx={rx} ry={ry} fill="none" stroke={TRUNK_COLOR} strokeWidth={1.8} />
-        </PopG>
-      ))}
-      {/* Mushroom — cap gets a faint wash of the washi-tape rust */}
-      <PopG x={420} y={1146} s={1.1} on={on} delay={2.55} origin="bottom">
-        <path
-          d="M-2 0 C -2 -5 -2 -8 -1 -10 M2 0 C 2 -5 2 -8 1 -10"
-          fill="none"
-          stroke={TRUNK_COLOR}
-          strokeWidth={1.8}
-          strokeLinecap="round"
-        />
-        <path
-          d="M-8 -9 C -8 -17 8 -17 8 -9 Z"
-          fill="rgba(1,103,100,0.28)"
-          stroke={TRUNK_COLOR}
-          strokeWidth={1.8}
-          strokeLinejoin="round"
-        />
-      </PopG>
-    </g>
-  );
-}
-
-// Sketch birds (two-arc gull doodles) drifting near the sun, with a slow bob.
+// Sketch birds (two-arc gull doodles) scattered above and between the cards,
+// with a slow bob. They sit on the same z-1 layer as the sun, so any that
+// overlap a card pass behind it.
 const BIRD_D = "M0 0 C 3 -5 8 -5 10 -1 C 12 -5 17 -5 20 0";
 const BIRDS = [
-  [820, 172, 1, -6, 2.0],
-  [884, 142, 0.8, 4, 2.15],
-  [768, 204, 0.62, 0, 2.3],
+  [880, 44, 1, -6],
+  [955, 124, 0.8, 4],
+  [300, 36, 0.62, 0],
+  [540, 152, 0.7, -4],
 ];
-function FlyingBirds({ on }) {
+function FlyingBirds({ on, reduced }) {
   return (
     <g style={{ opacity: 0.55 }}>
-      {BIRDS.map(([x, y, s, r, delay], i) => (
-        <g key={i} transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
-          <motion.g
-            initial={{ opacity: 0, y: 6 }}
-            animate={on ? { opacity: 1, y: [6, 0, 3, 0] } : undefined}
-            transition={{
-              opacity: { duration: 0.8, ease: "easeOut", delay },
-              y: { duration: 5 + i, repeat: Infinity, ease: "easeInOut", delay },
-            }}
-          >
-            <path d={BIRD_D} fill="none" stroke={TRUNK_COLOR} strokeWidth={2.2} strokeLinecap="round" />
-          </motion.g>
-        </g>
-      ))}
+      {BIRDS.map(([x, y, s, r], i) => {
+        const delay = T.birds + i * 0.15;
+        return (
+          <g key={i} transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
+            <motion.g
+              initial={{ opacity: 0, y: 6 }}
+              animate={on ? (reduced ? { opacity: 1, y: 0 } : { opacity: 1, y: [6, 0, 3, 0] }) : undefined}
+              transition={{
+                opacity: { ...tm(reduced, 0.8, delay), ease: "easeOut" },
+                y: reduced
+                  ? { duration: 0 }
+                  : { duration: 5 + i, repeat: Infinity, ease: "easeInOut", delay },
+              }}
+            >
+              <path d={BIRD_D} fill="none" stroke={VINE_COLOR} strokeWidth={2.2} strokeLinecap="round" />
+            </motion.g>
+          </g>
+        );
+      })}
     </g>
   );
 }
 
-// A leaf that breaks loose and tumbles down past the trunk on a loop.
-function FallingLeaf({ x, y, drop, on, delay, dur }) {
+// A leaf that breaks loose and tumbles down past the cards on a loop. Under
+// reduced motion it stays in the tree but never becomes visible: a perpetual
+// fall has no settled state to snap to, and a frozen mid-air leaf reads as a
+// bug. It must NOT be conditionally rendered — useReducedMotion() is false on
+// the server and reads the media query on the client, so branching the tree on
+// it fails hydration.
+function FallingLeaf({ x, y, drop, on, delay, dur, reduced }) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <motion.path
@@ -619,7 +560,7 @@ function FallingLeaf({ x, y, drop, on, delay, dur }) {
         style={{ transformBox: "fill-box", transformOrigin: "center" }}
         initial={{ opacity: 0 }}
         animate={
-          on
+          on && !reduced
             ? {
                 y: [0, drop * 0.25, drop * 0.5, drop * 0.75, drop],
                 x: [0, -26, 14, -20, 0],
@@ -634,125 +575,42 @@ function FallingLeaf({ x, y, drop, on, delay, dur }) {
   );
 }
 
-// Shared hover motion: a -4px lift plus the little settle-wobble.
-const CARD_LIFT = {
-  y: -4,
-  rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-};
-const CARD_LIFT_TRANSITION = {
-  y: { duration: 0.42, ease: EASE_OUT },
-  rotate: {
-    duration: 0.62,
-    ease: "easeOut",
-    times: [0, 0.18, 0.4, 0.62, 0.82, 1],
-  },
-};
-
-// Every card (tree and mobile stack alike) is framed by the sketched SVG path,
-// so hover is lift + wobble ONLY. Animating boxShadow/borderColor/
-// backgroundColor here would paint the rectangle the sketched outline exists to
-// avoid.
-const cardShakeHoverSketch = {
-  ...CARD_LIFT,
-  transition: { ...CARD_LIFT_TRANSITION },
-};
-
-function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView, emphasized = false }) {
-  const [hover, setHover] = useState(false);
-  const tilt = CARD_TILT[index % CARD_TILT.length];
-  const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
-  // Mobile stack (no inView prop): entrance via the parent grid's stagger
-  // variants, as before. Desktop tree: the slot wrapper animates the entrance,
-  // so the card root only carries its resting tilt.
-  const treeMode = inView !== undefined;
-  // Wobble around the resting tilt (so hover doesn't snap the card straight).
-  const hoverAnim = {
-    ...cardShakeHoverSketch,
-    rotate: cardShakeHoverSketch.rotate.map((r) => tilt + r),
-  };
-  const entrance =
-    !treeMode
-      ? {
-          variants: {
-            hidden: { opacity: 0, y: 18, rotate: tilt },
-            show: { opacity: 1, y: 0, rotate: tilt, transition: { duration: DURATION_MED, ease: EASE_OUT } },
-          },
-        }
-      : { initial: { rotate: tilt } };
-
+function HowItWorksCard({ step, emphasized = false, imgH = 130, compact = false }) {
+  // Both layouts are canvas-based now, so the card root only carries its
+  // surface: the entrance and resting tilt are owned by the slot wrapper.
   return (
-    <motion.div
-      ref={cardRef}
-      {...entrance}
-      whileHover={isOpen || isHidden ? undefined : hoverAnim}
-      onHoverStart={() => !isOpen && setHover(true)}
-      onHoverEnd={() => setHover(false)}
-      style={{
-        position: "relative",
-        // Cards are framed by a hand-sketched SVG path (below) that supplies both
-        // the outline and the white fill, so they carry no CSS
-        // border/background/shadow of their own — a rectangular box behind the
-        // wobbly outline is exactly what the design rules out.
-        opacity: isHidden ? 0 : 1,
-        pointerEvents: isHidden ? "none" : "auto",
-        willChange: "transform",
-      }}
-    >
-      {/* Sketched frame on both layouts. Tree cards hang a sprig off the edge
-          where the branch meets them; the mobile stack has no branch to answer
-          to, so it keeps the washi tape pinning the note to the wall. */}
+    <div style={{ position: "relative" }}>
+      {/* Cards are framed by a hand-sketched SVG path that supplies both the
+          outline and the white fill, so they carry no CSS
+          border/background/shadow of their own. A rectangular box behind the
+          wobbly outline is exactly what the design rules out. */}
       <SketchFrame emphasized={emphasized} />
-      {treeMode ? (
-        <CardSprig spec={SPRIGS[index % SPRIGS.length]} />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="washi-tape"
-          style={{ top: -9, left: "50%", transform: `translateX(-50%) rotate(${tapeTilt}deg)`, zIndex: 5 }}
-        />
-      )}
-      <button
-        type="button"
-        onClick={isOpen ? undefined : onOpen}
-        className={`${treeMode ? "" : "p-6 overflow-hidden"} block relative text-left w-full focus:outline-none bg-transparent`}
+      <div
+        className="block relative text-left w-full"
         style={{
           borderRadius: "var(--radius-card)",
-          cursor: isOpen ? "default" : "pointer",
-          // Tree cards use the design's asymmetric padding inside the sketched
-          // frame; the mobile stack keeps its uniform p-6.
-          ...(treeMode ? { padding: "34px 32px 38px" } : {}),
+          padding: compact ? "26px 22px 30px" : "32px 28px 36px",
         }}
       >
-        <CardFrontInner step={step} hover={hover} emphasized={emphasized} tall={treeMode} />
-        <div
-          className="font-display italic text-[12px] mt-4"
-          style={{
-            color: "var(--accent)",
-            fontWeight: 500,
-            opacity: hover ? 1 : 0.55,
-            transition: "opacity 220ms ease-out",
-          }}
-        >
-          Click to learn more →
-        </div>
-      </button>
-    </motion.div>
+        <CardFrontInner step={step} imgH={imgH} compact={compact} />
+      </div>
+    </div>
   );
 }
 
 // Hand-sketched card frame: a deliberately wobbly rounded rectangle drawn as one
-// SVG path, filled white and stroked in the tree's ink. `preserveAspectRatio
-// ="none"` stretches the 400x460 path to whatever box the card occupies, and the
+// SVG path, filled white and stroked in the vine's ink. `preserveAspectRatio
+// ="none"` stretches the 340x440 path to whatever box the card occupies, and the
 // drop-shadow filters follow the sketched silhouette (a CSS box-shadow would
 // betray the rectangle the outline is pretending not to be).
 const SKETCH_D =
-  "M14 22 C 80 14 180 18 386 16 C 392 120 388 300 390 440 C 280 448 120 444 12 446 C 8 320 12 140 14 22 Z";
+  "M12 20 C 70 12 155 16 328 14 C 334 110 330 280 332 422 C 238 430 102 426 10 428 C 6 300 10 130 12 20 Z";
 
 function SketchFrame({ emphasized = false }) {
   return (
     <svg
       aria-hidden="true"
-      viewBox="0 0 400 460"
+      viewBox="0 0 340 440"
       preserveAspectRatio="none"
       style={{
         position: "absolute",
@@ -766,7 +624,7 @@ function SketchFrame({ emphasized = false }) {
       <path
         d={SKETCH_D}
         fill={emphasized ? "var(--accent-softer)" : "#FFFFFF"}
-        stroke={TRUNK_COLOR}
+        stroke={VINE_COLOR}
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeOpacity={0.55}
@@ -775,37 +633,24 @@ function SketchFrame({ emphasized = false }) {
   );
 }
 
-function CardFrontInner({ step, hover = true, emphasized = false, tall = false }) {
+function CardFrontInner({ step, imgH, compact }) {
   return (
     <>
       {step.image && (
-        <div
-          className="relative overflow-hidden"
-          style={{ borderRadius: 10, height: tall ? 140 : 88 }}
-        >
+        <div className="relative overflow-hidden" style={{ borderRadius: 10, height: imgH }}>
           <img
             src={step.image.src}
             alt={step.image.alt}
             loading="lazy"
             draggable={false}
             className="w-full h-full object-cover"
-            style={{
-              // Lightly muted at rest, lifting to full colour on hover — same
-              // hover language as the icon tile below.
-              filter: hover ? "grayscale(0) saturate(1.05)" : "grayscale(0.32) saturate(0.92)",
-              transform: hover ? "scale(1.04)" : "scale(1)",
-              transition:
-                "filter 360ms ease-out, transform 600ms cubic-bezier(0.22,1,0.36,1)",
-            }}
           />
-          {/* keep a faint accent wash at rest so it reads as part of the card */}
+          {/* Faint accent wash so the photo reads as part of the card. */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
               background: "linear-gradient(180deg, rgba(1,103,100,0.05) 0%, rgba(1,103,100,0.12) 100%)",
-              opacity: hover ? 0 : 1,
-              transition: "opacity 360ms ease-out",
             }}
           />
         </div>
@@ -813,261 +658,27 @@ function CardFrontInner({ step, hover = true, emphasized = false, tall = false }
       {/* Caveat step number sits on the title's baseline, per the design. The
           icon tile the old card carried is gone: the design pairs the number
           with the title and nothing else. */}
-      <div className="flex items-baseline gap-3" style={{ marginTop: step.image ? 18 : 0 }}>
+      <div className="flex items-baseline gap-3" style={{ marginTop: step.image ? 16 : 0 }}>
         <span
           className="font-hand"
-          style={{ fontSize: 40, lineHeight: 1, fontWeight: 400, color: "var(--accent)" }}
+          style={{ fontSize: compact ? 32 : 38, lineHeight: 1, fontWeight: 400, color: "var(--accent)" }}
         >
           {step.n}.
         </span>
         <span
-          style={{ fontSize: 19, fontWeight: 400, color: "var(--ink-graphite)", letterSpacing: "-0.015em" }}
+          style={{
+            fontSize: compact ? 17 : 18,
+            fontWeight: 400,
+            color: "var(--ink-graphite)",
+            letterSpacing: "-0.015em",
+          }}
         >
           {step.t}
         </span>
       </div>
-      <p style={{ fontSize: 14, color: "var(--ink-muted)", lineHeight: 1.55, margin: "10px 0 0" }}>{step.b}</p>
+      <p style={{ fontSize: compact ? 13 : 14, color: "var(--ink-muted)", lineHeight: 1.55, margin: "10px 0 0" }}>
+        {step.b}
+      </p>
     </>
-  );
-}
-
-function ExpandedOverlay({ openIndex, sourceRect, onRequestClose, onClose, onExitDone, closeSignal }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
-
-  const step = openIndex === null ? null : STEPS[openIndex];
-
-  return createPortal(
-    <AnimatePresence onExitComplete={onExitDone}>
-      {step && (
-        <motion.div
-          key="how-overlay"
-          className="fixed inset-0 z-[60]"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 1 }}
-        >
-          <motion.div
-            className="absolute inset-0"
-            style={{ background: "rgba(0, 30, 30, 0.55)", backdropFilter: "blur(2px)" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: EASE_OUT }}
-            onClick={onRequestClose}
-          />
-          <ExpandedCard
-            step={step}
-            sourceRect={sourceRect}
-            onRequestClose={onRequestClose}
-            onClose={onClose}
-            closeSignal={closeSignal}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body,
-  );
-}
-
-function getTargetRect() {
-  if (typeof window === "undefined") return { width: 720, height: 560, top: 100, left: 100 };
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const width = Math.min(720, vw * 0.92);
-  const height = Math.min(560, vh * 0.82);
-  return {
-    width,
-    height,
-    top: (vh - height) / 2,
-    left: (vw - width) / 2,
-  };
-}
-
-function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }) {
-  const [flipped, setFlipped] = useState(false);
-  const [target, setTarget] = useState(() => getTargetRect());
-  // Snapshot the closeSignal at mount time. closeSignal is a monotonically
-  // increasing counter shared across opens, so on the 2nd open it's already
-  // > 0 — without this baseline, the effect below would fire immediately on
-  // mount and close the card right after it opened.
-  const baselineSignalRef = useRef(closeSignal);
-
-  useEffect(() => {
-    const onResize = () => setTarget(getTargetRect());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setFlipped(true), 320);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (closeSignal === baselineSignalRef.current) return;
-    setFlipped(false);
-    const t = setTimeout(() => onClose(), 360);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeSignal]);
-
-  const src = sourceRect || target;
-
-  const faceStyle = {
-    position: "absolute",
-    inset: 0,
-    backfaceVisibility: "hidden",
-    WebkitBackfaceVisibility: "hidden",
-    background: "var(--paper-card)",
-    border: "1px solid var(--paper-line)",
-    boxShadow: "0 40px 80px -30px rgba(0,30,30,0.45)",
-    overflow: "hidden",
-  };
-
-  return (
-    <motion.div
-      initial={{ top: src.top, left: src.left, width: src.width, height: src.height }}
-      animate={{ top: target.top, left: target.left, width: target.width, height: target.height }}
-      exit={{ top: src.top, left: src.left, width: src.width, height: src.height, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 30 }}
-      className="absolute"
-      style={{
-        borderRadius: "var(--radius-card)",
-        perspective: 1600,
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <motion.div
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          transformStyle: "preserve-3d",
-        }}
-        animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{ duration: 0.7, ease: EASE_OUT }}
-      >
-        {/* Front face */}
-        <div style={faceStyle} className="p-10">
-          <CardFrontInner step={step} hover={true} />
-        </div>
-
-        {/* Back face */}
-        <div
-          style={{
-            ...faceStyle,
-            transform: "rotateY(180deg)",
-            background: "linear-gradient(180deg, var(--paper-card) 0%, var(--accent-softer) 100%)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRequestClose();
-            }}
-            aria-label="Close"
-            className="absolute top-4 right-4 flex items-center justify-center"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: "var(--paper-card)",
-              border: "1px solid var(--accent-line)",
-              color: "var(--accent)",
-              cursor: "pointer",
-              zIndex: 2,
-            }}
-          >
-            <Icon name="x" size={16} />
-          </button>
-
-          <div className="h-full w-full p-8 sm:p-10 flex flex-col overflow-auto">
-            {/* Number type mirrors CardFrontInner, so the flip doesn't land on a
-                different typeface. Caveat carries its own letter-spacing; don't
-                reintroduce a tracking override here. */}
-            <div
-              className="font-hand mb-6"
-              style={{
-                fontSize: 44,
-                lineHeight: 1,
-                fontWeight: 400,
-                color: "var(--accent)",
-              }}
-            >
-              {step.n}.
-            </div>
-
-            {step.image && (
-              <div
-                className="relative mb-6 overflow-hidden"
-                style={{ borderRadius: 12, height: 132, border: "1px solid var(--accent-line)" }}
-              >
-                <img
-                  src={step.image.src}
-                  alt={step.image.alt}
-                  draggable={false}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            <h3
-              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink-graphite)] leading-[1.15] mb-3"
-              style={{ fontWeight: 400, letterSpacing: "-0.015em" }}
-            >
-              {step.backTitle}
-            </h3>
-            <p className="text-[15px] sm:text-[15.5px] text-[color:var(--ink-muted)] leading-[1.6] mb-5 max-w-[58ch]">
-              {step.backLead}
-            </p>
-
-            <ul className="space-y-2.5 mb-6">
-              {step.bullets.map((line) => (
-                <li key={line} className="flex items-start gap-3">
-                  <span
-                    className="flex items-center justify-center flex-shrink-0"
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 6,
-                      background: "var(--accent-softer)",
-                      color: "var(--accent)",
-                      border: "1px solid var(--accent-line)",
-                      marginTop: 2,
-                    }}
-                  >
-                    <Icon name="check" size={12} />
-                  </span>
-                  <span className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.55]">{line}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-auto pt-2">
-              <Link
-                href={step.cta.href}
-                onClick={onRequestClose}
-                className="inline-flex items-center gap-2 font-display"
-                style={{
-                  background: "var(--accent)",
-                  color: "#fff",
-                  padding: "12px 18px",
-                  borderRadius: 12,
-                  fontWeight: 500,
-                  fontSize: 15,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {step.cta.label}
-                <Icon name="arrow-right" size={16} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
   );
 }

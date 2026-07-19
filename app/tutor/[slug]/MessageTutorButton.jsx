@@ -34,7 +34,7 @@ export function MessageTutorButton({ tutor, full = true }) {
   const button = (
     <Button
       variant="primary"
-      size="lg"
+      size={full ? "xl" : "lg"}
       icon="message"
       full={full}
       disabled={!ready || navBusy || isTutorViewer}

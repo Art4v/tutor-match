@@ -23,7 +23,7 @@ export function BrowseResultsGrid({ tutors, savedOnly = false }) {
         hidden: {},
         show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.05 } },
       }}
-      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7"
+      className="flex flex-col gap-4"
     >
       <AnimatePresence mode="popLayout">
         {visible.map((t) => (
