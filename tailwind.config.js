@@ -30,6 +30,16 @@ module.exports = {
           card: "#FFFFFF",
         },
         desk: "#F7FBFB", // section surface behind cards
+        line: {
+          soft: "#EEF2F2", // lighter hairline: hero base, search bar, marquee band
+        },
+        pill: {
+          DEFAULT: "#F0F6F6", // subject-pill fill
+          ink: "#015F5C", // subject-pill text
+        },
+        chip: {
+          line: "#DDE9E8", // accent-tone chip / stat-tile border
+        },
         stamp: "#016764", // retired rust accent — folded into teal
         // Override Tailwind's default `slate` ramp with cool, teal-tinted
         // neutrals so every existing `text-slate-*` / `bg-slate-*` /

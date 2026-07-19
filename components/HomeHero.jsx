@@ -53,8 +53,8 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
       style={{
         minHeight: "100svh",
         marginTop: "calc(-1 * var(--nav-h))",
-        background: "linear-gradient(180deg, #F7FAFA 0%, #FFFFFF 78%)",
-        borderBottom: "1px solid #EEF2F2",
+        background: "linear-gradient(180deg, var(--bg-soft) 0%, var(--paper) 78%)",
+        borderBottom: "1px solid var(--line-soft)",
       }}
     >
       {/* Backdrop layers live in their own clip so the section can stay
@@ -160,7 +160,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.5 }}
                 className="relative z-30 mt-7 w-full max-w-[560px] hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_auto] items-stretch hero-search-glow"
-                style={{ background: "#fff", border: "1px solid #E3EAEA", borderRadius: 14, padding: 6 }}
+                style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 14, padding: 6 }}
               >
                 <SchoolPicker
                   catalog={schoolCatalog}

@@ -29,7 +29,7 @@ export function HomeCta() {
           className="relative overflow-hidden px-8 py-14 md:px-16 md:py-[76px]"
           style={{
             background: "linear-gradient(160deg, #E7F2F1 0%, #F5FAFA 100%)",
-            border: "1px solid #CCE2E0",
+            border: "1px solid var(--accent-line)",
             borderRadius: 20,
           }}
         >

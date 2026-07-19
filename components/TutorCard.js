@@ -69,7 +69,7 @@ function FitText({ children, max = 18, min = 10, className = "", style }) {
 // tint), "ink" is the rate tile (near-black value on a neutral tint).
 function StatTile({ value, label, tone = "accent" }) {
   const tones = {
-    accent: { border: "#DDE9E8", bg: "#F7FBFB", color: "var(--accent)" },
+    accent: { border: "var(--chip-line)", bg: "var(--desk)", color: "var(--accent)" },
     ink: { border: "var(--paper-line)", bg: "var(--desk-deep)", color: "var(--ink)" },
     muted: { border: "var(--paper-line)", bg: "var(--desk-deep)", color: "var(--sage)" },
   };
@@ -98,7 +98,7 @@ function SubjectChip({ children }) {
   return (
     <span
       className="inline-flex items-center font-medium whitespace-nowrap"
-      style={{ fontSize: 12, padding: "4px 11px", borderRadius: 999, lineHeight: 1.2, color: "#015F5C", background: "var(--pill)" }}
+      style={{ fontSize: 12, padding: "4px 11px", borderRadius: 999, lineHeight: 1.2, color: "var(--pill-ink)", background: "var(--pill)" }}
     >
       {children}
     </span>

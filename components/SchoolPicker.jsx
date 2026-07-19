@@ -114,7 +114,7 @@ export function SchoolPicker({
     <div
       ref={wrapRef}
       className={variant === "bar" ? "relative border-r last:border-r-0" : "relative"}
-      style={variant === "bar" ? { borderColor: "#EEF2F2" } : undefined}
+      style={variant === "bar" ? { borderColor: "var(--line-soft)" } : undefined}
     >
       {trigger}
 

@@ -84,7 +84,7 @@ export function SchoolsMarquee() {
   return (
     <section
       className="border-y flex flex-col justify-center"
-      style={{ background: "#FAFBFB", borderColor: "#EEF2F2", padding: "48px 0" }}
+      style={{ background: "var(--desk-deep)", borderColor: "var(--line-soft)", padding: "48px 0" }}
       aria-label="Schools our students come from"
     >
       <div className="w-full px-6 pb-6 text-center">
