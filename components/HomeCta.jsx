@@ -21,27 +21,25 @@ export function HomeCta() {
   }, []);
 
   return (
-    <section className="flex items-center">
-      <div className="max-w-[1200px] w-full mx-auto px-6 py-16">
-        <div
-          className="relative overflow-hidden px-8 py-14 md:px-16 md:py-[76px]"
-          style={{
-            background: "linear-gradient(160deg, #E7F2F1 0%, #F5FAFA 100%)",
-            border: "1px solid var(--accent-line)",
-            borderRadius: 20,
-          }}
-        >
-          {/* Decorative tree — trunk grows from the card's bottom edge.
-              The icon's trunk ends 3/24 of its size above its box, so the
-              negative bottom offset (size * 3/24) lands the trunk on the edge. */}
-          <div
-            aria-hidden="true"
-            className="absolute select-none pointer-events-none"
-            style={{ bottom: -38, right: 32, color: "var(--accent)", opacity: 0.08 }}
-          >
+    <section
+      className="relative overflow-hidden flex items-center"
+      style={{ background: "linear-gradient(160deg, #E7F2F1 0%, #F5FAFA 100%)" }}
+    >
+      {/* Decorative tree — trunk grows from the SECTION's bottom edge. The icon's
+          trunk ends 3/24 of its size above its box, so the negative bottom
+          offset (size * 3/24) lands the trunk on the edge. Held inside a
+          centred max-width track so it keeps its old distance from the content
+          rather than drifting out to the viewport edge on wide screens. */}
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none select-none">
+        <div className="relative h-full max-w-[1200px] mx-auto px-6">
+          <div className="absolute" style={{ bottom: -38, right: 56, color: "var(--accent)", opacity: 0.08 }}>
             <Icon name="tree" size={300} strokeWidth={1.1} />
           </div>
+        </div>
+      </div>
 
+      <div className="relative max-w-[1200px] w-full mx-auto px-6 pt-4 pb-16">
+        <div className="px-8 py-14 md:px-16 md:py-[76px]">
           <div className="relative flex flex-col items-center text-center gap-9">
             <div className="max-w-[680px] flex flex-col items-center">
               <div
@@ -74,7 +72,7 @@ export function HomeCta() {
               className="flex flex-col sm:flex-row gap-5 w-full max-w-[480px] justify-center"
             >
               <div className="flex-1">
-                <Button variant="primary" size="lg" iconRight="arrow-right" onClick={() => router.push(signedIn ? "/profile" : "/signup")} full>
+                <Button variant="primary" size="lg" onClick={() => router.push(signedIn ? "/profile" : "/signup")} full>
                   Become a tutor
                 </Button>
               </div>

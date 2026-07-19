@@ -1,11 +1,18 @@
 import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
 import { subjectLabel } from "@/lib/subjects";
-import { SectionReveal } from "@/components/anim/SectionReveal";
 import ServiceAreaMap from "./ServiceAreaMap";
 
 // Shared profile card chrome — used by the public profile page (server) and the
 // owner inline-editing shell (OwnerProfile, client) so both render identically.
+// Cards are flat: a 1px hairline border does the separating, no shadow.
+
+// Card shells. Main-column and sidebar cards differ only in padding and in the
+// size of their heading, so both live here and every card picks one.
+export const cardStyle = {
+  border: "1px solid var(--paper-line)",
+  borderRadius: "var(--radius-card)",
+};
 
 export function formatDelivery(tutor) {
   const parts = [];
@@ -39,39 +46,47 @@ export function buildCredentialTiles(credentials) {
   return tiles;
 }
 
+/** Main-column section card: 20px/24px padding, 22px heading. */
 export function Section({ title, subtitle, children, id }) {
-  // The whole card fades in together via SectionReveal — no per-element typing.
   return (
-    <SectionReveal
-      as="section"
+    <section
       id={id}
-      hover
-      className="paper-page bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24, boxShadow: "var(--card-shadow)" }}
+      className="bg-[color:var(--paper-card)]"
+      style={{ ...cardStyle, padding: "20px 24px" }}
     >
-      <div className="mb-5">
-        <h2 className="text-[18px] font-light text-slate-800 tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <div className="text-[13px] text-slate-500 mt-0.5">{subtitle}</div>
-        )}
+      <div className="mb-4">
+        <h2 className="text-[22px] font-light text-slate-800 tracking-tight">{title}</h2>
+        {subtitle && <div className="text-[13px] text-slate-500 mt-0.5">{subtitle}</div>}
       </div>
       {children}
-    </SectionReveal>
+    </section>
   );
+}
+
+/** Sidebar card: 18px/20px padding, 19px heading. */
+export function SidebarCard({ title, subtitle, children }) {
+  return (
+    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+      <SidebarHeading>{title}</SidebarHeading>
+      {subtitle && <div className="text-[13.5px] mt-0.5" style={{ color: "var(--sage)" }}>{subtitle}</div>}
+      {children}
+    </div>
+  );
+}
+
+export function SidebarHeading({ children }) {
+  return <h2 className="text-[19px] font-light text-slate-800 tracking-tight">{children}</h2>;
 }
 
 export function SubjectsCard({ subjects }) {
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
-      <div className="text-[14px] font-medium text-slate-900 mb-4">Subjects</div>
-      <div className="flex flex-wrap gap-1.5">
+    <SidebarCard title="Subjects">
+      <div className="flex flex-wrap gap-1.5 mt-3">
         {subjects.map((s) => (
-          <Chip key={s.slug} tone="cream" icon="graduation">{subjectLabel(s)}</Chip>
+          <Chip key={s.slug} tone="pill" size="sm" icon="graduation">{subjectLabel(s)}</Chip>
         ))}
       </div>
-    </SectionReveal>
+    </SidebarCard>
   );
 }
 
@@ -81,10 +96,8 @@ export function SubjectsCard({ subjects }) {
 // raw filename.
 export function DocumentationCard({ docs }) {
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
-      <div className="text-[14px] font-medium text-slate-900 mb-1">Documentation</div>
-      <div className="text-[12.5px] text-slate-500 mb-3">Documents shared to back up this tutor&apos;s credentials.</div>
-      <ul className="space-y-1.5">
+    <SidebarCard title="Documentation" subtitle="Documents shared to back up this tutor's credentials.">
+      <ul className="space-y-1.5 mt-3">
         {docs.map((doc) => (
           <li key={doc.id}>
             <a
@@ -101,33 +114,33 @@ export function DocumentationCard({ docs }) {
           </li>
         ))}
       </ul>
-    </SectionReveal>
+    </SidebarCard>
   );
 }
 
 export function RatingsCard() {
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)" }}>
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <div className="text-[14px] font-medium text-slate-900">Ratings &amp; reviews</div>
+    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+      <div className="flex items-center justify-between gap-3">
+        <SidebarHeading>Ratings &amp; reviews</SidebarHeading>
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider shrink-0"
           style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink-muted)" }}
         >
           Coming soon
         </span>
       </div>
       <div className="flex flex-col items-center text-center py-6">
-        <div className="flex items-center gap-1.5 mb-3">
+        <div className="flex items-center gap-1.5 mb-3" style={{ color: "var(--accent-line)" }}>
           {[0, 1, 2, 3, 4].map((i) => (
-            <Icon key={i} name="star" size={22} className="text-slate-200" />
+            <Icon key={i} name="star" size={20} />
           ))}
         </div>
-        <div className="text-[13px] text-slate-500 leading-[1.55] max-w-[260px]">
-          Ratings and reviews are coming soon — we&apos;re working on a way for verified students to leave them.
+        <div className="text-[13.5px] leading-[1.55] max-w-[260px]" style={{ color: "var(--sage)" }}>
+          Ratings and reviews are coming soon, we&apos;re working on a way for verified students to leave them.
         </div>
       </div>
-    </SectionReveal>
+    </div>
   );
 }
 
@@ -136,18 +149,18 @@ export function ServiceAreaCard({ tutor }) {
   const radiusKm = sa?.radiusKm ?? 10;
   const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "var(--card-shadow)" }}>
-      <div className="px-5 pt-5 pb-5">
-        <div className="text-[14px] font-medium text-slate-900">Service area</div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5">
-          In-person within {radiusKm} km of {sa?.suburb || tutor.suburb}
-        </div>
-      </div>
+    <SidebarCard
+      title="Service area"
+      subtitle={`In-person within ${radiusKm} km of ${sa?.suburb || tutor.suburb}`}
+    >
       {hasCoords && (
-        <div className="px-5 pb-5">
+        <div
+          className="mt-3 overflow-hidden"
+          style={{ borderRadius: 11, border: "1px solid var(--line)" }}
+        >
           <ServiceAreaMap lat={sa.lat} lng={sa.lng} radiusKm={radiusKm} />
         </div>
       )}
-    </SectionReveal>
+    </SidebarCard>
   );
 }

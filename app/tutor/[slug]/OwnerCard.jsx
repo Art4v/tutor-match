@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { RequestVerification } from "@/components/RequestVerification";
-import { SectionReveal } from "@/components/anim/SectionReveal";
 import { calcCompletion } from "@/components/profile-edit/sections";
 
 /**
@@ -69,11 +68,11 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
   ];
 
   return (
-    <div className="space-y-5">
-      <SectionReveal hover style={{ backgroundColor: "var(--paper-card)", borderRadius: "var(--radius-card)", padding: 22, boxShadow: "var(--card-shadow)", backgroundImage: "repeating-linear-gradient(0deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(180deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(270deg, var(--line-strong) 0 10px, transparent 10px 20px)", backgroundSize: "2px 100%, 100% 2px, 2px 100%, 100% 2px", backgroundPosition: "0 0, 0 0, 100% 0, 0 100%", backgroundRepeat: "no-repeat" }}>
+    <div className="space-y-[10px]">
+      <div style={{ backgroundColor: "var(--paper-card)", borderRadius: "var(--radius-card)", padding: "18px 20px", backgroundImage: "repeating-linear-gradient(0deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(180deg, var(--line-strong) 0 10px, transparent 10px 20px), repeating-linear-gradient(270deg, var(--line-strong) 0 10px, transparent 10px 20px)", backgroundSize: "2px 100%, 100% 2px, 2px 100%, 100% 2px", backgroundPosition: "0 0, 0 0, 100% 0, 0 100%", backgroundRepeat: "no-repeat" }}>
         <div className="flex items-center gap-2 mb-3">
           <Icon name="eye" size={15} className="text-slate-500" />
-          <h3 className="text-[14px] font-light text-slate-800 tracking-tight">Your profile</h3>
+          <h3 className="text-[19px] font-light text-slate-800 tracking-tight">Your profile</h3>
           <span className="ml-auto text-[11.5px] text-slate-400">Only you see this</span>
         </div>
 
@@ -151,7 +150,7 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
             <span className={"text-[11px] font-medium shrink-0 " + (copied ? "text-emerald-600" : "text-slate-400")}>{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>
-      </SectionReveal>
+      </div>
     </div>
   );
 }

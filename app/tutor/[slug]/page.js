@@ -4,7 +4,6 @@ import { getTutorBySlug, getFeaturedTutors, getTutorProfileForEditor } from "@/l
 import { rankTutors } from "@/lib/ranking";
 import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
-import { SectionReveal } from "@/components/anim/SectionReveal";
 import { RateCard } from "./RateCard";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
@@ -19,7 +18,7 @@ import { TutorBlockProvider } from "./TutorBlockProvider";
 import { ProfileBlockBanner } from "./ProfileBlockBanner";
 import { ProfileSaveButton } from "./ProfileSaveButton";
 import { listTutorDocs } from "@/lib/supabase/storage";
-import { Section, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { Section, SidebarHeading, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
 export async function generateMetadata({ params }) {
   const supabase = createSupabaseServerClient();
@@ -64,32 +63,32 @@ export default async function ProfilePage({ params }) {
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden">
       {/* Same cream desk + floating stationery as the featured section. */}
       <DeskBackdrop />
-      <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-6 pb-24">
+      <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6 pb-24">
         {/* Shown only when the signed-in student has blocked this tutor. */}
         <ProfileBlockBanner tutorName={tutor.name} />
-        <SectionReveal hover className="paper-page relative bg-[color:var(--paper-card)] overflow-hidden" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
+        <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
           {/* Save bookmark — top-right of the banner. Public view only; the
               owner branch above never reaches here. */}
           <ProfileSaveButton tutorId={tutor.id} variant="banner" />
           <div
             style={{
-              height: 140,
+              height: 150,
               background: tutor.bannerImg
                 ? `url(${tutor.bannerImg}) center / cover no-repeat`
                 : `linear-gradient(135deg, ${tutor.bannerBg ?? tutor.avatarBg}, oklch(0.96 0.01 250))`,
             }}
           />
-          <div className="px-7 pb-7" style={{ marginTop: -54 }}>
+          <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <Avatar tutor={tutor} size={108} ring />
             </div>
 
             <ProfileHeaderText tutor={tutor} deliveryLabel={deliveryLabel} />
           </div>
-        </SectionReveal>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 mt-8">
-          <div className="space-y-8 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
+          <div className="space-y-[10px] min-w-0">
             {tutor.bioLong && <AboutCard text={tutor.bioLong} />}
 
             {tiles.length > 0 && (
@@ -117,7 +116,7 @@ export default async function ProfilePage({ params }) {
             )}
           </div>
 
-          <aside className="space-y-5">
+          <aside className="space-y-[10px]">
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
@@ -130,11 +129,11 @@ export default async function ProfilePage({ params }) {
 
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[color:var(--paper-card)] p-4 z-40 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
         <div>
-          <div className="text-[18px] font-light tabular-nums">
+          <div className="text-[20px] font-light tabular-nums" style={{ color: "var(--ink-graphite-deep)" }}>
             ${tutor.rate}
-            <span className="text-[13px] text-slate-400 font-normal">/hr</span>
+            <span className="text-[13px] font-normal" style={{ color: "var(--sage)" }}>/hr</span>
           </div>
-          <div className="text-[11.5px] text-slate-500">Online or in person</div>
+          <div className="text-[12.5px]" style={{ color: "var(--sage)" }}>Online or in person</div>
         </div>
         <MessageTutorButton tutor={tutor} full={false} />
       </div>
@@ -145,13 +144,13 @@ export default async function ProfilePage({ params }) {
 
 function SimilarTutorsCard({ similar }) {
   return (
-    <SectionReveal className="bg-transparent" style={{ borderRadius: 0 }}>
-      <div className="text-[14px] font-medium text-slate-900 mb-4 px-1">Similar tutors</div>
-      <div className="grid grid-cols-2 gap-3">
+    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+      <SidebarHeading>Similar tutors</SidebarHeading>
+      <div className="grid grid-cols-2 gap-3 mt-3">
         {similar.map((t) => (
           <SimilarTutorMini key={t.id} tutor={t} />
         ))}
       </div>
-    </SectionReveal>
+    </div>
   );
 }

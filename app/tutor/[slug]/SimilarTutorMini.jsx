@@ -1,97 +1,36 @@
-"use client";
 import Link from "next/link";
-import { motion } from "motion/react";
 import { Avatar, VerifiedTick } from "@/components/ui";
-import { EASE_OUT } from "@/lib/motion";
 import { stripMarkdown } from "@/lib/richText";
 
-// Same hover choreography as TutorCard: small lift + shake wobble + shadow.
-const miniVariants = {
-  rest: {
-    y: 0,
-    rotate: 0,
-    boxShadow: "0 0 0 0 rgba(0,30,30,0)",
-    borderColor: "var(--paper-line)",
-    transition: {
-      y: { duration: 0.45, ease: EASE_OUT },
-      rotate: { duration: 0.4, ease: EASE_OUT },
-      boxShadow: { duration: 0.4, ease: EASE_OUT },
-      borderColor: { duration: 0.3, ease: EASE_OUT },
-    },
-  },
-  hover: {
-    y: -4,
-    rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 18px 36px -20px rgba(0,30,30,0.22)",
-    borderColor: "var(--line-strong)",
-    transition: {
-      y: { duration: 0.42, ease: EASE_OUT },
-      rotate: {
-        duration: 0.62,
-        ease: "easeOut",
-        times: [0, 0.18, 0.4, 0.62, 0.82, 1],
-      },
-      boxShadow: { duration: 0.42, ease: EASE_OUT },
-      borderColor: { duration: 0.3, ease: EASE_OUT },
-    },
-  },
-};
-
+/**
+ * Centered mini card for the similar-tutors grid. Fully static: no hover
+ * treatment, matching the flat profile page.
+ */
 export function SimilarTutorMini({ tutor }) {
   return (
-    <motion.div
-      initial="rest"
-      animate="rest"
-      whileHover="hover"
-      variants={miniVariants}
-      className="paper-page"
+    <Link
+      href={`/tutor/${tutor.slug}`}
+      className="flex flex-col items-center text-center"
       style={{
-        background: "var(--paper-card)",
-        border: "1px solid var(--paper-line)",
+        background: "var(--desk)",
+        border: "1px solid var(--line-soft)",
         borderRadius: 12,
-        willChange: "transform, box-shadow",
+        padding: "16px 14px",
       }}
     >
-      <Link
-        href={`/tutor/${tutor.slug}`}
-        className="block overflow-hidden"
-        style={{ borderRadius: 12 }}
-      >
-        <div
-          style={tutor.bannerImg
-            ? { height: 28, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-            : { height: 28, background: tutor.bannerBg ?? tutor.avatarBg, opacity: 0.55 }}
-        />
-        <div className="px-3 pb-3">
-          <div style={{ marginTop: -18, marginBottom: 6 }}>
-            <Avatar tutor={tutor} size={36} ring />
-          </div>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span
-              className="text-[16px] truncate leading-tight"
-              style={{ fontWeight: 400, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
-            >
-              {tutor.name}
-            </span>
-            {tutor.verified && <VerifiedTick size={11} />}
-          </div>
-          <div
-            className="text-[11.5px] text-slate-500 truncate mt-0.5"
-            style={{ minHeight: "1.3em" }}
-          >
-            {stripMarkdown(tutor.bio) || " "}
-          </div>
-          <div
-            className="mt-2 pt-2 flex items-baseline justify-end"
-            style={{ borderTop: "1px solid var(--desk)" }}
-          >
-            <div className="tabular-nums">
-              <span className="text-[13px] font-medium text-slate-900">${tutor.rate}</span>
-              <span className="text-[11px] text-slate-400">/hr</span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
+      <Avatar tutor={tutor} size={48} />
+      <div className="flex items-center gap-1 min-w-0 mt-2.5 max-w-full">
+        <span className="text-[14px] font-medium truncate" style={{ color: "var(--ink-graphite-deep)" }}>
+          {tutor.name}
+        </span>
+        {tutor.verified && <VerifiedTick size={11} />}
+      </div>
+      <div className="text-[12px] truncate mt-0.5 max-w-full" style={{ color: "var(--sage)", minHeight: "1.3em" }}>
+        {stripMarkdown(tutor.bio) || " "}
+      </div>
+      <div className="text-[12.5px] font-medium tabular-nums mt-1.5" style={{ color: "var(--pill-ink)" }}>
+        ${tutor.rate}/hr
+      </div>
+    </Link>
   );
 }

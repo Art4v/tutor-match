@@ -1,7 +1,5 @@
 "use client";
 import { useState } from "react";
-import { SectionReveal } from "@/components/anim/SectionReveal";
-import { StaggerChildren, RevealItem } from "@/components/anim/CardReveal";
 import { MessageTutorButton } from "./MessageTutorButton";
 
 export function RateCard({ tutor, showMessage = true }) {
@@ -10,52 +8,51 @@ export function RateCard({ tutor, showMessage = true }) {
   const rateLine = "Online or in person · flexible scheduling";
 
   return (
-    <SectionReveal hover className="paper-page bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 22 }}>
-      <StaggerChildren delay={0.3} step={0.12}>
-        <RevealItem>
-          <div className="flex items-baseline gap-1">
-            <span className="text-[34px] font-light text-slate-800 tabular-nums tracking-tight">
-              ${tutor.rate}
-            </span>
-            <span className="text-[14px] text-slate-400">/hour</span>
-          </div>
-        </RevealItem>
+    <div
+      className="bg-[color:var(--paper-card)]"
+      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: "18px 20px" }}
+    >
+      <div className="flex items-baseline gap-1">
+        <span className="text-[40px] font-light tabular-nums" style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.02em" }}>
+          ${tutor.rate}
+        </span>
+        <span className="text-[16px]" style={{ color: "var(--sage)" }}>/hour</span>
+      </div>
 
-        <RevealItem>
-          <div className="text-[12.5px] text-slate-500 mt-1">{rateLine}</div>
-        </RevealItem>
+      <div className="text-[13.5px] mt-1" style={{ color: "var(--sage)" }}>{rateLine}</div>
 
-        {packages.length > 0 && packages.map((p, i) => (
-          <RevealItem key={i}>
-            <div className={i === 0 ? "mt-5" : "mt-2"}>
-              <button
-                onClick={() => setPkg(i)}
-                className="w-full flex items-center justify-between p-3 text-left transition-colors"
-                style={{
-                  border: `1px solid ${pkg === i ? "var(--accent)" : "var(--paper-line)"}`,
-                  borderRadius: 10,
-                  background: pkg === i ? "var(--accent-softer)" : "#fff",
-                  color: pkg === i ? "var(--accent)" : "var(--ink)",
-                  transition: "background-color 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out",
-                }}
-              >
-                <div>
-                  <div className="text-[13.5px] font-medium">{p.label}</div>
-                </div>
-                <div className="text-[15px] font-medium tabular-nums">${p.price}</div>
-              </button>
+      {packages.length > 0 && (
+        <div className="flex flex-col gap-[10px] mt-5">
+          {packages.map((p, i) => (
+            <button
+              key={i}
+              onClick={() => setPkg(i)}
+              className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+              style={{
+                border: `1px solid ${pkg === i ? "var(--accent)" : "var(--accent-line)"}`,
+                borderRadius: 11,
+                background: pkg === i ? "var(--accent-soft)" : "var(--accent-softer)",
+                color: pkg === i ? "var(--accent)" : "var(--ink-graphite)",
+                transition: "background-color 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out",
+              }}
+            >
+              <span className="text-[14px] font-medium">{p.label}</span>
+              <span className="text-[14px] font-medium tabular-nums">${p.price}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showMessage && (
+        <div className="mt-5">
+          <MessageTutorButton tutor={tutor} />
+          {tutor.responsive && (
+            <div className="text-center text-[12.5px] mt-2" style={{ color: "var(--sage)" }}>
+              {tutor.responsive}
             </div>
-          </RevealItem>
-        ))}
-
-        {showMessage && (
-          <RevealItem>
-            <div className="mt-5">
-              <MessageTutorButton tutor={tutor} />
-            </div>
-          </RevealItem>
-        )}
-      </StaggerChildren>
-    </SectionReveal>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

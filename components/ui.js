@@ -110,12 +110,17 @@ export function VerifiedTick({ size = 14 }) {
   );
 }
 
-export function Chip({ children, tone = "grey", icon, onClick, active, onRemove, disabled, radius = 999 }) {
+export function Chip({ children, tone = "grey", size = "md", icon, onClick, active, onRemove, disabled, radius = 999 }) {
   const tones = {
     grey: { bg: active ? "var(--accent)" : "var(--desk)", color: active ? "#fff" : "var(--ink)", border: active ? "var(--accent)" : "transparent" },
     line: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--paper-line)" },
     cream: { bg: "var(--bg-soft)", color: "var(--ink-muted)", border: "var(--paper-line)" },
     accent: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
+    pill: { bg: "var(--pill)", color: "var(--pill-ink)", border: "var(--chip-line)" },
+  };
+  const sizes = {
+    md: "gap-1.5 px-2.5 py-1 text-[12.5px]",
+    sm: "gap-[5px] px-[9px] py-1 text-[12px]",
   };
   const t = tones[tone];
   const clickable = !!onClick && !disabled;
@@ -136,7 +141,7 @@ export function Chip({ children, tone = "grey", icon, onClick, active, onRemove,
       onClick={clickable ? onClick : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12.5px] font-medium"
+      className={`inline-flex items-center font-medium ${sizes[size] || sizes.md}`}
       style={{
         background: bg,
         color,
@@ -187,6 +192,8 @@ export function Button({ children, variant = "primary", size = "md", icon, iconR
     sm: { pad: "6px 12px", fs: 13, h: 32, r: 8 },
     md: { pad: "8px 16px", fs: 14, h: 38, r: 9 },
     lg: { pad: "11px 20px", fs: 15, h: 44, r: 10 },
+    // Profile-page primary CTA (the sidebar "Message" button).
+    xl: { pad: "13px 20px", fs: 15, h: 48, r: 11 },
   };
   const v = variants[variant] || variants.primary;
   const s = sizes[size];
