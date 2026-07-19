@@ -1,11 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "motion/react";
 import { Icon } from "./Icon";
 import { Avatar, VerifiedTick } from "./ui";
 import { SaveTutorButton } from "./SaveTutorButton";
-import { EASE_OUT } from "@/lib/motion";
 import { subjectLabel } from "@/lib/subjects";
 import { stripMarkdown } from "@/lib/richText";
 
@@ -21,10 +19,17 @@ const CRED_CAPTIONS = {
 };
 const captionForIcon = (icon) => CRED_CAPTIONS[icon] || "Credential";
 
-// Single-line text that scales its font down to fit its container's width.
-// Short values (ATAR, rate) keep `max`; long credential labels shrink toward
-// `min`, with truncation as a last resort so they can never spill the cell.
-function FitText({ children, max = 18, min = 10, className = "", style }) {
+// Single-line text that scales its font down to fit its container. Short values
+// (ATAR, rate) keep `max`; long credential labels shrink toward `min`, with
+// truncation as a last resort so they can never spill the cell.
+//
+// It fits against the box's HEIGHT as well as its width. Width alone isn't
+// enough: `max` is a JS prop set as an inline fontSize, which no Tailwind class
+// can override, so a short value like "99.85" would render at the full desktop
+// 21px even in the much narrower phone rail (it still fits widthwise). Capping
+// at the box height lets `boxClassName` drive the size responsively — give the
+// box `h-[16px] md:h-[23px]` and the value follows the breakpoint.
+function FitText({ children, max = 18, min = 10, className = "", boxClassName = "", style }) {
   const boxRef = useRef(null);
   const textRef = useRef(null);
   const [size, setSize] = useState(max);
@@ -41,8 +46,13 @@ function FitText({ children, max = 18, min = 10, className = "", style }) {
       const natural = t.scrollWidth;
       t.style.fontSize = prev;
       const avail = b.clientWidth;
+      const availH = b.clientHeight;
       if (natural > 0 && avail > 0) {
-        setSize(natural > avail ? Math.max(min, Math.floor((max * avail) / natural)) : max);
+        let next = natural > avail ? Math.floor((max * avail) / natural) : max;
+        // Never taller than the box (leading-none makes the line box ~= the
+        // font size, so the height doubles as a font-size ceiling).
+        if (availH > 0) next = Math.min(next, availH);
+        setSize(Math.max(min, next));
       }
     };
     fit();
@@ -52,7 +62,7 @@ function FitText({ children, max = 18, min = 10, className = "", style }) {
   }, [children, max, min]);
 
   return (
-    <div ref={boxRef} className="w-full flex justify-center min-w-0">
+    <div ref={boxRef} className={`w-full flex items-center justify-center min-w-0 ${boxClassName}`}>
       <span
         ref={textRef}
         className={`inline-block whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${className}`}
@@ -76,15 +86,28 @@ function StatTile({ value, label, tone = "accent" }) {
   const t = tones[tone] || tones.accent;
   return (
     <div
-      className="flex flex-col items-center justify-center gap-1 min-w-0"
-      style={{ border: `1px solid ${t.border}`, background: t.bg, borderRadius: 11, padding: "9px 8px" }}
+      className="flex flex-col items-center justify-center gap-0.5 md:gap-1 min-w-0 px-1 py-1 md:px-2 md:py-[9px]"
+      style={{ border: `1px solid ${t.border}`, background: t.bg, borderRadius: 9 }}
     >
-      <FitText max={21} min={11} className="tabular-nums leading-none" style={{ color: t.color, fontWeight: 300 }}>
+      {/* The box's FIXED height does double duty: it caps the font size per
+          breakpoint (see FitText), and it keeps every tile the same height
+          whatever the fitted size turns out to be. Without it the tile is only
+          as tall as its text, so a long credential ("State rank 3 - Physics",
+          shrunk to 9px) made a shorter tile than a short one ("99.85" at 21px)
+          — and since the rail drives card height, whole cards in the list came
+          out different heights. */}
+      <FitText
+        max={21}
+        min={9}
+        boxClassName="h-[15px] md:h-[23px]"
+        className="tabular-nums leading-none"
+        style={{ color: t.color, fontWeight: 300 }}
+      >
         {value}
       </FitText>
       <span
-        className="font-medium uppercase whitespace-nowrap"
-        style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--sage)" }}
+        className="font-medium uppercase whitespace-nowrap text-[7px] md:text-[10px]"
+        style={{ letterSpacing: "0.06em", color: "var(--sage)" }}
       >
         {label}
       </span>
@@ -97,8 +120,8 @@ function StatTile({ value, label, tone = "accent" }) {
 function SubjectChip({ children }) {
   return (
     <span
-      className="inline-flex items-center font-medium whitespace-nowrap"
-      style={{ fontSize: 12, padding: "4px 11px", borderRadius: 999, lineHeight: 1.2, color: "var(--pill-ink)", background: "var(--pill)" }}
+      className="inline-flex items-center font-medium whitespace-nowrap text-[10.5px] md:text-[12px] px-2 py-[3px] md:px-[11px] md:py-1"
+      style={{ borderRadius: 999, lineHeight: 1.2, color: "var(--pill-ink)", background: "var(--pill)" }}
     >
       {children}
     </span>
@@ -109,7 +132,7 @@ function SubjectChip({ children }) {
 // rows as fit, then caps with a "+N" pill. Packs chips off-screen first
 // (measured) so the visible rows never overflow / clip a chip mid-row. Re-runs
 // on width AND height changes (it lives in a flex region whose height shifts
-// with the rest of the card). `center` centres the rows for the Crown layout.
+// with the rest of the card). `center` centres the rows.
 function SubjectChipsFill({ subjects, center = false }) {
   const containerRef = useRef(null);
   const measureRef = useRef(null);
@@ -205,57 +228,47 @@ function SubjectChipsFill({ subjects, center = false }) {
   );
 }
 
-// The design's card is 420x580; we keep close to the original 504px footprint
-// and let the card fill its column (browse grid / hero stack), so the vertical
-// rhythm below is the design's proportions scaled to fit. The extra 26px over
-// the original buys the subject region a guaranteed second row (see
-// SUBJECTS_MIN_H).
-const CARD_HEIGHT = 530;
+// The card is a horizontal row, always: a left column (avatar · text over the
+// subject strip) beside a full-height stat rail. The layout NEVER stacks — the
+// same three zones hold at every width and the components scale down instead,
+// so a phone gets the desktop composition in miniature.
+//
+// Every size lives as a literal Tailwind class at the point of use rather than
+// as a constant here — the JIT scans source statically and can't see a class
+// name built from a variable. The set, phone -> md:
+//   body height    h-[120px]  md:h-[200px]
+//   rail width     w-[112px]  md:w-[210px]
+//   strip height   h-[44px]   md:h-[56px]
+//   chips box      h-[26px]   md:h-[36px]
+//   avatar         64         132   (a size prop, see the two-Avatar note below)
+//
+// Two of those are load-bearing rather than aesthetic:
+//
+// The md strip height must clear TWO chip rows or SubjectChipsFill silently
+// drops to one — it renders whole rows only. A chip is 12px text at line-height
+// 1.2 plus 4px padding top/bottom (~23px) and rows are 6px apart, so two rows
+// need >= 52px; the surplus keeps the "+N" pill in reach. The phone height is a
+// deliberate ONE row: there isn't the width for more beside the rail.
+//
+// The chips box must stay a FIXED height at both sizes. SubjectChipsFill
+// measures offsetHeight, so an auto-height box collapses and it renders nothing
+// at all.
 
-// Floor for the subject region. SubjectChipsFill only renders WHOLE rows, so
-// this must clear two of them or it silently drops to one: a chip is 12px text
-// at line-height 1.2 plus 4px padding top/bottom (~23px), and rows are 6px
-// apart, so two rows need >= 52px. The surplus keeps the "+N" pill in reach
-// when a tutor has more subjects than fit.
-const SUBJECTS_MIN_H = 56;
+// Bookmark placement. It's a sibling of the card <Link> (never nested), so it
+// can't flow inline in the text column and has to be positioned. It sits at the
+// top-right of the TEXT column, just left of the rail divider — the rail is now
+// flush to the card's right edge, so that's rail width + an 8px gap:
+// 88 + 8 = 96 on a phone, 210 + 8 = 218 from md up.
+// Written out in full rather than interpolated — Tailwind's JIT scans source
+// statically and can't see a class built from a template literal.
+const SAVE_POS = "top-2 right-[96px] md:top-3 md:right-[218px]";
 
-// Motion variants: a single source of truth for the hover behaviour. On enter,
-// y eases up to -4px while rotate plays a small back-and-forth wobble that
-// settles on 0; the shadow + border ease in. On leave, every property
-// interpolates back to rest with the same easing — no snapping, no overlap.
-// Both boxShadow strings MUST keep the same shape (same layers, same value
-// count per layer: contact + drop) — motion can only tween shadows with
-// matching templates; a mismatch makes it swap discretely instead of fading.
-const cardVariants = {
-  rest: {
-    y: 0,
-    rotate: 0,
-    boxShadow: "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49,47,0.14)",
-    borderColor: "var(--paper-line)",
-    transition: {
-      y: { duration: 0.45, ease: EASE_OUT },
-      rotate: { duration: 0.4, ease: EASE_OUT },
-      boxShadow: { duration: 0.4, ease: EASE_OUT },
-      borderColor: { duration: 0.3, ease: EASE_OUT },
-    },
-  },
-  hover: {
-    y: -4,
-    rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-    boxShadow: "0 2px 4px 0 rgba(0,30,30,0.05), 0 22px 48px -20px rgba(0,49,47,0.22)",
-    borderColor: "var(--line-strong)",
-    transition: {
-      y: { duration: 0.42, ease: EASE_OUT },
-      rotate: {
-        duration: 0.62,
-        ease: "easeOut",
-        times: [0, 0.18, 0.4, 0.62, 0.82, 1],
-      },
-      boxShadow: { duration: 0.42, ease: EASE_OUT },
-      borderColor: { duration: 0.3, ease: EASE_OUT },
-    },
-  },
-};
+// Resting shadow. Static — the card has NO hover animation at all: no lift, no
+// wobble, no shadow change, no border change. That's why this is a plain <div>
+// rather than a motion element and why nothing here is a motion variant.
+// (The entry stagger when a list renders is separate — it lives on the wrapper
+// in app/browse/BrowseResultsGrid.jsx, not on the card.)
+const CARD_SHADOW = "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49,47,0.14)";
 
 export function TutorCard({ tutor, showSave = true }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
@@ -277,136 +290,160 @@ export function TutorCard({ tutor, showSave = true }) {
   const schoolLocation = [school, location].filter(Boolean).join(" · ");
 
   return (
-    <motion.div
-      initial="rest"
-      animate="rest"
-      whileHover="hover"
-      variants={cardVariants}
+    <div
       style={{
         position: "relative",
-        height: CARD_HEIGHT,
         backgroundColor: "var(--paper-card)",
         border: "1px solid var(--paper-line)",
         borderRadius: 14,
+        boxShadow: CARD_SHADOW,
         overflow: "hidden",
-        willChange: "transform, box-shadow",
       }}
     >
       {/* Bookmark overlay — a sibling of the card <Link> (not nested, so the
-          HTML stays valid) pinned to the banner's top-right corner. Suppressed
-          on the home hero showcase cards (showSave={false}). */}
-      {showSave && <SaveTutorButton tutorId={tutor.id} variant="card" />}
+          HTML stays valid). See SAVE_POS for why it's placed by class rather
+          than the variant's own offset. Suppressed on showcase cards. */}
+      {showSave && <SaveTutorButton tutorId={tutor.id} variant="card" className={SAVE_POS} />}
       <Link
         href={`/tutor/${tutor.slug}`}
-        className="relative cursor-pointer flex flex-col h-full overflow-hidden"
+        className="relative cursor-pointer flex overflow-hidden"
       >
-        {/* Coloured banner — the tutor's uploaded banner image if present, else
-            their flat backdrop tint. The only full-bleed element on the card. */}
-        <div
-          className="shrink-0 relative overflow-hidden"
-          style={tutor.bannerImg
-            ? { height: 108, background: `url(${tutor.bannerImg}) center / cover no-repeat` }
-            : { height: 108, background: tutor.bannerBg ?? tutor.avatarBg }}
-        />
+        {/* LEFT COLUMN — body band over the subject strip. Sits beside the rail
+            rather than above it, which is what lets the rail reach the card's
+            bottom edge and cuts the strip off at the divider. */}
+        <div className="flex-1 min-w-0 flex flex-col">
+        {/* Body band: avatar · text. A min-height plus flex-1, not a fixed
+            height — whichever column is taller sets the card height, and when
+            it's the rail (which happens on phones, where the rail's contents
+            don't shrink as far as the body's) the body has to absorb the extra
+            or the surplus shows as a bare white sliver under the tinted strip. */}
+        <div className="flex-1 flex items-stretch gap-3 md:gap-5 p-3 md:p-5 min-h-[120px] md:min-h-[200px]">
+          {/* Avatar — a plain rounded square (no banner behind it to straddle,
+              so no white ring either), centred in its own stretched cell so it
+              lines up with the text column.
 
-        {/* Everything below the banner carries the side padding. */}
-        <div className="flex flex-col flex-1 min-h-0 items-center text-center" style={{ padding: "0 24px 22px" }}>
-          {/* Avatar frame — a rounded square straddling the banner, half over
-              the tint and half over the white card. */}
-          <div className="shrink-0" style={{ marginTop: -58, marginBottom: 12 }}>
-            <Avatar
-              tutor={tutor}
-              size={116}
-              radius={14}
-              fontScale={0.44}
-              weight={300}
-              ring
-              ringColor="#fff"
-              ringWidth={4}
-            />
+              Rendered TWICE at two sizes rather than once: Avatar writes
+              width/height/fontSize as inline styles from its numeric `size`
+              prop and takes no className/style, so Tailwind can't resize it and
+              the initials' font size wouldn't scale anyway. The hidden copy
+              costs one DOM node and no network request — browsers don't fetch
+              background-image on a display:none element, and the avatar is a
+              background image. */}
+          <div className="shrink-0 flex items-center md:hidden">
+            <Avatar tutor={tutor} size={64} radius={10} fontScale={0.44} weight={300} />
+          </div>
+          <div className="shrink-0 hidden md:flex items-center">
+            <Avatar tutor={tutor} size={132} radius={16} fontScale={0.44} weight={300} />
           </div>
 
-          {/* Name + verified rosette. */}
-          <div className="flex items-center justify-center gap-1.5 shrink-0 max-w-full">
-            <span
-              className="truncate leading-tight"
-              style={{ fontSize: 22, fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
+          {/* Text column. Each block keeps the minHeight it had on the portrait
+              card so rows stay aligned when a tutor is missing a field. */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            {/* Name + verified rosette. The bookmark floats over this column's
+                right edge at BOTH sizes now (it anchors to the rail divider,
+                which no longer moves), so the padding is unconditional — it
+                clears the 38px control plus its 8px offset. */}
+            <div className="flex items-center gap-1 md:gap-1.5 min-w-0 pr-12">
+              <span
+                className="truncate leading-tight text-[15px] md:text-[20px]"
+                style={{ fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
+              >
+                {tutor.name}
+              </span>
+              {tutor.verified && <VerifiedTick size={15} />}
+            </div>
+
+            {/* Tagline — one line, height reserved so rows stay aligned. On a
+                phone the rows are tight enough that the bookmark's 38px circle
+                reaches down past the name into this line too, so it needs the
+                same clearance; by md the name alone is tall enough to clear it. */}
+            <div
+              className="mt-0.5 md:mt-1 max-w-full leading-[1.3] text-[11.5px] md:text-[14px] pr-12 md:pr-0"
+              style={{
+                fontWeight: 500,
+                color: "var(--accent)",
+                minHeight: "1.3em",
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
             >
-              {tutor.name}
-            </span>
-            {tutor.verified && <VerifiedTick size={15} />}
-          </div>
+              {tagline || " "}
+            </div>
 
-          {/* Tagline — one line, height reserved so cards stay aligned. */}
+            {/* Long bio — capped at 2 lines. */}
+            <div
+              className="mt-1 md:mt-1.5 leading-[1.5] text-[10.5px] md:text-[12.5px]"
+              style={{
+                color: "var(--ink-muted)",
+                minHeight: "3em",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {longBio || " "}
+            </div>
+
+            {/* School · Location — deliberately quieter than the stat tiles. */}
+            <div
+              className="mt-1 md:mt-1.5 max-w-full truncate text-[10px] md:text-[12px]"
+              style={{ color: "var(--sage)", minHeight: "1.3em" }}
+            >
+              {schoolLocation || " "}
+            </div>
+          </div>
+        </div>
+
+        {/* Subject strip. Sits inside the left column, so it stops at the rail
+            divider instead of running under it. Dropped entirely for a tutor
+            with no subjects, so the card ends at the body instead of trailing
+            an empty tinted band. */}
+        {subjects.length > 0 && (
           <div
-            className="mt-1.5 shrink-0 max-w-full leading-[1.3]"
-            style={{
-              fontSize: 14.5,
-              fontWeight: 500,
-              color: "var(--accent)",
-              minHeight: "1.3em",
-              display: "-webkit-box",
-              WebkitLineClamp: 1,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
+            className="shrink-0 flex items-center px-3 md:px-5 h-[44px] md:h-[56px]"
+            style={{ borderTop: "1px solid var(--line)", background: "var(--desk)" }}
           >
-            {tagline || " "}
+            {/* Fixed height on purpose — SubjectChipsFill measures offsetHeight
+                and renders whole rows only, so an auto-height box collapses and
+                it renders nothing at all. */}
+            <div className="w-full h-[26px] md:h-[36px]">
+              <SubjectChipsFill subjects={subjects} />
+            </div>
           </div>
+        )}
+        </div>
 
-          {/* Long bio — capped at 2 lines so the centred stack stays compact. */}
-          <div
-            className="mt-1 shrink-0 leading-[1.5]"
-            style={{
-              fontSize: 12.5,
-              color: "var(--ink-muted)",
-              minHeight: "3em",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {longBio || " "}
-          </div>
-
-          {/* School · Location — deliberately quieter than the stat tiles. */}
-          <div
-            className="mt-1 shrink-0 max-w-full truncate"
-            style={{ fontSize: 12, color: "var(--sage)", minHeight: "1.3em" }}
-          >
-            {schoolLocation || " "}
-          </div>
-
-          {/* Twin stat tiles: top credential · rate. The left tile follows the
+        {/* RIGHT COLUMN — the stat rail, a direct child of the <Link> so it
+            spans the card's full height and its divider runs top to bottom.
+            Contents centre against the whole card, not just the body band. */}
+        <div className="shrink-0 flex flex-col justify-center gap-1.5 md:gap-2.5 p-2 md:p-5 w-[88px] md:w-[210px] border-l border-[color:var(--line)]">
+          {/* Twin stat tiles: top credential · rate. The first tile follows the
               tutor's chosen lead credential (see captionForIcon), so it reads
               "ATAR" for most tutors but "Award" / "Degree" / "State rank" when
-              they've ordered a different one first. */}
-          <div className="w-full grid grid-cols-2 gap-2.5 mt-3 shrink-0">
+              they've ordered a different one first. Always stacked now — the
+              rail is a column at every width. */}
+          <div className="grid grid-cols-1 gap-1.5 md:gap-2.5">
             <StatTile value={statValue} label={statLabel} tone={statTone} />
             <StatTile value={`$${tutor.rate}`} label="per hour" tone="ink" />
           </div>
 
-          {/* Subjects fill the gap above the CTA — wrap across as many rows as
-              fit, then cap with a "+N" pill. This flex-1 region absorbs leftover
-              space (pinning the CTA to the bottom) but reserves a guaranteed
-              two-row minimum (minHeight) so subjects never collapse to nothing
-              on content-heavy cards; lighter cards grow it to more rows. */}
-          <div className="w-full flex-1 min-h-0 mt-2.5" style={{ minHeight: SUBJECTS_MIN_H }}>
-            <SubjectChipsFill subjects={subjects} center />
-          </div>
-
-          {/* CTA — visual only; the whole card is already the link, so this is a
-              styled span (a nested <button>/<a> inside <a> is invalid). */}
+          {/* CTA — visual only; the whole card is already the link, so this is
+              a styled span (a nested <button>/<a> inside <a> is invalid).
+              Desktop only: the phone rail is too narrow to carry it without the
+              label wrapping awkwardly, and nothing is lost — tapping anywhere
+              on the card already navigates to the profile. */}
           <span
-            className="w-full shrink-0 inline-flex items-center justify-center gap-1.5 font-medium text-white"
-            style={{ background: "var(--ink-graphite)", borderRadius: 11, padding: "11px 14px", fontSize: 13, marginTop: 12 }}
+            className="w-full hidden md:inline-flex items-center justify-center gap-1.5 font-medium text-white text-[13px] px-[14px] py-[10px]"
+            style={{ background: "var(--ink-graphite)", borderRadius: 11 }}
           >
             View full profile
             <Icon name="arrow-right" size={14} className="shrink-0" />
           </span>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }

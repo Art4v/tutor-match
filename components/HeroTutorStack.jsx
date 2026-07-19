@@ -4,15 +4,16 @@ import { motion } from "motion/react";
 import { TutorCard } from "@/components/TutorCard";
 import { EASE_OUT } from "@/lib/motion";
 
-// Height of a TutorCard (CARD_HEIGHT in TutorCard.js) — the stack reserves this
-// so the absolutely-positioned cards have a box to live in. Keep it in step with
-// the card or it clips.
+// SHELVED: nothing renders this component (see app/page.js). The numbers below
+// describe the OLD 340x530 portrait TutorCard. TutorCard is now a wide
+// horizontal row (~256px tall, full width of its column), so this stack would
+// need a real rework — not just new constants — before it could be un-shelved:
+// a 3-up carousel of full-width rows doesn't fit the hero's right column at all.
 const CARD_HEIGHT = 530;
 const CARD_WIDTH = 340;
-// The hero shows the card a touch smaller than the /browse grid does. Done as a
-// transform on the whole stack rather than by shrinking TutorCard's CARD_HEIGHT,
-// which is shared with /browse — and which the card's internal rhythm (notably
-// SUBJECTS_MIN_H's guaranteed two chip rows) is tuned against.
+// The hero showed the card a touch smaller than the /browse grid did. Done as a
+// transform on the whole stack rather than by shrinking the card itself, which
+// is shared with /browse.
 const STACK_SCALE = 0.96;
 const AUTO_MS = 4500;
 

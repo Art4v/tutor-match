@@ -17,9 +17,15 @@ import { useSavedTutors } from "./SavedTutorsProvider";
 // narrow column inside the card. Its right edge anchors to the button so it
 // grows leftward and stays on screen.
 //
-// `variant` only tunes size/offset: "card" (sits in the 128px card banner
-// corner) vs "banner" (larger, the 140px profile banner corner).
-export function SaveTutorButton({ tutorId, variant = "card", disabled = false }) {
+// `variant` only tunes size/offset: "card" (sits in the tutor card's corner) vs
+// "banner" (larger, the 140px profile banner corner).
+//
+// `className` overrides the placement: pass Tailwind positioning classes (e.g.
+// "top-3 right-3 md:right-[238px]") and the variant's fixed top/right offset is
+// dropped so they take effect. The row card needs this because its bookmark
+// sits at the top-right of the TEXT column on desktop and the card's own corner
+// on mobile — a responsive position an inline style can't express.
+export function SaveTutorButton({ tutorId, variant = "card", disabled = false, className = "" }) {
   const { isStudent, isLoggedIn, ready, isSaved, toggleSave } = useSavedTutors();
   const [hover, setHover] = useState(false);
   const [coords, setCoords] = useState(null);
@@ -97,19 +103,20 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false })
         )
       : null;
 
+  // When the caller supplies positioning classes, leave top/right to them.
   const wrapStyle = {
     position: "absolute",
-    top: offset,
-    right: offset,
+    ...(className ? null : { top: offset, right: offset }),
     zIndex: 10,
     lineHeight: 0,
   };
+  const wrapClass = `inline-flex ${className}`;
 
   // Until the session/role resolves, show a neutral, non-interactive bookmark so
   // a logged-in student never briefly sees (or clicks) the signup decoy.
   if (!ready) {
     return (
-      <span style={wrapStyle} className="inline-flex">
+      <span style={wrapStyle} className={wrapClass}>
         <span className="inline-flex items-center justify-center" style={{ ...pill, boxShadow: "none", background: "rgba(255,255,255,0.7)" }}>
           <Icon name="bookmark" size={iconSize} />
         </span>
@@ -128,7 +135,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false })
       <span
         ref={wrapRef}
         style={wrapStyle}
-        className="inline-flex"
+        className={wrapClass}
         onMouseEnter={showTip}
         onMouseLeave={hideTip}
       >
@@ -161,7 +168,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false })
     <span
       ref={wrapRef}
       style={wrapStyle}
-      className="inline-flex"
+      className={wrapClass}
       onMouseEnter={showTip}
       onMouseLeave={hideTip}
     >
