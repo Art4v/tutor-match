@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import { Wordmark } from "@/components/Logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { homeFor } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
@@ -80,10 +81,7 @@ export default function ChooseRoleForm() {
       <div className="mb-6">
         <h1 className="text-[30px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
           How will you use{" "}
-          <span style={{ fontWeight: 500 }}>
-            <span className="text-slate-700">match</span>
-            <span style={{ color: "var(--accent)" }}>tutor</span>
-          </span>
+          <Wordmark matchColor="var(--ink-muted)" weight={500} />
           ?
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">

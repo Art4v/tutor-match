@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
+import { Wordmark } from "@/components/Logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { postAuthDest } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
@@ -87,10 +88,7 @@ function LoginInner() {
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">
           Sign in to your{" "}
-          <span style={{ fontWeight: 500 }}>
-            <span className="text-slate-700">match</span>
-            <span style={{ color: "var(--accent)" }}>tutor</span>
-          </span>{" "}
+          <Wordmark matchColor="var(--ink-muted)" weight={500} />{" "}
           account.
         </p>
       </div>

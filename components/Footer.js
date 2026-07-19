@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookSproutMark } from "./Logo";
+import { BookSproutMark, Wordmark } from "./Logo";
 
 export function Footer() {
   return (
@@ -9,10 +9,7 @@ export function Footer() {
             footer it needs its own lighter tints to stay legible. */}
         <span className="flex items-center gap-2 text-[19px] leading-none" style={{ fontWeight: 400 }}>
           <BookSproutMark size={22} accent="#2E8B87" sage="#5EA5A1" seam="var(--footer-bg)" className="shrink-0" />
-          <span>
-            <span style={{ color: "#C7DEDC" }}>Match</span>
-            <span style={{ color: "#5EA5A1" }}>Tutor</span>
-          </span>
+          <Wordmark matchColor="#C7DEDC" tutorColor="#5EA5A1" />
         </span>
         <div className="flex items-center gap-4 mt-2.5">
           <Link href="/terms-of-service" className="footer-link">

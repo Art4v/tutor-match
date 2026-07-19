@@ -221,7 +221,7 @@ export function HomeHero({ catalog, schoolCatalog = [], showcaseTutors = [], ver
                       is absolutely positioned below it), so the card's vertical
                       centre lines up with the left column's text. The lg nudge
                       re-centres it visually within the right column. */}
-                  <div className="relative w-full max-w-[510px] lg:translate-x-8">
+                  <div className="relative w-full max-w-[460px] lg:translate-x-8">
                     <HeroTutorStack tutors={showcaseTutors} />
                     <SeeAllTutorsLink
                       verifiedCount={verifiedCount}

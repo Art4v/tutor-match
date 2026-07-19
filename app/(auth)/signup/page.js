@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
+import { Wordmark } from "@/components/Logo";
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
 import { validateEmailFormat } from "@/lib/email";
 import { EASE_OUT } from "@/lib/motion";
@@ -119,10 +120,7 @@ export default function SignupPage() {
         </h1>
         <p className="text-[14px] text-slate-500 mt-1.5">
           Join{" "}
-          <span style={{ fontWeight: 500 }}>
-            <span className="text-slate-700">match</span>
-            <span style={{ color: "var(--accent)" }}>tutor</span>
-          </span>{" "}
+          <Wordmark matchColor="var(--ink-muted)" weight={500} />{" "}
           as a tutor or a student.
         </p>
       </div>

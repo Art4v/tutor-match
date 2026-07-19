@@ -5,6 +5,29 @@
    live site tokens. Colors default to CSS variables so they stay token-local
    (the same inline-color philosophy the rest of the app uses). */
 
+/* The split-colour "MatchTutor" wordmark. Colours are props, not tokens, because
+   the three surfaces genuinely differ: the nav uses the full heading colour, the
+   prose sites sit inside muted paragraphs and want a half-step emphasis, and the
+   footer needs lighter tints to stay legible on near-black. Defaults are the nav
+   pair. Kept here (rather than hand-built per site) so a rename touches one file:
+   the lowercase-to-TitleCase pass missed three of the five copies when it wasn't.
+   lib/email/send.js has its own wordmark() — mail is an HTML string, not React. */
+export function Wordmark({
+  matchColor = "var(--ink-graphite)",
+  tutorColor = "var(--accent)",
+  weight,
+  className,
+  wordClassName,
+  style,
+}) {
+  return (
+    <span className={className} style={{ ...(weight ? { fontWeight: weight } : null), ...style }}>
+      <span className={wordClassName} style={{ color: matchColor }}>Match</span>
+      <span className={wordClassName} style={{ color: tutorColor }}>Tutor</span>
+    </span>
+  );
+}
+
 // A single pointed leaf. Tip is UP, base at local origin (0,0).
 function Leaf({ fill, x = 0, y = 0, rot = 0, scale = 1 }) {
   return (
