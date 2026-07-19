@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getFeaturedTutors, getSubjects, getSchools, getVerifiedTutorCount } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
 import { HomeHero } from "@/components/HomeHero";
-import { SchoolsMarquee } from "@/components/SchoolsMarquee";
+import { SchoolsStrip } from "@/components/SchoolsStrip";
 import { HomeHowItWorks } from "@/components/HomeHowItWorks";
 import { HomeCta } from "@/components/HomeCta";
 
@@ -30,7 +30,7 @@ export default async function HomePage() {
   return (
     <main style={{ background: "var(--paper)" }}>
       <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} />
-      <SchoolsMarquee />
+      <SchoolsStrip />
       <HomeHowItWorks />
       <HomeCta />
     </main>

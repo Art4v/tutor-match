@@ -21,7 +21,7 @@
   --ink-muted: #33514F;         /* secondary text */
   --sage: #6B8A88;              /* mid tones, icons, secondary marks */
   --line: #E3EAEA;
-  --line-soft: #EEF2F2;         /* lighter hairline: hero base, search bar, marquee band */
+  --line-soft: #EEF2F2;         /* lighter hairline: hero base, search bar, schools band */
   --line-strong: #B9D5D3;
   --bg: #FFFFFF;
   --bg-soft: #F7FAFA;
@@ -312,29 +312,6 @@ input[type="number"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .type-caret { animation: none; }
-}
-
-/* Seamless marquee (school strip). The track holds two identical halves and
-   slides left by 50%, so the loop is invisible. Pauses under reduced motion. */
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.marquee-track {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  width: max-content;
-  animation: marquee var(--marquee-dur, 42s) linear infinite;
-}
-.marquee-track--reverse {
-  animation-direction: reverse;
-}
-.marquee-mask {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track { animation: none; }
 }
 
 /* ───────────────────────── Botanical accents ───────────────────────── */

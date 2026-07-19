@@ -9,19 +9,19 @@ const STEPS = [
   {
     n: "01",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
-    t: "Browse verified profiles",
+    t: "Browse Verified Profiles",
     b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
   },
   {
     n: "02",
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
-    t: "Pick a tutor that fits",
+    t: "Pick a Tutor that Fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
   },
   {
     n: "03",
     image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
-    t: "Lessons, reviews, switching",
+    t: "Lessons and Reviews",
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
   },
 ];
