@@ -1,56 +1,28 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import Link from "next/link";
-import { motion, AnimatePresence, useInView } from "motion/react";
-import { Icon } from "@/components/Icon";
+import { useLayoutEffect, useRef, useState } from "react";
+import { motion, useInView } from "motion/react";
 import { EASE_OUT, DURATION_MED, STAGGER } from "@/lib/motion";
 
+// Cards are static: no hover motion, no click-through. Everything a step needs
+// to say is on its face.
 const STEPS = [
   {
     n: "01",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
     t: "Browse verified profiles",
     b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
-    backTitle: "Browse, the way you'd want to",
-    backLead:
-      "We verify every tutor's ATAR, subject marks and identity before they appear in search. You see the people who actually have the receipts.",
-    bullets: [
-      "Every tutor independently verified. ATAR, marks, identity.",
-      "Filter by subject, year level, suburb, hourly rate, in-person or online.",
-      "Free to browse. No account needed until you want to reach out.",
-    ],
-    cta: { label: "Start browsing", href: "/browse" },
   },
   {
     n: "02",
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
     t: "Pick a tutor that fits",
     b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
-    backTitle: "Reach out directly. No agency in the middle",
-    backLead:
-      "When you've found someone who fits, sign up as a student (free) and email them directly. We don't take a cut, and there's no platform fee on top of the tutor's rate.",
-    bullets: [
-      "Sign up free as a student. Takes about a minute.",
-      "Contact tutors directly by email. No agency, no booking fee.",
-      "Pick the tutor's flat hourly rate, or choose one of their listed packages.",
-    ],
-    cta: { label: "Create a free account", href: "/signup" },
   },
   {
     n: "03",
     image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
     t: "Lessons, reviews, switching",
     b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
-    backTitle: "Lessons on your terms",
-    backLead:
-      "Meet in person or over video. Whatever suits the subject. After sessions, leave a review so the next student knows what they're getting. Not the right fit? Switch tutors, no questions asked.",
-    bullets: [
-      "Lessons in person or over video. Your call, their availability.",
-      "Leave a review after sessions so other students can choose well.",
-      "Switch tutors any time. You're never locked into anyone.",
-    ],
-    cta: { label: "Find your tutor", href: "/browse" },
   },
 ];
 
@@ -135,52 +107,16 @@ const CARD_POS = [
 ];
 
 export function HomeHowItWorks() {
-  const [openIndex, setOpenIndex] = useState(null);
-  const [hiddenIndex, setHiddenIndex] = useState(null);
-  const [sourceRect, setSourceRect] = useState(null);
-  const [closeSignal, setCloseSignal] = useState(0);
-  // Desktop tree and mobile stack both render card i (one is display:none),
-  // so refs are keyed `d${i}` / `m${i}` and openCard measures the visible one.
-  const cardRefs = useRef({});
-  const registerEl = (key) => (el) => {
-    cardRefs.current[key] = el;
-  };
-
-  const openCard = (i) => {
-    const el = [cardRefs.current[`d${i}`], cardRefs.current[`m${i}`]].find(
-      (n) => n && n.getBoundingClientRect().width > 0,
-    );
-    if (el) {
-      const r = el.getBoundingClientRect();
-      setSourceRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-    }
-    setHiddenIndex(i);
-    setOpenIndex(i);
-  };
-
-  const requestClose = () => setCloseSignal((n) => n + 1);
-  const finalClose = () => setOpenIndex(null);
-  const onExitDone = () => setHiddenIndex(null);
-
-  useEffect(() => {
-    if (openIndex === null) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") requestClose();
-    };
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [openIndex]);
-
   // Clean white band — the tree + sketched step cards carry this section, so it
   // deliberately skips the desk surface / stationery backdrop that /browse and
   // the tutor page use.
   return (
-    <section className="relative overflow-hidden min-h-screen flex items-center" style={{ background: "var(--paper)" }}>
+    // `z-0` is load-bearing: it gives this section its own stacking context so
+    // the inner `z-10` column stays trapped inside it. Without it that column
+    // competes directly with the hero's `z-10` in the root stacking context,
+    // ties, and wins on DOM order — painting this section over the hero's
+    // school/subject dropdowns.
+    <section className="relative z-0 overflow-hidden min-h-screen flex items-center" style={{ background: "var(--paper)" }}>
       <div className="relative z-10 max-w-[1200px] w-full mx-auto px-6 py-12">
         <div className="max-w-[820px] mb-8 mx-auto text-center flex flex-col items-center">
           <motion.div
@@ -219,12 +155,7 @@ export function HomeHowItWorks() {
           </motion.p>
         </div>
 
-        <DesktopTree
-          openIndex={openIndex}
-          hiddenIndex={hiddenIndex}
-          onOpen={openCard}
-          registerEl={registerEl}
-        />
+        <DesktopTree />
 
         {/* Mobile keeps the original stacked cards — the tree canvas is desktop-only. */}
         <motion.div
@@ -238,27 +169,10 @@ export function HomeHowItWorks() {
           className="md:hidden grid grid-cols-1 gap-5"
         >
           {STEPS.map((s, i) => (
-            <HowItWorksCard
-              key={s.n}
-              step={s}
-              index={i}
-              isOpen={openIndex === i}
-              isHidden={hiddenIndex === i}
-              onOpen={() => openCard(i)}
-              cardRef={registerEl(`m${i}`)}
-            />
+            <HowItWorksCard key={s.n} step={s} index={i} />
           ))}
         </motion.div>
       </div>
-
-      <ExpandedOverlay
-        openIndex={openIndex}
-        sourceRect={sourceRect}
-        onRequestClose={requestClose}
-        onClose={finalClose}
-        onExitDone={onExitDone}
-        closeSignal={closeSignal}
-      />
     </section>
   );
 }
@@ -301,7 +215,7 @@ function CardSprig({ spec }) {
 // coordinates, so below that width the whole canvas (SVG + cards together) is
 // uniformly scaled — rescaling only the SVG would detach branch tips from the
 // absolutely-positioned cards.
-function DesktopTree({ openIndex, hiddenIndex, onOpen, registerEl }) {
+function DesktopTree() {
   const outerRef = useRef(null);
   const canvasRef = useRef(null);
   const slot0 = useRef(null);
@@ -355,16 +269,7 @@ function DesktopTree({ openIndex, hiddenIndex, onOpen, registerEl }) {
             animate={cardInView[i] ? { opacity: 1, y: 0 } : undefined}
             transition={{ duration: 1, ease: EASE_OUT, delay: 0.3 }}
           >
-            <HowItWorksCard
-              step={s}
-              index={i}
-              isOpen={openIndex === i}
-              isHidden={hiddenIndex === i}
-              onOpen={() => onOpen(i)}
-              cardRef={registerEl(`d${i}`)}
-              inView={cardInView[i]}
-              emphasized={i === 1}
-            />
+            <HowItWorksCard step={s} index={i} inView={cardInView[i]} emphasized={i === 1} />
           </motion.div>
         ))}
       </div>
@@ -634,42 +539,13 @@ function FallingLeaf({ x, y, drop, on, delay, dur }) {
   );
 }
 
-// Shared hover motion: a -4px lift plus the little settle-wobble.
-const CARD_LIFT = {
-  y: -4,
-  rotate: [0, -0.9, 0.9, -0.45, 0.2, 0],
-};
-const CARD_LIFT_TRANSITION = {
-  y: { duration: 0.42, ease: EASE_OUT },
-  rotate: {
-    duration: 0.62,
-    ease: "easeOut",
-    times: [0, 0.18, 0.4, 0.62, 0.82, 1],
-  },
-};
-
-// Every card (tree and mobile stack alike) is framed by the sketched SVG path,
-// so hover is lift + wobble ONLY. Animating boxShadow/borderColor/
-// backgroundColor here would paint the rectangle the sketched outline exists to
-// avoid.
-const cardShakeHoverSketch = {
-  ...CARD_LIFT,
-  transition: { ...CARD_LIFT_TRANSITION },
-};
-
-function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView, emphasized = false }) {
-  const [hover, setHover] = useState(false);
+function HowItWorksCard({ step, index, inView, emphasized = false }) {
   const tilt = CARD_TILT[index % CARD_TILT.length];
   const tapeTilt = TAPE_TILT[index % TAPE_TILT.length];
   // Mobile stack (no inView prop): entrance via the parent grid's stagger
   // variants, as before. Desktop tree: the slot wrapper animates the entrance,
   // so the card root only carries its resting tilt.
   const treeMode = inView !== undefined;
-  // Wobble around the resting tilt (so hover doesn't snap the card straight).
-  const hoverAnim = {
-    ...cardShakeHoverSketch,
-    rotate: cardShakeHoverSketch.rotate.map((r) => tilt + r),
-  };
   const entrance =
     !treeMode
       ? {
@@ -682,20 +558,13 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
 
   return (
     <motion.div
-      ref={cardRef}
       {...entrance}
-      whileHover={isOpen || isHidden ? undefined : hoverAnim}
-      onHoverStart={() => !isOpen && setHover(true)}
-      onHoverEnd={() => setHover(false)}
       style={{
         position: "relative",
         // Cards are framed by a hand-sketched SVG path (below) that supplies both
         // the outline and the white fill, so they carry no CSS
-        // border/background/shadow of their own — a rectangular box behind the
+        // border/background/shadow of their own. A rectangular box behind the
         // wobbly outline is exactly what the design rules out.
-        opacity: isHidden ? 0 : 1,
-        pointerEvents: isHidden ? "none" : "auto",
-        willChange: "transform",
       }}
     >
       {/* Sketched frame on both layouts. Tree cards hang a sprig off the edge
@@ -711,31 +580,17 @@ function HowItWorksCard({ step, index, isOpen, isHidden, onOpen, cardRef, inView
           style={{ top: -9, left: "50%", transform: `translateX(-50%) rotate(${tapeTilt}deg)`, zIndex: 5 }}
         />
       )}
-      <button
-        type="button"
-        onClick={isOpen ? undefined : onOpen}
-        className={`${treeMode ? "" : "p-6 overflow-hidden"} block relative text-left w-full focus:outline-none bg-transparent`}
+      <div
+        className={`${treeMode ? "" : "p-6 overflow-hidden"} block relative text-left w-full`}
         style={{
           borderRadius: "var(--radius-card)",
-          cursor: isOpen ? "default" : "pointer",
           // Tree cards use the design's asymmetric padding inside the sketched
           // frame; the mobile stack keeps its uniform p-6.
           ...(treeMode ? { padding: "34px 32px 38px" } : {}),
         }}
       >
-        <CardFrontInner step={step} hover={hover} emphasized={emphasized} tall={treeMode} />
-        <div
-          className="font-display italic text-[12px] mt-4"
-          style={{
-            color: "var(--accent)",
-            fontWeight: 500,
-            opacity: hover ? 1 : 0.55,
-            transition: "opacity 220ms ease-out",
-          }}
-        >
-          Click to learn more →
-        </div>
-      </button>
+        <CardFrontInner step={step} emphasized={emphasized} tall={treeMode} />
+      </div>
     </motion.div>
   );
 }
@@ -775,7 +630,7 @@ function SketchFrame({ emphasized = false }) {
   );
 }
 
-function CardFrontInner({ step, hover = true, emphasized = false, tall = false }) {
+function CardFrontInner({ step, tall = false }) {
   return (
     <>
       {step.image && (
@@ -789,23 +644,13 @@ function CardFrontInner({ step, hover = true, emphasized = false, tall = false }
             loading="lazy"
             draggable={false}
             className="w-full h-full object-cover"
-            style={{
-              // Lightly muted at rest, lifting to full colour on hover — same
-              // hover language as the icon tile below.
-              filter: hover ? "grayscale(0) saturate(1.05)" : "grayscale(0.32) saturate(0.92)",
-              transform: hover ? "scale(1.04)" : "scale(1)",
-              transition:
-                "filter 360ms ease-out, transform 600ms cubic-bezier(0.22,1,0.36,1)",
-            }}
           />
-          {/* keep a faint accent wash at rest so it reads as part of the card */}
+          {/* Faint accent wash so the photo reads as part of the card. */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
               background: "linear-gradient(180deg, rgba(1,103,100,0.05) 0%, rgba(1,103,100,0.12) 100%)",
-              opacity: hover ? 0 : 1,
-              transition: "opacity 360ms ease-out",
             }}
           />
         </div>
@@ -828,246 +673,5 @@ function CardFrontInner({ step, hover = true, emphasized = false, tall = false }
       </div>
       <p style={{ fontSize: 14, color: "var(--ink-muted)", lineHeight: 1.55, margin: "10px 0 0" }}>{step.b}</p>
     </>
-  );
-}
-
-function ExpandedOverlay({ openIndex, sourceRect, onRequestClose, onClose, onExitDone, closeSignal }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
-
-  const step = openIndex === null ? null : STEPS[openIndex];
-
-  return createPortal(
-    <AnimatePresence onExitComplete={onExitDone}>
-      {step && (
-        <motion.div
-          key="how-overlay"
-          className="fixed inset-0 z-[60]"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 1 }}
-        >
-          <motion.div
-            className="absolute inset-0"
-            style={{ background: "rgba(0, 30, 30, 0.55)", backdropFilter: "blur(2px)" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: EASE_OUT }}
-            onClick={onRequestClose}
-          />
-          <ExpandedCard
-            step={step}
-            sourceRect={sourceRect}
-            onRequestClose={onRequestClose}
-            onClose={onClose}
-            closeSignal={closeSignal}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body,
-  );
-}
-
-function getTargetRect() {
-  if (typeof window === "undefined") return { width: 720, height: 560, top: 100, left: 100 };
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const width = Math.min(720, vw * 0.92);
-  const height = Math.min(560, vh * 0.82);
-  return {
-    width,
-    height,
-    top: (vh - height) / 2,
-    left: (vw - width) / 2,
-  };
-}
-
-function ExpandedCard({ step, sourceRect, onRequestClose, onClose, closeSignal }) {
-  const [flipped, setFlipped] = useState(false);
-  const [target, setTarget] = useState(() => getTargetRect());
-  // Snapshot the closeSignal at mount time. closeSignal is a monotonically
-  // increasing counter shared across opens, so on the 2nd open it's already
-  // > 0 — without this baseline, the effect below would fire immediately on
-  // mount and close the card right after it opened.
-  const baselineSignalRef = useRef(closeSignal);
-
-  useEffect(() => {
-    const onResize = () => setTarget(getTargetRect());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setFlipped(true), 320);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (closeSignal === baselineSignalRef.current) return;
-    setFlipped(false);
-    const t = setTimeout(() => onClose(), 360);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeSignal]);
-
-  const src = sourceRect || target;
-
-  const faceStyle = {
-    position: "absolute",
-    inset: 0,
-    backfaceVisibility: "hidden",
-    WebkitBackfaceVisibility: "hidden",
-    background: "var(--paper-card)",
-    border: "1px solid var(--paper-line)",
-    boxShadow: "0 40px 80px -30px rgba(0,30,30,0.45)",
-    overflow: "hidden",
-  };
-
-  return (
-    <motion.div
-      initial={{ top: src.top, left: src.left, width: src.width, height: src.height }}
-      animate={{ top: target.top, left: target.left, width: target.width, height: target.height }}
-      exit={{ top: src.top, left: src.left, width: src.width, height: src.height, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 30 }}
-      className="absolute"
-      style={{
-        borderRadius: "var(--radius-card)",
-        perspective: 1600,
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <motion.div
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          transformStyle: "preserve-3d",
-        }}
-        animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{ duration: 0.7, ease: EASE_OUT }}
-      >
-        {/* Front face */}
-        <div style={faceStyle} className="p-10">
-          <CardFrontInner step={step} hover={true} />
-        </div>
-
-        {/* Back face */}
-        <div
-          style={{
-            ...faceStyle,
-            transform: "rotateY(180deg)",
-            background: "linear-gradient(180deg, var(--paper-card) 0%, var(--accent-softer) 100%)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRequestClose();
-            }}
-            aria-label="Close"
-            className="absolute top-4 right-4 flex items-center justify-center"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: "var(--paper-card)",
-              border: "1px solid var(--accent-line)",
-              color: "var(--accent)",
-              cursor: "pointer",
-              zIndex: 2,
-            }}
-          >
-            <Icon name="x" size={16} />
-          </button>
-
-          <div className="h-full w-full p-8 sm:p-10 flex flex-col overflow-auto">
-            {/* Number type mirrors CardFrontInner, so the flip doesn't land on a
-                different typeface. Caveat carries its own letter-spacing; don't
-                reintroduce a tracking override here. */}
-            <div
-              className="font-hand mb-6"
-              style={{
-                fontSize: 44,
-                lineHeight: 1,
-                fontWeight: 400,
-                color: "var(--accent)",
-              }}
-            >
-              {step.n}.
-            </div>
-
-            {step.image && (
-              <div
-                className="relative mb-6 overflow-hidden"
-                style={{ borderRadius: 12, height: 132, border: "1px solid var(--accent-line)" }}
-              >
-                <img
-                  src={step.image.src}
-                  alt={step.image.alt}
-                  draggable={false}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            <h3
-              className="font-display text-[26px] sm:text-[30px] text-[color:var(--ink-graphite)] leading-[1.15] mb-3"
-              style={{ fontWeight: 400, letterSpacing: "-0.015em" }}
-            >
-              {step.backTitle}
-            </h3>
-            <p className="text-[15px] sm:text-[15.5px] text-[color:var(--ink-muted)] leading-[1.6] mb-5 max-w-[58ch]">
-              {step.backLead}
-            </p>
-
-            <ul className="space-y-2.5 mb-6">
-              {step.bullets.map((line) => (
-                <li key={line} className="flex items-start gap-3">
-                  <span
-                    className="flex items-center justify-center flex-shrink-0"
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 6,
-                      background: "var(--accent-softer)",
-                      color: "var(--accent)",
-                      border: "1px solid var(--accent-line)",
-                      marginTop: 2,
-                    }}
-                  >
-                    <Icon name="check" size={12} />
-                  </span>
-                  <span className="text-[14.5px] text-[color:var(--ink-muted)] leading-[1.55]">{line}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-auto pt-2">
-              <Link
-                href={step.cta.href}
-                onClick={onRequestClose}
-                className="inline-flex items-center gap-2 font-display"
-                style={{
-                  background: "var(--accent)",
-                  color: "#fff",
-                  padding: "12px 18px",
-                  borderRadius: 12,
-                  fontWeight: 500,
-                  fontSize: 15,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {step.cta.label}
-                <Icon name="arrow-right" size={16} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
   );
 }

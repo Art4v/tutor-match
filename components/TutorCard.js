@@ -236,19 +236,20 @@ function SubjectChipsFill({ subjects, center = false }) {
 // Every size lives as a literal Tailwind class at the point of use rather than
 // as a constant here — the JIT scans source statically and can't see a class
 // name built from a variable. The set, phone -> md:
-//   body height    h-[120px]  md:h-[200px]
+//   body height    h-[140px]  md:h-[200px]
 //   rail width     w-[112px]  md:w-[210px]
-//   strip height   h-[44px]   md:h-[56px]
-//   chips box      h-[26px]   md:h-[36px]
-//   avatar         64         132   (a size prop, see the two-Avatar note below)
+//   strip height   (hidden)   md:h-[56px]
+//   chips box      (hidden)   md:h-[36px]
+//   avatar         80         132   (a size prop, see the two-Avatar note below)
 //
 // Two of those are load-bearing rather than aesthetic:
 //
 // The md strip height must clear TWO chip rows or SubjectChipsFill silently
 // drops to one — it renders whole rows only. A chip is 12px text at line-height
 // 1.2 plus 4px padding top/bottom (~23px) and rows are 6px apart, so two rows
-// need >= 52px; the surplus keeps the "+N" pill in reach. The phone height is a
-// deliberate ONE row: there isn't the width for more beside the rail.
+// need >= 52px; the surplus keeps the "+N" pill in reach. The strip is dropped
+// below md: there isn't the width for a useful chip row beside the rail, and the
+// phone card reads better ending at the body band.
 //
 // The chips box must stay a FIXED height at both sizes. SubjectChipsFill
 // measures offsetHeight, so an auto-height box collapses and it renders nothing
@@ -320,7 +321,7 @@ export function TutorCard({ tutor, showSave = true }) {
             it's the rail (which happens on phones, where the rail's contents
             don't shrink as far as the body's) the body has to absorb the extra
             or the surplus shows as a bare white sliver under the tinted strip. */}
-        <div className="flex-1 flex items-stretch gap-3 md:gap-5 p-3 md:p-5 min-h-[120px] md:min-h-[200px]">
+        <div className="flex-1 flex items-stretch gap-3 md:gap-5 p-3 md:p-5 min-h-[140px] md:min-h-[200px]">
           {/* Avatar — a plain rounded square (no banner behind it to straddle,
               so no white ring either), centred in its own stretched cell so it
               lines up with the text column.
@@ -333,7 +334,7 @@ export function TutorCard({ tutor, showSave = true }) {
               background-image on a display:none element, and the avatar is a
               background image. */}
           <div className="shrink-0 flex items-center md:hidden">
-            <Avatar tutor={tutor} size={64} radius={10} fontScale={0.44} weight={300} />
+            <Avatar tutor={tutor} size={80} radius={12} fontScale={0.44} weight={300} />
           </div>
           <div className="shrink-0 hidden md:flex items-center">
             <Avatar tutor={tutor} size={132} radius={16} fontScale={0.44} weight={300} />
@@ -415,10 +416,10 @@ export function TutorCard({ tutor, showSave = true }) {
         {/* Subject strip. Sits inside the left column, so it stops at the rail
             divider instead of running under it. Dropped entirely for a tutor
             with no subjects, so the card ends at the body instead of trailing
-            an empty tinted band. */}
+            an empty tinted band, and hidden below md at every width. */}
         {subjects.length > 0 && (
           <div
-            className="shrink-0 flex items-center px-3 md:px-5 h-[44px] md:h-[56px]"
+            className="shrink-0 hidden md:flex items-center px-3 md:px-5 h-[44px] md:h-[56px]"
             style={{ borderTop: "1px solid var(--line)", background: "var(--desk)" }}
           >
             {/* Fixed height on purpose — SubjectChipsFill measures offsetHeight

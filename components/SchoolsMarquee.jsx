@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Seamless marquee of top NSW + VIC high schools — social proof strip between
- * the hero and the featured tutors. Pure presentation: static lists scrolled
+ * Seamless marquee of top NSW + VIC high schools, the social proof strip
+ * between the hero and "How it works". Pure presentation: static lists scrolled
  * with a CSS keyframe (two identical halves, translateX -50%), edge fades via
  * `.marquee-mask`, paused under reduced-motion (see globals.css). Two rows
  * under the one heading: NSW scrolls left, VIC scrolls right
