@@ -12,23 +12,31 @@
 --   Flips the tutor to verified WITHOUT going through the request -> email ->
 --   approve-link flow (app/api/verification/*). It reproduces the DB-visible
 --   result of a real approval:
---     * tutor_profiles.verification_status = 'verified'   (renders the
---                                                     VerifiedTick and applies the
---                                                     ranking boost — the app
---                                                     derives `verified` from this;
---                                                     see lib/ranking.js). This is
---                                                     the single source of truth
---                                                     since 0028 (the `verified`
---                                                     bool was dropped).
+--     * tutor_profiles.verification_status = 'verified'   (the single source of
+--                                                     truth since 0028 — the app
+--                                                     derives `verified` from it.
+--                                                     Renders the VerifiedTick,
+--                                                     applies the ranking boost
+--                                                     (lib/ranking.js), and
+--                                                     matches the /browse
+--                                                     Verified-only filter).
 --   That's the whole approval since 0034: documents are public profile content
 --   (`tutor_documents` + the `tutor-docs` bucket) and are NOT part of the
 --   verification flow — a decision must not touch them.
 --   It does NOT insert a /notifications row or send the "you're verified" email
---   (those are side effects of the approve route, not of the DB state). Requires
---   migrations 0021 + 0028 to be applied.
+--   (those are side effects of the approve route, not of the DB state).
 --
--- To UN-verify instead, set verification_status='none' on the same row (uncomment
--- the block at the bottom).
+--   NOTE (0052): verification and account status are independent. A tutor whose
+--   profiles.status = 'disabled' stays hidden from every public read even when
+--   verified — re-enable them with enable_user.sql if that's the intent. The
+--   sanity check below shows both.
+--
+--   Requires migrations 0021 + 0028 + 0052.
+--
+-- To UN-verify instead, set verification_status='none' on the same row
+-- (uncomment the block at the bottom). Use 'rejected' instead of 'none' to
+-- reproduce a real rejection (/api/verification/reject) — the tutor can then
+-- resubmit via request_tutor_verification (rejected -> pending).
 -- ============================================================================
 
 begin;
@@ -40,7 +48,8 @@ update public.tutor_profiles
    set verification_status = 'verified'
  where id = current_setting('util.user_id')::uuid;
 
--- Un-verify (uncomment to use instead of the update above):
+-- Un-verify (uncomment to use instead of the update above; swap 'none' for
+-- 'rejected' to simulate a real rejection):
 -- update public.tutor_profiles
 --    set verification_status = 'none',
 --        verification_requested_at = null
@@ -48,9 +57,12 @@ update public.tutor_profiles
 
 commit;
 
--- Sanity check — confirm the new state.
-select p.id,
-       p.verification_status,
-       p.verification_requested_at
-from public.tutor_profiles p
-where p.id = current_setting('util.user_id')::uuid;
+-- Sanity check — confirm the new state (status: a 'disabled' account stays
+-- publicly hidden regardless of verification — see 0052).
+select t.id,
+       t.verification_status,
+       t.verification_requested_at,
+       p.status
+from public.tutor_profiles t
+join public.profiles p on p.id = t.id
+where t.id = current_setting('util.user_id')::uuid;
