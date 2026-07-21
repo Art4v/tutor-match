@@ -637,7 +637,7 @@ export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
           supabase={supabase}
           userId={tutor.id}
           onChange={(url) => set({ avatarImg: url })}
-          hint="Square works best. Falls back to your initial when empty."
+          hint="Square works best. Falls back to a graduation cap when empty."
           aspect={1}
           cropShape="round"
           maxOutputPx={1024}

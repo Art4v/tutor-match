@@ -138,7 +138,6 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
               supabase={supabase}
               userId={userId}
               fullName={fullName}
-              userEmail={userEmail}
               initialUrl={initialAvatarUrl}
               showToast={showToast}
             />
@@ -345,7 +344,7 @@ function Input(props) {
 // student_profiles.avatar_url; the name writes profiles.full_name (the "profile
 // self update" RLS policy scopes it to the caller). router.refresh() propagates
 // a name change to the TopNav chip + greeting.
-function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, showToast }) {
+function ProfilePhotoCard({ supabase, userId, fullName, initialUrl, showToast }) {
   const router = useRouter();
   const inputRef = useRef(null);
   const [url, setUrl] = useState(initialUrl ?? null);
@@ -379,8 +378,6 @@ function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, s
     showToast("ok", "Name updated", 2000);
     router.refresh();
   };
-
-  const initial = ((savedName || userEmail || "?").trim().slice(0, 1) || "?").toUpperCase();
 
   const onPick = (e) => {
     const file = e.target.files?.[0];
@@ -466,14 +463,13 @@ function ProfilePhotoCard({ supabase, userId, fullName, userEmail, initialUrl, s
             borderRadius: "50%",
             border: "1px solid var(--paper-line)",
             background: url ? "var(--bg-soft)" : "var(--ink)",
-            fontSize: 24,
           }}
         >
           {url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt="Profile photo preview" className="w-full h-full object-cover" />
           ) : (
-            initial
+            <Icon name="grad-cap" size={30} />
           )}
         </div>
         <div className="flex-1 min-w-0">

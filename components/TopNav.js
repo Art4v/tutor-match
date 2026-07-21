@@ -281,7 +281,7 @@ export function TopNav() {
                       className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-medium text-white overflow-hidden bg-cover bg-center"
                       style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : { background: "var(--ink)" }}
                     >
-                      {!avatarUrl && (displayName || "?").slice(0, 1).toUpperCase()}
+                      {!avatarUrl && <Icon name="grad-cap" size={12} />}
                     </span>
                     <span className="max-w-[110px] sm:max-w-[180px] truncate">{displayName}</span>
                     <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />

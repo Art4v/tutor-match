@@ -5,16 +5,13 @@ import { Icon } from "./Icon";
 // Optional overrides, all defaulted so existing callers (TopNav chip, profile
 // header, similar-tutor minis) render exactly as before:
 //   radius     — the frame shape; the tutor card uses a rounded square
-//   fontScale  — placeholder initial size, as a fraction of `size`
-//   weight     — placeholder initial weight; the tutor card wants a light 300
 //   ringColor / ringWidth — the surround; the card uses a solid white border
+// No image → a graduation cap on the tutor's avatarBg colour.
 export function Avatar({
   tutor,
   size = 64,
   ring = false,
   radius = "50%",
-  fontScale = 0.34,
-  weight = 500,
   ringColor = "var(--paper-card)",
   ringWidth = 4,
 }) {
@@ -31,16 +28,13 @@ export function Avatar({
         backgroundColor: tutor.avatarBg,
         color: "var(--ink-graphite)",
         borderRadius: radius,
-        fontSize: size * fontScale,
-        fontWeight: weight,
-        letterSpacing: "-0.02em",
         boxShadow: ring ? `0 0 0 ${ringWidth}px ${ringColor}` : "none",
         backgroundImage: img ? `url(${img})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      {!img && tutor.initial}
+      {!img && <Icon name="grad-cap" size={Math.round(size * 0.5)} />}
     </div>
   );
 }

@@ -332,17 +332,16 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0 }) {
               lines up with the text column.
 
               Rendered TWICE at two sizes rather than once: Avatar writes
-              width/height/fontSize as inline styles from its numeric `size`
-              prop and takes no className/style, so Tailwind can't resize it and
-              the initials' font size wouldn't scale anyway. The hidden copy
-              costs one DOM node and no network request — browsers don't fetch
-              background-image on a display:none element, and the avatar is a
-              background image. */}
+              width/height (and the fallback icon size) as inline styles from
+              its numeric `size` prop and takes no className/style, so Tailwind
+              can't resize it. The hidden copy costs one DOM node and no
+              network request — browsers don't fetch background-image on a
+              display:none element, and the avatar is a background image. */}
           <div className="shrink-0 flex items-center md:hidden">
-            <Avatar tutor={tutor} size={80} radius={12} fontScale={0.44} weight={300} />
+            <Avatar tutor={tutor} size={80} radius={12} />
           </div>
           <div className="shrink-0 hidden md:flex items-center">
-            <Avatar tutor={tutor} size={132} radius={16} fontScale={0.44} weight={300} />
+            <Avatar tutor={tutor} size={132} radius={16} />
           </div>
 
           {/* Text column. Each block keeps the minHeight it had on the portrait
