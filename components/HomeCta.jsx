@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useRouteLoading } from "@/components/RouteLoadingProvider";
 
 export function HomeCta() {
-  const router = useRouter();
+  const { navigate } = useRouteLoading();
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
@@ -73,12 +73,12 @@ export function HomeCta() {
               className="flex flex-col sm:flex-row gap-5 w-full max-w-[480px] justify-center"
             >
               <div className="flex-1">
-                <Button variant="primary" size="lg" onClick={() => router.push(signedIn ? "/profile" : "/signup")} full>
+                <Button variant="primary" size="lg" onClick={() => navigate(signedIn ? "/profile" : "/signup")} full>
                   Become a tutor
                 </Button>
               </div>
               <div className="flex-1">
-                <Button variant="outline" size="lg" onClick={() => router.push("/browse")} full>
+                <Button variant="outline" size="lg" onClick={() => navigate("/browse")} full>
                   Browse tutors
                 </Button>
               </div>

@@ -331,6 +331,28 @@ input[type="number"] {
   .leaf-sway { animation: none; }
 }
 
+/* ───────────────────────── Route-loading spinner ───────────────────────── */
+
+/* Spinner inside the route-loading overlay (components/RouteLoadingProvider).
+   The ring itself is styled inline at the call site; only the animation lives
+   here. Reduced motion swaps the rotation for a gentle opacity pulse so the
+   "still loading" signal survives without spin. */
+@keyframes route-loading-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes route-loading-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.route-loading-spinner {
+  animation: route-loading-spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-spinner {
+    animation: route-loading-pulse 1.2s ease-in-out infinite;
+  }
+}
+
 /* ───────────────────────── Marquee rows ───────────────────────── */
 
 /* Featured-tutors marquee (components/FeaturedTutors.jsx). A CSS animation

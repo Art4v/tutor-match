@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
+import { useRouteLoading } from "@/components/RouteLoadingProvider";
 import { subjectLabel } from "@/lib/subjects";
 import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
 
@@ -28,9 +29,11 @@ export function BrowseFilters({
   totalCount,
   searchQuery,
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  // Route filter changes through the loading overlay: the server re-query can
+  // be slow, and this is the only feedback the user gets.
+  const { navigate } = useRouteLoading();
   // Saved-tutors filter is a student-only concept — hide the toggle otherwise.
   const { isStudent } = useSavedTutors();
 
@@ -62,7 +65,7 @@ export function BrowseFilters({
     mutate(params);
     params.delete("page"); // any filter change resets pagination
     const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    navigate(qs ? `${pathname}?${qs}` : pathname, { replace: true, scroll: false });
   }
 
   const setSingle = (key, value, defaultValue) =>
@@ -371,16 +374,16 @@ export function BrowseFilters({
 }
 
 export function BrowseSortAndChips({ filters, catalog, schoolCatalog }) {
-  const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  const { navigate } = useRouteLoading();
 
   function pushParams(mutate) {
     const params = new URLSearchParams(sp.toString());
     mutate(params);
     params.delete("page");
     const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    navigate(qs ? `${pathname}?${qs}` : pathname, { replace: true, scroll: false });
   }
 
   const removeSubject = (slug) =>

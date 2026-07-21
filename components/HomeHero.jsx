@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
@@ -8,6 +7,7 @@ import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolPicker } from "@/components/SchoolPicker";
 import { TypewriterWord } from "@/components/TypewriterWord";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
+import { useRouteLoading } from "@/components/RouteLoadingProvider";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 
 // Fixed word list for the cycling headline — hero copy, deliberately not tied
@@ -35,7 +35,7 @@ const TYPEWRITER_WORDS = [
  * (`components/FeaturedTutors.jsx`), one section down.
  */
 export function HomeHero({ catalog, schoolCatalog = [] }) {
-  const router = useRouter();
+  const { navigate } = useRouteLoading();
   const [school, setSchool] = useState(null);
   const [subject, setSubject] = useState(null);
 
@@ -44,7 +44,7 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
     if (subject?.slug) params.append("subject", subject.slug);
     if (school?.slug) params.append("school", school.slug);
     const qs = params.toString();
-    router.push(`/browse${qs ? `?${qs}` : ""}`);
+    navigate(`/browse${qs ? `?${qs}` : ""}`);
   };
 
   return (
