@@ -47,11 +47,6 @@ export function RateCard({ tutor, showMessage = true }) {
       {showMessage && (
         <div className="mt-5">
           <MessageTutorButton tutor={tutor} />
-          {tutor.responsive && (
-            <div className="text-center text-[12.5px] mt-2" style={{ color: "var(--sage)" }}>
-              {tutor.responsive}
-            </div>
-          )}
         </div>
       )}
     </div>
