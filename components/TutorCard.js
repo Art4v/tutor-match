@@ -275,7 +275,7 @@ const CARD_SHADOW = "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49
 // home marquee (components/FeaturedTutors.jsx), which renders every card twice
 // to make the loop seamless: the duplicate passes -1 so it stays clickable with
 // the mouse without putting each tutor in the tab order twice.
-export function TutorCard({ tutor, showSave = true, tabIndex = 0 }) {
+export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLabel = true }) {
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   // Headline stat: the tutor's first credential — labelled by its type (ATAR /
@@ -358,7 +358,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0 }) {
               >
                 {tutor.name}
               </span>
-              {tutor.verified && <VerifiedTick size={17} label />}
+              {tutor.verified && <VerifiedTick size={17} label={showVerifiedLabel} />}
             </div>
 
             {/* The three blocks below are each rendered ONLY when they have

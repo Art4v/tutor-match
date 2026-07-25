@@ -72,7 +72,7 @@ function MarqueeRow({ tutors, direction, duration }) {
         key={`${key}-${tutor.id ?? tutor.slug}-${i}`}
         className="shrink-0 w-[340px] md:w-[620px] mr-4 md:mr-6"
       >
-        <TutorCard tutor={tutor} tabIndex={tabIndex} />
+        <TutorCard tutor={tutor} tabIndex={tabIndex} showVerifiedLabel={false} />
       </div>
     ));
 
