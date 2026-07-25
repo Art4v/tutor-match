@@ -23,7 +23,7 @@ export function SimilarTutorMini({ tutor }) {
         <span className="text-[14px] font-medium truncate" style={{ color: "var(--ink-graphite-deep)" }}>
           {tutor.name}
         </span>
-        {tutor.verified && <VerifiedTick size={11} />}
+        {tutor.verified && <VerifiedTick size={13} />}
       </div>
       <div className="text-[12px] truncate mt-0.5 max-w-full" style={{ color: "var(--sage)", minHeight: "1.3em" }}>
         {stripMarkdown(tutor.bio) || " "}

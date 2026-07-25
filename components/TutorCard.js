@@ -358,7 +358,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0 }) {
               >
                 {tutor.name}
               </span>
-              {tutor.verified && <VerifiedTick size={15} />}
+              {tutor.verified && <VerifiedTick size={17} label />}
             </div>
 
             {/* The three blocks below are each rendered ONLY when they have

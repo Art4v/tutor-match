@@ -43,7 +43,7 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
           >
             {tutor.name}
           </h1>
-          {tutor.verified && <VerifiedTick size={20} />}
+          {tutor.verified && <VerifiedTick size={22} label />}
         </div>
 
         {tutor.bio && (

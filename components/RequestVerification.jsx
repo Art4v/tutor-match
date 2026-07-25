@@ -55,7 +55,7 @@ export function RequestVerification({ status: initialStatus = "none", completion
         <h3 className="text-[14px] font-light text-slate-800 tracking-tight">Get verified</h3>
         {status === "verified" && (
           <span className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "var(--accent)" }}>
-            <VerifiedTick size={14} /> Verified
+            <VerifiedTick size={16} /> Verified
           </span>
         )}
         {status === "pending" && (

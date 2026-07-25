@@ -99,7 +99,7 @@ export function VerifiedTick({ size = 16, label = false }) {
         // already announces "Verified by hand" to screen readers.
         <span
           className="font-hand whitespace-nowrap"
-          style={{ color: "var(--ink-graphite)", fontSize: "1.3em", lineHeight: 1 }}
+          style={{ color: "var(--ink-graphite)", fontSize: "1em", lineHeight: 1 }}
           aria-hidden="true"
         >
           verified by hand
