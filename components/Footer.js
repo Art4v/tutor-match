@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookSproutMark, Wordmark } from "./Logo";
+import { ReportBugLink } from "./ReportBugLink";
 
 export function Footer() {
   return (
@@ -18,6 +19,7 @@ export function Footer() {
           <Link href="/privacy-policy" className="footer-link">
             Privacy Policy
           </Link>
+          <ReportBugLink />
         </div>
       </div>
     </footer>
