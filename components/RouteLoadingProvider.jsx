@@ -98,8 +98,7 @@ export function RouteLoadingProvider({ children }) {
     []
   );
 
-  // No scrolling while the overlay is up. The shared lock also pauses the
-  // Lenis smooth-scroll layer, which plain overflow:hidden can't stop.
+  // No scrolling while the overlay is up (shared lock toggles overflow:hidden).
   // Programmatic scrolls (Next's scroll-to-top on navigation) still work.
   useEffect(() => {
     if (!visible) return;

@@ -113,8 +113,7 @@ export default function VerificationPrompt() {
     };
   }, []);
 
-  // Lock page scroll (including the Lenis smooth-scroll layer) while the modal
-  // is showing.
+  // Lock page scroll while the modal is showing.
   const visible = open && !onExcludedPage;
   useEffect(() => {
     if (!visible) return;

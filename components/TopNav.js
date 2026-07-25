@@ -6,7 +6,6 @@ import { Icon } from "./Icon";
 import { BookSproutMark, Wordmark } from "./Logo";
 import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getLenis } from "@/lib/scrollLock";
 
 // Primary links, left of the auth cluster. Browse is a real route; the other
 // three are anchors into the home page sections (ids live on the section tags
@@ -50,8 +49,7 @@ export function TopNav() {
 
   // Auto-hide on scroll (meuze.ai-style): transparent at the very top, slides up
   // and fades out when scrolling down, reappears (with a frosted backing) when
-  // scrolling up. rAF-throttled passive listener; Lenis emits real scroll events
-  // so this works under smooth-scroll too (native scroll on coarse pointers).
+  // scrolling up. rAF-throttled passive listener on native scroll events.
   useEffect(() => {
     const TOP = 8; // within this many px of the top = always shown, no backing
     const HIDE_AFTER = 80; // only start hiding once past this depth
@@ -206,14 +204,11 @@ export function TopNav() {
     const el = document.getElementById(hash);
     if (!el) return;
     e.preventDefault();
-    const lenis = getLenis();
     // Flush to the top of the viewport, no nav-height offset: scrolling down to
     // a section auto-hides the bar (see the scroll effect above), so reserving
     // 64px for it would just leave a strip of the previous section on screen.
-    // No Lenis = mobile or reduced-motion; scrollIntoView honours the motion
-    // preference at the browser level.
-    if (lenis) lenis.scrollTo(el, { offset: 0 });
-    else el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // scrollIntoView honours the reduced-motion preference at the browser level.
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
     // replace, not push, so Back means "previous page" and not "previous section".
     window.history.replaceState(null, "", `/#${hash}`);
   };

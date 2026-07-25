@@ -660,7 +660,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                 </span>
               </div>
             </div>
-            <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
               {rows.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center px-6">
                   <span className="inline-flex items-center justify-center mb-3" style={{ width: 44, height: 44, borderRadius: 999, background: "var(--desk)", color: "var(--sage)" }}>
@@ -696,7 +696,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[13.5px] font-medium text-slate-900 truncate">{r.name || "Unknown"}</span>
-                          {r.verified && <VerifiedTick size={13} />}
+                          {r.verified && <VerifiedTick size={15} />}
                           {r.blocked && (
                             <span className="inline-flex items-center gap-1 shrink-0 text-[10px] font-medium uppercase tracking-wide" style={{ color: "#DC2626" }}>
                               <Icon name="ban" size={11} /> Blocked
@@ -745,7 +745,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[14px] font-medium text-slate-900 truncate">{thread.name || "Unknown"}</span>
-                      {thread.verified && <VerifiedTick size={13} />}
+                      {thread.verified && <VerifiedTick size={15} />}
                     </div>
                     {thread.otherIsTutor && thread.slug && (
                       <a href={`/tutor/${thread.slug}`} className="text-[12px] text-slate-400 hover:text-slate-600">View profile</a>
@@ -791,7 +791,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                 </div>
 
                 {/* Messages */}
-                <div ref={scrollRef} data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)", WebkitOverflowScrolling: "touch" }}>
+                <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)", WebkitOverflowScrolling: "touch" }}>
                   {thread.messages == null ? (
                     <div className="h-full flex items-center justify-center">
                       <span

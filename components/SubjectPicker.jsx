@@ -253,7 +253,7 @@ export function SubjectPicker({
           </div>
 
           {/* Subject list */}
-          <div className="max-h-[240px] overflow-y-auto overscroll-contain py-1" data-lenis-prevent>
+          <div className="max-h-[240px] overflow-y-auto overscroll-contain py-1">
             {filtered.length === 0 ? (
               <div className="px-3 py-4 text-[13px] text-slate-400">No matching subjects</div>
             ) : (

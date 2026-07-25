@@ -1,7 +1,6 @@
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { TopNav } from "@/components/TopNav";
-import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import PolicyConsentGate from "@/components/PolicyConsentGate";
 import VerificationPrompt from "@/components/VerificationPrompt";
@@ -63,23 +62,21 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <SmoothScrollProvider>
-          {/* Saved-tutors state is shared across every TutorCard + the profile
-              banner + the /browse "Saved" filter, so load it once here. */}
-          <SavedTutorsProvider>
-            {/* Route-loading overlay: intercepts internal link clicks and hosts
-                the blur + spinner shown while slow navigations resolve. */}
-            <RouteLoadingProvider>
-              <TopNav />
-              {/* The nav is fixed (out of flow), so reserve its height here. The home
-                  hero cancels this with a negative margin to go full-bleed. */}
-              <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
-              <SiteFooter />
-              <PolicyConsentGate />
-              <VerificationPrompt />
-            </RouteLoadingProvider>
-          </SavedTutorsProvider>
-        </SmoothScrollProvider>
+        {/* Saved-tutors state is shared across every TutorCard + the profile
+            banner + the /browse "Saved" filter, so load it once here. */}
+        <SavedTutorsProvider>
+          {/* Route-loading overlay: intercepts internal link clicks and hosts
+              the blur + spinner shown while slow navigations resolve. */}
+          <RouteLoadingProvider>
+            <TopNav />
+            {/* The nav is fixed (out of flow), so reserve its height here. The home
+                hero cancels this with a negative margin to go full-bleed. */}
+            <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
+            <SiteFooter />
+            <PolicyConsentGate />
+            <VerificationPrompt />
+          </RouteLoadingProvider>
+        </SavedTutorsProvider>
         <Analytics />
       </body>
     </html>

@@ -118,7 +118,6 @@ export function SchoolCombobox({
         <div
           className="absolute left-0 right-0 top-full mt-2 z-50 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto overscroll-contain"
           style={{ border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(0,30,30,0.12)" }}
-          data-lenis-prevent
         >
           {results.map((s, i) => {
             const sel = s.slug === schoolSlug;

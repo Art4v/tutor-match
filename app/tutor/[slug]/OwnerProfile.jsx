@@ -437,7 +437,7 @@ function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, v
                 {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
               </button>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5" data-lenis-prevent>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5">
               {edit}
             </div>
           </div>
