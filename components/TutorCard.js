@@ -358,7 +358,12 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
               >
                 {tutor.name}
               </span>
-              {tutor.verified && <VerifiedTick size={17} label={showVerifiedLabel} />}
+              {/* The script label is desktop-only here: on a phone the name row
+                  is already tight against the bookmark control, so the label
+                  crowds it out. Tick stays at every width. */}
+              {tutor.verified && (
+                <VerifiedTick size={17} label={showVerifiedLabel} labelClassName="hidden md:inline" />
+              )}
             </div>
 
             {/* The three blocks below are each rendered ONLY when they have

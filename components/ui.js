@@ -64,8 +64,9 @@ export const TOOLTIP_STYLE = {
 // `label` renders the handwritten "verified by hand" script inline beside the
 // tick (dark green, sized off the surrounding name text). Off by default so the
 // compact call sites (message list, similar-tutor mini, the "Verified" pill)
-// stay tick-only.
-export function VerifiedTick({ size = 16, label = false }) {
+// stay tick-only. `labelClassName` lets a call site hide the script responsively
+// (a `display:none` label isn't a flex item, so the gap collapses with it).
+export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) {
   return (
     <span className="inline-flex items-center align-middle" style={{ gap: label ? "0.28em" : 0 }}>
       <span
@@ -98,7 +99,7 @@ export function VerifiedTick({ size = 16, label = false }) {
         // relative to the name it sits beside. aria-hidden: the tick's svg
         // already announces "Verified by hand" to screen readers.
         <span
-          className="font-hand whitespace-nowrap"
+          className={`font-hand whitespace-nowrap ${labelClassName}`}
           style={{ color: "var(--ink-graphite)", fontSize: "1em", lineHeight: 1 }}
           aria-hidden="true"
         >
