@@ -19,7 +19,9 @@ import { ProfileBlockBanner } from "./ProfileBlockBanner";
 import { ProfileSaveButton } from "./ProfileSaveButton";
 import { RevealStack } from "./RevealStack";
 import { listTutorDocs } from "@/lib/supabase/storage";
-import { Section, SidebarHeading, SubjectsCard, DocumentationCard, RatingsCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { getTutorReviews } from "@/lib/supabase/reviews";
+import { ReviewsCard } from "./ReviewsCard";
+import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
 export async function generateMetadata({ params }) {
   const supabase = createSupabaseServerClient();
@@ -55,6 +57,10 @@ export default async function ProfilePage({ params }) {
   // Public documents (`tutor_documents` is public-read, so the anon server
   // client can read any tutor's rows).
   const docs = await listTutorDocs(supabase, tutor.id);
+
+  // Approved reviews + author name/avatar, via the get_tutor_reviews RPC (0057)
+  // — the table alone can't expose a student's name to a public page.
+  const reviews = await getTutorReviews(supabase, tutor.id);
 
   const deliveryLabel = formatDelivery(tutor);
   const tiles = buildCredentialTiles(tutor.credentials);
@@ -123,7 +129,7 @@ export default async function ProfilePage({ params }) {
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
-            <RatingsCard />
+            <ReviewsCard tutorName={tutor.name} rating={tutor.rating} reviewCount={tutor.reviews} reviews={reviews} />
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
           </RevealStack>

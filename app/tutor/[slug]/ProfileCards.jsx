@@ -120,31 +120,8 @@ export function DocumentationCard({ docs }) {
   );
 }
 
-export function RatingsCard() {
-  return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
-      <div className="flex items-center justify-between gap-3">
-        <SidebarHeading>Ratings &amp; reviews</SidebarHeading>
-        <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider shrink-0"
-          style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink-muted)" }}
-        >
-          Coming soon
-        </span>
-      </div>
-      <div className="flex flex-col items-center text-center py-6">
-        <div className="flex items-center gap-1.5 mb-3" style={{ color: "var(--accent-line)" }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Icon key={i} name="star" size={20} />
-          ))}
-        </div>
-        <div className="text-[13.5px] leading-[1.55] max-w-[260px]" style={{ color: "var(--sage)" }}>
-          Ratings and reviews are coming soon, we&apos;re working on a way for verified students to leave them.
-        </div>
-      </div>
-    </div>
-  );
-}
+// RatingsCard (the "Coming soon" placeholder) was replaced by the real
+// ReviewsCard in 0057's slice — see ./ReviewsCard.jsx.
 
 export function ServiceAreaCard({ tutor }) {
   const sa = tutor.serviceArea;

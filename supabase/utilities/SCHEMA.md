@@ -40,11 +40,14 @@ These duplications are **intentional** — don't "tidy them up" without understa
   Minimum-ATAR filter (`query.gte("atar", …)`, indexed). It is never read for display. At most
   one credential may carry `icon="atar"` — enforced client-side (editor dropdown) and
   server-side (the `save_tutor_profile` RPC raises on a second ATAR).
-- **`rating` / `review_count` are trigger-derived from `reviews` (0057).** They were static
-  placeholders (always NULL / 0) until 0057; now `recalc_tutor_rating()` recomputes both from
-  **approved** reviews only, fired on every insert/update/delete of a review. `rating` is NULL
-  when a tutor has no approved reviews, which is the "no rating" sentinel every reader already
-  handles. **Never write them by hand:** a `before update` guard trigger
+- **`rating` / `review_count` are trigger-derived from `reviews` (0057, 0058).** They were static
+  placeholders (always NULL / 0) until 0057. `recalc_tutor_rating()` recomputes both by
+  aggregating over **`get_tutor_reviews()`** (0058) — so there is exactly one definition of "a
+  review that counts" (approved AND the author's account enabled) and the stored average always
+  equals the average of the rows the profile actually renders. Fired on every insert/update/delete
+  of a review, **and** on any change to `profiles.status` (0058), since disabling a reviewer
+  changes the aggregate without touching a review row. `rating` is NULL when a tutor has no
+  visible reviews, which is the "no rating" sentinel every reader already handles. **Never write them by hand:** a `before update` guard trigger
   (`tutor_profiles_guard_derived`) pins both columns back to their stored values for the `anon`
   and `authenticated` roles, because the `for all` self-write policy from 0001 would otherwise
   let a tutor set their own rating to 5.0 straight from the browser. A column-level `REVOKE`
@@ -156,7 +159,7 @@ UNIQUE `(tutor_id, student_id)` — one review per tutor per student, so a dupli
 
 **RLS carries the moderation ladder structurally.** Both write policies have `status = 'pending'` in their `WITH CHECK`, so a student can neither self-approve nor leave a row in any other state — which means "editing an approved review sends it back to the queue" is a database invariant, not something a route has to remember. The UPDATE policy's `USING (… AND status <> 'removed')` stops an author editing a removed review back into circulation. Public SELECT is `status = 'approved'`; the author additionally reads their own row in **any** state (the only way a pending/rejected review is visible to its writer).
 
-**Reads go through `get_tutor_reviews()`, not the table.** A public page cannot join the reviewer's name or avatar: 0055 narrowed the public `profiles` read to tutor rows, and `student_profiles` has been self-only since 0001. Rather than widen either policy, that SECURITY DEFINER function returns approved reviews plus exactly `full_name` + `avatar_url`. It also filters on the author's `profiles.status = 'enabled'`, so **disabling a reviewer (0052) hides their reviews site-wide with no extra write** — which is how report resolution takes an abusive reviewer's content down.
+**Reads go through `get_tutor_reviews()`, not the table.** A public page cannot join the reviewer's name or avatar: 0055 narrowed the public `profiles` read to tutor rows, and `student_profiles` has been self-only since 0001. Rather than widen either policy, that SECURITY DEFINER function returns approved reviews plus exactly `full_name` + `avatar_url`. It also filters on the author's `profiles.status = 'enabled'`, so **disabling a reviewer (0052) hides their reviews site-wide** — which is how report resolution takes an abusive reviewer's content down. Since 0058 it is also the **single definition of a countable review**: `recalc_tutor_rating()` aggregates over it, so `tutor_profiles.rating` / `review_count` and the rendered list can never disagree.
 
 ### `blocked_users` (join, 0049)
 Mutual block between two accounts — one row per (blocker, blocked) pair. Written by the block/unblock controls (messages thread header + tutor profile). A block is **silent** (no policy exposes rows where you are the `blocked_id`) and **reversible** (unblock deletes the row).
@@ -377,7 +380,8 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `unsend_message(p_message_id)` | void | Sender soft-deletes their own message (`unsent_at = now()`, body kept for audit); raises for non-sender / missing. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
 | `claim_message_notification(p_conversation_id)` | uuid | Called by the sender after inserting a message: atomically (row lock) decides whether to notify the recipient, throttled to one per unread streak (`notified IS NULL OR notified <= read`) **and** skipped (without stamping) when the recipient is actively viewing the thread (`active_at` within 60s, 0048); stamps the recipient's `*_last_notified_at` when notifying, and returns the recipient id to notify or NULL to skip. SECURITY DEFINER, `auth.uid()`-scoped | 0047 (0048) |
 | `get_tutor_reviews(p_tutor_id)` | TABLE(id, rating, body, created_at, updated_at, author_name, author_avatar_url) | The public read path for reviews. SECURITY DEFINER because the caller can't read a student's `profiles` / `student_profiles` row (0055 / 0001) — returns approved reviews joined to exactly the two author display fields, and skips authors whose account is disabled. Execute granted to anon + authenticated | 0057 |
-| `recalc_tutor_rating(p_tutor_id)` | void | Recompute `tutor_profiles.rating` (`round(avg,1)`, NULL when none) + `review_count` from **approved** reviews only. SECURITY DEFINER; **execute revoked from anon/authenticated** — called only by the `reviews_recalc_rating` trigger | 0057 |
+| `recalc_tutor_rating(p_tutor_id)` | void | Recompute `tutor_profiles.rating` (`round(avg,1)`, NULL when none) + `review_count` by **aggregating over `get_tutor_reviews()`** (0058), so the columns can never disagree with the rendered list. SECURITY DEFINER; **execute revoked from anon/authenticated** — called only by the `reviews_recalc_rating` and `profiles_status_recalc_ratings` triggers | 0057 → 0058 |
+| `profiles_status_recalc_ratings()` | trigger | On a `profiles.status` change, recalculate every tutor the user has reviewed — the aggregate depends on author status, and the review trigger alone would leave it stale. No-op for tutors (`reviews.student_id` → `student_profiles`) | 0058 |
 | `reviews_recalc_rating()` | trigger | Calls `recalc_tutor_rating` after any review insert/update/delete (and for the old tutor too if `tutor_id` ever changed). Fires on UPDATE as well, because every status transition moves the aggregate without a row appearing/disappearing | 0057 |
 | `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
 | `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
@@ -397,6 +401,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `reviews_recalc_rating` | `reviews` | AFTER INSERT/UPDATE/DELETE | `reviews_recalc_rating()` → recomputes the tutor's `rating` / `review_count` | 0057 |
 | `reviews_touch_updated_at` | `reviews` | BEFORE UPDATE | `reviews_touch_updated_at()` | 0057 |
 | `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins the derived `rating` / `review_count` against client writes | 0057 |
+| `profiles_status_recalc_ratings` | `profiles` | AFTER UPDATE OF `status` (WHEN changed) | `profiles_status_recalc_ratings()` → refresh the aggregates of every tutor this user reviewed | 0058 |
 
 ---
 
