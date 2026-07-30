@@ -359,7 +359,7 @@ export function OwnerProfile({ editorTutor, userId }) {
             {/* Read-only: reviews are written by students and moderated, so
                 there is nothing here for the owner to edit. Sits in the same
                 sidebar slot as on the public profile. */}
-            <ReviewsCard tutorName={display.name} rating={display.rating} reviewCount={display.reviews} reviews={reviews} />
+            <ReviewsCard tutorId={userId} tutorName={display.name} rating={display.rating} reviewCount={display.reviews} reviews={reviews} />
 
             <EditRegion
               {...regionProps("serviceArea", "service area", 520)}

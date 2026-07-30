@@ -129,7 +129,7 @@ export default async function ProfilePage({ params }) {
             <RateCard tutor={tutor} />
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
-            <ReviewsCard tutorName={tutor.name} rating={tutor.rating} reviewCount={tutor.reviews} reviews={reviews} />
+            <ReviewsCard tutorId={tutor.id} tutorName={tutor.name} rating={tutor.rating} reviewCount={tutor.reviews} reviews={reviews} />
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
             {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
           </RevealStack>
