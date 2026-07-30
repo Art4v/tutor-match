@@ -40,8 +40,16 @@ These duplications are **intentional** — don't "tidy them up" without understa
   Minimum-ATAR filter (`query.gte("atar", …)`, indexed). It is never read for display. At most
   one credential may carry `icon="atar"` — enforced client-side (editor dropdown) and
   server-side (the `save_tutor_profile` RPC raises on a second ATAR).
-- **`rating` / `review_count` are static.** No reviews feature exists yet; nothing writes them.
-  They are placeholders for a future reviews table, surfaced read-only on cards/profiles.
+- **`rating` / `review_count` are trigger-derived from `reviews` (0057).** They were static
+  placeholders (always NULL / 0) until 0057; now `recalc_tutor_rating()` recomputes both from
+  **approved** reviews only, fired on every insert/update/delete of a review. `rating` is NULL
+  when a tutor has no approved reviews, which is the "no rating" sentinel every reader already
+  handles. **Never write them by hand:** a `before update` guard trigger
+  (`tutor_profiles_guard_derived`) pins both columns back to their stored values for the `anon`
+  and `authenticated` roles, because the `for all` self-write policy from 0001 would otherwise
+  let a tutor set their own rating to 5.0 straight from the browser. A column-level `REVOKE`
+  can't close that (a table-level grant wins over a column-level revoke in Postgres), hence the
+  trigger.
 
 ---
 
@@ -99,8 +107,8 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `years_tutoring` | int | (0002) |
 | `credentials` | jsonb | NOT NULL DEFAULT `'[]'`; `{label, icon}` objects (text[]→jsonb in 0003) |
 | `languages` | text[] | NOT NULL DEFAULT `'{}'` (0002) |
-| `rating` | numeric(2,1) | e.g. 4.9 (0002) |
-| `review_count` | int | NOT NULL DEFAULT 0 (0002) |
+| `rating` | numeric(2,1) | e.g. 4.9 (0002). **Derived** — recomputed from approved `reviews` by `recalc_tutor_rating()` (0057); NULL ⇒ no approved reviews. Not client-writable (guard trigger) |
+| `review_count` | int | NOT NULL DEFAULT 0 (0002). **Derived** alongside `rating` (0057); not client-writable |
 | `availability` | jsonb | `{hours, days, grid}` (0002) |
 | `service_area` | jsonb | source-of-truth base suburb + radius; flattened to `service_*` scalars for geo filter (0008) |
 | `visibility` | text | NOT NULL DEFAULT `'public'` (0003; default `'unlisted'`→`'public'` in 0005); CHECK `public/unlisted/hidden` |
@@ -128,6 +136,27 @@ Student bookmarks — one row per saved tutor. Read/written by the bookmark butt
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
 **Index:** `(student_id, created_at desc)`. Self-only RLS on `student_id` (student reads/writes only their own saves).
+
+### `reviews` (0057)
+One row per (tutor, student) — a student's 1–5 star rating of a tutor with optional text. Held invisible until an admin approves it from an emailed signed link. Drives the derived `tutor_profiles.rating` / `review_count`.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `tutor_id` | uuid | NOT NULL → `tutor_profiles(id)` ON DELETE CASCADE |
+| `student_id` | uuid | NOT NULL → `student_profiles(id)` ON DELETE CASCADE — the FK is what makes "only students may review" a data-layer invariant (same reasoning as `saved_tutors`) |
+| `rating` | int | NOT NULL, CHECK `between 1 and 5` — whole stars only, always required |
+| `body` | text | nullable (text is optional); CHECK `body IS NULL OR (btrim(body) <> '' AND char_length(body) <= 500)` so a blank-but-present body can't reach the UI |
+| `status` | text | NOT NULL DEFAULT `'pending'`, CHECK in (`pending`,`approved`,`rejected`,`removed`). `rejected` = admin declined (resubmittable by editing); `removed` = a report took it down (not resubmittable) |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+| `updated_at` | timestamptz | NOT NULL DEFAULT `now()`; maintained by the `reviews_touch_updated_at` trigger, never passed by a route |
+| `approved_at` | timestamptz | nullable; stamped on approval |
+
+UNIQUE `(tutor_id, student_id)` — one review per tutor per student, so a duplicate submit is a clean `23505` the route turns into a 409. Indexes: `(tutor_id, status, created_at desc)` (the profile read), `(student_id)` (all reviews by one author).
+
+**RLS carries the moderation ladder structurally.** Both write policies have `status = 'pending'` in their `WITH CHECK`, so a student can neither self-approve nor leave a row in any other state — which means "editing an approved review sends it back to the queue" is a database invariant, not something a route has to remember. The UPDATE policy's `USING (… AND status <> 'removed')` stops an author editing a removed review back into circulation. Public SELECT is `status = 'approved'`; the author additionally reads their own row in **any** state (the only way a pending/rejected review is visible to its writer).
+
+**Reads go through `get_tutor_reviews()`, not the table.** A public page cannot join the reviewer's name or avatar: 0055 narrowed the public `profiles` read to tutor rows, and `student_profiles` has been self-only since 0001. Rather than widen either policy, that SECURITY DEFINER function returns approved reviews plus exactly `full_name` + `avatar_url`. It also filters on the author's `profiles.status = 'enabled'`, so **disabling a reviewer (0052) hides their reviews site-wide with no extra write** — which is how report resolution takes an abusive reviewer's content down.
 
 ### `blocked_users` (join, 0049)
 Mutual block between two accounts — one row per (blocker, blocked) pair. Written by the block/unblock controls (messages thread header + tutor profile). A block is **silent** (no policy exposes rows where you are the `blocked_id`) and **reversible** (unblock deletes the row).
@@ -347,6 +376,11 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 | `edit_message(p_message_id, p_body)` | messages | Sender rewrites their own, not-yet-unsent message: sets `body` + `edited_at = now()`; raises for non-sender / missing / unsent / blank. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
 | `unsend_message(p_message_id)` | void | Sender soft-deletes their own message (`unsent_at = now()`, body kept for audit); raises for non-sender / missing. SECURITY DEFINER, `auth.uid()`-scoped | 0045 |
 | `claim_message_notification(p_conversation_id)` | uuid | Called by the sender after inserting a message: atomically (row lock) decides whether to notify the recipient, throttled to one per unread streak (`notified IS NULL OR notified <= read`) **and** skipped (without stamping) when the recipient is actively viewing the thread (`active_at` within 60s, 0048); stamps the recipient's `*_last_notified_at` when notifying, and returns the recipient id to notify or NULL to skip. SECURITY DEFINER, `auth.uid()`-scoped | 0047 (0048) |
+| `get_tutor_reviews(p_tutor_id)` | TABLE(id, rating, body, created_at, updated_at, author_name, author_avatar_url) | The public read path for reviews. SECURITY DEFINER because the caller can't read a student's `profiles` / `student_profiles` row (0055 / 0001) — returns approved reviews joined to exactly the two author display fields, and skips authors whose account is disabled. Execute granted to anon + authenticated | 0057 |
+| `recalc_tutor_rating(p_tutor_id)` | void | Recompute `tutor_profiles.rating` (`round(avg,1)`, NULL when none) + `review_count` from **approved** reviews only. SECURITY DEFINER; **execute revoked from anon/authenticated** — called only by the `reviews_recalc_rating` trigger | 0057 |
+| `reviews_recalc_rating()` | trigger | Calls `recalc_tutor_rating` after any review insert/update/delete (and for the old tutor too if `tutor_id` ever changed). Fires on UPDATE as well, because every status transition moves the aggregate without a row appearing/disappearing | 0057 |
+| `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
+| `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
 | `touch_conversation_presence(p_conversation_id)` | void | Recipient's client heartbeat (~30s while the thread is open + tab visible): sets the caller's own `*_last_active_at = now()`; no-op for non-participants. Feeds the presence skip in `claim_message_notification`. SECURITY DEFINER, `auth.uid()`-scoped | 0048 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.
@@ -360,6 +394,9 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` | 0001 |
 | `on_auth_user_email_confirmed` | `auth.users` | AFTER UPDATE OF `email_confirmed_at` | `handle_user_email_confirmed()` | 0007 |
 | `messages_bump_conversation` | `messages` | AFTER INSERT | `bump_conversation_last_message()` (sets `conversations.last_message_at`) | 0044 |
+| `reviews_recalc_rating` | `reviews` | AFTER INSERT/UPDATE/DELETE | `reviews_recalc_rating()` → recomputes the tutor's `rating` / `review_count` | 0057 |
+| `reviews_touch_updated_at` | `reviews` | BEFORE UPDATE | `reviews_touch_updated_at()` | 0057 |
+| `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins the derived `rating` / `review_count` against client writes | 0057 |
 
 ---
 
@@ -368,9 +405,10 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | Table | Read | Write |
 | --- | --- | --- |
 | `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE |
-| `tutor_profiles` | public | tutor self (ALL) |
+| `tutor_profiles` | public | tutor self (ALL), **except the derived `rating` / `review_count`, pinned by a guard trigger (0057)** |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
+| `reviews` | public where `status='approved'`; **+ author reads own row in any status** | author (`student_id` = uid) INSERT/UPDATE/DELETE, with INSERT+UPDATE forced to `status='pending'` so a student can't self-approve (0057) |
 | `blocked_users` | self (own `blocker_id`) — a block is invisible to the blocked user | self (own `blocker_id`) INSERT/DELETE (0049) |
 | `conversations` | participants (`student_id`/`tutor_id` = uid) | participants UPDATE (read cursors); no INSERT (RPC-created, 0044) |
 | `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) + no block between participants (0049) + neither participant disabled (0052); no UPDATE/DELETE — edit/unsend via RPC (0045) |
@@ -386,3 +424,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 > **Invariant:** `saveTutorProfile` never writes `verified` / `verification_status` — those are
 > server-controlled so a tutor cannot self-verify.
+>
+> **Invariant:** nothing in the app writes `tutor_profiles.rating` / `review_count`. They are
+> derived from approved `reviews` by `recalc_tutor_rating()` and pinned against client writes by
+> the `tutor_profiles_guard_derived` trigger (0057), so a tutor cannot self-award a rating.
