@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { StarRating } from "@/components/StarRating";
 import { Button } from "@/components/ui";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getMyReviewForTutor } from "@/lib/supabase/reviews";
 import { SidebarHeading, cardStyle } from "./ProfileCards";
 import { ReviewItem } from "./ReviewItem";
+import { ReviewMenu } from "./ReviewMenu";
 import { ReviewsModal } from "./ReviewsModal";
 import { ReviewFormModal } from "./ReviewFormModal";
 import { useTutorBlock } from "./TutorBlockProvider";
@@ -65,7 +67,8 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
   const { blocked, blockedByThem } = useTutorBlock();
 
   const [myReview, setMyReview] = useState(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState(null); // null | "create" | "edit"
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
   const [sent, setSent] = useState(false);
@@ -83,16 +86,21 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
     };
   }, [ready, isStudent, userId, tutorId]);
 
+  // Create and edit hit the same endpoint with a different verb; the server
+  // forces an edited review back to 'pending' either way.
   const submit = useCallback(
     async ({ rating: newRating, body }) => {
       if (busy) return;
+      const editing = formMode === "edit";
       setBusy(true);
       setFormError("");
       try {
         const res = await fetch("/api/reviews", {
-          method: "POST",
+          method: editing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tutorId, rating: newRating, body }),
+          body: JSON.stringify(
+            editing ? { reviewId: myReview?.id, rating: newRating, body } : { tutorId, rating: newRating, body }
+          ),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -102,23 +110,71 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
         setSent(true);
         // Reflect the pending review immediately rather than waiting for a
         // refetch; it can't appear in the public list until it's approved.
-        setMyReview({ id: data.id, rating: newRating, body: body || null, status: "pending", createdAt: new Date().toISOString() });
+        setMyReview((prev) => ({
+          ...prev,
+          id: data.id ?? prev?.id,
+          rating: newRating,
+          body: body || null,
+          status: "pending",
+          createdAt: prev?.createdAt ?? new Date().toISOString(),
+        }));
       } catch {
         setFormError("Network error. Please try again.");
       } finally {
         setBusy(false);
       }
     },
-    [busy, tutorId]
+    [busy, formMode, myReview?.id, tutorId]
   );
 
+  const remove = useCallback(async () => {
+    if (busy || !myReview?.id) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: myReview.id }),
+      });
+      if (!res.ok) return;
+      setMyReview(null);
+      setConfirmDelete(false);
+      router.refresh();
+    } catch {
+      // Leave the dialog open so the action can be retried.
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, myReview?.id, router]);
+
   const closeForm = () => {
-    setFormOpen(false);
+    setFormMode(null);
     setFormError("");
     if (sent) {
       setSent(false);
+      // An edit pulls the review out of the public list, so the server-rendered
+      // list and the aggregate both need re-reading.
       router.refresh();
     }
+  };
+
+  // Edit / delete belong only to the author. The public list carries no author
+  // id (get_tutor_reviews deliberately returns names, not uuids), so ownership
+  // is matched on the review id we already fetched for this viewer.
+  //
+  // "Report" is NOT here yet: it needs the report path, so it ships with that
+  // slice rather than as a menu item that does nothing.
+  const actionsFor = (review) => {
+    if (!myReview || review.id !== myReview.id) return null;
+    return (
+      <ReviewMenu
+        label="Your review options"
+        items={[
+          { icon: "pencil", label: "Edit review", onClick: () => setFormMode("edit") },
+          { icon: "trash", label: "Delete review", danger: true, onClick: () => setConfirmDelete(true) },
+        ]}
+      />
+    );
   };
 
   // Blocking works like messaging: a block in either direction takes the control
@@ -131,7 +187,7 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
 
   const cta = canReview ? (
     <div className="mt-4">
-      <Button variant="soft" size="md" icon="star" full onClick={() => setFormOpen(true)}>
+      <Button variant="soft" size="md" icon="star" full onClick={() => setFormMode("create")}>
         Write a review
       </Button>
     </div>
@@ -171,23 +227,47 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
           {ownStatus.label}
         </span>
       </div>
-      <ReviewItem review={{ ...myReview, authorName: "You", authorAvatarUrl: null }} clamp />
+      <ReviewItem
+        review={{ ...myReview, authorName: "You", authorAvatarUrl: null }}
+        clamp
+        actions={actionsFor(myReview)}
+      />
       <p className="text-[11.5px] leading-[1.5] mt-2" style={{ color: "var(--sage)" }}>
         {ownStatus.note}
       </p>
     </div>
   ) : null;
 
-  const modals = formOpen ? (
-    <ReviewFormModal
-      tutorName={tutorName}
-      busy={busy}
-      error={formError}
-      sent={sent}
-      onCancel={closeForm}
-      onSubmit={submit}
-    />
-  ) : null;
+  const modals = (
+    <>
+      {formMode && (
+        <ReviewFormModal
+          tutorName={tutorName}
+          mode={formMode}
+          initialRating={formMode === "edit" ? myReview?.rating ?? 0 : 0}
+          initialBody={formMode === "edit" ? myReview?.body ?? "" : ""}
+          busy={busy}
+          error={formError}
+          sent={sent}
+          onCancel={closeForm}
+          onSubmit={submit}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmModal
+          title="Delete your review?"
+          body="It will be removed from this tutor's profile and their rating will update. This can't be undone."
+          confirmLabel="Delete review"
+          confirmingLabel="Deleting…"
+          icon="trash"
+          tone="danger"
+          busy={busy}
+          onCancel={() => { if (!busy) setConfirmDelete(false); }}
+          onConfirm={remove}
+        />
+      )}
+    </>
+  );
 
   // numeric(2,1) can arrive as a string depending on the client; the read
   // mappers already coerce, but this keeps toFixed safe either way.
@@ -239,7 +319,7 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
         style={{ borderTop: "1px solid var(--paper-line)" }}
       >
         {reviews.slice(0, INLINE_LIMIT).map((r) => (
-          <ReviewItem key={r.id} review={r} clamp />
+          <ReviewItem key={r.id} review={r} clamp actions={actionsFor(r)} />
         ))}
       </div>
 
@@ -271,6 +351,7 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
           rating={hasAvg ? avg : null}
           reviewCount={count}
           reviews={reviews}
+          actionsFor={actionsFor}
           onClose={() => setShowAll(false)}
         />
       )}

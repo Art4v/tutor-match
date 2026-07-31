@@ -14,7 +14,9 @@ import { ReviewItem } from "./ReviewItem";
 // and backdrop-click to close. The body is its own scroll region so a long list
 // scrolls inside the card rather than growing it past the viewport.
 
-export function ReviewsModal({ tutorName, rating, reviewCount, reviews, onClose }) {
+// `actionsFor(review)` lets the caller attach the per-review kebab menu, so the
+// author can edit their own review from here as well as from the card.
+export function ReviewsModal({ tutorName, rating, reviewCount, reviews, actionsFor, onClose }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -82,7 +84,7 @@ export function ReviewsModal({ tutorName, rating, reviewCount, reviews, onClose 
           style={{ borderTop: "1px solid var(--paper-line)", paddingTop: 16, WebkitOverflowScrolling: "touch" }}
         >
           {reviews.map((r) => (
-            <ReviewItem key={r.id} review={r} />
+            <ReviewItem key={r.id} review={r} actions={actionsFor?.(r)} />
           ))}
         </div>
 

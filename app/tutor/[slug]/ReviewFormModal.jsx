@@ -19,9 +19,20 @@ import { lockScroll, unlockScroll } from "@/lib/scrollLock";
 
 const MAX_BODY = 500; // must match the 0057 CHECK and the route
 
-export function ReviewFormModal({ tutorName, busy = false, error = "", sent = false, onCancel, onSubmit }) {
-  const [rating, setRating] = useState(0);
-  const [body, setBody] = useState("");
+export function ReviewFormModal({
+  tutorName,
+  mode = "create", // "create" | "edit"
+  initialRating = 0,
+  initialBody = "",
+  busy = false,
+  error = "",
+  sent = false,
+  onCancel,
+  onSubmit,
+}) {
+  const editing = mode === "edit";
+  const [rating, setRating] = useState(initialRating);
+  const [body, setBody] = useState(initialBody);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -68,11 +79,12 @@ export function ReviewFormModal({ tutorName, busy = false, error = "", sent = fa
           <Icon name="check-circle" size={22} />
         </span>
         <h2 id="review-form-title" className="text-[19px] font-light tracking-tight text-slate-800">
-          Thanks for your review
+          {editing ? "Your changes are saved" : "Thanks for your review"}
         </h2>
         <p className="text-[13.5px] text-slate-600 mt-2 leading-[1.55]">
-          Our team checks every review before it goes live, so it may take a little while to appear on
-          {" "}{firstName}&apos;s profile.
+          {editing
+            ? `An edited review goes back to our team for another check, so it will be hidden from ${firstName}'s profile until it's approved again.`
+            : `Our team checks every review before it goes live, so it may take a little while to appear on ${firstName}'s profile.`}
         </p>
         <div className="flex justify-end mt-6">
           <Button variant="primary" size="md" onClick={onCancel}>Done</Button>
@@ -86,10 +98,12 @@ export function ReviewFormModal({ tutorName, busy = false, error = "", sent = fa
   return shell(
     <>
       <h2 id="review-form-title" className="text-[19px] font-light tracking-tight text-slate-800">
-        Review {firstName}
+        {editing ? "Edit your review" : `Review ${firstName}`}
       </h2>
       <p className="text-[13.5px] text-slate-600 mt-1.5 leading-[1.55]">
-        Your name and photo show with your review. It appears once our team has checked it.
+        {editing
+          ? "Editing sends your review back to our team, so it will be hidden until it's approved again."
+          : "Your name and photo show with your review. It appears once our team has checked it."}
       </p>
 
       <div className="mt-5">
@@ -127,7 +141,7 @@ export function ReviewFormModal({ tutorName, busy = false, error = "", sent = fa
           onClick={() => onSubmit({ rating, body: body.trim() })}
           disabled={busy || rating < 1}
         >
-          {busy ? "Sending…" : "Submit review"}
+          {busy ? "Saving…" : editing ? "Save changes" : "Submit review"}
         </Button>
       </div>
     </>,
