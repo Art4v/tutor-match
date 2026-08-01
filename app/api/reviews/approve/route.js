@@ -51,13 +51,33 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, alreadyDecided: true, removed: true });
   }
 
-  const { error: updateErr } = await admin
+  // The status predicate is the real guard, not the reads above: only a review
+  // that is STILL pending can be published. Without it, a remove_review landing
+  // between the read and this write would be overwritten — the service-role
+  // client bypasses the 0057 RLS ladder, so nothing else enforces terminality.
+  const { data: updated, error: updateErr } = await admin
     .from("reviews")
     .update({ status: "approved", approved_at: new Date().toISOString() })
-    .eq("id", review.id);
+    .eq("id", review.id)
+    .eq("status", "pending")
+    .select("id");
   if (updateErr) {
     console.error("[reviews/approve] update failed:", updateErr);
     return NextResponse.json({ error: "Could not approve, please try again." }, { status: 500 });
+  }
+  // Zero rows: the status changed since the read. Report the current state
+  // instead of pretending the review was published, and skip the notifications.
+  if (!updated || updated.length === 0) {
+    const { data: current } = await admin
+      .from("reviews")
+      .select("status")
+      .eq("id", review.id)
+      .maybeSingle();
+    return NextResponse.json({
+      ok: true,
+      alreadyDecided: true,
+      ...(current?.status === "removed" ? { removed: true } : {}),
+    });
   }
 
   const origin = new URL(request.url).origin;

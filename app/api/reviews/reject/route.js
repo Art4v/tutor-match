@@ -49,13 +49,32 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, alreadyDecided: true, removed: true });
   }
 
-  const { error: updateErr } = await admin
+  // Pending-only, like approve: a remove_review landing between the read and
+  // this write must not be flipped to 'rejected' (the author could then edit a
+  // removed review back into the queue). The service-role client bypasses the
+  // 0057 RLS ladder, so this predicate is the only enforcement.
+  const { data: updated, error: updateErr } = await admin
     .from("reviews")
     .update({ status: "rejected", approved_at: null })
-    .eq("id", review.id);
+    .eq("id", review.id)
+    .eq("status", "pending")
+    .select("id");
   if (updateErr) {
     console.error("[reviews/reject] update failed:", updateErr);
     return NextResponse.json({ error: "Could not reject, please try again." }, { status: 500 });
+  }
+  // Zero rows: the status changed since the read. Say so and skip the email.
+  if (!updated || updated.length === 0) {
+    const { data: current } = await admin
+      .from("reviews")
+      .select("status")
+      .eq("id", review.id)
+      .maybeSingle();
+    return NextResponse.json({
+      ok: true,
+      alreadyDecided: true,
+      ...(current?.status === "removed" ? { removed: true } : {}),
+    });
   }
 
   const origin = new URL(request.url).origin;
