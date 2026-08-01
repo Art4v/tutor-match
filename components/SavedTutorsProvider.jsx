@@ -148,7 +148,11 @@ export function SavedTutorsProvider({ children }) {
 
   return (
     <SavedTutorsContext.Provider
-      value={{ isStudent, isLoggedIn: !!userId, ready, isSaved, toggleSave, unsave }}
+      // userId is exposed (not just isLoggedIn) so consumers that need to scope a
+      // query to the signed-in user — e.g. ReviewsCard reading the viewer's own
+      // review — don't have to re-run auth.getUser() to learn what this provider
+      // already knows.
+      value={{ isStudent, isLoggedIn: !!userId, userId, ready, isSaved, toggleSave, unsave }}
     >
       {children}
     </SavedTutorsContext.Provider>

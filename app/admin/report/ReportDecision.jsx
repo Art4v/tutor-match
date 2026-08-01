@@ -6,7 +6,7 @@ import { Icon } from "@/components/Icon";
 // Decision control for /admin/report. POSTs the signed token + chosen action to
 // the resolve route (the GET page never mutates). Shows a success state in place
 // so the admin gets immediate feedback without a redirect.
-export function ReportDecision({ token, reporterName, reportedName }) {
+export function ReportDecision({ token, reporterName, reportedName, canRemoveReview = false }) {
   const [state, setState] = useState("idle"); // idle | working | done | error
   const [action, setAction] = useState(null);
   const [message, setMessage] = useState("");
@@ -40,6 +40,8 @@ export function ReportDecision({ token, reporterName, reportedName }) {
         ? `${reportedName}'s account has been disabled.`
         : action === "disable_reporter"
         ? `${reporterName}'s account has been disabled.`
+        : action === "remove_review"
+        ? "The review has been removed and the tutor's rating updated."
         : "The report was dismissed. No accounts were changed.";
     const danger = action !== "dismiss";
     return (
@@ -62,6 +64,14 @@ export function ReportDecision({ token, reporterName, reportedName }) {
   return (
     <div>
       <div className="flex flex-col gap-2.5">
+        {/* Removing the review is the proportionate response, so it leads. Only
+            offered when there is still a review to remove — review_id is ON
+            DELETE SET NULL, so the author may have deleted it already. */}
+        {canRemoveReview && (
+          <DangerButton onClick={() => submit("remove_review")} disabled={working} busy={working && action === "remove_review"} icon="trash">
+            Remove the review
+          </DangerButton>
+        )}
         <DangerButton onClick={() => submit("disable_reported")} disabled={working} busy={working && action === "disable_reported"}>
           Disable {reportedName} (reported)
         </DangerButton>
@@ -92,7 +102,7 @@ export function ReportDecision({ token, reporterName, reportedName }) {
   );
 }
 
-function DangerButton({ onClick, disabled, busy, children }) {
+function DangerButton({ onClick, disabled, busy, children, icon = "ban", busyLabel = "Disabling…" }) {
   return (
     <button
       type="button"
@@ -110,8 +120,8 @@ function DangerButton({ onClick, disabled, busy, children }) {
         cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
-      <Icon name="ban" size={16} />
-      {busy ? "Disabling…" : children}
+      <Icon name={icon} size={16} />
+      {busy ? (icon === "trash" ? "Removing…" : busyLabel) : children}
     </button>
   );
 }

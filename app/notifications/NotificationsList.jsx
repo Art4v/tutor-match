@@ -10,6 +10,10 @@ const TYPES = {
   verification_requested: { icon: "shield", color: "var(--accent)", bg: "var(--accent-softer)" },
   verification_approved: { icon: "shield-check", color: "var(--stamp)", bg: "#ECFDF5" },
   verification_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
+  review_submitted: { icon: "star", color: "var(--accent)", bg: "var(--accent-softer)" },
+  review_approved: { icon: "check-circle", color: "var(--stamp)", bg: "#ECFDF5" },
+  review_published: { icon: "star", color: "var(--stamp)", bg: "#ECFDF5" },
+  review_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
 };
 const FALLBACK = { icon: "bell", color: "var(--ink-muted)", bg: "var(--desk)" };
 

@@ -286,6 +286,8 @@ This is the one place the **app itself** sends mail (separate from the Supabase 
 3. `ADMIN_EMAIL` — where verification requests land (defaults to `matchtutoraustralia@gmail.com`).
 4. `SUPABASE_SERVICE_ROLE_KEY` — **Project Settings → API → service_role key**. Bypasses RLS; used server-side only to write notifications and to approve (the admin has no session when clicking the email link). **Never expose it.**
 5. `VERIFICATION_APPROVE_SECRET` — any long random string (`openssl rand -hex 32`). Signs the approve link's HMAC token.
+6. `REPORT_REVIEW_SECRET` — same idea, for the report-resolution link (`/admin/report`).
+7. `REVIEW_APPROVE_SECRET` — same idea, for the student-review moderation link (`/admin/review`). Each link class gets its **own** secret so a token minted for one can never authorize another.
 
 Apply migration `0021_verification_and_notifications.sql`. Dev shortcut: `supabase/utilities/verify_user.sql` flips one tutor verified by id without the email round-trip.
 

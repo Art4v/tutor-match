@@ -1,24 +1,29 @@
 import { Icon } from "@/components/Icon";
+import { StarRating } from "@/components/StarRating";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyReportToken } from "@/lib/reportToken";
+import { getReviewForModeration } from "@/lib/supabase/reviews";
 import { ReportDecision } from "./ReportDecision";
 
 export const metadata = { title: "Review report" };
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Keep in sync with the 0059 CHECK + ReportModal + lib/email/send.js.
 const CATEGORY_LABELS = {
   harassment: "Harassment or abuse",
   spam: "Spam",
   inappropriate: "Inappropriate content",
   scam: "Scam or fraud",
   other: "Other",
+  inappropriate_review: "Inappropriate review",
 };
 
 const RESOLUTION_LABELS = {
   disabled_reported: "the reported account was disabled",
   disabled_reporter: "the reporter's account was disabled",
   dismissed: "the report was dismissed",
+  removed_review: "the review was removed",
 };
 
 // Landing page for the review link in the admin email. The signed token in
@@ -58,7 +63,7 @@ export default async function AdminReportPage({ searchParams }) {
 
   const { data: report } = await admin
     .from("reports")
-    .select("id, reporter_id, reported_id, conversation_id, category, details, status, resolution, created_at")
+    .select("id, reporter_id, reported_id, conversation_id, review_id, category, details, status, resolution, created_at")
     .eq("id", reportId)
     .maybeSingle();
 
@@ -99,6 +104,9 @@ export default async function AdminReportPage({ searchParams }) {
     email: reportedEmail,
   };
 
+  // A report is about EITHER a conversation or a review (0059).
+  const aboutAReview = !!report.review_id || report.category === "inappropriate_review";
+
   // Full conversation transcript (service-role: bypasses participant RLS). We do
   // NOT filter unsent_at — the admin sees everything that was ever sent.
   let messages = [];
@@ -109,6 +117,14 @@ export default async function AdminReportPage({ searchParams }) {
       .eq("conversation_id", report.conversation_id)
       .order("created_at", { ascending: true });
     messages = data || [];
+  }
+
+  // The reported review, when there is one. review_id is ON DELETE SET NULL, so a
+  // review the author deleted after being reported leaves the report intact with
+  // nothing to show — say so rather than rendering an empty panel.
+  let reviewed = null;
+  if (report.review_id) {
+    reviewed = await getReviewForModeration(admin, report.review_id);
   }
 
   const categoryLabel = CATEGORY_LABELS[report.category] || "Other";
@@ -122,7 +138,11 @@ export default async function AdminReportPage({ searchParams }) {
           </span>
           <div>
             <h1 className="text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Review report</h1>
-            <p className="text-[13.5px] text-slate-500 mt-1">Read the conversation, then disable an account or dismiss.</p>
+            <p className="text-[13.5px] text-slate-500 mt-1">
+              {aboutAReview
+                ? "Read the review, then remove it, disable the account, or dismiss."
+                : "Read the conversation, then disable an account or dismiss."}
+            </p>
           </div>
         </div>
 
@@ -138,25 +158,73 @@ export default async function AdminReportPage({ searchParams }) {
           </div>
         </div>
 
-        {/* Conversation transcript */}
-        <h2 className="text-[13px] font-light text-slate-500 uppercase tracking-wide mt-6 mb-2">Conversation</h2>
-        <div className="space-y-2" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16, maxHeight: 360, overflowY: "auto" }}>
-          {messages.length === 0 ? (
-            <p className="text-[13.5px] text-slate-500">No messages were exchanged.</p>
-          ) : (
-            messages.map((m) => {
-              const fromReporter = m.sender_id === report.reporter_id;
-              return (
-                <div key={m.id} className="text-[13.5px]">
-                  <span className="font-medium" style={{ color: fromReporter ? "var(--accent)" : "#DC2626" }}>
-                    {fromReporter ? reporter.name : reported.name}:
-                  </span>{" "}
-                  <span className="text-slate-700 whitespace-pre-wrap">{m.body}</span>
-                </div>
-              );
-            })
-          )}
-        </div>
+        {/* The reported content: a review, or the conversation transcript. */}
+        {aboutAReview ? (
+          <>
+            <h2 className="text-[13px] font-light text-slate-500 uppercase tracking-wide mt-6 mb-2">The review</h2>
+            <div style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
+              {!reviewed ? (
+                <p className="text-[13.5px] text-slate-500">
+                  This review has been deleted by the person who wrote it, so there is nothing left to remove. You can still disable the account or dismiss.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <StarRating value={reviewed.review.rating} size={16} />
+                    <span className="text-[14px] font-medium text-slate-900">{reviewed.review.rating}/5</span>
+                    {reviewed.review.status !== "approved" && (
+                      <span className="text-[12px] px-2 py-0.5" style={{ background: "var(--desk)", color: "var(--ink-muted)", borderRadius: 999 }}>
+                        {reviewed.review.status}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-slate-500 text-[13px] mt-1.5">
+                    {reviewed.studentName} on {reviewed.tutorName}
+                  </div>
+                  {reviewed.review.body ? (
+                    <p className="text-[14px] leading-[1.6] mt-3 whitespace-pre-wrap" style={{ color: "var(--ink)" }}>
+                      {reviewed.review.body}
+                    </p>
+                  ) : (
+                    <p className="text-[13px] mt-3" style={{ color: "var(--sage)" }}>No written review, a rating only.</p>
+                  )}
+                  {reviewed.tutorSlug && (
+                    <a
+                      href={`/tutor/${reviewed.tutorSlug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-[13px] mt-3"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      View the tutor&apos;s profile <Icon name="external" size={13} />
+                    </a>
+                  )}
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-[13px] font-light text-slate-500 uppercase tracking-wide mt-6 mb-2">Conversation</h2>
+            <div className="space-y-2" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16, maxHeight: 360, overflowY: "auto" }}>
+              {messages.length === 0 ? (
+                <p className="text-[13.5px] text-slate-500">No messages were exchanged.</p>
+              ) : (
+                messages.map((m) => {
+                  const fromReporter = m.sender_id === report.reporter_id;
+                  return (
+                    <div key={m.id} className="text-[13.5px]">
+                      <span className="font-medium" style={{ color: fromReporter ? "var(--accent)" : "#DC2626" }}>
+                        {fromReporter ? reporter.name : reported.name}:
+                      </span>{" "}
+                      <span className="text-slate-700 whitespace-pre-wrap">{m.body}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </>
+        )}
 
         {report.status === "resolved" ? (
           <div
@@ -169,9 +237,15 @@ export default async function AdminReportPage({ searchParams }) {
         ) : (
           <>
             <p className="text-[12.5px] text-slate-500 mt-6 mb-4">
-              Disabling an account signs that user out of the platform on their next visit and hides them from search. This can be reversed manually in the database.
+              {aboutAReview && "Removing the review hides it everywhere and updates the tutor's rating; it can't be edited back. "}
+              Disabling an account signs that user out of the platform on their next visit and hides them from search, along with every review they've written. This can be reversed manually in the database.
             </p>
-            <ReportDecision token={token} reporterName={reporter.name} reportedName={reported.name} />
+            <ReportDecision
+              token={token}
+              reporterName={reporter.name}
+              reportedName={reported.name}
+              canRemoveReview={aboutAReview && !!reviewed}
+            />
           </>
         )}
       </section>

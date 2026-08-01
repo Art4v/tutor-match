@@ -32,6 +32,8 @@ import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { ReviewsCard } from "./ReviewsCard";
+import { getTutorReviews } from "@/lib/supabase/reviews";
 import { OwnerCard } from "./OwnerCard";
 import { RevealStack } from "./RevealStack";
 
@@ -61,12 +63,16 @@ export function OwnerProfile({ editorTutor, userId }) {
   const [docs, setDocs] = useState([]);
   const [docsDirty, setDocsDirty] = useState(false);
   const docsEditorRef = useRef(null);
+  // Reviews aren't part of the profile row (or editable), so they load
+  // separately and render read-only — the tutor sees what students see.
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     let active = true;
     getSubjects(supabase).then((rows) => { if (active) setSubjectCatalog(rows); });
     getSchools(supabase).then((rows) => { if (active) setSchoolCatalog(rows); });
     listTutorDocs(supabase, userId).then((rows) => { if (active) setDocs(rows); });
+    getTutorReviews(supabase, userId).then((rows) => { if (active) setReviews(rows); });
     return () => { active = false; };
   }, [supabase, userId]);
 
@@ -349,6 +355,11 @@ export function OwnerProfile({ editorTutor, userId }) {
                 : <MiniCard title="Documentation"><EmptyHint>Share documents that back up your credentials, like your WWCC, transcripts and certificates.</EmptyHint></MiniCard>}
               edit={<DocumentationUploader ref={docsEditorRef} userId={userId} docs={docs} onDirtyChange={setDocsDirty} />}
             />
+
+            {/* Read-only: reviews are written by students and moderated, so
+                there is nothing here for the owner to edit. Sits in the same
+                sidebar slot as on the public profile. */}
+            <ReviewsCard tutorId={userId} tutorName={display.name} rating={display.rating} reviewCount={display.reviews} reviews={reviews} />
 
             <EditRegion
               {...regionProps("serviceArea", "service area", 520)}
