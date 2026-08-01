@@ -4,11 +4,15 @@ import { verifyReportToken } from "@/lib/reportToken";
 
 export const runtime = "nodejs";
 
-// Maps a decision action to (which account to disable, resolution to record).
+// Maps a decision action to (which account to disable, whether to take the
+// reported review down, resolution to record).
 const ACTIONS = {
   disable_reported: { disable: "reported_id", resolution: "disabled_reported" },
   disable_reporter: { disable: "reporter_id", resolution: "disabled_reporter" },
   dismiss: { disable: null, resolution: "dismissed" },
+  // Review reports only (0059): takes the review down without touching either
+  // account, the proportionate response to one bad review.
+  remove_review: { disable: null, resolution: "removed_review", removeReview: true },
 };
 
 // Resolve a report. NO user session — the admin clicks a link from their email,
@@ -41,7 +45,7 @@ export async function POST(request) {
 
   const { data: report, error: readErr } = await admin
     .from("reports")
-    .select("id, reporter_id, reported_id, status")
+    .select("id, reporter_id, reported_id, review_id, status")
     .eq("id", reportId)
     .maybeSingle();
   if (readErr || !report) {
@@ -50,6 +54,28 @@ export async function POST(request) {
 
   if (report.status === "resolved") {
     return NextResponse.json({ ok: true, alreadyResolved: true });
+  }
+
+  if (action.removeReview && !report.review_id) {
+    // Either this isn't a review report, or the author deleted the review first
+    // (review_id is ON DELETE SET NULL). Nothing to remove.
+    return NextResponse.json({ error: "There is no review to remove." }, { status: 400 });
+  }
+
+  // Take the review down. 'removed' is terminal: the 0057 RLS update policy's
+  // `status <> 'removed'` USING clause stops the author editing it back into
+  // circulation, and the approve route refuses to revive it. The 0057 trigger
+  // drops it from the tutor's average, since recalc_tutor_rating() aggregates
+  // over get_tutor_reviews(), which is approved-only.
+  if (action.removeReview) {
+    const { error: removeErr } = await admin
+      .from("reviews")
+      .update({ status: "removed", approved_at: null })
+      .eq("id", report.review_id);
+    if (removeErr) {
+      console.error("[reports] review removal failed:", removeErr);
+      return NextResponse.json({ error: "Could not remove the review, please try again." }, { status: 500 });
+    }
   }
 
   // Disable the chosen account (if any).

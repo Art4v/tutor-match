@@ -4,22 +4,49 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 
-// "Report and block" dialog. Modeled on ConfirmModal's chrome. The caller does
-// the block (existing blockUser flow) and files the report via onSubmit; this
-// component only collects a required category + optional details. Backdrop click
-// + Escape cancel unless mid-submit (busy).
+// Report dialog, in two modes. Modeled on ConfirmModal's chrome. Collects a
+// required category + optional details; the caller files the report via
+// onSubmit. Backdrop click + Escape cancel unless mid-submit (busy).
+//
+//   kind="conversation" (default) — "report and block" the other party. The
+//     caller also does the block (existing blockUser flow), so the copy says so.
+//   kind="review" — report a published review. Reporting a review does NOT
+//     block anybody, so no copy here may mention blocking.
+//
+// Keep these values in sync with the 0059 CHECK, CATEGORIES in
+// app/api/reports/route.js, and the two label maps (lib/email/send.js,
+// app/admin/report/page.js).
 export const REPORT_CATEGORIES = [
   { value: "harassment", label: "Harassment or abuse" },
   { value: "spam", label: "Spam" },
   { value: "inappropriate", label: "Inappropriate content" },
   { value: "scam", label: "Scam or fraud" },
+  { value: "inappropriate_review", label: "Inappropriate review" },
   { value: "other", label: "Other" },
 ];
 
+// A review can't be a "scam" and reporting one isn't harassment reporting, so
+// the review mode offers a narrower, relevant set.
+const REVIEW_CATEGORY_VALUES = ["inappropriate_review", "harassment", "spam", "other"];
+
 const MAX_DETAILS = 2000;
 
-export function ReportModal({ name, busy = false, error = "", sent = false, alreadyReported = false, onCancel, onSubmit }) {
-  const [category, setCategory] = useState("");
+export function ReportModal({
+  name,
+  kind = "conversation", // "conversation" | "review"
+  busy = false,
+  error = "",
+  sent = false,
+  alreadyReported = false,
+  onCancel,
+  onSubmit,
+}) {
+  const aboutAReview = kind === "review";
+  const categories = aboutAReview
+    ? REVIEW_CATEGORY_VALUES.map((v) => REPORT_CATEGORIES.find((c) => c.value === v)).filter(Boolean)
+    : REPORT_CATEGORIES.filter((c) => c.value !== "inappropriate_review");
+  // Preselect the obvious reason so reporting a review is one click.
+  const [category, setCategory] = useState(aboutAReview ? "inappropriate_review" : "");
   const [details, setDetails] = useState("");
 
   useEffect(() => {
@@ -58,7 +85,9 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
             Already reported
           </h2>
           <p className="text-[13.5px] text-slate-600 mt-1.5">
-            You've already reported {name || "this person"}, and they stay blocked. Our team is still reviewing that report, so there's nothing more to send right now.
+            {aboutAReview
+              ? "You've already reported this review. Our team is still looking at it, so there's nothing more to send right now."
+              : `You've already reported ${name || "this person"}, and they stay blocked. Our team is still reviewing that report, so there's nothing more to send right now.`}
           </p>
           <div className="mt-6">
             <button
@@ -116,7 +145,9 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
             Report sent
           </h2>
           <p className="text-[13.5px] text-slate-600 mt-1.5">
-            Thanks for letting us know. We've blocked {name || "this person"} and our team will review the conversation.
+            {aboutAReview
+              ? "Thanks for letting us know. Our team will take a look at that review and decide whether it should stay up."
+              : `Thanks for letting us know. We've blocked ${name || "this person"} and our team will review the conversation.`}
           </p>
           <div className="mt-6">
             <button
@@ -166,10 +197,12 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
           </span>
           <div>
             <h2 id="report-modal-title" className="text-[17px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
-              Report and block {name || "this person"}?
+              {aboutAReview ? "Report this review?" : `Report and block ${name || "this person"}?`}
             </h2>
             <p className="text-[13.5px] text-slate-600 mt-1.5">
-              We'll block them and send this conversation to our team to review. They aren't told they've been reported.
+              {aboutAReview
+                ? "We'll send it to our team to review. Nobody is blocked, and the person who wrote it isn't told they've been reported."
+                : "We'll block them and send this conversation to our team to review. They aren't told they've been reported."}
             </p>
           </div>
         </div>
@@ -178,7 +211,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
         <fieldset className="mt-5">
           <legend className="text-[12.5px] font-medium text-slate-500 mb-2">Reason</legend>
           <div className="flex flex-col gap-1">
-            {REPORT_CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <label
                 key={c.value}
                 className="flex items-center gap-2.5 text-[14px] text-slate-700 cursor-pointer rounded-lg px-2.5 py-2 hover:bg-slate-50"
@@ -237,7 +270,7 @@ export function ReportModal({ name, busy = false, error = "", sent = false, alre
             }}
           >
             <Icon name="flag" size={14} />
-            {busy ? "Reporting…" : "Report and block"}
+            {busy ? "Reporting…" : aboutAReview ? "Report review" : "Report and block"}
           </button>
         </div>
       </div>

@@ -325,15 +325,20 @@ Self-only SELECT + UPDATE (mark-read); **no INSERT policy** — written by the s
 | `id` | uuid | PK DEFAULT `gen_random_uuid()` |
 | `reporter_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE |
 | `reported_id` | uuid | NOT NULL → `auth.users(id)` ON DELETE CASCADE; CHECK `reporter_id <> reported_id` |
-| `conversation_id` | uuid | → `conversations(id)` ON DELETE SET NULL |
-| `category` | text | NOT NULL, CHECK in (`harassment`,`spam`,`inappropriate`,`scam`,`other`) |
+| `conversation_id` | uuid | → `conversations(id)` ON DELETE SET NULL; NULL on a review report |
+| `review_id` | uuid | → `reviews(id)` **ON DELETE SET NULL** (0059); NULL on a conversation report |
+| `category` | text | NOT NULL, CHECK in (`harassment`,`spam`,`inappropriate`,`scam`,`other`,`inappropriate_review`) (0059) |
 | `details` | text | nullable; optional free-text |
 | `status` | text | NOT NULL default `'pending'`, CHECK in (`pending`,`resolved`) |
-| `resolution` | text | nullable, CHECK in (`disabled_reported`,`disabled_reporter`,`dismissed`) — set on resolve |
+| `resolution` | text | nullable, CHECK in (`disabled_reported`,`disabled_reporter`,`dismissed`,`removed_review`) (0059) — set on resolve |
 | `resolved_at` | timestamptz | nullable |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
-Partial unique index `reports_one_open_per_pair` on `(reporter_id, reported_id) WHERE status='pending'` (one open report per pair — re-filing while pending is a no-op). Index on `conversation_id`. RLS: reporter self-SELECT only; **no INSERT/UPDATE policy** — written by the service-role client in the report routes (like `notifications`).
+A report is about **either** a conversation **or** a review (0059): `review_id` is a nullable FK to `reviews`, **ON DELETE SET NULL** rather than cascade, so an author deleting a reported review can't erase the report along with it (otherwise: post abuse, wait for a report, delete before the admin looks, repeat).
+
+Two partial unique indexes, split by kind (0059), so a pending conversation report can't silently swallow a report about the same person's review: `reports_one_open_per_pair` on `(reporter_id, reported_id) WHERE status='pending' AND review_id IS NULL`, and `reports_one_open_per_review` on `(reporter_id, review_id) WHERE status='pending' AND review_id IS NOT NULL`. Indexes on `conversation_id` and `review_id`. RLS: reporter self-SELECT only; **no INSERT/UPDATE policy** — written by the service-role client in the report routes (like `notifications`).
+
+**Filing a review report does not block anyone**, unlike the conversation path where the block is a server-owned invariant: you may be reporting a stranger's review of a third party, and a tutor auto-blocking a critic would read as retaliation.
 
 ### `tutor_documents` (0034)
 | Column | Type | Constraints / Notes |

@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { StarRating } from "@/components/StarRating";
 import { Button } from "@/components/ui";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { ReportModal } from "@/components/ReportModal";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getMyReviewForTutor } from "@/lib/supabase/reviews";
@@ -57,6 +58,13 @@ const OWN_STATUS = {
     note: "This review wasn't approved. Editing it sends it back to us for another look.",
     style: { background: "#FEF3C7", color: "#B45309", border: "1px solid #FDE68A" },
   },
+  // 0059: taken down after a report. Terminal — the RLS update policy excludes
+  // 'removed', so editing it back into circulation isn't possible.
+  removed: {
+    label: "Removed",
+    note: "This review was removed after it was reported. It can't be edited back, but you can delete it.",
+    style: { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" },
+  },
 };
 
 export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews = [] }) {
@@ -72,6 +80,12 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
   const [sent, setSent] = useState(false);
+  // Reporting someone else's review: which review id, plus the dialog's state.
+  const [reportFor, setReportFor] = useState(null);
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportError, setReportError] = useState("");
+  const [reportSent, setReportSent] = useState(false);
+  const [reportAlready, setReportAlready] = useState(false);
 
   // The author's own row, in any status (RLS self-read). Skipped entirely for
   // guests and tutors, who have nothing of their own to see.
@@ -158,20 +172,73 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
     }
   };
 
-  // Edit / delete belong only to the author. The public list carries no author
-  // id (get_tutor_reviews deliberately returns names, not uuids), so ownership
-  // is matched on the review id we already fetched for this viewer.
-  //
-  // "Report" is NOT here yet: it needs the report path, so it ships with that
-  // slice rather than as a menu item that does nothing.
+  const submitReport = useCallback(
+    async ({ category, details }) => {
+      if (!reportFor) return;
+      setReportBusy(true);
+      setReportError("");
+      try {
+        const res = await fetch("/api/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reviewId: reportFor, category, details }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setReportError(data?.error || "Could not send your report. Please try again.");
+          return;
+        }
+        // A still-pending report of the same review is a silent no-op server
+        // side, so say so rather than claiming a second one was filed.
+        if (data?.status === "pending") setReportAlready(true);
+        else setReportSent(true);
+      } catch {
+        setReportError("Network error. Please try again.");
+      } finally {
+        setReportBusy(false);
+      }
+    },
+    [reportFor]
+  );
+
+  // Edit / delete belong only to the author; everyone else signed in can report.
+  // The public list carries no author id (get_tutor_reviews deliberately returns
+  // names, not uuids), so ownership is matched on the review id we already
+  // fetched for this viewer. Logged-out viewers get no menu at all.
   const actionsFor = (review) => {
-    if (!myReview || review.id !== myReview.id) return null;
+    if (!ready) return null;
+    const mine = myReview && review.id === myReview.id;
+
+    if (mine) {
+      // A removed review can't be edited back (the RLS update policy excludes
+      // 'removed'), so only offer the delete.
+      const removed = myReview.status === "removed";
+      return (
+        <ReviewMenu
+          label="Your review options"
+          items={[
+            ...(removed ? [] : [{ icon: "pencil", label: "Edit review", onClick: () => setFormMode("edit") }]),
+            { icon: "trash", label: "Delete review", danger: true, onClick: () => setConfirmDelete(true) },
+          ]}
+        />
+      );
+    }
+
+    if (!isLoggedIn) return null;
     return (
       <ReviewMenu
-        label="Your review options"
         items={[
-          { icon: "pencil", label: "Edit review", onClick: () => setFormMode("edit") },
-          { icon: "trash", label: "Delete review", danger: true, onClick: () => setConfirmDelete(true) },
+          {
+            icon: "flag",
+            label: "Report review",
+            danger: true,
+            onClick: () => {
+              setReportError("");
+              setReportSent(false);
+              setReportAlready(false);
+              setReportFor(review.id);
+            },
+          },
         ]}
       />
     );
@@ -264,6 +331,19 @@ export function ReviewsCard({ tutorId, tutorName, rating, reviewCount, reviews =
           busy={busy}
           onCancel={() => { if (!busy) setConfirmDelete(false); }}
           onConfirm={remove}
+        />
+      )}
+      {reportFor && (
+        <ReportModal
+          kind="review"
+          busy={reportBusy}
+          error={reportError}
+          sent={reportSent}
+          alreadyReported={reportAlready}
+          onCancel={() => {
+            if (reportSent || reportAlready || !reportBusy) setReportFor(null);
+          }}
+          onSubmit={submitReport}
         />
       )}
     </>
