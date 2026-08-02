@@ -59,8 +59,27 @@ export function ArticleCard({ article }) {
 
       <p className="mt-3 text-[14.5px] text-slate-700 leading-[1.65] line-clamp-3">{excerpt}</p>
 
-      <span className="mt-4 inline-block text-[13.5px] font-medium" style={{ color: "var(--accent)" }}>
+      {/* Same control as FeaturedTutors' "Browse all N verified tutors": trailing
+          arrow that nudges right and an underline that wipes in from the left.
+          It hangs off the CARD's `group`, not its own, so the animation runs when
+          you hover anywhere on the card, which is the whole click target.
+          `relative` anchors the underline; the right inset clears the arrow
+          (14px icon + gap-2) so the rule spans the label only. */}
+      <span
+        className="mt-4 relative inline-flex items-center gap-2 text-[13.5px] font-medium"
+        style={{ color: "var(--accent)" }}
+      >
         Read the guide
+        <Icon
+          name="arrow-right"
+          size={14}
+          className="shrink-0 transition-transform group-hover:translate-x-0.5"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute left-0 right-[24px] -bottom-0.5 h-px origin-left scale-x-0 group-hover:scale-x-100"
+          style={{ background: "var(--accent)", transition: "transform 280ms cubic-bezier(0.22,1,0.36,1)" }}
+        />
       </span>
     </Link>
   );

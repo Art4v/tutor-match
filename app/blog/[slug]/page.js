@@ -41,7 +41,7 @@ export default async function ArticlePage({ params }) {
 
   return (
     <div className="bg-[color:var(--paper-card)] scroll-smooth">
-      <div className="max-w-[1040px] mx-auto px-6 pt-16 pb-24">
+      <div className="max-w-[1040px] mx-auto px-6 pt-16 pb-20">
         <Link
           href="/blog"
           className="inline-flex items-center gap-1.5 text-[13px] font-medium"
@@ -66,8 +66,10 @@ export default async function ArticlePage({ params }) {
                 {article.category}
               </div>
             )}
+            {/* Same h1 treatment as the /blog index, so the two pages read as
+                one type system. Change both together. */}
             <h1
-              className="text-[34px] sm:text-[42px] leading-[1.1] max-w-[860px]"
+              className="text-[36px] sm:text-[44px] leading-[1.12] max-w-[860px]"
               style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
             >
               {article.title}
@@ -93,7 +95,7 @@ export default async function ArticlePage({ params }) {
             </div>
 
             <p
-              className="mt-8 text-[17px] leading-[1.65] max-w-[760px]"
+              className="mt-8 text-[16px] leading-[1.65] max-w-[640px]"
               style={{ color: "var(--ink-muted)" }}
             >
               {article.excerpt}
@@ -123,19 +125,23 @@ export default async function ArticlePage({ params }) {
             </div>
 
             <div className="mt-16">
-              <CtaBand
-                title="Put it into practice"
-                body="Browse verified tutors by subject, location and rate."
-                compact
-              />
-            </div>
-
-            <div className="mt-16">
               <RelatedArticles articles={related} />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Outside the grid AND the container: full-bleed like the index and the
+          home page, and because the rail's sticky range is the grid row it sits
+          in, ending that row here is also what makes the rail stop travelling
+          once the CTA comes into view. */}
+      <CtaBand
+        eyebrow="Next step."
+        title="Put it into practice"
+        body="Browse verified tutors by subject, location and rate, or keep reading the guides."
+        primary={{ label: "Browse tutors", href: "/browse" }}
+        secondary={{ label: "More guides", href: "/blog" }}
+      />
     </div>
   );
 }

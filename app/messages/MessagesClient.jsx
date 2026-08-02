@@ -672,7 +672,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                   ) : (
                     <>
                       <p className="text-[12.5px] text-slate-500 mt-1">Message a tutor from their profile to start a conversation.</p>
-                      <a href="/browse" className="text-[13px] font-medium mt-2.5 hover:underline" style={{ color: "var(--accent)" }}>
+                      <a href="/browse" className="text-[13px] font-medium mt-2.5" style={{ color: "var(--accent)" }}>
                         Find tutors now →
                       </a>
                     </>
@@ -1104,9 +1104,9 @@ function DisclaimerContent({ titleId }) {
         </p>
         <p className="text-[13.5px] text-slate-600 mt-2.5">
           Please be aware of our{" "}
-          <a href="/terms-of-service" className="hover:underline" style={linkStyle}>Terms of Service</a>
+          <a href="/terms-of-service" style={linkStyle}>Terms of Service</a>
           {" "}and{" "}
-          <a href="/privacy-policy" className="hover:underline" style={linkStyle}>Privacy Policy</a>.
+          <a href="/privacy-policy" style={linkStyle}>Privacy Policy</a>.
         </p>
       </div>
     </div>

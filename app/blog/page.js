@@ -14,21 +14,23 @@ export default async function BlogPage() {
 
   return (
     <div className="bg-[color:var(--paper-card)]">
-      <div className="max-w-[1128px] mx-auto px-6 py-24">
+      <div className="max-w-[1128px] mx-auto px-6 pt-24 pb-20">
         <header>
-          <div
-            className="text-[12px] font-medium uppercase mb-3"
-            style={{ color: "var(--accent)", letterSpacing: "0.08em" }}
-          >
-            The MatchTutor blog
+          {/* Handwritten eyebrow, the same 26px/weight-400 accent treatment as
+              the "How it works" and CTA eyebrows. See the typography note in
+              CLAUDE.md before adding another `.font-hand` use. */}
+          <div className="font-hand text-[26px] mb-1.5" style={{ color: "var(--accent)", fontWeight: 400 }}>
+            The MatchTutor Blog
           </div>
+          {/* Same h1 treatment as an article page, so the two read as one type
+              system. Change both together. */}
           <h1
-            className="text-[40px] sm:text-[44px] leading-none"
+            className="text-[36px] sm:text-[44px] leading-[1.12]"
             style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
           >
             Guides for students and parents
           </h1>
-          <p className="mt-5 text-[15px] leading-[1.7] max-w-[560px]" style={{ color: "var(--ink-muted)" }}>
+          <p className="mt-5 text-[16px] leading-[1.65] max-w-[640px]" style={{ color: "var(--ink-muted)" }}>
             Practical writing on the HSC, the VCE, ATAR scaling and how to study, from the tutors who
             sat these courses recently.
           </p>
@@ -50,13 +52,17 @@ export default async function BlogPage() {
           </div>
         )}
 
-        <div className="mt-20">
-          <CtaBand
-            title="Ready to find your tutor?"
-            body="Browse verified HSC and VCE tutors by subject, location and rate."
-          />
-        </div>
       </div>
+
+      {/* Full-bleed, outside the article container, so it reads as the same
+          closing slice as the home page's CTA rather than a card on the page. */}
+      <CtaBand
+        eyebrow="For students."
+        title="Ready to find your tutor?"
+        body="Browse verified tutors by performance, subject, location and rate, and find the perfect tutor for you."
+        primary={{ label: "Browse tutors", href: "/browse" }}
+        secondary={{ label: "Become a tutor", href: "/signup" }}
+      />
     </div>
   );
 }
