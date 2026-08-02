@@ -63,6 +63,7 @@ export async function middleware(request) {
       pathname.startsWith("/api") ||
       pathname.startsWith("/terms-of-service") ||
       pathname.startsWith("/privacy-policy") ||
+      pathname.startsWith("/blog") ||
       pathname.startsWith("/forgot-password") ||
       pathname.startsWith("/reset-password");
 
@@ -75,7 +76,8 @@ export async function middleware(request) {
       pathname.startsWith("/auth") ||
       pathname.startsWith("/api") ||
       pathname.startsWith("/terms-of-service") ||
-      pathname.startsWith("/privacy-policy");
+      pathname.startsWith("/privacy-policy") ||
+      pathname.startsWith("/blog");
 
     // We only need the profile when a redirect is possible: an enforceable page
     // (to push NULL-role/disabled users to their gate), the chooser, the auth

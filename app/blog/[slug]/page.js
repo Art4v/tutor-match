@@ -1,0 +1,141 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Icon } from "@/components/Icon";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTutorBySlug } from "@/lib/supabase/tutors";
+import { getArticleBySlug, getRelatedArticles, formatArticleDate } from "@/lib/blog";
+import { ArticleByline } from "./ArticleByline";
+import { ArticleToc } from "./ArticleToc";
+import { RelatedArticles } from "./RelatedArticles";
+import { CtaBand } from "../CtaBand";
+
+export async function generateMetadata({ params }) {
+  const article = await getArticleBySlug(params.slug);
+  // Returning {} on a miss leaves the root layout's defaults in place, the same
+  // way /tutor/[slug] does; the page below is what actually 404s.
+  return article ? { title: article.title, description: article.excerpt } : {};
+}
+
+// The byline links to the author's tutor profile only when that profile really
+// exists and is public. getTutorBySlug already returns null rather than throwing
+// for a missing row, so the try/catch is only there for the unconfigured-Supabase
+// case, where constructing the client itself can throw.
+async function resolveAuthorHref(author) {
+  if (!author?.tutorSlug) return null;
+  try {
+    const tutor = await getTutorBySlug(createSupabaseServerClient(), author.tutorSlug);
+    return tutor ? `/tutor/${author.tutorSlug}` : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function ArticlePage({ params }) {
+  const article = await getArticleBySlug(params.slug);
+  if (!article) return notFound();
+
+  const [related, authorHref] = await Promise.all([
+    getRelatedArticles(params.slug, 3),
+    resolveAuthorHref(article.author),
+  ]);
+
+  return (
+    <div className="bg-[color:var(--paper-card)] scroll-smooth">
+      <div className="max-w-[1040px] mx-auto px-6 pt-16 pb-24">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium"
+          style={{ color: "var(--sage)" }}
+        >
+          <Icon name="chevron-left" size={14} />
+          All articles
+        </Link>
+
+        {/* The header spans both columns; below it the body keeps the header's
+            left edge and the chapter rail sticks to its right. The rail stays
+            BEFORE the body in source order so that when this stacks below lg it
+            reads as an intro contents block rather than a footnote; `order` is
+            what puts it on the right on wide screens. */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px] gap-x-12 gap-y-10">
+          <header className="lg:col-span-2">
+            {article.category && (
+              <div
+                className="text-[12px] font-medium uppercase mb-3"
+                style={{ color: "var(--accent)", letterSpacing: "0.08em" }}
+              >
+                {article.category}
+              </div>
+            )}
+            <h1
+              className="text-[34px] sm:text-[42px] leading-[1.1] max-w-[860px]"
+              style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
+            >
+              {article.title}
+            </h1>
+
+            <div
+              className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]"
+              style={{ color: "var(--sage)" }}
+            >
+              <span>Published {formatArticleDate(article.publishedAt)}</span>
+              {article.updatedAt && (
+                <>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>Updated {formatArticleDate(article.updatedAt)}</span>
+                </>
+              )}
+              <span aria-hidden="true">&middot;</span>
+              <span>{article.readingMinutes} min read</span>
+            </div>
+
+            <div className="mt-6">
+              <ArticleByline author={article.author} linkHref={authorHref} />
+            </div>
+
+            <p
+              className="mt-8 text-[17px] leading-[1.65] max-w-[760px]"
+              style={{ color: "var(--ink-muted)" }}
+            >
+              {article.excerpt}
+            </p>
+          </header>
+
+          {/* self-start is what makes the sticky work: a stretched grid item is
+              already as tall as its row, so it has nothing to stick within. The
+              max-height keeps a long chapter list scrollable inside the rail. */}
+          <aside className="lg:order-2 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+            <ArticleToc sections={article.sections} />
+          </aside>
+
+          <div className="min-w-0 lg:order-1">
+            <div className="text-[15px] text-slate-700 leading-[1.7]">
+              {article.sections.map((section) => (
+                <section key={section.id} id={section.id} className="mt-12 first:mt-0 scroll-mt-24">
+                  <h2
+                    className="text-[24px] font-light mb-4"
+                    style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.015em" }}
+                  >
+                    {section.heading}
+                  </h2>
+                  {section.content}
+                </section>
+              ))}
+            </div>
+
+            <div className="mt-16">
+              <CtaBand
+                title="Put it into practice"
+                body="Browse verified tutors by subject, location and rate."
+                compact
+              />
+            </div>
+
+            <div className="mt-16">
+              <RelatedArticles articles={related} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

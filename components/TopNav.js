@@ -7,14 +7,15 @@ import { BookSproutMark, Wordmark } from "./Logo";
 import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// Primary links, left of the auth cluster. Browse is a real route; the other
-// three are anchors into the home page sections (ids live on the section tags
-// in FeaturedTutors / HomeHowItWorks / HomeCta).
+// Primary links, left of the auth cluster. Browse and Blog are real routes; the
+// three between them are anchors into the home page sections (ids live on the
+// section tags in FeaturedTutors / HomeHowItWorks / HomeCta).
 const NAV_LINKS = [
   { label: "Browse", href: "/browse" },
   { label: "Featured tutors", href: "/#featured-tutors", hash: "featured-tutors" },
   { label: "How it works", href: "/#how-it-works", hash: "how-it-works" },
   { label: "For tutors", href: "/#for-tutors", hash: "for-tutors" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export function TopNav() {
