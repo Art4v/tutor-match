@@ -23,6 +23,7 @@ export function TopNav() {
   const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null); // profiles.role — source of truth
+  const [canAuthor, setCanAuthor] = useState(false); // profiles.can_author_articles (0061)
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
   const [unread, setUnread] = useState(0);
@@ -125,6 +126,7 @@ export function TopNav() {
   useEffect(() => {
     if (!user) {
       setRole(null);
+      setCanAuthor(false);
       setTutorSlug(null);
       setProfile(null);
       setUnread(0);
@@ -138,7 +140,7 @@ export function TopNav() {
     // (keyed on pathname so it refetches after navigating away from /settings).
     supabase
       .from("profiles")
-      .select("role, full_name")
+      .select("role, full_name, can_author_articles")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -146,6 +148,9 @@ export function TopNav() {
         const r = data?.role ?? null;
         const fullName = data?.full_name ?? null;
         setRole(r);
+        // 0061. Independent of role: an author is an ordinary tutor who has
+        // been designated, so this is a second flag rather than a role branch.
+        setCanAuthor(Boolean(data?.can_author_articles));
         if (r === "tutor") {
           supabase
             .from("tutor_profiles")
@@ -307,6 +312,14 @@ export function TopNav() {
                       {isTutor && (
                         <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
                           Profile
+                        </NavMenuLink>
+                      )}
+                      {canAuthor && (
+                        // The only in-app route to the blog editor (0061).
+                        // Gated on the capability, not the role, so revoking it
+                        // takes the entry point away in the same breath.
+                        <NavMenuLink href="/author" onClick={() => setMenuOpen(false)}>
+                          Write
                         </NavMenuLink>
                       )}
                       <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>

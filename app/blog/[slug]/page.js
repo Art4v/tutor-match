@@ -2,42 +2,32 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getTutorBySlug } from "@/lib/supabase/tutors";
 import { getArticleBySlug, getRelatedArticles, formatArticleDate } from "@/lib/blog";
+import { ArticleBody } from "./ArticleBody";
 import { ArticleByline } from "./ArticleByline";
 import { ArticleToc } from "./ArticleToc";
 import { RelatedArticles } from "./RelatedArticles";
 import { CtaBand } from "../CtaBand";
 
 export async function generateMetadata({ params }) {
-  const article = await getArticleBySlug(params.slug);
+  const article = await getArticleBySlug(createSupabaseServerClient(), params.slug);
   // Returning {} on a miss leaves the root layout's defaults in place, the same
   // way /tutor/[slug] does; the page below is what actually 404s.
   return article ? { title: article.title, description: article.excerpt } : {};
 }
 
-// The byline links to the author's tutor profile only when that profile really
-// exists and is public. getTutorBySlug already returns null rather than throwing
-// for a missing row, so the try/catch is only there for the unconfigured-Supabase
-// case, where constructing the client itself can throw.
-async function resolveAuthorHref(author) {
-  if (!author?.tutorSlug) return null;
-  try {
-    const tutor = await getTutorBySlug(createSupabaseServerClient(), author.tutorSlug);
-    return tutor ? `/tutor/${author.tutorSlug}` : null;
-  } catch {
-    return null;
-  }
-}
-
 export default async function ArticlePage({ params }) {
-  const article = await getArticleBySlug(params.slug);
+  const supabase = createSupabaseServerClient();
+
+  const article = await getArticleBySlug(supabase, params.slug);
   if (!article) return notFound();
 
-  const [related, authorHref] = await Promise.all([
-    getRelatedArticles(params.slug, 3),
-    resolveAuthorHref(article.author),
-  ]);
+  const related = await getRelatedArticles(supabase, params.slug, 3);
+
+  // No second lookup to decide whether the byline links: the author embed only
+  // returns a tutorSlug when that profile is public and enabled, so having one
+  // IS the proof the link resolves. This replaced a per-render getTutorBySlug.
+  const authorHref = article.author?.tutorSlug ? `/tutor/${article.author.tutorSlug}` : null;
 
   return (
     <div className="bg-[color:var(--paper-card)] scroll-smooth">
@@ -119,7 +109,7 @@ export default async function ArticlePage({ params }) {
                   >
                     {section.heading}
                   </h2>
-                  {section.content}
+                  <ArticleBody content={section.content} />
                 </section>
               ))}
             </div>

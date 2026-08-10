@@ -6,29 +6,42 @@ import { formatArticleDate } from "@/lib/blog";
 // affordance is a span rather than a nested anchor, and every hover effect is
 // CSS group-hover — no state, no client boundary.
 //
-// There are no article photographs: the art block is a per-article gradient
-// (meta.accent) over a faint oversized icon, which keeps the index visually
-// varied without adding binary assets to the repo.
+// The art block is the article's cover photo from the blog-images bucket
+// (0061). An article without one renders a neutral block in the same footprint
+// rather than a placeholder image, so the grid rhythm never shifts: same
+// aspect ratio, same border, same radius in both branches.
 export function ArticleCard({ article }) {
-  const { slug, title, excerpt, category, publishedAt, author, accent } = article;
+  const { slug, title, excerpt, category, publishedAt, author, coverUrl, coverAlt } = article;
 
   return (
     <Link href={`/blog/${slug}`} className="group block">
       <div
         className="relative overflow-hidden w-full aspect-[2/1]"
         style={{
-          background: `linear-gradient(${accent?.angle ?? 150}deg, ${accent?.from ?? "#E7F2F1"}, ${accent?.to ?? "#CFE5E3"})`,
+          background: "var(--desk)",
           border: "1px solid var(--paper-line)",
           borderRadius: "var(--radius-card)",
         }}
       >
-        <div
-          aria-hidden="true"
-          className="absolute pointer-events-none select-none"
-          style={{ right: -18, bottom: -34, color: "var(--accent)", opacity: 0.1 }}
-        >
-          <Icon name="notebook" size={210} strokeWidth={1} />
-        </div>
+        {coverUrl ? (
+          // alt="" when the article gives no alt text: the cover is decorative
+          // here, and the card's heading right below it already names the
+          // article, so announcing the image twice is worse than not at all.
+          <img
+            src={coverUrl}
+            alt={coverAlt || ""}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="absolute pointer-events-none select-none"
+            style={{ right: -18, bottom: -34, color: "var(--accent)", opacity: 0.1 }}
+          >
+            <Icon name="notebook" size={210} strokeWidth={1} />
+          </div>
+        )}
       </div>
 
       <div className="mt-5 flex items-baseline justify-between gap-4">

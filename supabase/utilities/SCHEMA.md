@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0045_message_interactions.sql`
-**Last reviewed:** 2026-07-12
+**Applied through:** `0061_articles.sql`
+**Last reviewed:** 2026-08-02
 
 ---
 
@@ -77,6 +77,7 @@ These duplications are **intentional** — don't "tidy them up" without understa
 | `terms_agreed_at` | timestamptz | nullable; consent stamp for every role, NULL ⇒ must (re-)agree (0025 on `tutor_profiles`, moved here in 0039) |
 | `messages_disclaimer_ack_at` | timestamptz | nullable; `/messages` first-open disclaimer acknowledgment, NULL/stale ⇒ show the blocking gate (versioned via `lib/messagesDisclaimer.js`). NOT stamped on signup, so new users see it once too (0046) |
 | `status` | text | NOT NULL default `'enabled'`, CHECK in (`enabled`,`disabled`) (0052). `disabled` ⇒ `middleware.js` gates the user to `/account-disabled`, hides a disabled tutor from public reads, and (structurally) freezes their messaging. Flipped by the report-resolve route; reverse manually via `supabase/utilities/enable_user.sql` |
+| `can_author_articles` | boolean | NOT NULL default `false` (0061). The blog authoring capability: `/author` and every `articles` write policy require it. **Not self-grantable** — the `profiles_guard_capabilities` trigger pins it for `authenticated`/`anon`, so the only grant path is `supabase/utilities/grant_author.sql` run as a superuser role. Independent of `role`: an author is a designated tutor, not a separate role |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
@@ -160,6 +161,38 @@ UNIQUE `(tutor_id, student_id)` — one review per tutor per student, so a dupli
 **RLS carries the moderation ladder structurally.** Both write policies have `status = 'pending'` in their `WITH CHECK`, so a student can neither self-approve nor leave a row in any other state — which means "editing an approved review sends it back to the queue" is a database invariant, not something a route has to remember. The UPDATE policy's `USING (… AND status <> 'removed')` stops an author editing a removed review back into circulation. Public SELECT is `status = 'approved'`; the author additionally reads their own row in **any** state (the only way a pending/rejected review is visible to its writer).
 
 **Reads go through `get_tutor_reviews()`, not the table.** A public page cannot join the reviewer's name or avatar: 0055 narrowed the public `profiles` read to tutor rows, and `student_profiles` has been self-only since 0001. Rather than widen either policy, that SECURITY DEFINER function returns approved reviews plus exactly `full_name` + `avatar_url`. It also filters on the author's `profiles.status = 'enabled'`, so **disabling a reviewer (0052) hides their reviews site-wide** — which is how report resolution takes an abusive reviewer's content down. Since 0058 it is also the **single definition of a countable review**: `recalc_tutor_rating()` aggregates over it, so `tutor_profiles.rating` / `review_count` and the rendered list can never disagree.
+
+### `articles` (0061)
+The blog. One row per article, replacing the five JSX modules that used to live in `content/blog/` behind a manifest. `lib/blog.js` is the only reader.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `slug` | text | NOT NULL UNIQUE, CHECK non-blank — the `/blog/[slug]` URL |
+| `title` | text | NOT NULL, CHECK non-blank |
+| `excerpt` | text | nullable, CHECK non-blank if present. Card copy and the page's meta description |
+| `category` | text | nullable, CHECK non-blank if present. **Free text, no CHECK list** — the page renders it conditionally and pinning the vocabulary would make "add a category" a migration |
+| `body_md` | text | nullable, CHECK non-blank if present. **Markdown**, parsed per request by `lib/markdown.js` into the node tree `app/blog/[slug]/ArticleBody.jsx` renders. Sections and anchor ids come from `##` headings at parse time, so structure is derived from the copy rather than stored beside it |
+| `status` | text | NOT NULL DEFAULT `'draft'`, CHECK in (`draft`,`pending`,`published`,`removed`) |
+| `author_id` | uuid | → `tutor_profiles(id)` ON DELETE **SET NULL**. FK to `tutor_profiles` rather than `profiles` is what makes "an author is a tutor" structural (a CHECK cannot subquery). Set-null, not cascade: deleting the account costs the site its byline, not its article |
+| `cover_path` | text | nullable, CHECK non-blank if present. A **path** inside `blog-images`, never a URL — baking the project ref into data breaks every image on a restore into another project |
+| `cover_alt` | text | nullable, CHECK non-blank if present |
+| `published_at` | **date** | reader-visible publish date |
+| `content_updated_at` | **date** | reader-visible "Updated …" date, nullable |
+| `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+| `updated_at` | timestamptz | NOT NULL DEFAULT `now()`; maintained by `articles_touch_updated_at` |
+
+CHECK `articles_cover_in_author_folder`: `cover_path IS NULL OR author_id IS NULL OR split_part(cover_path,'/',1) = author_id::text` — a row can only point at a path its own author could have written under the bucket policy. Both NULL branches matter: they are what stop ON DELETE SET NULL failing this check on an article that still has cover art. Indexes: `(status, published_at desc)` (the index page), `(author_id)`, `(category)`.
+
+**Two date columns on purpose.** `content_updated_at` is authored copy the reader sees; `updated_at` is row bookkeeping. Merging them would mean the touch trigger bumped the reader-visible "Updated" date every time an admin flipped a status.
+
+**RLS gates on the CAPABILITY, not just ownership.** Both write policies carry `exists (select 1 from profiles where id = auth.uid() and can_author_articles)` alongside `author_id = auth.uid()`, so an ordinary tutor cannot write to the blog even under their own name. `status in ('draft','pending','published')` in the same `WITH CHECK` means a designated author **does** publish their own work — the deliberate difference from `reviews` (0057), where a student is structurally barred from approving themselves. The trust boundary here is the flag plus its guard trigger, not the status. UPDATE and DELETE both carry `USING (… AND status <> 'removed')`, so removal is terminal and the record of what was published survives a takedown. Public SELECT is `status = 'published'`; the author additionally reads their own row in any status.
+
+Revoking `can_author_articles` freezes everything that author owns: published articles stay live (public SELECT only looks at status) but every write policy fails from then on. To take an article down, set its `status` to `removed` instead.
+
+`pending` is in the CHECK but nothing sets it. It is kept so an editorial review step is later a route plus a UI rather than a schema change: the signed-link pattern (`lib/reviewToken.js` → `/api/reviews/approve` → `/admin/review`) drops straight on top.
+
+**No SECURITY DEFINER read function**, unlike `reviews`. That one exists because a public page cannot join a *student's* name; article authors are tutors, so a plain PostgREST select with embeds works for anonymous readers. The author embed is a **LEFT join** in `lib/blog.js`, deliberately: an inner join would silently unpublish every article an author ever wrote the moment their account was disabled (0055 hides the rows). Left-joined, the byline degrades to nothing and the article stays up — account status governs the account, `articles.status` governs the article.
 
 ### `blocked_users` (join, 0049)
 Mutual block between two accounts — one row per (blocker, blocked) pair. Written by the block/unblock controls (messages thread header + tutor profile). A block is **silent** (no policy exposes rows where you are the `blocked_id`) and **reversible** (unblock deletes the row).
@@ -357,6 +390,9 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 ### Storage: `tutor-docs` bucket (0034; replaced the private `verification-docs` bucket from 0033)
 **Public** — the files behind `tutor_documents`, at `<uid>/<timestamp>-<name>`. Bucket-level `file_size_limit` 10 MB + `allowed_mime_types` `{application/pdf, image/*}`. Owner-scoped SELECT (0035) / INSERT / DELETE (folder = uid) — the app never lists the bucket (reads go through the table; public-bucket downloads bypass RLS), but the owner SELECT is required because the Storage API's `remove()` checks SELECT as well as DELETE (without it the owner's delete silently no-ops). **No UPDATE policy** — files are immutable, so uploads must not use upsert. Not part of the verification flow. 0034 dropped the old bucket's policies; the bucket itself is emptied + deleted in the dashboard (Supabase's `storage.protect_delete()` trigger blocks SQL DELETEs on storage tables) rather than migrating the files — they were uploaded under a private-and-deleted-after-review promise.
 
+### Storage: `blog-images` bucket (0061)
+**Public** — article cover art behind `articles.cover_path`, at `<author_uid>/<slug>-<timestamp>.<ext>`. Bucket-level `file_size_limit` 5 MB + `allowed_mime_types` `{image/*}`. Public SELECT; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`. Modelled on `profile-images`, **not** `tutor-docs`: cover art is replaceable, so UPDATE exists and uploads may use upsert. The public SELECT policy is also what keeps owner deletes working (the 0035 lesson: `remove()` checks SELECT as well as DELETE) — do not narrow it without adding an owner SELECT policy in the same change.
+
 ---
 
 ## Functions / RPCs
@@ -407,6 +443,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `reviews_touch_updated_at` | `reviews` | BEFORE UPDATE | `reviews_touch_updated_at()` | 0057 |
 | `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins the derived `rating` / `review_count` against client writes | 0057 |
 | `profiles_status_recalc_ratings` | `profiles` | AFTER UPDATE OF `status` (WHEN changed) | `profiles_status_recalc_ratings()` → refresh the aggregates of every tutor this user reviewed | 0058 |
+| `articles_touch_updated_at` | `articles` | BEFORE UPDATE | `articles_touch_updated_at()` — touches `updated_at` only, never the reader-visible `content_updated_at` | 0061 |
+| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` against client writes, so nobody can grant themselves blog authoring | 0061 |
 
 ---
 
@@ -414,7 +452,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 | Table | Read | Write |
 | --- | --- | --- |
-| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE |
+| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE, **except `can_author_articles`, pinned by the `profiles_guard_capabilities` trigger (0061)** — note the self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guard is a trigger |
 | `tutor_profiles` | public | tutor self (ALL), **except the derived `rating` / `review_count`, pinned by a guard trigger (0057)** |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
@@ -431,6 +469,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `tutor_documents` | public | owner-scoped INSERT/UPDATE/DELETE |
 | `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid |
 | `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE |
+| `articles` | public where `status='published'`; **+ author reads own row in any status** | author (`author_id` = uid) **who also holds `profiles.can_author_articles`** — INSERT/UPDATE may set `status in ('draft','pending','published')` (designated authors self-publish); UPDATE/DELETE blocked once `status='removed'` (0061) |
+| `storage.objects` (`blog-images`) | public | owner-scoped by folder = uid, INSERT/UPDATE/DELETE (0061) |
 
 > **Invariant:** `saveTutorProfile` never writes `verified` / `verification_status` — those are
 > server-controlled so a tutor cannot self-verify.
@@ -438,3 +478,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 > **Invariant:** nothing in the app writes `tutor_profiles.rating` / `review_count`. They are
 > derived from approved `reviews` by `recalc_tutor_rating()` and pinned against client writes by
 > the `tutor_profiles_guard_derived` trigger (0057), so a tutor cannot self-award a rating.
+>
+> **Invariant:** nothing in the app writes `profiles.can_author_articles`. It is granted out of
+> band via `supabase/utilities/grant_author.sql` and pinned against client writes by the
+> `profiles_guard_capabilities` trigger (0061), so a user cannot grant themselves the ability to
+> publish to the blog.

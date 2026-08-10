@@ -1,6 +1,11 @@
-// Shared building blocks for article bodies, so the five article modules stay
-// prose and don't each re-declare table or callout chrome. Server components:
-// no state, no handlers. Colours come from the theme tokens, not new values.
+// Body chrome for article bodies, so a callout or a table is a theme decision
+// made once rather than markup repeated per article. Moved here from
+// content/blog/prose.jsx when articles became rows (0061); the components are
+// unchanged, only their caller is. Server components: no state, no handlers.
+//
+// These stay dumb and presentational. ArticleBody.jsx turns jsonb into the
+// children/cells passed in here, which is what keeps the styling in one place
+// and the whitelist in the other.
 
 /** A soft accent panel for a definition, a warning, or a "in short" summary. */
 export function Callout({ title, children }) {
@@ -37,9 +42,9 @@ export function Table({ head, rows, caption }) {
         <table className="w-full text-[14px]" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--desk)" }}>
-              {head.map((h) => (
+              {head.map((h, i) => (
                 <th
-                  key={h}
+                  key={i}
                   className="text-left px-4 py-2.5 font-medium whitespace-nowrap"
                   style={{ color: "var(--ink-graphite)", borderBottom: "1px solid var(--paper-line)" }}
                 >

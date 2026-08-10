@@ -1,3 +1,4 @@
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getArticles } from "@/lib/blog";
 import { SectionReveal } from "@/components/anim/SectionReveal";
 import { ArticleCard } from "./ArticleCard";
@@ -9,8 +10,12 @@ export const metadata = {
     "Guides on the HSC, the VCE, ATAR scaling and study technique, written by tutors on MatchTutor.",
 };
 
+// Reading articles from Supabase makes this route dynamic (the server client
+// reads cookies()), where the file-backed version was static. That matches
+// every other server page in the app, and the empty state below now covers an
+// unconfigured Supabase as well as an empty table.
 export default async function BlogPage() {
-  const articles = await getArticles();
+  const articles = await getArticles(createSupabaseServerClient());
 
   return (
     <div className="bg-[color:var(--paper-card)]">

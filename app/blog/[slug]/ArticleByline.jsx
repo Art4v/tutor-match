@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-// The byline always renders from the article's own metadata, never from the
-// database. `linkHref` is passed only when the author's tutorSlug resolved to a
-// live public profile, so an empty database, a deleted account or a profile set
-// to private downgrades the byline to plain text instead of breaking the page.
+// The byline renders the joined tutor behind articles.author_id (0061), so the
+// name, photo and tagline follow the profile instead of being frozen into the
+// article. `linkHref` is passed only when that profile is public, so a deleted
+// account, a disabled one or a profile set to private downgrades the byline to
+// plain text (or to nothing) instead of breaking the page.
 //
 // The initials chip is local rather than components/ui.js `Avatar`, whose
 // no-image fallback is a graduation cap; a byline wants the person's initials.
@@ -38,8 +39,14 @@ export function ArticleByline({ author, linkHref = null }) {
         >
           {author.name}
         </span>
+        {/* The tutor's own tagline, which is a sentence rather than the short
+            "HSC tutor" label this used to hold. Clamped so a long one wraps to
+            two lines instead of stretching the 40px avatar row. */}
         {author.roleLine && (
-          <span className="block text-[12.5px] mt-0.5" style={{ color: "var(--sage)" }}>
+          <span
+            className="text-[12.5px] mt-0.5 line-clamp-2"
+            style={{ color: "var(--sage)" }}
+          >
             {author.roleLine}
           </span>
         )}

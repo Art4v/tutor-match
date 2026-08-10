@@ -3,11 +3,13 @@ module.exports = {
   content: [
     "./app/**/*.{js,jsx}",
     "./components/**/*.{js,jsx}",
-    // Blog article bodies are JSX with Tailwind classes in them (see the Blog
-    // section of CLAUDE.md). Without this glob a class used ONLY by an article
-    // is silently never generated, so the copy renders unstyled. Unrelated to
-    // the Tailwind key also being called `content`.
-    "./content/**/*.{js,jsx}",
+    // There was a "./content/**" glob here while article bodies were JSX files.
+    // Bodies are jsonb rows now (0061) and Tailwind cannot scan a database, so
+    // every class an article body renders MUST appear as a literal string in
+    // app/blog/[slug]/ArticleBody.jsx. That is why spacing there is applied
+    // mechanically by the renderer rather than stored per node: a className
+    // living only in jsonb would never be generated, and the copy would render
+    // unstyled with no build error to warn you.
   ],
   theme: {
     extend: {
