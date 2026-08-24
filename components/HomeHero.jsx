@@ -4,11 +4,12 @@ import { motion } from "motion/react";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { SubjectPicker } from "@/components/SubjectPicker";
-import { SchoolPicker } from "@/components/SchoolPicker";
+import { CatalogPicker } from "@/components/CatalogPicker";
 import { TypewriterWord } from "@/components/TypewriterWord";
 import { ParticleNetwork } from "@/components/ParticleNetwork";
 import { useRouteLoading } from "@/components/RouteLoadingProvider";
 import { EASE_OUT, DURATION_MED } from "@/lib/motion";
+import { AU_STATES } from "@/lib/states";
 
 // Fixed word list for the cycling headline — hero copy, deliberately not tied
 // to the DB subject catalog.
@@ -28,21 +29,22 @@ const TYPEWRITER_WORDS = [
 /**
  * Hero at 90svh: an animated "neural network" constellation fills the
  * whole hero behind one centred column — eyebrow, headline, feature bullets,
- * search bar, scroll cue. The search wiring (`goBrowse`) filters by school +
+ * search bar, scroll cue. The search wiring (`goBrowse`) filters by state +
  * subject.
  *
  * The hero carries no tutor cards: that surface is the featured-tutors marquee
  * (`components/FeaturedTutors.jsx`), one section down.
  */
-export function HomeHero({ catalog, schoolCatalog = [] }) {
+export function HomeHero({ catalog }) {
   const { navigate } = useRouteLoading();
-  const [school, setSchool] = useState(null);
+  // `auState` rather than `state` — a bare `state` reads as React state here.
+  const [auState, setAuState] = useState(null);
   const [subject, setSubject] = useState(null);
 
   const goBrowse = () => {
     const params = new URLSearchParams();
     if (subject?.slug) params.append("subject", subject.slug);
-    if (school?.slug) params.append("school", school.slug);
+    if (auState?.slug) params.append("state", auState.slug);
     const qs = params.toString();
     navigate(`/browse${qs ? `?${qs}` : ""}`);
   };
@@ -140,7 +142,7 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
                 </span>
               </motion.h1>
 
-              {/* Compact search bar (School · Subject · Search) — centred
+              {/* Compact search bar (State · Subject · Search) — centred
                   directly beneath the headline. */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -149,14 +151,15 @@ export function HomeHero({ catalog, schoolCatalog = [] }) {
                 className="relative z-30 mt-8 w-full max-w-[720px] mx-auto hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_auto] items-stretch hero-search-glow"
                 style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 13, padding: 5 }}
               >
-                <SchoolPicker
-                  catalog={schoolCatalog}
-                  value={school?.slug ?? null}
-                  onChange={(slug, s) => setSchool(slug ? { slug, name: s?.name } : null)}
+                <CatalogPicker
+                  kind="state"
+                  catalog={AU_STATES}
+                  value={auState?.slug ?? null}
+                  onChange={(slug, s) => setAuState(slug ? { slug, name: s?.name } : null)}
                   mode="single"
                   variant="bar"
-                  label="School"
-                  placeholder="Any school"
+                  label="State"
+                  placeholder="Any state"
                 />
                 <SubjectPicker
                   catalog={catalog}

@@ -4,22 +4,43 @@ import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
 
 /**
- * Searchable school selector keyed by slug, matching the `?school=` URL contract.
- * Flat (no exam grouping). Two modes / two looks:
+ * Searchable slug-keyed selector, matching the `?school=` / `?state=` URL
+ * contracts. Flat (no exam grouping). Two modes / two looks:
  *   mode="multi" variant="box"  — /browse sidebar filter (checkbox list + chips)
- *   mode="single" variant="bar" — home hero search segment (one school)
+ *   mode="single" variant="bar" — home hero search segment (one value)
+ *
+ * The per-list copy is hard-coded in KINDS below rather than passed in, so call
+ * sites stay short and the two pickers can't drift apart visually.
  *
  * Props:
- *   catalog     [{ name, slug }]  (ordered by HSC rank from getSchools)
+ *   kind        'school' (default) | 'state' — icon + copy + whether it searches
+ *   catalog     [{ name, slug }]  (schools from getSchools; states from AU_STATES)
  *   value       multi: string[] of slugs · single: string|null slug
  *   onChange    multi: (nextSlugs) => void
- *               single: (slug|null, school|null) => void
+ *               single: (slug|null, item|null) => void
  *   mode        'multi' (default) | 'single'
  *   variant     'box' (default) | 'bar'
  *   placeholder trigger placeholder text
- *   label       'bar' variant only — the uppercase field label (e.g. "School")
+ *   label       'bar' variant only — the uppercase field label (e.g. "State")
  */
-export function SchoolPicker({
+const KINDS = {
+  school: {
+    icon: "graduation",
+    search: "Search schools",
+    empty: "No matching schools",
+    searchable: true,
+  },
+  state: {
+    icon: "map-pin",
+    search: null,
+    empty: "No matching states",
+    // Eight fixed entries — a search field would be noise.
+    searchable: false,
+  },
+};
+
+export function CatalogPicker({
+  kind = "school",
   catalog = [],
   value,
   onChange,
@@ -28,6 +49,8 @@ export function SchoolPicker({
   placeholder = "Add schools",
   label = "School",
 }) {
+  const k = KINDS[kind] ?? KINDS.school;
+
   const bySlug = useMemo(() => {
     const m = new Map();
     for (const s of catalog) m.set(s.slug, s);
@@ -53,7 +76,7 @@ export function SchoolPicker({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const q = search.trim().toLowerCase();
+  const q = k.searchable ? search.trim().toLowerCase() : "";
   const filtered = q
     ? catalog.filter((s) => s.name.toLowerCase().includes(q))
     : catalog;
@@ -84,7 +107,7 @@ export function SchoolPicker({
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[46px] sm:h-[48px] text-left rounded-[10px]"
       >
-        <Icon name="graduation" size={16} className="text-[color:var(--accent)] shrink-0" />
+        <Icon name={k.icon} size={16} className="text-[color:var(--accent)] shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-[10px] sm:text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
           <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (singleLabel ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
@@ -100,7 +123,9 @@ export function SchoolPicker({
         className="w-full flex items-center gap-2 h-9 px-3 text-left"
         style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
       >
-        <Icon name="search" size={14} className="text-slate-400 shrink-0" />
+        {/* A magnifier only makes sense when the panel actually searches;
+            otherwise fall back to the kind's own glyph. */}
+        <Icon name={k.searchable ? "search" : k.icon} size={14} className="text-slate-400 shrink-0" />
         <span className={"flex-1 text-[13.5px] truncate " + (selected.length ? "text-slate-900" : "text-slate-400")}>
           {selected.length ? `${selected.length} selected` : placeholder}
         </span>
@@ -140,22 +165,24 @@ export function SchoolPicker({
           }}
         >
           {/* Search */}
-          <div className="p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
-            <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "var(--bg-soft)", borderRadius: 8 }}>
-              <Icon name="search" size={13} className="text-slate-400 shrink-0" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search schools"
-                className="w-full bg-transparent outline-none text-[13px] text-slate-900 placeholder:text-slate-400"
-              />
+          {k.searchable && (
+            <div className="p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
+              <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "var(--bg-soft)", borderRadius: 8 }}>
+                <Icon name="search" size={13} className="text-slate-400 shrink-0" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={k.search}
+                  className="w-full bg-transparent outline-none text-[13px] text-slate-900 placeholder:text-slate-400"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* School list */}
+          {/* Options */}
           <div className="max-h-[240px] overflow-y-auto overscroll-contain py-1">
             {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-[13px] text-slate-400">No matching schools</div>
+              <div className="px-3 py-4 text-[13px] text-slate-400">{k.empty}</div>
             ) : (
               filtered.map((s) => {
                 const sel = isSelected(s.slug);

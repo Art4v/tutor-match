@@ -6,18 +6,19 @@ import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
-import { SchoolPicker } from "@/components/SchoolPicker";
+import { CatalogPicker } from "@/components/CatalogPicker";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { useRouteLoading } from "@/components/RouteLoadingProvider";
 import { subjectLabel } from "@/lib/subjects";
 import { YEAR_LEVELS_DESC, yearLabel } from "@/lib/yearLevels";
+import { AU_STATES, stateName } from "@/lib/states";
 
 /**
  * URL-driven sidebar for /browse. Every change calls router.replace() with a
  * new query string so the server component re-runs the Supabase query.
  *
  * Props:
- *   filters       — current values: { name, subjectSlugs, place, lat, lng, modes[], atarMin, rateMax, yearLevels[] }
+ *   filters       — current values: { name, subjectSlugs, schoolSlugs, states[], place, lat, lng, modes[], atarMin, rateMax, yearLevels[] }
  *   catalog        — exam-scoped subject catalog [{ name, slug, exam, examName }, ...]
  *   totalCount     — number, rendered in the header
  *   searchQuery    — current ?q= value, for the header heading
@@ -81,11 +82,18 @@ export function BrowseFilters({
       next.forEach((s) => p.append("subject", s));
     });
 
-  // Same contract for the SchoolPicker — repeated `school=` slug params.
+  // Same contract for the school picker — repeated `school=` slug params.
   const setSchools = (next) =>
     pushParams((p) => {
       p.delete("school");
       next.forEach((s) => p.append("school", s));
+    });
+
+  // And for the state picker — repeated `state=` params, each an AU state code.
+  const setStates = (next) =>
+    pushParams((p) => {
+      p.delete("state");
+      next.forEach((s) => p.append("state", s));
     });
 
   const setLocation = (place) =>
@@ -138,6 +146,7 @@ export function BrowseFilters({
     !!filters.name ||
     (filters.subjectSlugs?.length ?? 0) > 0 ||
     (filters.schoolSlugs?.length ?? 0) > 0 ||
+    (filters.states?.length ?? 0) > 0 ||
     !!filters.place ||
     (filters.modes?.length ?? 0) > 0 ||
     filters.atarMin != null ||
@@ -245,6 +254,16 @@ export function BrowseFilters({
         )}
       </FilterGroup>
 
+      <FilterGroup title="State">
+        <CatalogPicker
+          kind="state"
+          catalog={AU_STATES}
+          value={filters.states}
+          onChange={setStates}
+          placeholder="Any state"
+        />
+      </FilterGroup>
+
       <FilterGroup title="Year level">
         <div className="grid grid-cols-2 gap-1.5">
           <Chip active={yearLevels.length === 0} onClick={() => toggleYearLevel("all")}>
@@ -274,7 +293,8 @@ export function BrowseFilters({
       </FilterGroup>
 
       <FilterGroup title="School">
-        <SchoolPicker
+        <CatalogPicker
+          kind="school"
           catalog={schoolCatalog}
           value={filters.schoolSlugs}
           onChange={setSchools}
@@ -400,6 +420,13 @@ export function BrowseSortAndChips({ filters, catalog, schoolCatalog }) {
       rest.forEach((s) => p.append("school", s));
     });
 
+  const removeState = (code) =>
+    pushParams((p) => {
+      const rest = p.getAll("state").filter((s) => s !== code);
+      p.delete("state");
+      rest.forEach((s) => p.append("state", s));
+    });
+
   const removeMode = (value) =>
     pushParams((p) => {
       const rest = p.getAll("mode").filter((v) => v !== value);
@@ -441,6 +468,11 @@ export function BrowseSortAndChips({ filters, catalog, schoolCatalog }) {
         {(filters.schoolSlugs ?? []).map((slug) => (
           <Chip key={slug} onClick={() => removeSchool(slug)} icon="x">
             {schoolNameFor(slug)}
+          </Chip>
+        ))}
+        {(filters.states ?? []).map((code) => (
+          <Chip key={code} onClick={() => removeState(code)} icon="x">
+            {stateName(code)}
           </Chip>
         ))}
         {(filters.modes ?? []).map((m) => (

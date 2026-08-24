@@ -6,6 +6,7 @@ import {
   getSchools,
 } from "@/lib/supabase/tutors";
 import { getSavedTutorIds } from "@/lib/supabase/saved";
+import { isStateCode } from "@/lib/states";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
@@ -34,6 +35,9 @@ export default async function BrowsePage({ searchParams }) {
 
   const subjectSlugs = asArray(searchParams.subject);
   const schoolSlugs = asArray(searchParams.school);
+  // Validated up front so a junk ?state= is ignored rather than filtering the
+  // results down to nothing.
+  const states = asArray(searchParams.state).filter(isStateCode);
   const q = (searchParams.q ?? "").toString();
   const name = (searchParams.name ?? "").toString();
   const lat = parseNumber(searchParams.lat);
@@ -72,6 +76,7 @@ export default async function BrowsePage({ searchParams }) {
       name: name || undefined,
       subjectSlugs,
       schoolSlugs,
+      states,
       lat,
       lng,
       atarMin,
@@ -94,6 +99,7 @@ export default async function BrowsePage({ searchParams }) {
     name: name || null,
     subjectSlugs,
     schoolSlugs,
+    states,
     place: place || null,
     lat,
     lng,

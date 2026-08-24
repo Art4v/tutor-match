@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getFeaturedTutors, getSubjects, getSchools, getVerifiedTutorCount } from "@/lib/supabase/tutors";
+import { getFeaturedTutors, getSubjects, getVerifiedTutorCount } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
 import { HomeHero } from "@/components/HomeHero";
 import { SchoolsStrip } from "@/components/SchoolsStrip";
@@ -16,10 +16,9 @@ const VERIFIED_POOL = 150;
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [featuredPool, subjectCatalog, schoolCatalog, verifiedCount] = await Promise.all([
+  const [featuredPool, subjectCatalog, verifiedCount] = await Promise.all([
     getFeaturedTutors(supabase, VERIFIED_POOL, null, { verifiedOnly: true }),
     getSubjects(supabase),
-    getSchools(supabase),
     getVerifiedTutorCount(supabase),
   ]);
   // Marquee pool: the fetch above already narrowed to verified tutors, so this
@@ -33,7 +32,7 @@ export default async function HomePage() {
 
   return (
     <main style={{ background: "var(--paper)" }}>
-      <HomeHero catalog={subjectCatalog} schoolCatalog={schoolCatalog} />
+      <HomeHero catalog={subjectCatalog} />
       <SchoolsStrip />
       <FeaturedTutors tutors={showcaseTutors} verifiedCount={verifiedCount} />
       <HomeHowItWorks />
