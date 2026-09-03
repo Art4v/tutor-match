@@ -314,14 +314,6 @@ export function TopNav() {
                           Profile
                         </NavMenuLink>
                       )}
-                      {canAuthor && (
-                        // The only in-app route to the blog editor (0061).
-                        // Gated on the capability, not the role, so revoking it
-                        // takes the entry point away in the same breath.
-                        <NavMenuLink href="/author" onClick={() => setMenuOpen(false)}>
-                          Write
-                        </NavMenuLink>
-                      )}
                       <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
                         <span className="flex items-center justify-between gap-2">
                           Notifications
@@ -359,6 +351,16 @@ export function TopNav() {
                         // Saved tutors is live (→ /browse with the saved filter pre-applied).
                         <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
                           Saved Tutors
+                        </NavMenuLink>
+                      )}
+                      {canAuthor && (
+                        // The only in-app route to the blog editor (0061).
+                        // Gated on the capability, not the role, so revoking it
+                        // takes the entry point away in the same breath. Sits
+                        // last, directly above Log out, since it is a rare
+                        // capability rather than an everyday destination.
+                        <NavMenuLink href="/author" onClick={() => setMenuOpen(false)}>
+                          Write
                         </NavMenuLink>
                       )}
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
