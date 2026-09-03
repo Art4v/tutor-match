@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InlineMarkdown } from "@/components/RichText";
 
 // The byline renders the joined tutor behind articles.author_id (0061), so the
 // name, photo and tagline follow the profile instead of being frozen into the
@@ -41,13 +42,21 @@ export function ArticleByline({ author, linkHref = null }) {
         </span>
         {/* The tutor's own tagline, which is a sentence rather than the short
             "HSC tutor" label this used to hold. Clamped so a long one wraps to
-            two lines instead of stretching the 40px avatar row. */}
+            two lines instead of stretching the 40px avatar row.
+
+            It carries the same **bold** / *italic* subset every other surface
+            gives that field (see ProfileHeaderText), so it goes through
+            InlineMarkdown rather than being printed raw, which showed the
+            asterisks. InlineMarkdown's <strong> hardcodes text-slate-900, which
+            at 12.5px under the name would out-weigh the name itself; the
+            descendant selector below outranks that single class and keeps
+            emphasis one step darker than the line, not black. */}
         {author.roleLine && (
           <span
-            className="text-[12.5px] mt-0.5 line-clamp-2"
+            className="text-[12.5px] mt-0.5 line-clamp-2 [&_strong]:text-[color:var(--ink-muted)]"
             style={{ color: "var(--sage)" }}
           >
-            {author.roleLine}
+            <InlineMarkdown text={author.roleLine} />
           </span>
         )}
       </span>

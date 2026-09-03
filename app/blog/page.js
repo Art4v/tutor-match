@@ -1,6 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getArticles } from "@/lib/blog";
-import { SectionReveal } from "@/components/anim/SectionReveal";
 import { ArticleCard } from "./ArticleCard";
 import { CtaBand } from "./CtaBand";
 
@@ -46,13 +45,13 @@ export default async function BlogPage() {
             No articles have been published yet. Check back soon.
           </p>
         ) : (
-          // Two per row from md up; the reveal wrappers are the grid items, so
-          // each card animates in on its own.
+          // Two per row from md up. Each card is its own grid item and renders
+          // straight in, with no enter-view animation.
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-14">
-            {articles.map((article, i) => (
-              <SectionReveal key={article.slug} as="article" delay={i % 2 === 0 ? 0 : 0.06}>
+            {articles.map((article) => (
+              <article key={article.slug}>
                 <ArticleCard article={article} />
-              </SectionReveal>
+              </article>
             ))}
           </div>
         )}
