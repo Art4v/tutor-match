@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "sync:audience": "node scripts/sync-tutors-audience.mjs"
+    "sync:audience": "node scripts/sync-tutors-audience.mjs",
+    "seed:blog": "node scripts/seed-blog-articles.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.5.2",
@@ -14,6 +15,8 @@
     "@vercel/analytics": "^2.0.1",
     "emoji-picker-react": "^4.19.1",
     "leaflet": "^1.9.4",
+    "markdown-it": "^15.0.0",
+    "markdown-it-container": "^4.0.0",
     "motion": "^11.11.17",
     "next": "14.2.5",
     "react": "18.3.1",

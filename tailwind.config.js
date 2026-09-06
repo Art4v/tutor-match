@@ -3,6 +3,13 @@ module.exports = {
   content: [
     "./app/**/*.{js,jsx}",
     "./components/**/*.{js,jsx}",
+    // There was a "./content/**" glob here while article bodies were JSX files.
+    // Bodies are jsonb rows now (0061) and Tailwind cannot scan a database, so
+    // every class an article body renders MUST appear as a literal string in
+    // app/blog/[slug]/ArticleBody.jsx. That is why spacing there is applied
+    // mechanically by the renderer rather than stored per node: a className
+    // living only in jsonb would never be generated, and the copy would render
+    // unstyled with no build error to warn you.
   ],
   theme: {
     extend: {
