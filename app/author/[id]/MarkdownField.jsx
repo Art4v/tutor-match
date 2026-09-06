@@ -194,6 +194,85 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
     caretRef.current = null;
   }
 
+  // A bullet or numbered item: indent, marker, and the text after it.
+  const LIST_ITEM = /^(\s*)([-*+]|\d+\.)(\s+)(.*)$/;
+
+  /**
+   * Enter continues a list, and a second Enter on an empty item leaves it.
+   *
+   * Without this, prefixLines only marks the lines you had already selected, so
+   * every bullet after the first is typed by hand and numbered lists are
+   * renumbered by hand. Goes through applyEdit like everything else here, so a
+   * continued bullet is one undo step rather than a state write that would
+   * detach from the native undo stack.
+   *
+   * Returns true when it handled the key.
+   */
+  function continueList(ta) {
+    const { value: v, selectionStart: start, selectionEnd: end } = ta;
+    if (start !== end) return false; // a selection: let Enter replace it normally
+
+    const lineStart = v.lastIndexOf("\n", start - 1) + 1;
+    const m = LIST_ITEM.exec(v.slice(lineStart, start));
+    if (!m) return false;
+
+    const [, indent, marker, gap, content] = m;
+
+    // Enter on an item with no content means "get me out of this list", so the
+    // marker is removed rather than a dead bullet being added below it.
+    if (!content.trim()) {
+      applyEdit(() => ({
+        from: lineStart,
+        to: start,
+        text: "",
+        selStart: lineStart,
+        selEnd: lineStart,
+      }));
+      return true;
+    }
+
+    // Ordered lists only need the next number, not a full renumber pass: the
+    // output is an <ol>, so the literal digits in the source never reach it.
+    const next = /^\d+\.$/.test(marker) ? `${parseInt(marker, 10) + 1}.` : marker;
+    const text = `\n${indent}${next}${gap}`;
+    applyEdit(({ start: s0, end: e0 }) => ({
+      from: s0,
+      to: e0,
+      text,
+      selStart: s0 + text.length,
+      selEnd: s0 + text.length,
+    }));
+    return true;
+  }
+
+  /**
+   * The formatting shortcuts every writer expects, plus list continuation.
+   *
+   * Cmd/Ctrl+S is NOT here: it saves, and this component deliberately knows
+   * nothing about saving. ArticleEditor owns that as a window listener, next to
+   * the persist() it calls.
+   */
+  function onKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (continueList(e.currentTarget)) e.preventDefault();
+      return;
+    }
+
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    // preventDefault on all three: Ctrl+I and Ctrl+K are taken by some browsers.
+    if (k === "b") {
+      e.preventDefault();
+      wrap("**");
+    } else if (k === "i") {
+      e.preventDefault();
+      wrap("*");
+    } else if (k === "k") {
+      e.preventDefault();
+      wrap2("[", "](https://)");
+    }
+  }
+
   // Body images with no alt text. A soft nudge, never a gate: it is rendered
   // under the textarea because this component owns the markdown string and it
   // is where the author is looking. Uses the parser's own articleImages so
@@ -284,6 +363,7 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
         value={value}
         rows={rows}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         spellCheck

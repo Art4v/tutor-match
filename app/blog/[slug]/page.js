@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getArticleBySlug, getRelatedArticles, formatArticleDate } from "@/lib/blog";
-import { ArticleBody } from "./ArticleBody";
+import { ArticleSections } from "./ArticleSections";
 import { ArticleByline } from "./ArticleByline";
 import { ArticleToc } from "./ArticleToc";
 import { RelatedArticles } from "./RelatedArticles";
@@ -91,19 +91,9 @@ export default async function ArticlePage({ params }) {
           </aside>
 
           <div className="min-w-0 lg:order-1">
-            <div className="text-[15px] text-slate-700 leading-[1.7]">
-              {article.sections.map((section) => (
-                <section key={section.id} id={section.id} className="mt-12 first:mt-0 scroll-mt-24">
-                  <h2
-                    className="text-[24px] font-light mb-4"
-                    style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.015em" }}
-                  >
-                    {section.heading}
-                  </h2>
-                  <ArticleBody content={section.content} />
-                </section>
-              ))}
-            </div>
+            {/* Shared with the editor's preview, so what an author checks is
+                literally what publishes. See ArticleSections.jsx. */}
+            <ArticleSections sections={article.sections} />
 
             <div className="mt-16">
               <RelatedArticles articles={related} />

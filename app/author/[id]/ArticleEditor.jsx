@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getMyArticles, saveArticle } from "@/lib/blog";
+import { formatArticleDate, getMyArticles, readingMinutes, saveArticle } from "@/lib/blog";
 import {
   removeBlogImages,
   uploadArticleBodyImage,
@@ -14,7 +14,8 @@ import {
 } from "@/lib/supabase/storage";
 import { articleImages, parseArticleBody } from "@/lib/markdown";
 import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
-import { ArticleBody } from "@/app/blog/[slug]/ArticleBody";
+import { ArticleSections } from "@/app/blog/[slug]/ArticleSections";
+import { ArticleToc } from "@/app/blog/[slug]/ArticleToc";
 import { MarkdownField } from "./MarkdownField";
 
 // ============================================================================
@@ -46,6 +47,10 @@ export function ArticleEditor({ userId, initial }) {
   const [draft, setDraft] = useState(initial);
   const [busy, setBusy] = useState(null); // "save" | "publish" | "cover" | "delete"
   const [error, setError] = useState("");
+  // The banner sits at the top of a long page, so it is scrolled into view when
+  // it appears. Without that, saving from the bottom of a 2000-word body showed
+  // no failure at all: the button just flicked back to "Save".
+  const errorRef = useRef(null);
   const [toast, setToast] = useState("");
   const [preview, setPreview] = useState(false);
   // A new article gets its slug from the title until the author edits the slug
@@ -64,6 +69,32 @@ export function ArticleEditor({ userId, initial }) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+
+  // Failures used to be silent while successes toasted at the bottom of the
+  // viewport, which is exactly backwards. The banner is in normal flow at the
+  // top of the page, so bring it to the author rather than hoping they scroll.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
+
+  // Cmd/Ctrl+S saves. Without this it opens the browser's "Save Page As",
+  // which is the most reflexive keystroke a writer has, wired to nothing. A
+  // window listener in a useEffect is the house style for global keys (see the
+  // Escape handlers in ConfirmModal and every modal in the repo), and the guard
+  // mirrors the Save button's own disabled condition so the two cannot drift.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "s") return;
+      e.preventDefault();
+      if (busy !== null || !dirty) return;
+      persist(draft.status === "published" ? "published" : "draft");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // No dependency array on purpose: the handler closes over busy/dirty/draft,
+    // and re-registering a listener per render is cheaper than reasoning about
+    // a stale closure that silently saves the wrong thing.
+  });
 
   function showToast(text) {
     setToast(text);
@@ -145,6 +176,7 @@ export function ArticleEditor({ userId, initial }) {
 
   async function onDelete() {
     if (!saved.id) return;
+    setError("");
     if (!window.confirm("Delete this article? This cannot be undone.")) return;
     setBusy("delete");
     const { error: err } = await supabase.from("articles").delete().eq("id", saved.id);
@@ -193,8 +225,23 @@ export function ArticleEditor({ userId, initial }) {
   return (
     <div className="bg-[color:var(--paper-card)] min-h-screen">
       <div className="max-w-[1040px] mx-auto px-6 pt-10 pb-24">
+        {/* beforeunload does NOT fire on Next's client-side navigation, and this
+            link sits directly above the editor, so without the guard one click
+            silently discards unsaved work. window.confirm rather than
+            ConfirmModal to match onDelete in this file; ConfirmModal would be
+            nicer if this file ever adopts it.
+
+            Known limit: this guards the one link the editor owns. TopNav links
+            still navigate away freely, because the App Router has no
+            routeChangeStart. A global guard would belong in
+            RouteLoadingProvider, which already intercepts link clicks. */}
         <Link
           href="/author"
+          onClick={(e) => {
+            if (!dirty) return;
+            if (window.confirm("You have unsaved changes. Leave without saving?")) return;
+            e.preventDefault();
+          }}
           className="inline-flex items-center gap-1.5 text-[13px] font-medium"
           style={{ color: "var(--sage)" }}
         >
@@ -265,7 +312,10 @@ export function ArticleEditor({ userId, initial }) {
 
         {error && (
           <div
-            className="mt-5 px-4 py-3 text-[13.5px]"
+            ref={errorRef}
+            role="alert"
+            aria-live="assertive"
+            className="mt-5 px-4 py-3 text-[13.5px] flex items-start justify-between gap-3"
             style={{
               background: "#FBEAEA",
               color: "#9B2C2C",
@@ -273,36 +323,102 @@ export function ArticleEditor({ userId, initial }) {
               borderRadius: "var(--radius-card)",
             }}
           >
-            {error}
+            <span>{error}</span>
+            {/* Dismissable because nothing else clears it: a failed cover upload
+                would otherwise leave a red banner sitting there through an hour
+                of unrelated editing. */}
+            <button
+              type="button"
+              onClick={() => setError("")}
+              aria-label="Dismiss error"
+              className="shrink-0 inline-flex items-center justify-center"
+              style={{ width: 20, height: 20, color: "#9B2C2C", opacity: 0.7 }}
+            >
+              <Icon name="x" size={14} />
+            </button>
           </div>
         )}
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-x-8 gap-y-8">
           <div className="min-w-0">
             {preview ? (
+              // Mirrors the header of app/blog/[slug]/page.js so an author sees
+              // what actually publishes. CHANGE THE TWO TOGETHER, the same
+              // convention CtaBand/HomeCta already follow. The sections and the
+              // contents rail are the SAME components the live page uses, which
+              // is what stops the two drifting again.
+              //
+              // Still absent, deliberately: the byline (the editor holds no
+              // author data and fetching it for a preview is not worth a query),
+              // related articles and the CTA band, none of which are per-article
+              // authored content. Line length also differs slightly, since this
+              // column sits in the editor's [1fr_300px] grid rather than the
+              // article's [1fr_240px] with gap-x-12.
               <div className="px-6 py-6" style={cardStyle}>
-                <div className="text-[15px] text-slate-700 leading-[1.7]">
-                  {sections.length === 0 ? (
-                    <p style={{ color: "var(--ink-muted)" }}>Nothing to preview yet.</p>
-                  ) : (
-                    sections.map((section) => (
-                      <section key={section.id} className="mt-12 first:mt-0">
-                        {section.heading && (
-                          <h2
-                            className="text-[24px] font-light mb-4"
-                            style={{
-                              color: "var(--ink-graphite-deep)",
-                              letterSpacing: "-0.015em",
-                            }}
-                          >
-                            {section.heading}
-                          </h2>
+                {sections.length === 0 && !draft.title ? (
+                  <p style={{ color: "var(--ink-muted)" }}>Nothing to preview yet.</p>
+                ) : (
+                  <>
+                    <header>
+                      {draft.category && (
+                        <div
+                          className="text-[12px] font-medium uppercase mb-3"
+                          style={{ color: "var(--accent)", letterSpacing: "0.08em" }}
+                        >
+                          {draft.category}
+                        </div>
+                      )}
+                      <h1
+                        className="text-[30px] sm:text-[36px] leading-[1.12]"
+                        style={{
+                          color: "var(--ink-graphite)",
+                          fontWeight: 300,
+                          letterSpacing: "-0.025em",
+                        }}
+                      >
+                        {draft.title || "Untitled"}
+                      </h1>
+
+                      <div
+                        className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]"
+                        style={{ color: "var(--sage)" }}
+                      >
+                        <span>
+                          {draft.publishedAt
+                            ? `Published ${formatArticleDate(draft.publishedAt)}`
+                            : "Not published yet"}
+                        </span>
+                        {draft.updatedAt && (
+                          <>
+                            <span aria-hidden="true">&middot;</span>
+                            <span>Updated {formatArticleDate(draft.updatedAt)}</span>
+                          </>
                         )}
-                        <ArticleBody content={section.content} />
-                      </section>
-                    ))
-                  )}
-                </div>
+                        <span aria-hidden="true">&middot;</span>
+                        {/* The same readingMinutes the published page prints, so
+                            the number cannot disagree with the live article. */}
+                        <span>{readingMinutes(sections)} min read</span>
+                      </div>
+
+                      {draft.excerpt && (
+                        <p
+                          className="mt-8 text-[16px] leading-[1.65]"
+                          style={{ color: "var(--ink-muted)" }}
+                        >
+                          {draft.excerpt}
+                        </p>
+                      )}
+                    </header>
+
+                    <div className="mt-10">
+                      <ArticleToc sections={sections} />
+                    </div>
+
+                    <div className="mt-10">
+                      <ArticleSections sections={sections} />
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <>
