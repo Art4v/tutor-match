@@ -67,6 +67,8 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "eye-off": return <svg {...props}><path d="M10.7 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.2 3.1M6.6 6.6A17.6 17.6 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/></svg>;
     case "upload": return <svg {...props}><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>;
     case "image": return <svg {...props}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>;
+    // A block with a short line under it: what a captioned figure looks like.
+    case "caption": return <svg {...props}><rect x="3" y="4" width="18" height="11" rx="2"/><path d="M7 19h10"/></svg>;
     case "bold": return <svg {...props}><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/></svg>;
     case "italic": return <svg {...props}><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg>;
     case "list": return <svg {...props}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>;

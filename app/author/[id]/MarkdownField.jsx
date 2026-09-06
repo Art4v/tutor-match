@@ -2,7 +2,12 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { TOOLTIP_STYLE } from "@/components/ui";
 import { articleImages } from "@/lib/markdown";
+
+// Preselected by the Caption button so the next keystroke replaces it, the same
+// trick wrap2 uses for a link's URL.
+const CAPTION_PLACEHOLDER = "Caption text.";
 
 // ============================================================================
 // The Markdown body field: a plain textarea plus a toolbar that inserts syntax.
@@ -133,6 +138,33 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
     insertBlockAt(block, block.length);
   }
 
+  /**
+   * Insert a standalone PARAGRAPH, guaranteeing a BLANK line before it, and
+   * optionally selecting `selectLen` characters from `caretOffset`.
+   *
+   * The blank line is the whole point, and it is why this cannot just call
+   * insertBlock. insertBlock guarantees a fresh LINE, but attachCaptions
+   * (lib/markdown.js) only folds in a paragraph that is ENTIRELY italic, and an
+   * italic line separated by a single newline is a softbreak run inside the
+   * PRECEDING paragraph, i.e. [" ", { i: "..." }], two nodes rather than one.
+   * A caption inserted one line under an image would therefore silently render
+   * as ordinary body text. The caret sits on a fresh line right after an image
+   * insert, so that is the common case, not the edge case.
+   */
+  function insertParagraph(block, caretOffset, selectLen = 0) {
+    applyEdit(({ value: v, start, end }) => {
+      // Already after a blank line: nothing to add. On a fresh line: one more
+      // newline makes it blank. Mid-line: close the line and add a blank one.
+      let lead = "\n\n";
+      if (start === 0 || v.slice(start - 2, start) === "\n\n") lead = "";
+      else if (v[start - 1] === "\n") lead = "\n";
+
+      const text = `${lead}${block}`;
+      const from = start + lead.length + caretOffset;
+      return { from: start, to: end, text, selStart: from, selEnd: from + selectLen };
+    });
+  }
+
   function pickImage() {
     const ta = ref.current;
     if (ta) caretRef.current = { start: ta.selectionStart, end: ta.selectionEnd };
@@ -236,6 +268,15 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
             />
           </>
         )}
+        {/* Outside the onUploadImage guard: a caption belongs to a table just
+            as much as to a figure, so it is available either way. */}
+        <Btn
+          label="Caption"
+          onClick={() =>
+            insertParagraph(`*${CAPTION_PLACEHOLDER}*\n`, 1, CAPTION_PLACEHOLDER.length)
+          }
+          icon="caption"
+        />
       </div>
 
       <textarea
@@ -273,31 +314,51 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
   );
 }
 
+// Most of this toolbar is icon-only, so each button names itself on hover. The
+// native `title` attribute is deliberately GONE: it takes about a second to
+// appear and cannot be themed, and leaving it alongside this would stack a
+// second, slower label behind the first. aria-label still carries the name, so
+// nothing changes for a screen reader.
+//
+// Two positioning constraints, both from the field wrapper's overflow: hidden.
+// The label opens DOWNWARD, over the textarea, because above the toolbar it
+// would be clipped. And it anchors left rather than centring, because the first
+// button's label ("Section heading") is far wider than its 28px box and would
+// clip against the left edge if centred; the toolbar only has px-2 of padding.
 function Btn({ label, onClick, icon, children, disabled = false }) {
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      disabled={disabled}
-      // Keeps the textarea selection alive through the click, which is the whole
-      // reason every toolbar button in this repo does this.
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className="inline-flex items-center justify-center rounded"
-      style={{
-        minWidth: 28,
-        height: 28,
-        padding: "0 6px",
-        color: "var(--ink-muted)",
-        fontSize: 12,
-        fontWeight: 500,
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "default" : undefined,
-      }}
-    >
-      {icon ? <Icon name={icon} size={15} /> : children}
-    </button>
+    <span className="relative group inline-flex">
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        // Keeps the textarea selection alive through the click, which is the
+        // whole reason every toolbar button in this repo does this. It stays on
+        // the button, not the wrapper, so the wrapper cannot swallow it.
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onClick}
+        className="inline-flex items-center justify-center rounded"
+        style={{
+          minWidth: 28,
+          height: 28,
+          padding: "0 6px",
+          color: "var(--ink-muted)",
+          fontSize: 12,
+          fontWeight: 500,
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? "default" : undefined,
+        }}
+      >
+        {icon ? <Icon name={icon} size={15} /> : children}
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute top-full left-0 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-20"
+        style={TOOLTIP_STYLE}
+      >
+        {label}
+      </span>
+    </span>
   );
 }
 
