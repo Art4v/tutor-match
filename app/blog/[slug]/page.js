@@ -32,15 +32,6 @@ export default async function ArticlePage({ params }) {
   return (
     <div className="bg-[color:var(--paper-card)] scroll-smooth">
       <div className="max-w-[1040px] mx-auto px-6 pt-16 pb-20">
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium"
-          style={{ color: "var(--sage)" }}
-        >
-          <Icon name="chevron-left" size={14} />
-          All articles
-        </Link>
-
         {/* The header spans both columns; below it the body keeps the header's
             left edge and the chapter rail sticks to its right. The rail stays
             BEFORE the body in source order so that when this stacks below lg it
