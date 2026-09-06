@@ -7,6 +7,16 @@
 // children/cells passed in here, which is what keeps the styling in one place
 // and the whitelist in the other.
 
+/** The one caption treatment, shared by Table and Figure. */
+function Caption({ children }) {
+  if (!children) return null;
+  return (
+    <figcaption className="text-[12.5px] mt-2" style={{ color: "var(--sage)" }}>
+      {children}
+    </figcaption>
+  );
+}
+
 /** A soft accent panel for a definition, a warning, or a "in short" summary. */
 export function Callout({ title, children }) {
   return (
@@ -73,11 +83,42 @@ export function Table({ head, rows, caption }) {
           </tbody>
         </table>
       </div>
-      {caption && (
-        <figcaption className="text-[12.5px] mt-2" style={{ color: "var(--sage)" }}>
-          {caption}
-        </figcaption>
-      )}
+      <Caption>{caption}</Caption>
+    </figure>
+  );
+}
+
+/**
+ * A full-width body image. No width or alignment options by design: one
+ * treatment is a theme decision made once, exactly like Callout and Table.
+ *
+ * width/height are the image's INTRINSIC pixel size, recovered from its
+ * filename by lib/markdown.js, and the aspectRatio repeats them as a style so
+ * the browser reserves the box before the bytes arrive. Without them a long
+ * article visibly reflows as each image lands.
+ *
+ * alt="" rather than a missing attribute when blank, so a decorative image is
+ * announced as decorative instead of having its filename read out.
+ */
+export function Figure({ src, alt, width, height, caption }) {
+  return (
+    <figure className="my-6">
+      <img
+        src={src}
+        alt={alt || ""}
+        width={width || undefined}
+        height={height || undefined}
+        loading="lazy"
+        decoding="async"
+        className="block w-full h-auto"
+        style={{
+          border: "1px solid var(--paper-line)",
+          borderRadius: "var(--radius-card)",
+          background: "var(--desk)",
+          aspectRatio: width && height ? `${width} / ${height}` : undefined,
+        }}
+      />
+      <Caption>{caption}</Caption>
     </figure>
   );
 }

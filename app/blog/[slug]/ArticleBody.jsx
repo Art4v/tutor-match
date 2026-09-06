@@ -1,4 +1,5 @@
-import { Callout, Table } from "./prose";
+import { Callout, Figure, Table } from "./prose";
+import { blogImageUrl } from "@/lib/supabase/storage";
 
 // ============================================================================
 // Renders one article section's `content`. The nodes come from lib/markdown.js,
@@ -24,6 +25,8 @@ import { Callout, Table } from "./prose";
 //     | { type: "ol",      items: Inline[][] }
 //     | { type: "callout", title?: string, content: Block[] }
 //     | { type: "table",   head: string[], rows: Cell[][], caption?: string }
+//     | { type: "figure",  path: string, alt?: string, w?: number, h?: number,
+//                          caption?: string }
 //
 //   Inline = string              // plain text
 //          | { b: string }       // the font-medium run
@@ -33,6 +36,15 @@ import { Callout, Table } from "./prose";
 //
 // Anywhere Inline[] is expected a bare Inline is accepted too, so a paragraph
 // with no bold in it is just { type: "p", text: "one plain sentence." }.
+//
+// A figure stores a STORAGE PATH inside the blog-images bucket, never a URL, so
+// a dump restored into another Supabase project is not full of dead images. The
+// public URL is built HERE, at render time, from NEXT_PUBLIC_SUPABASE_URL. The
+// path is allowlisted at PARSE time (safeImagePath in lib/markdown.js) to the
+// <author-uuid>/<filename> shape the uploader writes, which is what makes
+// hotlinking and tracking pixels impossible in a body. `w`/`h` are the
+// intrinsic pixel size, carried in the FILENAME rather than in the Markdown or
+// a column, and they are what stops the page reflowing as images land.
 //
 // SPACING IS MECHANICAL, NOT STORED. Every paragraph after the first carries
 // mt-4 and every list carries mt-3, because Tailwind's preflight zeroes those
@@ -160,6 +172,24 @@ function renderBlock(block, i, first) {
           caption={block.caption}
         />
       );
+
+    case "figure": {
+      // Figure brings its own my-6, so it ignores the first-child rule, like
+      // Callout and Table. A path that cannot resolve renders nothing, which is
+      // the same whitelist rule as every other node here.
+      const src = blogImageUrl(block.path);
+      if (!src) return null;
+      return (
+        <Figure
+          key={i}
+          src={src}
+          alt={block.alt}
+          width={block.w}
+          height={block.h}
+          caption={block.caption}
+        />
+      );
+    }
 
     default:
       return null;

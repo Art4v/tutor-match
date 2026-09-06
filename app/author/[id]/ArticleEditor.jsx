@@ -6,9 +6,13 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { saveArticle } from "@/lib/blog";
-import { uploadArticleCover } from "@/lib/supabase/storage";
-import { parseArticleBody } from "@/lib/markdown";
+import { getMyArticles, saveArticle } from "@/lib/blog";
+import {
+  removeBlogImages,
+  uploadArticleBodyImage,
+  uploadArticleCover,
+} from "@/lib/supabase/storage";
+import { articleImages, parseArticleBody } from "@/lib/markdown";
 import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { ArticleBody } from "@/app/blog/[slug]/ArticleBody";
 import { MarkdownField } from "./MarkdownField";
@@ -122,16 +126,60 @@ export function ArticleEditor({ userId, initial }) {
     set({ coverPath: res.path, coverUrl: res.url });
   }
 
+  /**
+   * Upload one body image for the Markdown toolbar. Deliberately does NOT touch
+   * `busy`: that slot is the PAGE-level action (save/publish/cover/delete) and
+   * is read by disabled={busy !== null} on four buttons. Routing an image
+   * upload through it would let a concurrent cover upload clobber it (whichever
+   * resolves first calls setBusy(null) and re-enables Save while the other is
+   * still running), and would disable Save for no benefit, since the markdown
+   * has not been inserted yet so nothing about an in-flight upload makes a save
+   * unsafe. The button's busy state is local to MarkdownField, where it belongs.
+   */
+  async function onBodyImage(file) {
+    setError("");
+    const res = await uploadArticleBodyImage(supabase, userId, file);
+    if (!res.ok) setError(res.error);
+    return res;
+  }
+
   async function onDelete() {
     if (!saved.id) return;
     if (!window.confirm("Delete this article? This cannot be undone.")) return;
     setBusy("delete");
     const { error: err } = await supabase.from("articles").delete().eq("id", saved.id);
-    setBusy(null);
     if (err) {
+      setBusy(null);
       setError("Could not delete this article.");
       return;
     }
+
+    // Best-effort sweep, AFTER the row delete succeeds: the row is the source of
+    // truth, and an orphaned object is cheaper than an image missing from a live
+    // article. Paths come from the SAVED body (what the deleted row held) plus
+    // the DRAFT (images uploaded but never saved are orphans too) plus both
+    // covers, minus anything the author's OTHER articles still reference, so
+    // markdown copy-pasted into a second article does not break when this one
+    // goes. RLS means the author's own articles are the only place a sweepable
+    // path can appear, and the bucket's owner-scoped DELETE policy is the
+    // backstop for anything else. Never reconciled on save.
+    const mine = await getMyArticles(supabase, userId);
+    const stillUsed = new Set(
+      mine
+        .filter((a) => a.id !== saved.id)
+        .flatMap((a) => articleImages(a.bodyMd || "").map((img) => img.path)),
+    );
+    await removeBlogImages(
+      supabase,
+      [
+        ...articleImages(saved.bodyMd || "").map((img) => img.path),
+        ...articleImages(draft.bodyMd || "").map((img) => img.path),
+        saved.coverPath,
+        draft.coverPath,
+      ].filter((p) => p && !stillUsed.has(p)),
+    );
+
+    setBusy(null);
     router.push("/author");
   }
 
@@ -266,11 +314,15 @@ export function ArticleEditor({ userId, initial }) {
                   label="Body"
                   hint="Markdown. Each ## heading starts a section and appears in the contents rail."
                 >
-                  <MarkdownField value={draft.bodyMd} onChange={(bodyMd) => set({ bodyMd })} />
+                  <MarkdownField
+                    value={draft.bodyMd}
+                    onChange={(bodyMd) => set({ bodyMd })}
+                    onUploadImage={onBodyImage}
+                  />
                 </Field>
               </>
             )}
-          </div>
+          </div>  
 
           <aside className="space-y-6">
             <div className="px-5 py-5" style={cardStyle}>
@@ -304,7 +356,14 @@ export function ArticleEditor({ userId, initial }) {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => onCover(e.target.files?.[0])}
+                    onChange={(e) => {
+                      // Snapshot before clearing: e.target.files is a LIVE
+                      // FileList. Clearing lets the same file be re-picked
+                      // after Remove, which otherwise silently did nothing.
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      onCover(f);
+                    }}
                   />
                   <span
                     className="inline-flex items-center gap-1.5 cursor-pointer"

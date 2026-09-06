@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { articleImages } from "@/lib/markdown";
 
 // ============================================================================
 // The Markdown body field: a plain textarea plus a toolbar that inserts syntax.
@@ -16,14 +17,31 @@ import { Icon } from "@/components/Icon";
 // quietly break undo, which authors notice immediately in a long document.
 // ============================================================================
 
-export function MarkdownField({ value, onChange, rows = 24 }) {
+export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
   const ref = useRef(null);
+  const fileRef = useRef(null);
+  // Where the caret was when the picker opened. The file dialog takes focus and
+  // the author may click elsewhere while the upload runs, so the insert point
+  // is snapshotted rather than read back afterwards.
+  const caretRef = useRef(null);
   const [focused, setFocused] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  function applyEdit(fn) {
+  function applyEdit(fn, at) {
     const ta = ref.current;
     if (!ta) return;
-    const edit = fn({ value: ta.value, start: ta.selectionStart, end: ta.selectionEnd });
+    // Focus BEFORE execCommand. Every synchronous toolbar button already has
+    // focus (Btn's onMouseDown preventDefault keeps it), so this is a no-op for
+    // them, but the image insert runs after a file picker has stolen focus, and
+    // execCommand("insertText") on an unfocused textarea returns false and
+    // drops to the fallback below, costing the undo entry this whole mechanism
+    // exists to protect.
+    ta.focus();
+    // `at` is a caret snapshot taken before an async detour, clamped because the
+    // author may have typed or deleted while the upload was in flight.
+    const start = at ? Math.min(at.start, ta.value.length) : ta.selectionStart;
+    const end = at ? Math.min(at.end, ta.value.length) : ta.selectionEnd;
+    const edit = fn({ value: ta.value, start, end });
     if (!edit) return;
     const { from, to, text, selStart, selEnd } = edit;
 
@@ -95,21 +113,63 @@ export function MarkdownField({ value, onChange, rows = 24 }) {
     });
   }
 
-  /** Insert a block at the start of a fresh line. */
-  function insertBlock(block) {
+  /**
+   * Insert a block at the start of a fresh line, leaving the caret
+   * `caretOffset` characters into the inserted block. `at` is an optional caret
+   * snapshot, for an insert that happens after an async detour.
+   */
+  function insertBlockAt(block, caretOffset, at) {
     applyEdit(({ value: v, start, end }) => {
       const atLineStart = start === 0 || v[start - 1] === "\n";
       const lead = atLineStart ? "" : "\n\n";
       const text = `${lead}${block}`;
-      return {
-        from: start,
-        to: end,
-        text,
-        selStart: start + text.length,
-        selEnd: start + text.length,
-      };
-    });
+      const caret = start + lead.length + (caretOffset ?? block.length);
+      return { from: start, to: end, text, selStart: caret, selEnd: caret };
+    }, at);
   }
+
+  /** Insert a block at the start of a fresh line, caret after it. */
+  function insertBlock(block) {
+    insertBlockAt(block, block.length);
+  }
+
+  function pickImage() {
+    const ta = ref.current;
+    if (ta) caretRef.current = { start: ta.selectionStart, end: ta.selectionEnd };
+    fileRef.current?.click();
+  }
+
+  async function onPickImage(file) {
+    if (!file || !onUploadImage) return;
+    setUploading(true);
+    const res = await onUploadImage(file);
+    setUploading(false);
+    if (!res?.ok) return; // the parent owns the error banner
+    // Caret lands between "![" and "]", so typing alt text is the next
+    // keystroke. Nothing is inserted before the upload resolves: the button's
+    // own busy state is the acknowledgement, so there is no placeholder token
+    // to find and replace, and no way to strand one if the upload fails.
+    //
+    // The caption placeholder matches the Table button's, and the BLANK LINE
+    // before it is load-bearing: attachCaptions only folds in a paragraph that
+    // is entirely italic, and without the blank line the italics would be a
+    // softbreak run inside the image's own paragraph instead.
+    insertBlockAt(
+      `![](${res.path})\n\n*Optional caption in italics.*\n`,
+      2,
+      caretRef.current,
+    );
+    caretRef.current = null;
+  }
+
+  // Body images with no alt text. A soft nudge, never a gate: it is rendered
+  // under the textarea because this component owns the markdown string and it
+  // is where the author is looking. Uses the parser's own articleImages so
+  // "what counts as a body image" has exactly one definition.
+  const blankAlts = useMemo(
+    () => articleImages(value || "").filter((img) => !img.alt).length,
+    [value],
+  );
 
   return (
     <div
@@ -156,6 +216,26 @@ export function MarkdownField({ value, onChange, rows = 24 }) {
           }
           icon="grip"
         />
+        {onUploadImage && (
+          <>
+            <Btn label="Image" onClick={pickImage} disabled={uploading} icon={uploading ? null : "image"}>
+              {uploading ? "Uploading…" : null}
+            </Btn>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                // Snapshot before clearing: e.target.files is a LIVE FileList.
+                // Clearing lets the same file be re-picked after a failure.
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                onPickImage(f);
+              }}
+            />
+          </>
+        )}
       </div>
 
       <textarea
@@ -175,16 +255,31 @@ export function MarkdownField({ value, onChange, rows = 24 }) {
           lineHeight: 1.7,
         }}
       />
+
+      {blankAlts > 0 && (
+        <div
+          className="px-4 py-2 text-[12.5px]"
+          style={{
+            borderTop: "1px solid var(--paper-line)",
+            background: "var(--desk)",
+            color: "var(--sage)",
+          }}
+        >
+          {blankAlts === 1 ? "1 image has no alt text." : `${blankAlts} images have no alt text.`}{" "}
+          Describe each one for screen readers and search. You can publish without it.
+        </div>
+      )}
     </div>
   );
 }
 
-function Btn({ label, onClick, icon, children }) {
+function Btn({ label, onClick, icon, children, disabled = false }) {
   return (
     <button
       type="button"
       title={label}
       aria-label={label}
+      disabled={disabled}
       // Keeps the textarea selection alive through the click, which is the whole
       // reason every toolbar button in this repo does this.
       onMouseDown={(e) => e.preventDefault()}
@@ -197,6 +292,8 @@ function Btn({ label, onClick, icon, children }) {
         color: "var(--ink-muted)",
         fontSize: 12,
         fontWeight: 500,
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "default" : undefined,
       }}
     >
       {icon ? <Icon name={icon} size={15} /> : children}
