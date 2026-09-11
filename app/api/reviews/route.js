@@ -109,11 +109,23 @@ export async function POST(request) {
   // check them here the way the public query helpers do.
   const { data: tutor } = await supabase
     .from("tutor_profiles")
-    .select("id, visibility, email_confirmed_at, profile:profiles!inner ( full_name )")
+    .select("id, visibility, email_confirmed_at, partner_id, profile:profiles!inner ( full_name )")
     .eq("id", tutorId)
     .maybeSingle();
   if (!tutor || tutor.visibility !== "public" || !tutor.email_confirmed_at) {
     return NextResponse.json({ error: "Tutor not found." }, { status: 404 });
+  }
+  // Reviews of a centre's tutor belong to the CENTRE, not the individual
+  // (0065/0066). The profile page already hides the review UI for these, but a
+  // hidden control is not a boundary and this route is the only place that is:
+  // reviews.tutor_id points straight at tutor_profiles, so without this check a
+  // hand-rolled POST would land a per-tutor review the product doesn't have a
+  // surface for, and which would silently move tutor_profiles.rating.
+  if (tutor.partner_id) {
+    return NextResponse.json(
+      { error: "Reviews for this tutor go to their centre." },
+      { status: 403 }
+    );
   }
 
   const { data: inserted, error: insertErr } = await supabase

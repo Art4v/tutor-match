@@ -178,6 +178,50 @@ export function PartnerRateCard({ partner, showEnquire = true }) {
   );
 }
 
+/**
+ * The centre's tutors. Each links to `/tutor/<slug>` — a partner tutor is an
+ * ordinary tutor_profiles row, so it has a real profile page and appears in
+ * /browse, which is the entire point of the shadow-account design.
+ *
+ * Hidden tutors are filtered here rather than in the query, because the owner
+ * editor reuses `listPartnerTutors` and must see them.
+ */
+export function PartnerTutorsCard({ tutors, partnerName }) {
+  const visible = (tutors ?? []).filter((t) => t.visibility === "public");
+  if (visible.length === 0) return null;
+  return (
+    <section className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
+      <h2 className="text-[22px] font-light text-slate-800 tracking-tight">Our tutors</h2>
+      <p className="text-[13px] text-slate-500 mt-0.5 mb-4">
+        {visible.length} {visible.length === 1 ? "tutor" : "tutors"} at {partnerName}.
+      </p>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {visible.map((t) => (
+          <li key={t.id}>
+            <a
+              href={`/tutor/${t.slug}`}
+              className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-100"
+              style={{ background: "var(--bg-soft)", borderRadius: 10 }}
+            >
+              <PartnerLogo partner={{ logoImg: t.avatarImg, avatarBg: t.avatarBg, initial: t.initial }} size={38} />
+              <span className="min-w-0">
+                <span className="block text-[14px] font-medium truncate" style={{ color: "var(--ink)" }}>
+                  {t.name}
+                </span>
+                {t.subjects.length > 0 && (
+                  <span className="block text-[12.5px] text-slate-500 truncate">
+                    {t.subjects.slice(0, 3).map((s) => s.name).join(", ")}
+                  </span>
+                )}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function PartnerLocationCard({ partner }) {
   const location = [partner.suburb, partner.city].filter(Boolean).join(", ");
   return (

@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { savePartnerProfile } from "@/lib/supabase/partners";
+import { getSubjects } from "@/lib/supabase/tutors";
 import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
 import {
   PartnerImagesSection,
@@ -20,7 +21,9 @@ import {
   PartnerAboutCard,
   PartnerRateCard,
   PartnerLocationCard,
+  PartnerTutorsCard,
 } from "./PartnerCards";
+import { PartnerTutorsEditor } from "./PartnerTutorsEditor";
 
 /**
  * Inline centre editor, the partner counterpart of OwnerProfile. Renders the
@@ -34,7 +37,7 @@ import {
  * abstraction here would couple the tutor editor to the centre editor for the
  * sake of ~60 lines of scaffolding.
  */
-export function OwnerPartner({ initialPartner, userId }) {
+export function OwnerPartner({ initialPartner, initialTutors, userId }) {
   const router = useRouter();
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
@@ -45,6 +48,16 @@ export function OwnerPartner({ initialPartner, userId }) {
   const [editingKey, setEditingKey] = useState(null);
   const [savingKey, setSavingKey] = useState(null);
   const [toast, setToast] = useState(null);
+  // Tutors are rows in `tutor_profiles`, not part of the partners row, so they
+  // are state of their own and their editor persists independently.
+  const [tutors, setTutors] = useState(initialTutors ?? []);
+  const [subjectCatalog, setSubjectCatalog] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    getSubjects(supabase).then((rows) => { if (active) setSubjectCatalog(rows); });
+    return () => { active = false; };
+  }, [supabase]);
 
   const showToast = (kind, text, ms = 2200) => {
     setToast({ kind, text });
@@ -175,6 +188,35 @@ export function OwnerPartner({ initialPartner, userId }) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
           <div className="space-y-[10px]">
             <EditRegion
+              {...regionProps("tutors", "our tutors", 820)}
+              closeOnly
+              view={
+                tutors.length > 0 ? (
+                  <PartnerTutorsCard tutors={tutors} partnerName={partner.name} />
+                ) : (
+                  <PlaceholderCard
+                    title="Our tutors"
+                    body="Add your tutors and they'll show here, and in the main tutor search."
+                  />
+                )
+              }
+              edit={
+                <div>
+                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Our tutors</h2>
+                  <PartnerTutorsEditor
+                    partnerId={partner.id}
+                    ownerId={userId}
+                    tutors={tutors}
+                    setTutors={setTutors}
+                    supabase={supabase}
+                    subjectCatalog={subjectCatalog}
+                    onToast={showToast}
+                  />
+                </div>
+              }
+            />
+
+            <EditRegion
               {...regionProps("about", "about")}
               view={
                 partner.bioLong ? (
@@ -290,7 +332,11 @@ function PlaceholderCard({ title, body }) {
 // Lifted from OwnerProfile.jsx. Kept as a local copy on purpose: it is pure
 // presentation with no partner/tutor knowledge, and hoisting it into a shared
 // module would mean any restyle of one editor silently restyles the other.
-function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, view, edit, maxW = 640 }) {
+// `closeOnly` is a local addition: the tutors panel persists every action as it
+// happens (adding a tutor mints an auth user, which cannot be drafted), so it
+// gets a single Done button instead of a Cancel/Save pair that would imply
+// changes are still pending.
+function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, view, edit, maxW = 640, closeOnly = false }) {
   return (
     <div className="relative">
       {view}
@@ -319,6 +365,17 @@ function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, v
             style={{ maxWidth: maxW, maxHeight: "88vh", border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)" }}
           >
             <div className="shrink-0 flex items-center justify-end gap-2 px-5 sm:px-6 py-3" style={{ borderBottom: "1px solid var(--desk)" }}>
+              {closeOnly ? (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full inline-flex items-center gap-1.5"
+                  style={{ background: "var(--ink)", color: "#fff" }}
+                >
+                  <Icon name="check" size={13} strokeWidth={2.4} /> Done
+                </button>
+              ) : (
+              <>
               <button
                 type="button"
                 onClick={onCancel}
@@ -337,6 +394,8 @@ function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, v
               >
                 {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
               </button>
+              </>
+              )}
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5">
               {edit}

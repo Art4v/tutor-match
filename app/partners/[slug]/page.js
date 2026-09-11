@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getPartnerBySlug, getMyPartner } from "@/lib/supabase/partners";
+import { getPartnerBySlug, getMyPartner, listPartnerTutors } from "@/lib/supabase/partners";
 import {
   PartnerHeaderCard,
   PartnerAboutCard,
   PartnerRateCard,
   PartnerLocationCard,
+  PartnerTutorsCard,
   EnquireButton,
 } from "./PartnerCards";
 import { OwnerPartner } from "./OwnerPartner";
@@ -35,7 +36,8 @@ export default async function PartnerPage({ params }) {
   if (user) {
     const mine = await getMyPartner(supabase, user.id);
     if (mine && mine.slug === params.slug) {
-      return <OwnerPartner initialPartner={mine} userId={user.id} />;
+      const myTutors = await listPartnerTutors(supabase, mine.id);
+      return <OwnerPartner initialPartner={mine} initialTutors={myTutors} userId={user.id} />;
     }
   }
 
@@ -44,6 +46,8 @@ export default async function PartnerPage({ params }) {
   // hidden, or the owning account disabled. An UNCLAIMED centre is deliberately
   // NOT one of them — it renders, which is the whole invite model.
   if (!partner) return notFound();
+
+  const tutors = await listPartnerTutors(supabase, partner.id);
 
   return (
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
@@ -54,6 +58,7 @@ export default async function PartnerPage({ params }) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
           <div className="space-y-[10px]">
             {partner.bioLong && <PartnerAboutCard partner={partner} />}
+            <PartnerTutorsCard tutors={tutors} partnerName={partner.name} />
           </div>
 
           <aside className="space-y-[10px]">

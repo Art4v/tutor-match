@@ -43,7 +43,29 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
           >
             {tutor.name}
           </h1>
-          {tutor.verified && <VerifiedTick size={22} label />}
+          {/* A partner tutor shows the centre's chip INSTEAD of the verified
+              tick, never as well. The tick means something specific and earned
+              by an individual tutor; it must not be handed out by association
+              with a centre we invited. (Browse still treats them as verified
+              for filtering — that is a ranking fact, not a visual claim.) */}
+          {tutor.partner ? (
+            <a
+              href={`/partners/${tutor.partner.slug}`}
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:bg-slate-100"
+              style={{
+                background: "var(--accent-softer)",
+                color: "var(--accent)",
+                border: "1px solid var(--accent-line)",
+                borderRadius: 999,
+                padding: "4px 11px",
+              }}
+            >
+              <Icon name="building" size={13} />
+              {tutor.partner.name}
+            </a>
+          ) : (
+            tutor.verified && <VerifiedTick size={22} label />
+          )}
         </div>
 
         {tutor.bio && (
