@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0066_partner_tutor_mirrors.sql`
+**Applied through:** `0067_partner_reviews.sql`
 **Last reviewed:** 2026-09-11
 
 ---
@@ -197,8 +197,8 @@ Student bookmarks — one row per saved tutor. Read/written by the bookmark butt
 
 **Index:** `(student_id, created_at desc)`. Self-only RLS on `student_id` (student reads/writes only their own saves).
 
-### `reviews` (0057)
-One row per (tutor, student) — a student's 1–5 star rating of a tutor with optional text. Held invisible until an admin approves it from an emailed signed link. Drives the derived `tutor_profiles.rating` / `review_count`.
+### `reviews` (0057, widened 0067)
+One row per (tutor, student) **or** (partner, student) — a student's 1–5 star rating of a tutor with optional text. Held invisible until an admin approves it from an emailed signed link. Drives the derived `tutor_profiles.rating` / `review_count`.
 
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
@@ -485,6 +485,9 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
 | `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
 | `save_partner_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `partners` scalars + replace-all `partner_packages`. SECURITY DEFINER, resolves the target through `owner_id = auth.uid()`. **Deliberately does not write `owner_id`, `id` or `slug`** — with no verification column, ownership is the security-relevant field, so the same "the only write path doesn't mention it" trick `save_tutor_profile` uses for `verification_status` applies here; slug renames go through the race-safe `assign_partner_slug()` | 0064 |
+| `get_partner_reviews(p_partner_id)` | TABLE(id, rating, body, created_at, updated_at, author_name, author_avatar_url) | Sibling of `get_tutor_reviews`, and SECURITY DEFINER for the same reason: 0055 narrowed the public `profiles` read to tutor rows and `student_profiles` is self-only, so a public page cannot join a reviewer's name itself. Approved-only, and skips authors whose account is disabled. Granted to anon + authenticated | 0067 |
+| `recalc_partner_rating(p_partner_id)` | void | Recomputes `partners.rating` / `review_count` by **aggregating over `get_partner_reviews()`**, so the stored average is by construction the average of exactly the rows the page renders. Execute revoked from anon/authenticated | 0067 |
+| `partners_guard_derived()` | trigger | Pins `partners.rating` / `review_count` when `current_user` is `anon`/`authenticated`, so the owner-update policy can't be used to self-award a rating. Pins rather than raises, same as `tutor_profiles_guard_derived` | 0067 |
 | `sync_partner_tutors(p_partner_id)` | void | Recomputes the derived mirror on every one of a centre's tutors: `rate` (the cheapest `partner_packages` price) plus `suburb` / `city` / `service_lat` / `service_lng` (the centre's address). Exists because /browse filters those columns in SQL — `rateMax` is indexed on `rate`, State is `.in("city", …)`, and location goes through `tutors_within_service_radius` — so leaving them null silently dropped partner tutors from the two most-used filters and compared them on a rate nobody is shown. Same demote-to-derived-mirror pattern as `atar` in 0036. Skips no-op updates. **Not mirrored:** `service_radius_km` (the RPC already reads null as `coalesce(…, 5)`) and `delivers_*` | 0066 |
 | `partner_packages_sync_tutors()` / `partners_sync_tutors()` / `tutor_profiles_sync_from_partner()` | trigger | Call the above from each source: a rate-card change, a change to the centre's address, and a tutor joining a centre. The last is scoped to `insert or update of partner_id` so the sync's own write can't re-fire it | 0066 |
 | `partner_owns_tutor(p_tutor_id)` | boolean | STABLE SECURITY DEFINER predicate shared by every partner-write policy, so the same condition can't drift across six tables. DEFINER because it reads `partners`, which the caller only sees through its own policies (same reasoning as `conversation_writable` in 0054) | 0065 |

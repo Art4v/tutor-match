@@ -124,6 +124,11 @@ function PartnerCard({ partner }) {
               <Icon name="map-pin" size={12} /> {location}
             </span>
           )}
+          {partner.rating != null && (
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="star" size={12} /> {partner.rating.toFixed(1)} ({partner.reviewCount})
+            </span>
+          )}
           {partner.tutorCount > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <Icon name="users" size={12} /> {partner.tutorCount}{" "}

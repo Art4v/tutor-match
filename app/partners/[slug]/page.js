@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPartnerBySlug, getMyPartner, listPartnerTutors } from "@/lib/supabase/partners";
+import { getPartnerReviews } from "@/lib/supabase/reviews";
+import { ReviewsCard } from "@/app/tutor/[slug]/ReviewsCard";
 import {
   PartnerHeaderCard,
   PartnerAboutCard,
@@ -36,8 +38,13 @@ export default async function PartnerPage({ params }) {
   if (user) {
     const mine = await getMyPartner(supabase, user.id);
     if (mine && mine.slug === params.slug) {
-      const myTutors = await listPartnerTutors(supabase, mine.id);
-      return <OwnerPartner initialPartner={mine} initialTutors={myTutors} userId={user.id} />;
+      const [myTutors, myReviews] = await Promise.all([
+        listPartnerTutors(supabase, mine.id),
+        getPartnerReviews(supabase, mine.id),
+      ]);
+      return (
+        <OwnerPartner initialPartner={mine} initialTutors={myTutors} initialReviews={myReviews} userId={user.id} />
+      );
     }
   }
 
@@ -47,7 +54,10 @@ export default async function PartnerPage({ params }) {
   // NOT one of them — it renders, which is the whole invite model.
   if (!partner) return notFound();
 
-  const tutors = await listPartnerTutors(supabase, partner.id);
+  const [tutors, reviews] = await Promise.all([
+    listPartnerTutors(supabase, partner.id),
+    getPartnerReviews(supabase, partner.id),
+  ]);
 
   return (
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
@@ -63,6 +73,16 @@ export default async function PartnerPage({ params }) {
 
           <aside className="space-y-[10px]">
             <PartnerRateCard partner={partner} />
+            {/* Reviews attach to the CENTRE, never to the individual tutors it
+                lists (0067). The same card the tutor sidebar uses, switched to
+                its partner mode. */}
+            <ReviewsCard
+              partnerId={partner.id}
+              tutorName={partner.name}
+              rating={partner.rating}
+              reviewCount={partner.reviewCount}
+              reviews={reviews}
+            />
             <PartnerLocationCard partner={partner} />
           </aside>
         </div>

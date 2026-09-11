@@ -37,7 +37,7 @@ export async function POST(request) {
   if (!found) {
     return NextResponse.json({ error: "Review not found." }, { status: 404 });
   }
-  const { review, tutorSlug, tutorName, studentName } = found;
+  const { review, subjectName, subjectHref, studentName } = found;
 
   // Already rejected: no-op success so a double-click doesn't error.
   if (review.status === "rejected") {
@@ -78,15 +78,15 @@ export async function POST(request) {
   }
 
   const origin = new URL(request.url).origin;
-  const profileUrl = tutorSlug ? `${origin}/tutor/${tutorSlug}` : null;
+  const profileUrl = subjectHref ? `${origin}${subjectHref}` : null;
 
   await notifyUser(admin, review.student_id, {
     type: "review_rejected",
     title: "Your review wasn't published",
-    body: `We couldn't publish your review of ${tutorName}. You can edit it to send it back for another look.`,
+    body: `We couldn't publish your review of ${subjectName}. You can edit it to send it back for another look.`,
     email: {
       subject: "Your review wasn't published",
-      html: reviewRejectedEmail({ name: studentName, tutorName, profileUrl }),
+      html: reviewRejectedEmail({ name: studentName, tutorName: subjectName, profileUrl }),
     },
   });
 

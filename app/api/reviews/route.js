@@ -98,45 +98,78 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const tutorId = payload?.tutorId;
+  // Two kinds of review, told apart by the body shape the way /api/reports
+  // distinguishes its two: a tutor review or a CENTRE review (0067). The DB
+  // CHECK enforces exactly-one-of, so rejecting both-or-neither here is about
+  // giving a readable error rather than a constraint violation.
+  const tutorId = payload?.tutorId ?? null;
+  const partnerId = payload?.partnerId ?? null;
   const { rating, body, error: fieldError } = parseReviewFields(payload);
-  if (fieldError || !tutorId) {
-    return NextResponse.json({ error: fieldError || "A tutor is required." }, { status: 400 });
+  if (fieldError) {
+    return NextResponse.json({ error: fieldError }, { status: 400 });
+  }
+  if (Boolean(tutorId) === Boolean(partnerId)) {
+    return NextResponse.json({ error: "Review either a tutor or a centre." }, { status: 400 });
   }
 
-  // The target must be a real, publicly listable tutor. RLS already hides
-  // disabled owners (0055); visibility + confirmation are app-level filters, so
-  // check them here the way the public query helpers do.
-  const { data: tutor } = await supabase
-    .from("tutor_profiles")
-    .select("id, visibility, email_confirmed_at, partner_id, profile:profiles!inner ( full_name )")
-    .eq("id", tutorId)
-    .maybeSingle();
-  if (!tutor || tutor.visibility !== "public" || !tutor.email_confirmed_at) {
-    return NextResponse.json({ error: "Tutor not found." }, { status: 404 });
-  }
-  // Reviews of a centre's tutor belong to the CENTRE, not the individual
-  // (0065/0066). The profile page already hides the review UI for these, but a
-  // hidden control is not a boundary and this route is the only place that is:
-  // reviews.tutor_id points straight at tutor_profiles, so without this check a
-  // hand-rolled POST would land a per-tutor review the product doesn't have a
-  // surface for, and which would silently move tutor_profiles.rating.
-  if (tutor.partner_id) {
-    return NextResponse.json(
-      { error: "Reviews for this tutor go to their centre." },
-      { status: 403 }
-    );
+  let subjectName;
+  let insertRow;
+
+  if (partnerId) {
+    // Visibility is the only app-level filter for a centre: there is no
+    // verification and no email confirmation in that design.
+    const { data: partner } = await supabase
+      .from("partners")
+      .select("id, name, visibility")
+      .eq("id", partnerId)
+      .maybeSingle();
+    if (!partner || partner.visibility !== "public") {
+      return NextResponse.json({ error: "Centre not found." }, { status: 404 });
+    }
+    subjectName = partner.name || "a centre";
+    insertRow = { partner_id: partnerId, student_id: user.id, rating, body };
+  } else {
+    // The target must be a real, publicly listable tutor. RLS already hides
+    // disabled owners (0055); visibility + confirmation are app-level filters, so
+    // check them here the way the public query helpers do.
+    const { data: tutor } = await supabase
+      .from("tutor_profiles")
+      .select("id, visibility, email_confirmed_at, partner_id, profile:profiles!inner ( full_name )")
+      .eq("id", tutorId)
+      .maybeSingle();
+    if (!tutor || tutor.visibility !== "public" || !tutor.email_confirmed_at) {
+      return NextResponse.json({ error: "Tutor not found." }, { status: 404 });
+    }
+    // Reviews of a centre's tutor belong to the CENTRE, not the individual
+    // (0065/0067). The profile page already hides the review UI for these, but a
+    // hidden control is not a boundary and this route is the only place that is:
+    // reviews.tutor_id points straight at tutor_profiles, so without this check a
+    // hand-rolled POST would land a per-tutor review the product doesn't have a
+    // surface for, and which would silently move tutor_profiles.rating.
+    if (tutor.partner_id) {
+      return NextResponse.json(
+        { error: "Reviews for this tutor go to their centre." },
+        { status: 403 }
+      );
+    }
+    subjectName = tutor.profile?.full_name || "a tutor";
+    insertRow = { tutor_id: tutorId, student_id: user.id, rating, body };
   }
 
   const { data: inserted, error: insertErr } = await supabase
     .from("reviews")
-    .insert({ tutor_id: tutorId, student_id: user.id, rating, body })
+    .insert(insertRow)
     .select("id")
     .maybeSingle();
 
   if (insertErr) {
     if (insertErr.code === "23505") {
-      return NextResponse.json({ error: "You've already reviewed this tutor.", status: "exists" }, { status: 409 });
+      // One of the two partial unique indexes from 0067, whichever domain this
+      // write was in.
+      return NextResponse.json(
+        { error: `You've already reviewed this ${partnerId ? "centre" : "tutor"}.`, status: "exists" },
+        { status: 409 }
+      );
     }
     console.error("[reviews] insert failed:", insertErr);
     return NextResponse.json({ error: "Could not save your review." }, { status: 500 });
@@ -149,15 +182,14 @@ export async function POST(request) {
   try {
     const admin = createSupabaseAdminClient();
     const studentName = me?.full_name || "A student";
-    const tutorName = tutor.profile?.full_name || "a tutor";
 
-    await emailAdminForReview({ request, reviewId: inserted.id, studentName, tutorName, rating, body });
+    await emailAdminForReview({ request, reviewId: inserted.id, studentName, tutorName: subjectName, rating, body });
 
     await notifyUser(admin, user.id, {
       type: "review_submitted",
       title: "Review submitted",
-      body: "Thanks for leaving a review. Our team checks every review before it appears on the tutor's profile.",
-      email: { subject: "Thanks for leaving a review", html: reviewReceivedEmail({ name: studentName, tutorName }) },
+      body: `Thanks for leaving a review. Our team checks every review before it appears on ${partnerId ? "the centre's" : "the tutor's"} page.`,
+      email: { subject: "Thanks for leaving a review", html: reviewReceivedEmail({ name: studentName, tutorName: subjectName }) },
     });
   } catch (err) {
     console.error("[reviews] side effects failed, rolling back the review row:", err);

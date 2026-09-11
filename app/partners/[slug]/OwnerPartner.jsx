@@ -8,6 +8,7 @@ import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { savePartnerProfile } from "@/lib/supabase/partners";
 import { getSubjects } from "@/lib/supabase/tutors";
+import { ReviewsCard } from "@/app/tutor/[slug]/ReviewsCard";
 import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
 import {
   PartnerImagesSection,
@@ -37,7 +38,7 @@ import { PartnerTutorsEditor } from "./PartnerTutorsEditor";
  * abstraction here would couple the tutor editor to the centre editor for the
  * sake of ~60 lines of scaffolding.
  */
-export function OwnerPartner({ initialPartner, initialTutors, userId }) {
+export function OwnerPartner({ initialPartner, initialTutors, initialReviews, userId }) {
   const router = useRouter();
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
@@ -249,6 +250,17 @@ export function OwnerPartner({ initialPartner, initialTutors, userId }) {
                   <PartnerRateSection partner={draft} set={set} />
                 </div>
               }
+            />
+
+            {/* Read-only for the owner: reviews aren't editable by their
+                subject, and partners_guard_derived (0067) pins the aggregate
+                against a client write regardless. */}
+            <ReviewsCard
+              partnerId={partner.id}
+              tutorName={partner.name}
+              rating={partner.rating}
+              reviewCount={partner.reviewCount}
+              reviews={initialReviews ?? []}
             />
 
             <EditRegion
