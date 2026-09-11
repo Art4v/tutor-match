@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0063_partners.sql`
+**Applied through:** `0064_save_partner_profile.sql`
 **Last reviewed:** 2026-09-11
 
 ---
@@ -482,6 +482,7 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `reviews_recalc_rating()` | trigger | Calls `recalc_tutor_rating` after any review insert/update/delete (and for the old tutor too if `tutor_id` ever changed). Fires on UPDATE as well, because every status transition moves the aggregate without a row appearing/disappearing | 0057 |
 | `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
 | `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
+| `save_partner_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `partners` scalars + replace-all `partner_packages`. SECURITY DEFINER, resolves the target through `owner_id = auth.uid()`. **Deliberately does not write `owner_id`, `id` or `slug`** — with no verification column, ownership is the security-relevant field, so the same "the only write path doesn't mention it" trick `save_tutor_profile` uses for `verification_status` applies here; slug renames go through the race-safe `assign_partner_slug()` | 0064 |
 | `_assign_partner_slug(p_id, p_name)` | text | Race-safe partner slug assignment, a clone of `_assign_tutor_slug`. SECURITY DEFINER; execute revoked from public, **granted to `service_role`** so `npm run create:partner` can name a new centre | 0063 |
 | `assign_partner_slug(p_name)` | text | Authenticated wrapper; resolves the target through `partners.owner_id = auth.uid()`, so a caller can only rename their own centre | 0063 |
 | `claim_partner_as(p_partner_id, p_user_id)` | text | Binds an invited partner to an account and sets `profiles.role = 'partner'`; returns the slug, or NULL when already claimed. Takes the user id **explicitly** because the claim route must call it through the service role (which has no `auth.uid()`). Execute revoked from public, granted only to `service_role` — if it were callable from a browser, anyone could claim any centre by guessing its uuid. The `where owner_id is null` guard on its UPDATE is the entire replay defence, which is why there is no invites table | 0063 |
