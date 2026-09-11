@@ -276,6 +276,11 @@ const CARD_SHADOW = "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49
 // to make the loop seamless: the duplicate passes -1 so it stays clickable with
 // the mouse without putting each tutor in the tab order twice.
 export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLabel = true }) {
+  // A centre's tutor (0065). Non-null swaps the verified rosette for the
+  // centre's chip and suppresses the bookmark: saved_tutors FKs tutor_profiles
+  // but the product has no "save a centre's tutor" story yet, and a control
+  // that silently does nothing is worse than no control.
+  const partner = tutor.partner ?? null;
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   // Headline stat: the tutor's first credential — labelled by its type (ATAR /
@@ -311,7 +316,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
       {/* Bookmark overlay — a sibling of the card <Link> (not nested, so the
           HTML stays valid). See SAVE_POS for why it's placed by class rather
           than the variant's own offset. Suppressed on showcase cards. */}
-      {showSave && <SaveTutorButton tutorId={tutor.id} variant="card" className={SAVE_POS} tabIndex={tabIndex} />}
+      {showSave && !partner && <SaveTutorButton tutorId={tutor.id} variant="card" className={SAVE_POS} tabIndex={tabIndex} />}
       <Link
         href={`/tutor/${tutor.slug}`}
         tabIndex={tabIndex}
@@ -361,8 +366,30 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
               {/* The script label is desktop-only here: on a phone the name row
                   is already tight against the bookmark control, so the label
                   crowds it out. Tick stays at every width. */}
-              {tutor.verified && (
-                <VerifiedTick size={17} label={showVerifiedLabel} labelClassName="hidden md:inline" />
+              {/* Partner chip INSTEAD of the tick, never both. The rosette is
+                  earned by an individual tutor through verification; a centre
+                  tutor inherits none of that, and browse treating them as
+                  verified for FILTERING is a ranking fact, not a claim to make
+                  on the card. Hidden below md for the same reason the script
+                  label is: this row is already tight against the bookmark. */}
+              {partner ? (
+                <span
+                  className="hidden md:inline-flex items-center gap-1 shrink-0 text-[11.5px] font-medium"
+                  style={{
+                    background: "var(--accent-softer)",
+                    color: "var(--accent)",
+                    border: "1px solid var(--accent-line)",
+                    borderRadius: 999,
+                    padding: "2px 8px",
+                  }}
+                >
+                  <Icon name="building" size={11} />
+                  <span className="truncate max-w-[130px]">{partner.name}</span>
+                </span>
+              ) : (
+                tutor.verified && (
+                  <VerifiedTick size={17} label={showVerifiedLabel} labelClassName="hidden md:inline" />
+                )
               )}
             </div>
 

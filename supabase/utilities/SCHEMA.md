@@ -10,7 +10,7 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0065_partner_tutors.sql`
+**Applied through:** `0066_partner_tutor_mirrors.sql`
 **Last reviewed:** 2026-09-11
 
 ---
@@ -123,6 +123,7 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `visibility` | text | NOT NULL DEFAULT `'public'` (0003; default `'unlisted'`→`'public'` in 0005); CHECK `public/unlisted/hidden` |
 | `verification_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/rejected` (0021). **Single source of truth** — the app derives the `verified` boolean from `= 'verified'`; the standalone `verified` bool was dropped in 0028 |
 | `verification_requested_at` | timestamptz | (0021) |
+| `rate` | int | AUD/hour. **Write-derived for partner tutors** since 0066 (mirrors the centre's cheapest package); an ordinary tutor still sets it themselves |
 | `partner_id` | uuid | nullable → `partners(id)` ON DELETE CASCADE (0065). **Non-null ⇒ a partner tutor**: listed and controlled by a tutoring centre, backed by a shadow `auth.users` row that cannot sign in. One nullable FK rather than a boolean plus a link, so the two can't disagree. Drives the partner chip, the centre's rate card, the Enquire button, the `start_conversation` refusal and the `/api/reviews` 403 |
 | `onboarded` | bool | NOT NULL DEFAULT false; drives `/onboarding` gate (0018) |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` (0002) |
@@ -484,6 +485,8 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
 | `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
 | `save_partner_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `partners` scalars + replace-all `partner_packages`. SECURITY DEFINER, resolves the target through `owner_id = auth.uid()`. **Deliberately does not write `owner_id`, `id` or `slug`** — with no verification column, ownership is the security-relevant field, so the same "the only write path doesn't mention it" trick `save_tutor_profile` uses for `verification_status` applies here; slug renames go through the race-safe `assign_partner_slug()` | 0064 |
+| `sync_partner_tutors(p_partner_id)` | void | Recomputes the derived mirror on every one of a centre's tutors: `rate` (the cheapest `partner_packages` price) plus `suburb` / `city` / `service_lat` / `service_lng` (the centre's address). Exists because /browse filters those columns in SQL — `rateMax` is indexed on `rate`, State is `.in("city", …)`, and location goes through `tutors_within_service_radius` — so leaving them null silently dropped partner tutors from the two most-used filters and compared them on a rate nobody is shown. Same demote-to-derived-mirror pattern as `atar` in 0036. Skips no-op updates. **Not mirrored:** `service_radius_km` (the RPC already reads null as `coalesce(…, 5)`) and `delivers_*` | 0066 |
+| `partner_packages_sync_tutors()` / `partners_sync_tutors()` / `tutor_profiles_sync_from_partner()` | trigger | Call the above from each source: a rate-card change, a change to the centre's address, and a tutor joining a centre. The last is scoped to `insert or update of partner_id` so the sync's own write can't re-fire it | 0066 |
 | `partner_owns_tutor(p_tutor_id)` | boolean | STABLE SECURITY DEFINER predicate shared by every partner-write policy, so the same condition can't drift across six tables. DEFINER because it reads `partners`, which the caller only sees through its own policies (same reasoning as `conversation_writable` in 0054) | 0065 |
 | `provision_partner_tutor(p_uid, p_partner_id, p_name)` | text | Promotes a freshly created shadow `auth.users` row into a partner tutor: sets `profiles.role='tutor'` + `full_name`, inserts `tutor_profiles` with `partner_id`, stamps `email_confirmed_at`, assigns the slug. `full_name` and `email_confirmed_at` are load-bearing (a null name drops the tutor from the `profiles!inner` browse join; a null confirmation fails all five public read filters) and are set here so they're atomic with the insert. Granted only to `service_role` | 0065 |
 | `save_partner_tutor_profile(p_tutor_id, p_payload)` | jsonb | Sibling of `save_tutor_profile`, scoped by partner ownership instead of `auth.uid() = id`. Updates name/bio/photo and replace-alls `tutor_subjects`; returns `{ dropped_subjects }`. **`save_tutor_profile` is untouched** — a tutor editing their own profile runs exactly the code they always did | 0065 |
