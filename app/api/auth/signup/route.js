@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { validatePassword } from "@/lib/password";
 import { validateEmailFormat, getEmailDomain } from "@/lib/email";
 import { domainCanReceiveMail } from "@/lib/mailDomain";
+import { safeNext } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,11 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { fullName, email, password, agreed } = body ?? {};
+  const { fullName, email, password, agreed, next } = body ?? {};
+  // Re-sanitise rather than trusting the client's own safeNext() call: this
+  // value ends up in an email link, which is the last place to be relaxed about
+  // an attacker-supplied destination.
+  const nextPath = safeNext(next);
 
   if (!email || !password) {
     return NextResponse.json(
@@ -74,7 +79,9 @@ export async function POST(request) {
       // /type=signup, mirroring the recovery flow) so confirmation mints a
       // session and lands the user logged-in. The callback then routes a
       // NULL-role account to /choose-role; the `next` here is just a fallback.
-      emailRedirectTo: `${origin}/auth/callback?next=/choose-role`,
+      // A partner invite overrides it, so confirming the email lands the centre
+      // on the claim page instead of a chooser that would reject their role.
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath ?? "/choose-role")}`,
       // full_name ends up in auth.users.raw_user_meta_data, where
       // handle_new_user() reads it to populate the profiles row.
       data: { full_name: fullName ?? "" },

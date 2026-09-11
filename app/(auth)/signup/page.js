@@ -10,6 +10,7 @@ import OAuthButtons from "@/components/OAuthButtons";
 import { Wordmark } from "@/components/Logo";
 import { PASSWORD_RULES, validatePassword } from "@/lib/password";
 import { validateEmailFormat } from "@/lib/email";
+import { safeNext } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
 
 export default function SignupPage() {
@@ -64,13 +65,18 @@ export default function SignupPage() {
     }
 
     setSubmitting(true);
+    // Read ?next= straight off the URL rather than with useSearchParams: this
+    // page has no Suspense boundary (unlike /login), and the handler only ever
+    // runs in the browser. safeNext rejects anything that isn't a same-origin
+    // path, so this can't become an open redirect.
+    const next = safeNext(new URLSearchParams(window.location.search).get("next"));
     let res;
     let payload;
     try {
       res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password, agreed }),
+        body: JSON.stringify({ fullName, email, password, agreed, next }),
       });
       payload = await res.json();
     } catch {
@@ -96,8 +102,10 @@ export default function SignupPage() {
       return;
     }
     // Role is chosen after signup: everyone goes through the /choose-role gate
-    // (which creates the tutor/student row) before landing anywhere else.
-    router.push("/choose-role");
+    // (which creates the tutor/student row) before landing anywhere else. The
+    // exception is an invite link, whose ?next= carries them to the claim page
+    // instead — a partner's role is set by claiming, never by the chooser.
+    router.push(next ?? "/choose-role");
     router.refresh();
   };
 

@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0061_articles.sql`
-**Last reviewed:** 2026-08-02
+**Applied through:** `0063_partners.sql`
+**Last reviewed:** 2026-09-11
 
 ---
 
@@ -60,7 +60,12 @@ These duplications are **intentional** — don't "tidy them up" without understa
 
 | Type | Values | Migration |
 | --- | --- | --- |
-| `public.user_role` | `'tutor'`, `'student'` | 0001 |
+| `public.user_role` | `'tutor'`, `'student'`, `'partner'` | 0001; `'partner'` added 0062 |
+
+> `'partner'` is **not selectable at `/choose-role`** — `choose_role()` raises on it (0063). The only
+> way an account becomes a partner is claiming a signed invite link, which is what makes "partners
+> are invite only" a property of the database rather than of which buttons the UI renders.
+> Note `alter type ... add value` is irreversible: Postgres has no `drop value`.
 
 ---
 
@@ -129,6 +134,55 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `id` | uuid | PK → `profiles(id)` ON DELETE CASCADE |
 | `avatar_url` | text | Student profile photo — `profile-images` upload (0043); shown on `/account` + the top-nav chip |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
+
+### `partners` (0063)
+A tutoring centre. **Invite only:** we create the row (pre-filled from the centre's own website),
+the page goes live immediately, and the centre claims it later with a signed link. There is
+deliberately **no verification column** — only we can create a partner, so existence is the
+endorsement and there is nothing left to verify.
+
+**This table breaks the extension-table pattern on purpose.** `tutor_profiles` and
+`student_profiles` key on `profiles.id`; `partners` has its own uuid plus a separate nullable
+`owner_id`, because the row must exist *before* anyone signs up. Keying on `profiles.id` would make
+the entire invite model impossible. Do not "fix" this.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` — **not** `profiles.id`, see above |
+| `owner_id` | uuid | UNIQUE, nullable → `profiles(id)` **ON DELETE SET NULL**. NULL ⇒ unclaimed (and still publicly visible). Set null, not cascade, so an owner deleting their account reverts the centre to unclaimed rather than deleting the page and its tutors |
+| `slug` | text | NOT NULL UNIQUE; assigned by `_assign_partner_slug()` |
+| `name` | text | NOT NULL, CHECK `btrim(name) <> ''`. The **business** name — distinct from `profiles.full_name`, which is the person who manages it |
+| `website_url` | text | nullable; where "Enquire at &lt;name&gt;" sends people. Partners cannot be DM'd |
+| `bio` | text | one-line tagline |
+| `bio_long` | text | the About section |
+| `suburb` | text | nullable |
+| `city` | text | nullable; stores the **state code**, matching `tutor_profiles.city` |
+| `service_lat` / `service_lng` | double precision | nullable; the centre is a fixed site |
+| `logo_url` / `banner_url` | text | nullable; `profile-images` bucket |
+| `avatar_bg` / `banner_bg` / `initials` | text | nullable; fallbacks when no image is set |
+| `visibility` | text | NOT NULL default `'public'`, CHECK in (`public`,`hidden`) |
+| `created_at` / `updated_at` | timestamptz | NOT NULL DEFAULT `now()`; `updated_at` maintained by `partners_touch_updated_at` |
+
+**Indexes:** `(visibility)`, `(city)`.
+**RLS:** public SELECT on `visibility = 'public' AND (owner_id IS NULL OR owner profiles.status = 'enabled')` —
+the `owner_id IS NULL` arm is what keeps an unclaimed page live. Owner SELECT/UPDATE on
+`owner_id = auth.uid()`. **No INSERT or DELETE policy at all:** partners are created by us through
+the service role (`npm run create:partner`) and are never created or destroyed from a browser.
+
+### `partner_packages` (0063)
+The centre's one rate card. Every tutor listed under the partner displays these prices rather than
+a rate of their own.
+
+| Column | Type | Constraints / Notes |
+| --- | --- | --- |
+| `id` | uuid | PK DEFAULT `gen_random_uuid()` |
+| `partner_id` | uuid | NOT NULL → `partners(id)` ON DELETE CASCADE |
+| `label` | text | NOT NULL, e.g. "Single lesson" |
+| `price` | int | NOT NULL, AUD |
+| `position` | int | NOT NULL default 0 |
+
+**Index:** `(partner_id, position)`. Public SELECT follows the parent partner's visibility; owner
+has `FOR ALL` scoped through `partners.owner_id`.
 
 ### `saved_tutors` (join, 0042)
 Student bookmarks — one row per saved tutor. Read/written by the bookmark button and the `/browse ?saved=1` filter.
@@ -402,7 +456,7 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | Function | Returns | Purpose | Migration |
 | --- | --- | --- | --- |
 | `handle_new_user()` | trigger | On signup: create the `profiles` row only, with **role NULL** (role is deferred to `choose_role()`); name←Google `name` claim; stamp `profiles.terms_agreed_at` for every role. No longer creates the role extension table or assigns a slug | 0001 → 0016/0025/0039/0041 |
-| `choose_role(p_role)` | void | Authenticated, `auth.uid()`-scoped, one-time: set `profiles.role` and create the matching extension row (tutor → placeholder slug + `_assign_tutor_slug` + mirror `email_confirmed_at`; else `student_profiles`). Raises if a role is already set | 0041 |
+| `choose_role(p_role)` | void | Authenticated, `auth.uid()`-scoped, one-time: set `profiles.role` and create the matching extension row (tutor → placeholder slug + `_assign_tutor_slug` + mirror `email_confirmed_at`; else `student_profiles`). Raises if a role is already set. **Raises on `'partner'`** (0063) — 0041's `else` was a catch-all that would otherwise hand a partner a `student_profiles` row, and raising is what makes invite-only structural | 0041 → 0063 |
 | `handle_user_email_confirmed()` | trigger | Mirror `auth.users.email_confirmed_at` onto `tutor_profiles` on confirmation | 0007 |
 | `generate_unique_slug(p_name)` | text | Name→slug with collision suffix; superseded by `_assign_tutor_slug` (0013) but still present | 0004 |
 | `_assign_tutor_slug(p_id, p_name)` | text | Race-safe slug assignment (retry on unique_violation). SECURITY DEFINER; execute revoked from anon/authenticated | 0013 |
@@ -428,6 +482,10 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `reviews_recalc_rating()` | trigger | Calls `recalc_tutor_rating` after any review insert/update/delete (and for the old tutor too if `tutor_id` ever changed). Fires on UPDATE as well, because every status transition moves the aggregate without a row appearing/disappearing | 0057 |
 | `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
 | `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
+| `_assign_partner_slug(p_id, p_name)` | text | Race-safe partner slug assignment, a clone of `_assign_tutor_slug`. SECURITY DEFINER; execute revoked from public, **granted to `service_role`** so `npm run create:partner` can name a new centre | 0063 |
+| `assign_partner_slug(p_name)` | text | Authenticated wrapper; resolves the target through `partners.owner_id = auth.uid()`, so a caller can only rename their own centre | 0063 |
+| `claim_partner_as(p_partner_id, p_user_id)` | text | Binds an invited partner to an account and sets `profiles.role = 'partner'`; returns the slug, or NULL when already claimed. Takes the user id **explicitly** because the claim route must call it through the service role (which has no `auth.uid()`). Execute revoked from public, granted only to `service_role` — if it were callable from a browser, anyone could claim any centre by guessing its uuid. The `where owner_id is null` guard on its UPDATE is the entire replay defence, which is why there is no invites table | 0063 |
+| `partners_touch_updated_at()` | trigger | Stamps `partners.updated_at = now()` before update | 0063 |
 | `touch_conversation_presence(p_conversation_id)` | void | Recipient's client heartbeat (~30s while the thread is open + tab visible): sets the caller's own `*_last_active_at = now()`; no-op for non-participants. Feeds the presence skip in `claim_message_notification`. SECURITY DEFINER, `auth.uid()`-scoped | 0048 |
 
 Note: verification **approve/reject have no RPC** — the admin has no session; the routes write via the service-role client gated by a signed HMAC token.

@@ -9,7 +9,7 @@ import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { Wordmark } from "@/components/Logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { postAuthDest } from "@/lib/roles";
+import { postAuthDest, safeNext } from "@/lib/roles";
 import { EASE_OUT } from "@/lib/motion";
 
 function LoginInner() {
@@ -57,7 +57,9 @@ function LoginInner() {
         .maybeSingle();
       role = profile?.role ?? null;
     }
-    router.push(postAuthDest(role));
+    // ?next= wins when present and safe, so a partner arriving from an invite
+    // link lands back on the claim page instead of their role's home surface.
+    router.push(safeNext(searchParams.get("next")) ?? postAuthDest(role));
     router.refresh();
   };
 

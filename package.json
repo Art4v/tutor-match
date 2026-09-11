@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "sync:audience": "node scripts/sync-tutors-audience.mjs",
-    "seed:blog": "node scripts/seed-blog-articles.mjs"
+    "seed:blog": "node scripts/seed-blog-articles.mjs",
+    "create:partner": "node scripts/create-partner.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.5.2",
