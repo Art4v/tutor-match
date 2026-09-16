@@ -104,7 +104,7 @@ export default function SignupPage() {
     // Role is chosen after signup: everyone goes through the /choose-role gate
     // (which creates the tutor/student row) before landing anywhere else. The
     // exception is an invite link, whose ?next= carries them to the claim page
-    // instead — a partner's role is set by claiming, never by the chooser.
+    // instead — a company's role is set by claiming, never by the chooser.
     router.push(next ?? "/choose-role");
     router.refresh();
   };

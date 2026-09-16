@@ -2,22 +2,22 @@ import { redirect } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { verifyPartnerInviteToken } from "@/lib/partnerToken";
-import { getPartnerForClaim } from "@/lib/supabase/partners";
+import { verifyCompanyInviteToken } from "@/lib/companyToken";
+import { getCompanyForClaim } from "@/lib/supabase/companies";
 import { ClaimPanel } from "./ClaimPanel";
 
-export const metadata = { title: "Claim your centre" };
+export const metadata = { title: "Claim your company" };
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Landing page for the partner invite link. The signed token in ?token= is the
+// Landing page for the company invite link. The signed token in ?token= is the
 // authorization, so this page is deliberately login-unguarded, exactly like
 // /admin/verify. A GET never mutates: the claim is a POST behind a button, so
-// an email client prefetching the link cannot silently bind the partner to
+// an email client prefetching the link cannot silently bind the company to
 // whoever happens to be signed in.
-export default async function ClaimPartnerPage({ searchParams }) {
+export default async function ClaimCompanyPage({ searchParams }) {
   const token = searchParams?.token ?? "";
-  const { partnerId, error } = verifyPartnerInviteToken(token);
+  const { companyId, error } = verifyCompanyInviteToken(token);
 
   if (error) {
     return (
@@ -47,15 +47,15 @@ export default async function ClaimPartnerPage({ searchParams }) {
   }
 
   // Read through the service role: the visitor is usually logged out or brand
-  // new, and a hidden partner still needs its claim page to work.
-  const partner = await getPartnerForClaim(admin, partnerId);
-  if (!partner) {
+  // new, and a hidden company still needs its claim page to work.
+  const company = await getCompanyForClaim(admin, companyId);
+  if (!company) {
     return (
       <Shell>
         <StateCard
           tone="error"
           icon="alert-triangle"
-          title="Centre not found"
+          title="Company not found"
           body="This listing may have been removed. Get in touch if you think that's a mistake."
         />
       </Shell>
@@ -67,36 +67,36 @@ export default async function ClaimPartnerPage({ searchParams }) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Already claimed. If it's the caller's own, just take them to it — a partner
+  // Already claimed. If it's the caller's own, just take them to it — a company
   // re-opening their original email should land somewhere useful, not on an
   // error.
-  if (partner.claimed) {
+  if (company.claimed) {
     const { data: mine } = await supabase
       .from("partners")
       .select("slug")
-      .eq("id", partner.id)
+      .eq("id", company.id)
       .maybeSingle();
-    if (mine?.slug) redirect(`/partners/${mine.slug}`);
+    if (mine?.slug) redirect(`/companies/${mine.slug}`);
     return (
       <Shell>
         <StateCard
           tone="error"
           icon="alert-triangle"
-          title={`${partner.name} has already been claimed`}
-          body="Someone at your centre has already set this page up. Ask them to add you, or get in touch if you think this is wrong."
+          title={`${company.name} has already been claimed`}
+          body="Someone at your company has already set this page up. Ask them to add you, or get in touch if you think this is wrong."
         />
       </Shell>
     );
   }
 
-  const next = `/partners/claim?token=${encodeURIComponent(token)}`;
+  const next = `/companies/claim?token=${encodeURIComponent(token)}`;
 
   // Logged out: send them through signup or login, carrying the claim URL so
   // they come straight back here afterwards.
   if (!user) {
     return (
       <Shell>
-        <Card partnerName={partner.name}>
+        <Card companyName={company.name}>
           <p className="text-[13.5px] text-slate-500 mt-4 mb-5 leading-[1.55]">
             Create an account (or sign in) and this page becomes yours to edit. It's already
             live, so nothing goes dark while you set up.
@@ -124,7 +124,7 @@ export default async function ClaimPartnerPage({ searchParams }) {
 
   // Signed in, but as a tutor or a student. Those accounts already have an
   // extension row and a public identity built on it, so they can't also be a
-  // centre — claim_partner() raises on this too, but saying so here is kinder
+  // company — claim_partner_as() raises on this too, but saying so here is kinder
   // than letting them press the button and read an exception.
   const { data: profile } = await supabase
     .from("profiles")
@@ -140,7 +140,11 @@ export default async function ClaimPartnerPage({ searchParams }) {
           tone="error"
           icon="alert-triangle"
           title="You're signed in as a different kind of account"
-          body={`This is a ${role} account, which can't also manage a centre. Log out and create a separate account for ${partner.name}.`}
+          // The guard above leaves only 'tutor' and 'student' here, so name the
+          // role explicitly rather than interpolating the enum. The DB value for
+          // a company account is still 'partner' (see the naming note in
+          // CLAUDE.md), and interpolating it would show a word the UI never uses.
+          body={`This is a ${role === "tutor" ? "tutor" : "student"} account, which can't also manage a company. Log out and create a separate account for ${company.name}.`}
         />
       </Shell>
     );
@@ -148,18 +152,18 @@ export default async function ClaimPartnerPage({ searchParams }) {
 
   return (
     <Shell>
-      <Card partnerName={partner.name}>
+      <Card companyName={company.name}>
         <p className="text-[13.5px] text-slate-500 mt-4 mb-5 leading-[1.55]">
-          Claiming links {partner.name} to this account. You'll be able to edit the page,
+          Claiming links {company.name} to this account. You'll be able to edit the page,
           set your rates and add your tutors straight away.
         </p>
-        <ClaimPanel token={token} partnerName={partner.name} />
+        <ClaimPanel token={token} companyName={company.name} />
       </Card>
     </Shell>
   );
 }
 
-function Card({ partnerName, children }) {
+function Card({ companyName, children }) {
   return (
     <section
       className="bg-[color:var(--paper-card)]"
@@ -175,7 +179,7 @@ function Card({ partnerName, children }) {
         className="text-[30px] leading-none"
         style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
       >
-        Claim {partnerName}
+        Claim {companyName}
       </h1>
       <p className="text-[14px] text-slate-500 mt-1.5">Your page on MatchTutor is ready.</p>
       {children}

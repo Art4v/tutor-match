@@ -79,7 +79,7 @@ export async function POST(request) {
       // /type=signup, mirroring the recovery flow) so confirmation mints a
       // session and lands the user logged-in. The callback then routes a
       // NULL-role account to /choose-role; the `next` here is just a fallback.
-      // A partner invite overrides it, so confirming the email lands the centre
+      // A company invite overrides it, so confirming the email lands the company
       // on the claim page instead of a chooser that would reject their role.
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath ?? "/choose-role")}`,
       // full_name ends up in auth.users.raw_user_meta_data, where

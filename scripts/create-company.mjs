@@ -1,23 +1,23 @@
 // ============================================================================
-// Create a partner (tutoring centre) and print its claim link.
+// Create a company (tutoring company) and print its claim link.
 // ----------------------------------------------------------------------------
-// Partners are INVITE ONLY: there is no signup path and no verification step.
-// We create the row, the page goes live immediately, and the centre claims it
+// Companies are INVITE ONLY: there is no signup path and no verification step.
+// We create the row, the page goes live immediately, and the company claims it
 // with the signed link this prints. Existence is the endorsement.
 //
-//   npm run create:partner -- --name "Kumon Chatswood" \
+//   npm run create:company -- --name "Kumon Chatswood" \
 //                             --website https://example.com \
 //                             --suburb Chatswood --state NSW
 //
 // Dry run by default, like seed:blog. Add --apply to actually write.
-// Re-print a link for an existing centre without creating anything:
-//   npm run create:partner -- --link <partner-uuid>
+// Re-print a link for an existing company without creating anything:
+//   npm run create:company -- --link <company-uuid>
 //
 // WHY THIS IS A SCRIPT AND NOT A .sql UTILITY (unlike grant_author.sql):
 //   The claim link carries an HMAC token signed with PARTNER_INVITE_SECRET.
 //   Signing it in SQL would mean the token format lived in two places, and the
 //   day they drift every outstanding invite silently stops working. This
-//   imports lib/partnerToken.js so there is exactly one definition of it.
+//   imports lib/companyToken.js so there is exactly one definition of it.
 //
 // NEEDS: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
 //        PARTNER_INVITE_SECRET (read from .env.local, parsed below).
@@ -57,10 +57,10 @@ function loadEnvFiles() {
 
 loadEnvFiles();
 
-// Imported AFTER loadEnvFiles(): lib/partnerToken.js reads the secret lazily
+// Imported AFTER loadEnvFiles(): lib/companyToken.js reads the secret lazily
 // inside secret(), so import order is not actually load-bearing, but keeping
 // it here makes that independence obvious rather than accidental.
-const { signPartnerInviteToken } = await import("../lib/partnerToken.js");
+const { signCompanyInviteToken } = await import("../lib/companyToken.js");
 
 const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PARTNER_INVITE_SECRET } = process.env;
 const SITE_URL = (process.env.SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
@@ -86,9 +86,9 @@ const supabase = createClient(NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const claimUrl = (id) => `${SITE_URL}/partners/claim?token=${encodeURIComponent(signPartnerInviteToken(id))}`;
+const claimUrl = (id) => `${SITE_URL}/companies/claim?token=${encodeURIComponent(signCompanyInviteToken(id))}`;
 
-// ── Re-print a link for an existing centre ──────────────────────────────────
+// ── Re-print a link for an existing company ──────────────────────────────────
 if (linkOnly) {
   const { data, error } = await supabase
     .from("partners")
@@ -96,21 +96,21 @@ if (linkOnly) {
     .eq("id", linkOnly)
     .maybeSingle();
   if (error || !data) {
-    console.error(`No partner with id ${linkOnly}.`);
+    console.error(`No company with id ${linkOnly}.`);
     process.exit(1);
   }
   if (data.owner_id) {
     console.error(`${data.name} has already been claimed. A fresh link would be inert.`);
     process.exit(1);
   }
-  console.log(`\n${data.name}  (/partners/${data.slug})\n\n  ${claimUrl(data.id)}\n`);
+  console.log(`\n${data.name}  (/companies/${data.slug})\n\n  ${claimUrl(data.id)}\n`);
   process.exit(0);
 }
 
 // ── Create ──────────────────────────────────────────────────────────────────
 const name = arg("name");
 if (!name) {
-  console.error('Usage: npm run create:partner -- --name "Centre Name" [--website URL] [--suburb S] [--state NSW] [--apply]');
+  console.error('Usage: npm run create:company -- --name "Company Name" [--website URL] [--suburb S] [--state NSW] [--apply]');
   process.exit(1);
 }
 
@@ -129,8 +129,8 @@ const row = {
 if (!APPLY) {
   console.log("\nDRY RUN — nothing written. Re-run with --apply.\n");
   console.log(row);
-  console.log("\nOn apply this centre's page goes LIVE immediately, before anyone claims it.");
-  console.log("Keep the pre-filled copy factual and sourced from the centre's own site.\n");
+  console.log("\nOn apply this company's page goes LIVE immediately, before anyone claims it.");
+  console.log("Keep the pre-filled copy factual and sourced from the company's own site.\n");
   process.exit(0);
 }
 
@@ -141,7 +141,7 @@ const { data: created, error: insertError } = await supabase
   .single();
 
 if (insertError) {
-  console.error("Could not create the partner:", insertError.message);
+  console.error("Could not create the company:", insertError.message);
   process.exit(1);
 }
 
@@ -156,6 +156,6 @@ if (slugError) {
 }
 
 console.log(`\nCreated ${row.name}`);
-console.log(`  page:  ${SITE_URL}/partners/${slug}   (live now)`);
+console.log(`  page:  ${SITE_URL}/companies/${slug}   (live now)`);
 console.log(`  claim: ${claimUrl(created.id)}`);
-console.log("\nSend the claim link to the centre. It stops working once used.\n");
+console.log("\nSend the claim link to the company. It stops working once used.\n");

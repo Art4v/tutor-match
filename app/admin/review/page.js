@@ -59,7 +59,7 @@ export default async function AdminReviewPage({ searchParams }) {
     );
   }
 
-  // subjectName/subjectHref resolve to either the tutor or the centre the
+  // subjectName/subjectHref resolve to either the tutor or the company the
   // review is about (0067), so this page needs no branch of its own.
   const { review, subjectName, subjectHref, studentName } = found;
   const profileHref = subjectHref;

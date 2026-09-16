@@ -3,26 +3,26 @@ import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
 import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
 import { TutorCard } from "@/components/TutorCard";
 
-// Shared partner card chrome, used by BOTH the public page (server) and the
-// owner inline-editing shell (OwnerPartner, client) so the two cannot drift.
+// Shared company card chrome, used by BOTH the public page (server) and the
+// owner inline-editing shell (OwnerCompany, client) so the two cannot drift.
 // Same arrangement, and same reason, as app/tutor/[slug]/ProfileCards.jsx.
 //
 // These are all server-safe (no hooks, no event handlers) so the public page
 // stays a server component.
 
 /**
- * The one contact route a partner has. Centres cannot be messaged on
+ * The one contact route a company has. Companies cannot be messaged on
  * MatchTutor: `start_conversation()` only accepts a student caller and a
- * tutor_profiles target, so a partner is structurally unmessageable and this
+ * tutor_profiles target, so a company is structurally unmessageable and this
  * button is the deliberate replacement, not a fallback.
  *
  * Renders nothing without a website — better no button than a dead one.
  */
-export function EnquireButton({ partner, full = true }) {
-  if (!partner.websiteUrl) return null;
+export function EnquireButton({ company, full = true }) {
+  if (!company.websiteUrl) return null;
   return (
     <a
-      href={partner.websiteUrl}
+      href={company.websiteUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={
@@ -31,40 +31,40 @@ export function EnquireButton({ partner, full = true }) {
       }
       style={{ background: "var(--accent)", color: "#fff", borderRadius: 999, padding: "12px 22px" }}
     >
-      Enquire at {partner.name}
+      Enquire at {company.name}
       <Icon name="external" size={14} />
     </a>
   );
 }
 
-export function PartnerHeaderCard({ partner }) {
-  const location = [partner.suburb, partner.city].filter(Boolean).join(", ");
+export function CompanyHeaderCard({ company }) {
+  const location = [company.suburb, company.city].filter(Boolean).join(", ");
   return (
     <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
       <div
         style={{
           height: 150,
-          background: partner.bannerImg
-            ? `url(${partner.bannerImg}) center / cover no-repeat`
-            : `linear-gradient(135deg, ${partner.bannerBg ?? partner.avatarBg ?? "var(--accent-softer)"}, oklch(0.96 0.01 250))`,
+          background: company.bannerImg
+            ? `url(${company.bannerImg}) center / cover no-repeat`
+            : `linear-gradient(135deg, ${company.bannerBg ?? company.avatarBg ?? "var(--accent-softer)"}, oklch(0.96 0.01 250))`,
         }}
       />
       <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
-        <PartnerLogo partner={partner} size={108} ring />
+        <CompanyLogo company={company} size={108} ring />
         <h1
           className="text-[34px] leading-none mt-4 break-words"
           style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
         >
-          {partner.name}
+          {company.name}
         </h1>
-        {partner.bio && (
+        {company.bio && (
           <p className="text-[15px] mt-2 max-w-[60ch] break-words" style={{ color: "var(--sage)" }}>
-            {partner.bio}
+            {company.bio}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[13.5px]" style={{ color: "var(--ink-muted)" }}>
           <span className="inline-flex items-center gap-1.5">
-            <Icon name="building" size={14} /> Tutoring centre
+            <Icon name="building" size={14} /> Tutoring company
           </span>
           {location && (
             <span className="inline-flex items-center gap-1.5">
@@ -81,7 +81,7 @@ export function PartnerHeaderCard({ partner }) {
  * Logo with the same fallback ladder as components/ui.js Avatar (image →
  * colour + initial), but standalone: Avatar reads tutor-shaped keys.
  */
-export function PartnerLogo({ partner, size = 108, ring = false }) {
+export function CompanyLogo({ company, size = 108, ring = false }) {
   return (
     <span
       className="inline-flex items-center justify-center overflow-hidden shrink-0"
@@ -89,23 +89,23 @@ export function PartnerLogo({ partner, size = 108, ring = false }) {
         width: size,
         height: size,
         borderRadius: 999,
-        background: partner.logoImg
-          ? `url(${partner.logoImg}) center / cover no-repeat`
-          : partner.avatarBg ?? "var(--accent-softer)",
+        background: company.logoImg
+          ? `url(${company.logoImg}) center / cover no-repeat`
+          : company.avatarBg ?? "var(--accent-softer)",
         border: ring ? "4px solid var(--paper-card)" : undefined,
         color: "var(--accent)",
         fontSize: size * 0.38,
         fontWeight: 300,
       }}
-      aria-hidden={!!partner.logoImg}
+      aria-hidden={!!company.logoImg}
     >
-      {!partner.logoImg && (partner.initial ?? "?")}
+      {!company.logoImg && (company.initial ?? "?")}
     </span>
   );
 }
 
-export function PartnerAboutCard({ partner }) {
-  const blocks = parseRichTextBlocks(partner.bioLong ?? "");
+export function CompanyAboutCard({ company }) {
+  const blocks = parseRichTextBlocks(company.bioLong ?? "");
   return (
     <section id="about" className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
       <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-4">About</h2>
@@ -121,15 +121,15 @@ export function PartnerAboutCard({ partner }) {
 }
 
 /**
- * The centre's one rate card. Deliberately NOT interactive the way the tutor
+ * The company's one rate card. Deliberately NOT interactive the way the tutor
  * RateCard is (which tracks a selected package): there is nothing to select
- * here, since every price applies to every tutor the centre lists.
+ * here, since every price applies to every tutor the company lists.
  */
-export function PartnerRateCard({ partner, showEnquire = true }) {
-  const packages = partner.packages ?? [];
+export function CompanyRateCard({ company, showEnquire = true }) {
+  const packages = company.packages ?? [];
   return (
     <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
-      {partner.fromPrice != null ? (
+      {company.fromPrice != null ? (
         <>
           <div className="flex items-baseline gap-1">
             <span className="text-[16px]" style={{ color: "var(--sage)" }}>from</span>
@@ -137,16 +137,16 @@ export function PartnerRateCard({ partner, showEnquire = true }) {
               className="text-[40px] font-light tabular-nums"
               style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.02em" }}
             >
-              ${partner.fromPrice}
+              ${company.fromPrice}
             </span>
           </div>
           <div className="text-[13.5px] mt-1" style={{ color: "var(--sage)" }}>
-            Set by the centre, the same for every tutor here.
+            Set by the company, the same for every tutor here.
           </div>
         </>
       ) : (
         <div className="text-[13.5px]" style={{ color: "var(--sage)" }}>
-          Contact the centre for current pricing.
+          Contact the company for current pricing.
         </div>
       )}
 
@@ -170,9 +170,9 @@ export function PartnerRateCard({ partner, showEnquire = true }) {
         </div>
       )}
 
-      {showEnquire && partner.websiteUrl && (
+      {showEnquire && company.websiteUrl && (
         <div className="mt-5">
-          <EnquireButton partner={partner} />
+          <EnquireButton company={company} />
         </div>
       )}
     </div>
@@ -180,10 +180,10 @@ export function PartnerRateCard({ partner, showEnquire = true }) {
 }
 
 /**
- * The centre's tutors, rendered with the SAME <TutorCard> as /browse rather
- * than a bespoke row. A partner tutor is an ordinary tutor_profiles row, so it
+ * The company's tutors, rendered with the SAME <TutorCard> as /browse rather
+ * than a bespoke row. A company tutor is an ordinary tutor_profiles row, so it
  * already has every field the card reads (rate / suburb / city arrive via the
- * 0066 mirrors), and reusing the card is what stops the centre page drifting
+ * 0066 mirrors), and reusing the card is what stops the company page drifting
  * from the listing a student sees everywhere else.
  *
  * `compact` is what keeps the section the size it was before the card moved in
@@ -191,27 +191,27 @@ export function PartnerRateCard({ partner, showEnquire = true }) {
  * "View full profile") at every width, because this card is nested one level
  * deep inside another and the browse size dwarfs its container.
  *
- * Two more props are deliberately off here. `partner` is left unset by
- * `partnerTutorRowToCard`, so the card falls back to its verified-tick slot and
- * renders nothing there: the centre's own chip on every card of the centre's
+ * Two more props are deliberately off here. `company` is left unset by
+ * `companyTutorRowToCard`, so the card falls back to its verified-tick slot and
+ * renders nothing there: the company's own chip on every card of the company's
  * own page says nothing. `showSave` is false for the reason the card itself
- * suppresses the bookmark for partner tutors (saved_tutors has no "save a
- * centre's tutor" story yet).
+ * suppresses the bookmark for company tutors (saved_tutors has no "save a
+ * company's tutor" story yet).
  *
  * TutorCard is a client component. Importing it does not make this file or the
  * public page a client component; it just marks that subtree.
  *
  * Hidden tutors are filtered here rather than in the query, because the owner
- * editor reuses `listPartnerTutors` and must see them.
+ * editor reuses `listCompanyTutors` and must see them.
  */
-export function PartnerTutorsCard({ tutors, partnerName }) {
+export function CompanyTutorsCard({ tutors, companyName }) {
   const visible = (tutors ?? []).filter((t) => t.visibility === "public");
   if (visible.length === 0) return null;
   return (
     <section className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
       <h2 className="text-[22px] font-light text-slate-800 tracking-tight">Our tutors</h2>
       <p className="text-[13px] text-slate-500 mt-0.5 mb-4">
-        {visible.length} {visible.length === 1 ? "tutor" : "tutors"} at {partnerName}.
+        {visible.length} {visible.length === 1 ? "tutor" : "tutors"} at {companyName}.
       </p>
       <div className="flex flex-col gap-3">
         {visible.map((t) => (
@@ -222,13 +222,13 @@ export function PartnerTutorsCard({ tutors, partnerName }) {
   );
 }
 
-export function PartnerLocationCard({ partner }) {
-  const location = [partner.suburb, partner.city].filter(Boolean).join(", ");
+export function CompanyLocationCard({ company }) {
+  const location = [company.suburb, company.city].filter(Boolean).join(", ");
   return (
     <SidebarCard title="Where we are" subtitle={location || "Location not set yet."}>
-      {partner.websiteUrl && (
+      {company.websiteUrl && (
         <a
-          href={partner.websiteUrl}
+          href={company.websiteUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-[13px] mt-3"

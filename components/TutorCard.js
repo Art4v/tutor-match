@@ -192,11 +192,11 @@ const CARD_SHADOW = "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49
 // to make the loop seamless: the duplicate passes -1 so it stays clickable with
 // the mouse without putting each tutor in the tab order twice.
 export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLabel = true, compact = false }) {
-  // A centre's tutor (0065). Non-null swaps the verified rosette for the
-  // centre's chip and suppresses the bookmark: saved_tutors FKs tutor_profiles
-  // but the product has no "save a centre's tutor" story yet, and a control
+  // A company's tutor (0065). Non-null swaps the verified rosette for the
+  // company's chip and suppresses the bookmark: saved_tutors FKs tutor_profiles
+  // but the product has no "save a company's tutor" story yet, and a control
   // that silently does nothing is worse than no control.
-  const partner = tutor.partner ?? null;
+  const company = tutor.company ?? null;
   const credentials = (tutor.credentials || []).filter((c) => c?.label);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   // Headline stat: the tutor's first credential — labelled by its type (ATAR /
@@ -220,7 +220,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
 
   // `compact` pins the card to its PHONE composition at EVERY width: the same
   // three zones, the small sizes, and no "View full profile" (the 88px rail has
-  // no room for it). It exists for the centre page, where the card sits inside
+  // no room for it). It exists for the company page, where the card sits inside
   // another card and the desktop size dwarfs its container.
   //
   // The subject strip is KEPT in compact, unlike on an actual phone. It's
@@ -277,7 +277,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
       {/* Bookmark overlay — a sibling of the card <Link> (not nested, so the
           HTML stays valid). See SAVE_POS for why it's placed by class rather
           than the variant's own offset. Suppressed on showcase cards. */}
-      {showSave && !partner && <SaveTutorButton tutorId={tutor.id} variant="card" className={compact ? SAVE_POS_COMPACT : SAVE_POS} tabIndex={tabIndex} />}
+      {showSave && !company && <SaveTutorButton tutorId={tutor.id} variant="card" className={compact ? SAVE_POS_COMPACT : SAVE_POS} tabIndex={tabIndex} />}
       <Link
         href={`/tutor/${tutor.slug}`}
         tabIndex={tabIndex}
@@ -327,13 +327,13 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
               {/* The script label is desktop-only here: on a phone the name row
                   is already tight against the bookmark control, so the label
                   crowds it out. Tick stays at every width. */}
-              {/* Partner chip INSTEAD of the tick, never both. The rosette is
-                  earned by an individual tutor through verification; a centre
+              {/* Company chip INSTEAD of the tick, never both. The rosette is
+                  earned by an individual tutor through verification; a company
                   tutor inherits none of that, and browse treating them as
                   verified for FILTERING is a ranking fact, not a claim to make
                   on the card. Hidden below md for the same reason the script
                   label is: this row is already tight against the bookmark. */}
-              {partner ? (
+              {company ? (
                 <span
                   className={"items-center gap-1 shrink-0 text-[11.5px] font-medium " + C.chip}
                   style={{
@@ -345,7 +345,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
                   }}
                 >
                   <Icon name="building" size={11} />
-                  <span className="truncate max-w-[130px]">{partner.name}</span>
+                  <span className="truncate max-w-[130px]">{company.name}</span>
                 </span>
               ) : (
                 tutor.verified && (

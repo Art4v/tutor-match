@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 
-// Claim control for /partners/claim. POSTs the signed token (the GET page never
-// mutates). On success it routes straight into the page the partner now owns,
+// Claim control for /companies/claim. POSTs the signed token (the GET page never
+// mutates). On success it routes straight into the page the company now owns,
 // which is the whole friction argument: sign up, one click, you're editing.
-export function ClaimPanel({ token, partnerName }) {
+export function ClaimPanel({ token, companyName }) {
   const router = useRouter();
   const [state, setState] = useState("idle"); // idle | working | error
   const [message, setMessage] = useState("");
@@ -17,7 +17,7 @@ export function ClaimPanel({ token, partnerName }) {
     setState("working");
     setMessage("");
     try {
-      const res = await fetch("/api/partners/claim", {
+      const res = await fetch("/api/companies/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
@@ -30,7 +30,7 @@ export function ClaimPanel({ token, partnerName }) {
       }
       // Not setState("done"): we leave immediately, and refresh so the nav
       // picks up the new role.
-      router.push(`/partners/${data.slug}`);
+      router.push(`/companies/${data.slug}`);
       router.refresh();
     } catch {
       setState("error");
@@ -43,7 +43,7 @@ export function ClaimPanel({ token, partnerName }) {
   return (
     <div>
       <Button onClick={submit} disabled={working}>
-        {working ? "Claiming…" : `Claim ${partnerName}`}
+        {working ? "Claiming…" : `Claim ${companyName}`}
       </Button>
 
       {state === "error" && (

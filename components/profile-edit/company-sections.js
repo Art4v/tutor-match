@@ -1,15 +1,15 @@
 "use client";
 
 // ============================================================================
-// Partner (tutoring centre) editor sections.
+// Company (tutoring company) editor sections.
 // ----------------------------------------------------------------------------
-// The partner counterpart of ./sections.js. Same contract: every section takes
-// { partner, set } over shared draft state and renders `bare` (no Card wrapper)
-// because OwnerPartner puts them inside an EditRegion modal that supplies the
+// The company counterpart of ./sections.js. Same contract: every section takes
+// { company, set } over shared draft state and renders `bare` (no Card wrapper)
+// because OwnerCompany puts them inside an EditRegion modal that supplies the
 // chrome.
 //
 // They live in their own file rather than in sections.js because that file is
-// ~1500 lines of tutor-shaped code and a centre is a different subject. The
+// ~1500 lines of tutor-shaped code and a company is a different subject. The
 // low-level primitives ARE shared, imported from sections.js, so the two
 // editors stay visually identical without either one owning the other.
 // ============================================================================
@@ -26,12 +26,12 @@ import {
 } from "./sections";
 
 /** Logo, banner and the fallback colours behind them. */
-export function PartnerImagesSection({ partner, set, supabase, userId }) {
+export function CompanyImagesSection({ company, set, supabase, userId }) {
   return (
     <div className="space-y-5">
       <ImageUploadControl
         label="Logo"
-        value={partner.logoImg}
+        value={company.logoImg}
         kind="avatar"
         supabase={supabase}
         userId={userId}
@@ -43,12 +43,12 @@ export function PartnerImagesSection({ partner, set, supabase, userId }) {
       />
       <ImageUploadControl
         label="Banner"
-        value={partner.bannerImg}
+        value={company.bannerImg}
         kind="banner"
         supabase={supabase}
         userId={userId}
         onChange={(url) => set({ bannerImg: url })}
-        hint="A wide photo of your centre. Optional."
+        hint="A wide photo of your company. Optional."
         aspect={1200 / 320}
         cropShape="rect"
         maxOutputPx={2400}
@@ -58,14 +58,14 @@ export function PartnerImagesSection({ partner, set, supabase, userId }) {
           Banner colour
         </div>
         <p className="text-[12.5px] text-slate-500 mb-2.5">
-          {partner.bannerImg ? "Not used while a banner photo is set." : "Used when there's no banner photo."}
+          {company.bannerImg ? "Not used while a banner photo is set." : "Used when there's no banner photo."}
         </p>
         <div className="flex flex-wrap gap-2">
           {AVATAR_SWATCHES.map((c) => (
             <button
               key={c}
               type="button"
-              disabled={!!partner.bannerImg}
+              disabled={!!company.bannerImg}
               onClick={() => set({ bannerBg: c })}
               aria-label={`Use banner colour ${c}`}
               className="transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -74,7 +74,7 @@ export function PartnerImagesSection({ partner, set, supabase, userId }) {
                 height: 30,
                 borderRadius: 999,
                 background: c,
-                border: partner.bannerBg === c ? "2px solid var(--ink)" : "1px solid var(--paper-line)",
+                border: company.bannerBg === c ? "2px solid var(--ink)" : "1px solid var(--paper-line)",
               }}
             />
           ))}
@@ -85,11 +85,11 @@ export function PartnerImagesSection({ partner, set, supabase, userId }) {
 }
 
 /** Name, tagline and the outbound enquiry link. */
-export function PartnerIdentitySection({ partner, set }) {
-  const name = partner.name ?? "";
+export function CompanyIdentitySection({ company, set }) {
+  const name = company.name ?? "";
   return (
     <div className="space-y-5">
-      <Field label="Centre name" hint="Your business name, as students should see it.">
+      <Field label="Company name" hint="Your business name, as students should see it.">
         <TextInput
           value={name}
           onChange={(v) => set({ name: v, initial: v.trim().charAt(0).toUpperCase() || null })}
@@ -105,20 +105,20 @@ export function PartnerIdentitySection({ partner, set }) {
 
       <Field label="Tagline" optional hint="One line, shown under your name.">
         <TextInput
-          value={partner.bio ?? ""}
+          value={company.bio ?? ""}
           onChange={(v) => set({ bio: v })}
           placeholder="Small-group maths and science in Chatswood since 2009."
           maxLength={140}
         />
       </Field>
 
-      {/* This is the ONLY contact route a partner has: centres can't be messaged
+      {/* This is the ONLY contact route a company has: companies can't be messaged
           on MatchTutor, every enquiry goes to their own site. */}
       <Field label="Website" hint="Where the Enquire button sends people. Your enquiry or contact page is ideal.">
         <TextInput
-          value={partner.websiteUrl ?? ""}
+          value={company.websiteUrl ?? ""}
           onChange={(v) => set({ websiteUrl: v })}
-          placeholder="https://yourcentre.com.au/contact"
+          placeholder="https://yourcompany.com.au/contact"
           type="url"
           inputMode="url"
         />
@@ -128,11 +128,11 @@ export function PartnerIdentitySection({ partner, set }) {
 }
 
 /** The long-form About body. */
-export function PartnerAboutSection({ partner, set }) {
+export function CompanyAboutSection({ company, set }) {
   return (
-    <Field label="About your centre" optional hint="Who you teach, how you teach, what makes you different.">
+    <Field label="About your company" optional hint="Who you teach, how you teach, what makes you different.">
       <RichTextField
-        value={partner.bioLong ?? ""}
+        value={company.bioLong ?? ""}
         onChange={(v) => set({ bioLong: v })}
         placeholder="We run small-group classes of no more than six students…"
         rows={10}
@@ -144,11 +144,11 @@ export function PartnerAboutSection({ partner, set }) {
 }
 
 /**
- * The centre's one rate card. Every tutor listed under this partner renders
+ * The company's one rate card. Every tutor listed under this company renders
  * these prices, so this is the single place pricing is set.
  */
-export function PartnerRateSection({ partner, set }) {
-  const packages = partner.packages ?? [];
+export function CompanyRateSection({ company, set }) {
+  const packages = company.packages ?? [];
   const update = (i, patch) =>
     set({ packages: packages.map((p, idx) => (idx === i ? { ...p, ...patch } : p)) });
   const remove = (i) => set({ packages: packages.filter((_, idx) => idx !== i) });
@@ -226,10 +226,10 @@ export function PartnerRateSection({ partner, set }) {
 }
 
 /**
- * Where the centre is. A partner is a fixed site, so this is one address rather
+ * Where the company is. A company is a fixed site, so this is one address rather
  * than the radius model tutors use.
  */
-export function PartnerLocationSection({ partner, set }) {
+export function CompanyLocationSection({ company, set }) {
   return (
     <div>
       <Field label="Suburb" hint="Students filter by this, so it's worth getting right.">
@@ -237,7 +237,7 @@ export function PartnerLocationSection({ partner, set }) {
             is no second round-trip to /api/geocode the way the tutor service
             area needs one. */}
         <SuburbAutocomplete
-          value={partner.suburb ?? ""}
+          value={company.suburb ?? ""}
           variant="box"
           placeholder="Chatswood"
           onSelect={(place) =>
@@ -245,7 +245,7 @@ export function PartnerLocationSection({ partner, set }) {
               suburb: place.suburb,
               // `city` stores the STATE CODE, matching tutor_profiles.city. The
               // column name is historical; see the /browse State filter.
-              city: place.state || partner.city || "",
+              city: place.state || company.city || "",
               serviceLat: place.lat ?? null,
               serviceLng: place.lng ?? null,
             })
@@ -253,9 +253,9 @@ export function PartnerLocationSection({ partner, set }) {
           onClear={() => set({ suburb: "", serviceLat: null, serviceLng: null })}
         />
       </Field>
-      {partner.city && (
+      {company.city && (
         <p className="text-[12.5px] text-slate-500 mt-2">
-          State: <span className="font-medium text-slate-700">{partner.city}</span>
+          State: <span className="font-medium text-slate-700">{company.city}</span>
         </p>
       )}
     </div>

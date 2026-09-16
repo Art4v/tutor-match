@@ -14,20 +14,20 @@ import {
 } from "@/components/profile-edit/sections";
 
 /**
- * Add or edit one of a centre's tutors, with every field it can set.
+ * Add or edit one of a company's tutors, with every field it can set.
  *
  * ONE component for both, seeded blank for an add and from the row for an edit,
  * exactly as app/author/[id] seeds a BLANK article so "new" and "existing" are
  * one code path rather than two field lists that drift.
  *
  * DIVISION OF LABOUR: this modal owns the DRAFT, the parent owns the NETWORK.
- * That is what lets add and edit share everything — PartnerTutorsEditor has a
+ * That is what lets add and edit share everything — CompanyTutorsEditor has a
  * single submit() whose only branch is whether the draft has an id yet.
  *
  * It opens ON TOP OF another modal (the "our tutors" EditRegion), which drives
  * three things that look like oversights and are not:
  *
- *   It does NOT lock scroll. OwnerPartner already froze the body with a raw
+ *   It does NOT lock scroll. OwnerCompany already froze the body with a raw
  *   style.overflow save/restore that does not participate in lib/scrollLock.js's
  *   reference count. Calling lockScroll() here would take that count to 0 on
  *   close and hand scrolling back to the page behind a still-open parent.
@@ -63,7 +63,7 @@ const BLANK = {
   yearMax: 12,
 };
 
-export function PartnerTutorModal({
+export function CompanyTutorModal({
   initial,
   ownerId,
   supabase,
@@ -163,12 +163,12 @@ export function PartnerTutorModal({
             value={tutor.avatarImg}
             kind="avatar"
             supabase={supabase}
-            // The PARTNER OWNER's uid, not the tutor's. The profile-images
+            // The COMPANY OWNER's uid, not the tutor's. The profile-images
             // bucket policy (0006) is owner-by-uid-folder and checks auth.uid()
             // against the first path segment, so uploading under the tutor's id
             // would be rejected by Storage — silently, since the crop modal only
             // surfaces a generic failure. The bucket is public, so the file
-            // being in the centre's folder costs nothing on read.
+            // being in the company's folder costs nothing on read.
             //
             // It is also what lets this popup exist: the upload does not need
             // the tutor row, so a photo can be chosen before the tutor is made.
@@ -192,7 +192,7 @@ export function PartnerTutorModal({
           <Field label="About" optional>
             {/* RichTextField directly, not AboutSection: that one posts to
                 /api/ai/generate-bio using the SIGNED-IN user's own profile as
-                context, which is the centre, not the tutor being written about. */}
+                context, which is the company, not the tutor being written about. */}
             <RichTextField
               value={tutor.bioLong ?? ""}
               onChange={(v) => set({ bioLong: v })}

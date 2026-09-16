@@ -2,17 +2,17 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { listPartners } from "@/lib/supabase/partners";
+import { listCompanies } from "@/lib/supabase/companies";
 import { getSubjects } from "@/lib/supabase/tutors";
 import { isStateCode } from "@/lib/states";
 import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
-import { PartnerCard } from "@/components/PartnerCard";
-import { PartnersFilters } from "./PartnersFilters";
-import { PartnersFeed, PartnersFeedItem } from "./PartnersFeed";
+import { CompanyCard } from "@/components/CompanyCard";
+import { CompaniesFilters } from "./CompaniesFilters";
+import { CompaniesFeed, CompaniesFeedItem } from "./CompaniesFeed";
 
 export const metadata = {
-  title: "Partners — tutoring centres",
-  description: "Tutoring centres listed on MatchTutor.",
+  title: "Companies",
+  description: "Tutoring companies listed on MatchTutor.",
 };
 
 function asArray(v) {
@@ -20,7 +20,7 @@ function asArray(v) {
   return Array.isArray(v) ? v : [v];
 }
 
-export default async function PartnersPage({ searchParams }) {
+export default async function CompaniesPage({ searchParams }) {
   const supabase = createSupabaseServerClient();
 
   // URL is the source of truth, same contract as /browse: shareable and
@@ -29,8 +29,8 @@ export default async function PartnersPage({ searchParams }) {
   const states = asArray(searchParams?.state).filter(isStateCode);
   const subjectSlugs = asArray(searchParams?.subject);
 
-  const [partners, catalog] = await Promise.all([
-    listPartners(supabase, { q, states, subjectSlugs }),
+  const [companies, catalog] = await Promise.all([
+    listCompanies(supabase, { q, states, subjectSlugs }),
     getSubjects(supabase),
   ]);
 
@@ -41,29 +41,29 @@ export default async function PartnersPage({ searchParams }) {
       <DeskBackdrop className="-z-10" />
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
-          <PartnersFilters
+          <CompaniesFilters
             catalog={catalog}
             filters={{ q, states, subjectSlugs }}
-            totalCount={partners.length}
+            totalCount={companies.length}
           />
 
           <div className="min-w-0">
-            {partners.length === 0 ? (
+            {companies.length === 0 ? (
               <div
                 className="bg-[color:var(--paper-card)] text-center py-16 px-6"
                 style={cardStyle}
               >
                 <h2 className="text-[22px] font-light text-slate-800 tracking-tight">
-                  No centres match those filters
+                  No companies match those filters
                 </h2>
                 <p className="text-[14px] text-slate-500 mt-1.5">
                   {hasFilters
                     ? "Try widening your search."
-                    : "We're adding tutoring centres now. Check back soon."}
+                    : "We're adding tutoring companies now. Check back soon."}
                 </p>
                 {hasFilters && (
                   <Link
-                    href="/partners"
+                    href="/companies"
                     className="inline-flex items-center gap-1.5 text-[13.5px] font-medium mt-4"
                     style={{ color: "var(--accent)" }}
                   >
@@ -72,13 +72,13 @@ export default async function PartnersPage({ searchParams }) {
                 )}
               </div>
             ) : (
-              <PartnersFeed>
-                {partners.map((p) => (
-                  <PartnersFeedItem key={p.id}>
-                    <PartnerCard partner={p} />
-                  </PartnersFeedItem>
+              <CompaniesFeed>
+                {companies.map((p) => (
+                  <CompaniesFeedItem key={p.id}>
+                    <CompanyCard company={p} />
+                  </CompaniesFeedItem>
                 ))}
-              </PartnersFeed>
+              </CompaniesFeed>
             )}
           </div>
         </div>

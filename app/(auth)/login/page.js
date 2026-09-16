@@ -57,7 +57,7 @@ function LoginInner() {
         .maybeSingle();
       role = profile?.role ?? null;
     }
-    // ?next= wins when present and safe, so a partner arriving from an invite
+    // ?next= wins when present and safe, so a company arriving from an invite
     // link lands back on the claim page instead of their role's home surface.
     router.push(safeNext(searchParams.get("next")) ?? postAuthDest(role));
     router.refresh();

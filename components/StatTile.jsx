@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 // ============================================================================
 // The stat tile, and the auto-fitting text inside it.
 // ----------------------------------------------------------------------------
-// Extracted from components/TutorCard.js so the centre card on /partners can
+// Extracted from components/TutorCard.js so the company card on /companies can
 // render the identical tile rather than a second copy of its chrome. Both files
 // import from here; neither redefines it.
 //
 // It is "use client" because FitText measures with a ResizeObserver. A SERVER
 // component can still render <StatTile>: importing a client component marks
 // that subtree only, it does not make the importer a client component (same
-// note as app/partners/[slug]/PartnerCards.jsx on importing TutorCard).
+// note as app/companies/[slug]/CompanyCards.jsx on importing TutorCard).
 // ============================================================================
 
 // Single-line text that scales its font down to fit its container. Short values

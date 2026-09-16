@@ -20,8 +20,8 @@ import { ProfileSaveButton } from "./ProfileSaveButton";
 import { RevealStack } from "./RevealStack";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { getTutorReviews } from "@/lib/supabase/reviews";
-import { getPartnerBySlug } from "@/lib/supabase/partners";
-import { PartnerRateCard, EnquireButton } from "@/app/partners/[slug]/PartnerCards";
+import { getCompanyBySlug } from "@/lib/supabase/companies";
+import { CompanyRateCard, EnquireButton } from "@/app/companies/[slug]/CompanyCards";
 import { ReviewsCard } from "./ReviewsCard";
 import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
@@ -67,12 +67,12 @@ export default async function ProfilePage({ params }) {
   const deliveryLabel = formatDelivery(tutor);
   const tiles = buildCredentialTiles(tutor.credentials);
 
-  // A partner tutor renders the CENTRE's rate card, never its own: the centre
+  // A company tutor renders the COMPANY's rate card, never its own: the company
   // owns pricing, and tutor_profiles.rate is only a derived mirror kept for the
   // indexed /browse rateMax filter (0065). Null for an independent tutor, which
   // leaves every branch below inert.
-  const partner = tutor.partner
-    ? await getPartnerBySlug(supabase, tutor.partner.slug)
+  const company = tutor.company
+    ? await getCompanyBySlug(supabase, tutor.company.slug)
     : null;
 
   return (
@@ -136,13 +136,13 @@ export default async function ProfilePage({ params }) {
           </RevealStack>
 
           <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
-            {partner ? <PartnerRateCard partner={partner} /> : <RateCard tutor={tutor} />}
+            {company ? <CompanyRateCard company={company} /> : <RateCard tutor={tutor} />}
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
-            {/* Reviews are CENTRE-level for partner tutors (0066), so the
+            {/* Reviews are COMPANY-level for company tutors (0066), so the
                 per-tutor card is suppressed here. The hidden UI is not the
-                boundary: /api/reviews refuses a partner-managed tutor id. */}
-            {!partner && (
+                boundary: /api/reviews refuses a company-managed tutor id. */}
+            {!company && (
               <ReviewsCard tutorId={tutor.id} tutorName={tutor.name} rating={tutor.rating} reviewCount={tutor.reviews} reviews={reviews} />
             )}
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
@@ -154,17 +154,17 @@ export default async function ProfilePage({ params }) {
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[color:var(--paper-card)] p-4 z-40 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
         <div>
           <div className="text-[20px] font-light tabular-nums" style={{ color: "var(--ink-graphite-deep)" }}>
-            {partner ? (partner.fromPrice != null ? `from $${partner.fromPrice}` : partner.name) : `$${tutor.rate}`}
-            {!partner && <span className="text-[13px] font-normal" style={{ color: "var(--sage)" }}>/hr</span>}
+            {company ? (company.fromPrice != null ? `from $${company.fromPrice}` : company.name) : `$${tutor.rate}`}
+            {!company && <span className="text-[13px] font-normal" style={{ color: "var(--sage)" }}>/hr</span>}
           </div>
           <div className="text-[12.5px]" style={{ color: "var(--sage)" }}>
-            {partner ? `At ${partner.name}` : "Online or in person"}
+            {company ? `At ${company.name}` : "Online or in person"}
           </div>
         </div>
-        {/* Centres are contacted through their own site, never by DM.
-            start_conversation() refuses a partner tutor outright (0065), so
+        {/* Companies are contacted through their own site, never by DM.
+            start_conversation() refuses a company tutor outright (0065), so
             this swap is presentation catching up with the database. */}
-        {partner ? <EnquireButton partner={partner} full={false} /> : <MessageTutorButton tutor={tutor} full={false} />}
+        {company ? <EnquireButton company={company} full={false} /> : <MessageTutorButton tutor={tutor} full={false} />}
       </div>
     </div>
     </TutorBlockProvider>

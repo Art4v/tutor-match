@@ -6,50 +6,50 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { savePartnerProfile } from "@/lib/supabase/partners";
+import { saveCompanyProfile } from "@/lib/supabase/companies";
 import { getSubjects } from "@/lib/supabase/tutors";
 import { ReviewsCard } from "@/app/tutor/[slug]/ReviewsCard";
 import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
 import {
-  PartnerImagesSection,
-  PartnerIdentitySection,
-  PartnerAboutSection,
-  PartnerRateSection,
-  PartnerLocationSection,
-} from "@/components/profile-edit/partner-sections";
+  CompanyImagesSection,
+  CompanyIdentitySection,
+  CompanyAboutSection,
+  CompanyRateSection,
+  CompanyLocationSection,
+} from "@/components/profile-edit/company-sections";
 import {
-  PartnerHeaderCard,
-  PartnerAboutCard,
-  PartnerRateCard,
-  PartnerLocationCard,
-  PartnerTutorsCard,
-} from "./PartnerCards";
-import { PartnerTutorsEditor } from "./PartnerTutorsEditor";
+  CompanyHeaderCard,
+  CompanyAboutCard,
+  CompanyRateCard,
+  CompanyLocationCard,
+  CompanyTutorsCard,
+} from "./CompanyCards";
+import { CompanyTutorsEditor } from "./CompanyTutorsEditor";
 
 /**
- * Inline centre editor, the partner counterpart of OwnerProfile. Renders the
- * partner's own public page from the committed `partner`, with a pen on each
+ * Inline company editor, the company counterpart of OwnerProfile. Renders the
+ * company's own public page from the committed `company`, with a pen on each
  * card that opens its matching form in a modal. **Each section saves
  * independently**, and only one is open at a time, so a save can never clobber
  * another section's unsaved work.
  *
  * Deliberately mirrors OwnerProfile's structure rather than abstracting a
  * shared shell: the two subjects share almost no fields, and a premature
- * abstraction here would couple the tutor editor to the centre editor for the
+ * abstraction here would couple the tutor editor to the company editor for the
  * sake of ~60 lines of scaffolding.
  */
-export function OwnerPartner({ initialPartner, initialTutors, initialReviews, userId }) {
+export function OwnerCompany({ initialCompany, initialTutors, initialReviews, userId }) {
   const router = useRouter();
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
   const supabase = supabaseRef.current;
 
-  const [partner, setPartner] = useState(initialPartner); // committed truth
-  const [draft, setDraft] = useState(initialPartner);     // working copy
+  const [company, setCompany] = useState(initialCompany); // committed truth
+  const [draft, setDraft] = useState(initialCompany);     // working copy
   const [editingKey, setEditingKey] = useState(null);
   const [savingKey, setSavingKey] = useState(null);
   const [toast, setToast] = useState(null);
-  // Tutors are rows in `tutor_profiles`, not part of the partners row, so they
+  // Tutors are rows in `tutor_profiles`, not part of the companies row, so they
   // are state of their own and their editor persists independently.
   const [tutors, setTutors] = useState(initialTutors ?? []);
   const [subjectCatalog, setSubjectCatalog] = useState([]);
@@ -69,31 +69,31 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
   // Opening a section reseeds the draft from committed truth, so an abandoned
   // edit elsewhere can never leak into this one.
   const openSection = (k) => {
-    setDraft({ ...partner });
+    setDraft({ ...company });
     setEditingKey(k);
   };
   const cancel = () => setEditingKey(null);
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
 
   const dirty = useMemo(
-    () => editingKey != null && JSON.stringify(draft) !== JSON.stringify(partner),
-    [editingKey, draft, partner]
+    () => editingKey != null && JSON.stringify(draft) !== JSON.stringify(company),
+    [editingKey, draft, company]
   );
 
   const saveSection = async () => {
     if (savingKey) return;
     if ((draft.name ?? "").trim() === "") {
-      showToast("error", "Your centre needs a name.", 3500);
+      showToast("error", "Your company needs a name.", 3500);
       return;
     }
     setSavingKey(editingKey);
-    // `partner.name` is the committed name, which is how savePartnerProfile
+    // `company.name` is the committed name, which is how saveCompanyProfile
     // tells a genuine rename from an unrelated edit and avoids churning the
     // public URL on every save.
-    const result = await savePartnerProfile(supabase, draft, partner.name);
+    const result = await saveCompanyProfile(supabase, draft, company.name);
     setSavingKey(null);
     if (!result.ok) {
-      console.error("[partner] save failed:", result.error);
+      console.error("[company] save failed:", result.error);
       showToast("error", result.error?.message || "Save failed, please try again.", 4000);
       return;
     }
@@ -109,25 +109,25 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
       slug: result.slug ?? draft.slug,
       fromPrice: prices.length ? Math.min(...prices) : null,
     };
-    setPartner(saved);
+    setCompany(saved);
     setEditingKey(null);
     showToast("ok", "Section saved", 1600);
     // A rename moves the page, so the URL has to follow it.
-    if (result.slug && result.slug !== partner.slug) {
-      router.replace(`/partners/${result.slug}`);
+    if (result.slug && result.slug !== company.slug) {
+      router.replace(`/companies/${result.slug}`);
     }
   };
 
   // Visibility has no section editor, so it persists immediately from the
   // sidebar. Keep any open draft in sync so a later section save can't revert it.
   const onVisibilityChange = async (value) => {
-    const next = { ...partner, visibility: value };
-    const result = await savePartnerProfile(supabase, next, partner.name);
+    const next = { ...company, visibility: value };
+    const result = await saveCompanyProfile(supabase, next, company.name);
     if (!result.ok) {
       showToast("error", result.error?.message || "Couldn't update visibility.", 3500);
       return;
     }
-    setPartner(next);
+    setCompany(next);
     setDraft((d) => ({ ...d, visibility: value }));
     showToast("ok", value === "public" ? "Your page is live." : "Your page is hidden.", 2000);
   };
@@ -170,17 +170,17 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
         <EditRegion
-          {...regionProps("header", "centre details", 1100)}
-          view={<PartnerHeaderCard partner={partner} />}
+          {...regionProps("header", "company details", 1100)}
+          view={<CompanyHeaderCard company={company} />}
           edit={
             <div>
-              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Centre details</h2>
+              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Company details</h2>
               <p className="text-[13px] text-slate-500 mt-1 mb-5">
                 The logo, banner and name at the top of your page.
               </p>
-              <PartnerImagesSection partner={draft} set={set} supabase={supabase} userId={userId} />
+              <CompanyImagesSection company={draft} set={set} supabase={supabase} userId={userId} />
               <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
-                <PartnerIdentitySection partner={draft} set={set} />
+                <CompanyIdentitySection company={draft} set={set} />
               </div>
             </div>
           }
@@ -197,7 +197,7 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
               closeOnly
               view={
                 tutors.length > 0 ? (
-                  <PartnerTutorsCard tutors={tutors} partnerName={partner.name} />
+                  <CompanyTutorsCard tutors={tutors} companyName={company.name} />
                 ) : (
                   <PlaceholderCard
                     title="Our tutors"
@@ -208,12 +208,12 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
               edit={
                 <div>
                   <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Our tutors</h2>
-                  <PartnerTutorsEditor
-                    partnerId={partner.id}
-                    // provision_partner_tutor inherits the centre's visibility,
+                  <CompanyTutorsEditor
+                    companyId={company.id}
+                    // provision_partner_tutor inherits the company's visibility,
                     // so a new tutor's local row has to start there too or a
-                    // hidden centre shows a "public" tutor until reload.
-                    partnerVisibility={partner.visibility}
+                    // hidden company shows a "public" tutor until reload.
+                    companyVisibility={company.visibility}
                     ownerId={userId}
                     tutors={tutors}
                     setTutors={setTutors}
@@ -228,8 +228,8 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
             <EditRegion
               {...regionProps("about", "about")}
               view={
-                partner.bioLong ? (
-                  <PartnerAboutCard partner={partner} />
+                company.bioLong ? (
+                  <CompanyAboutCard company={company} />
                 ) : (
                   <PlaceholderCard
                     title="About"
@@ -240,44 +240,44 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
               edit={
                 <div>
                   <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-5">About</h2>
-                  <PartnerAboutSection partner={draft} set={set} />
+                  <CompanyAboutSection company={draft} set={set} />
                 </div>
               }
             />
           </div>
 
           <aside className="space-y-[10px]">
-            <VisibilityCard partner={partner} onChange={onVisibilityChange} />
+            <VisibilityCard company={company} onChange={onVisibilityChange} />
 
             <EditRegion
               {...regionProps("rate", "rates")}
-              view={<PartnerRateCard partner={partner} showEnquire={false} />}
+              view={<CompanyRateCard company={company} showEnquire={false} />}
               edit={
                 <div>
                   <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Rates</h2>
-                  <PartnerRateSection partner={draft} set={set} />
+                  <CompanyRateSection company={draft} set={set} />
                 </div>
               }
             />
 
             {/* Read-only for the owner: reviews aren't editable by their
-                subject, and partners_guard_derived (0067) pins the aggregate
+                subject, and companies_guard_derived (0067) pins the aggregate
                 against a client write regardless. */}
             <ReviewsCard
-              partnerId={partner.id}
-              tutorName={partner.name}
-              rating={partner.rating}
-              reviewCount={partner.reviewCount}
+              companyId={company.id}
+              tutorName={company.name}
+              rating={company.rating}
+              reviewCount={company.reviewCount}
               reviews={initialReviews ?? []}
             />
 
             <EditRegion
               {...regionProps("location", "location")}
-              view={<PartnerLocationCard partner={partner} />}
+              view={<CompanyLocationCard company={company} />}
               edit={
                 <div>
                   <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-5">Where we are</h2>
-                  <PartnerLocationSection partner={draft} set={set} />
+                  <CompanyLocationSection company={draft} set={set} />
                 </div>
               }
             />
@@ -307,8 +307,8 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
  * Live / hidden switch. Persists immediately rather than through a section
  * editor, because it is one boolean and a Save button would be ceremony.
  */
-function VisibilityCard({ partner, onChange }) {
-  const live = partner.visibility === "public";
+function VisibilityCard({ company, onChange }) {
+  const live = company.visibility === "public";
   return (
     <SidebarCard title="Your page">
       <div className="flex items-center gap-2 mt-2.5 text-[13.5px]" style={{ color: live ? "var(--accent)" : "var(--ink-muted)" }}>
@@ -325,7 +325,7 @@ function VisibilityCard({ partner, onChange }) {
       </button>
       {live && (
         <a
-          href={`/partners/${partner.slug}`}
+          href={`/companies/${company.slug}`}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1.5 text-[12.5px] mt-3"
@@ -350,7 +350,7 @@ function PlaceholderCard({ title, body }) {
 }
 
 // Lifted from OwnerProfile.jsx. Kept as a local copy on purpose: it is pure
-// presentation with no partner/tutor knowledge, and hoisting it into a shared
+// presentation with no company/tutor knowledge, and hoisting it into a shared
 // module would mean any restyle of one editor silently restyles the other.
 // `closeOnly` is a local addition: the tutors panel persists every action as it
 // happens (adding a tutor mints an auth user, which cannot be drafted), so it

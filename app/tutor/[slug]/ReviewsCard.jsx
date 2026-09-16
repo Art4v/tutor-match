@@ -9,7 +9,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { ReportModal } from "@/components/ReportModal";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getMyReviewForTutor, getMyReviewForPartner } from "@/lib/supabase/reviews";
+import { getMyReviewForTutor, getMyReviewForCompany } from "@/lib/supabase/reviews";
 import { SidebarHeading, cardStyle } from "./ProfileCards";
 import { ReviewItem } from "./ReviewItem";
 import { ReviewMenu } from "./ReviewMenu";
@@ -67,13 +67,13 @@ const OWN_STATUS = {
   },
 };
 
-// `partnerId` (0067) makes this card serve a CENTRE instead of a tutor. Exactly
-// one of tutorId / partnerId is ever set, matching the DB CHECK. Only three
+// `companyId` (0067) makes this card serve a COMPANY instead of a tutor. Exactly
+// one of tutorId / companyId is ever set, matching the DB CHECK. Only three
 // things actually differ — which "my review" read runs, which key the POST
 // carries, and the copy — so branching here is far cheaper than a second card
 // that would have to track this one's moderation states forever.
-export function ReviewsCard({ tutorId, partnerId, tutorName, rating, reviewCount, reviews = [] }) {
-  const subjectId = tutorId ?? partnerId;
+export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount, reviews = [] }) {
+  const subjectId = tutorId ?? companyId;
   const [showAll, setShowAll] = useState(false);
   const router = useRouter();
 
@@ -99,8 +99,8 @@ export function ReviewsCard({ tutorId, partnerId, tutorName, rating, reviewCount
     if (!ready || !isStudent || !userId || !subjectId) return;
     let active = true;
     const client = createSupabaseBrowserClient();
-    const load = partnerId
-      ? getMyReviewForPartner(client, userId, partnerId)
+    const load = companyId
+      ? getMyReviewForCompany(client, userId, companyId)
       : getMyReviewForTutor(client, userId, tutorId);
     load.then((r) => {
       if (active) setMyReview(r);
@@ -108,7 +108,7 @@ export function ReviewsCard({ tutorId, partnerId, tutorName, rating, reviewCount
     return () => {
       active = false;
     };
-  }, [ready, isStudent, userId, tutorId, partnerId, subjectId]);
+  }, [ready, isStudent, userId, tutorId, companyId, subjectId]);
 
   // Create and edit hit the same endpoint with a different verb; the server
   // forces an edited review back to 'pending' either way.
@@ -125,8 +125,8 @@ export function ReviewsCard({ tutorId, partnerId, tutorName, rating, reviewCount
           body: JSON.stringify(
             editing
               ? { reviewId: myReview?.id, rating: newRating, body }
-              : partnerId
-                ? { partnerId, rating: newRating, body }
+              : companyId
+                ? { companyId, rating: newRating, body }
                 : { tutorId, rating: newRating, body }
           ),
         });
@@ -152,7 +152,7 @@ export function ReviewsCard({ tutorId, partnerId, tutorName, rating, reviewCount
         setBusy(false);
       }
     },
-    [busy, formMode, myReview?.id, tutorId, partnerId]
+    [busy, formMode, myReview?.id, tutorId, companyId]
   );
 
   const remove = useCallback(async () => {

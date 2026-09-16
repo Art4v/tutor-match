@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 // /admin/review (which POSTs here).
 //
 // The aggregate needs no work: rating / review_count on tutor_profiles OR on
-// partners are recomputed by the reviews trigger on the status change (0058 made
+// companies are recomputed by the reviews trigger on the status change (0058 made
 // that aggregate exactly the set of reviews the page renders; 0067 routes it to
 // whichever subject the review points at).
 export async function POST(request) {
@@ -95,8 +95,8 @@ export async function POST(request) {
     },
   });
 
-  // Whoever the review is about: the tutor, or a centre's OWNER. `notifyUserId`
-  // is null for an unclaimed centre — a real state, since we publish a centre's
+  // Whoever the review is about: the tutor, or a company's OWNER. `notifyUserId`
+  // is null for an unclaimed company — a real state, since we publish a company's
   // page before anyone owns it — so this is genuinely optional rather than a
   // defensive null check. The review still publishes either way.
   if (notifyUserId) {

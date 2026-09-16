@@ -11,10 +11,10 @@ export const runtime = "nodejs";
 const SHADOW_EMAIL_DOMAIN = "partners.matchtutor.invalid";
 
 /**
- * Resolve the partner the caller owns, or null. Every handler here is scoped
- * through this: a partner can only ever touch its own tutors.
+ * Resolve the company the caller owns, or null. Every handler here is scoped
+ * through this: a company can only ever touch its own tutors.
  */
-async function callerPartner(supabase, userId) {
+async function callerCompany(supabase, userId) {
   const { data } = await supabase
     .from("partners")
     .select("id, name, visibility")
@@ -24,9 +24,9 @@ async function callerPartner(supabase, userId) {
 }
 
 /**
- * POST { name } — add a tutor to the caller's centre.
+ * POST { name } — add a tutor to the caller's company.
  *
- * A partner tutor is an ordinary `tutor_profiles` row, and that table's id FKs
+ * A company tutor is an ordinary `tutor_profiles` row, and that table's id FKs
  * through `profiles` to `auth.users`, so the row cannot exist without an auth
  * user. We mint a shadow one. THREE THINGS MUST HOLD, and each fails silently
  * rather than loudly if it doesn't:
@@ -67,9 +67,9 @@ export async function POST(request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
-  const partner = await callerPartner(supabase, user.id);
-  if (!partner) {
-    return NextResponse.json({ error: "Only a centre can add tutors." }, { status: 403 });
+  const company = await callerCompany(supabase, user.id);
+  if (!company) {
+    return NextResponse.json({ error: "Only a company can add tutors." }, { status: 403 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -83,7 +83,7 @@ export async function POST(request) {
     email_confirm: true,
     // No password, deliberately. Also flag the row for anyone reading auth.users
     // directly and wondering what these accounts are.
-    user_metadata: { shadow_partner_tutor: true, partner_id: partner.id },
+    user_metadata: { shadow_partner_tutor: true, partner_id: company.id },
   });
   if (createError || !created?.user) {
     return NextResponse.json(
@@ -94,7 +94,7 @@ export async function POST(request) {
 
   const { data: slug, error: provisionError } = await admin.rpc("provision_partner_tutor", {
     p_uid: created.user.id,
-    p_partner_id: partner.id,
+    p_partner_id: company.id,
     p_name: name,
   });
 
@@ -115,13 +115,13 @@ export async function POST(request) {
 /**
  * DELETE { tutorId } — unlist a tutor.
  *
- * A real delete, not a hide. The locked behaviour is "the partner unlists and
+ * A real delete, not a hide. The locked behaviour is "the company unlists and
  * the profile disappears", and deleting the auth user cascades cleanly through
  * profiles -> tutor_profiles -> every child table, which is also what stops
  * this design accumulating orphaned shadow accounts over time.
  *
- * Safe precisely because of what a partner tutor is NOT: it holds no reviews
- * (those are centre-level) and no conversations (partner tutors cannot be
+ * Safe precisely because of what a company tutor is NOT: it holds no reviews
+ * (those are company-level) and no conversations (company tutors cannot be
  * messaged), so there is no history to strand.
  */
 export async function DELETE(request) {
@@ -141,9 +141,9 @@ export async function DELETE(request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
-  const partner = await callerPartner(supabase, user.id);
-  if (!partner) {
-    return NextResponse.json({ error: "Only a centre can remove tutors." }, { status: 403 });
+  const company = await callerCompany(supabase, user.id);
+  if (!company) {
+    return NextResponse.json({ error: "Only a company can remove tutors." }, { status: 403 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -151,9 +151,9 @@ export async function DELETE(request) {
     return NextResponse.json({ error: "Server is not configured." }, { status: 500 });
   }
 
-  // Ownership check through the ADMIN client, against the partner we resolved
+  // Ownership check through the ADMIN client, against the company we resolved
   // from the caller's own session. Doing it here rather than trusting the
-  // request means a partner cannot delete another centre's tutor by id, and a
+  // request means a company cannot delete another company's tutor by id, and a
   // deliberately narrow select keeps the check readable.
   const { data: target } = await admin
     .from("tutor_profiles")
@@ -161,7 +161,7 @@ export async function DELETE(request) {
     .eq("id", tutorId)
     .maybeSingle();
 
-  if (!target || target.partner_id !== partner.id) {
+  if (!target || target.partner_id !== company.id) {
     return NextResponse.json({ error: "That tutor isn't yours." }, { status: 403 });
   }
 

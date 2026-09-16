@@ -2,12 +2,12 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { savePartnerTutor } from "@/lib/supabase/partners";
-import { PartnerLogo } from "./PartnerCards";
-import { PartnerTutorModal } from "./PartnerTutorModal";
+import { saveCompanyTutor } from "@/lib/supabase/companies";
+import { CompanyLogo } from "./CompanyCards";
+import { CompanyTutorModal } from "./CompanyTutorModal";
 
 /**
- * Manage the tutors a centre lists.
+ * Manage the tutors a company lists.
  *
  * UNLIKE every other section in this editor, add and remove persist
  * IMMEDIATELY rather than on the enclosing Save. That is not an inconsistency:
@@ -15,7 +15,7 @@ import { PartnerTutorModal } from "./PartnerTutorModal";
  * neither can be held in a draft and replayed later. It is why this section is
  * mounted with `closeOnly` and gets a Done button rather than Cancel / Save.
  *
- * Field edits draft inside <PartnerTutorModal> and commit on its own button, so
+ * Field edits draft inside <CompanyTutorModal> and commit on its own button, so
  * abandoning one changes nothing here.
  *
  * ADDING IS TWO WRITES BEHIND ONE BUTTON: the route mints the shadow account
@@ -28,9 +28,9 @@ import { PartnerTutorModal } from "./PartnerTutorModal";
  * must NOT mint a second account. The ref is what makes the retry resume rather
  * than restart.
  */
-export function PartnerTutorsEditor({
-  partnerId,
-  partnerVisibility = "public",
+export function CompanyTutorsEditor({
+  companyId,
+  companyVisibility = "public",
   ownerId,
   tutors,
   setTutors,
@@ -44,7 +44,7 @@ export function PartnerTutorsEditor({
   const createdIdRef = useRef(null);
 
   // Subjects are held as slugs while editing and as objects everywhere else
-  // (PartnerTutorsCard feeds these rows straight into the real <TutorCard>,
+  // (CompanyTutorsCard feeds these rows straight into the real <TutorCard>,
   // which expects objects), so resolve them back through the catalog on the way
   // out of the modal.
   const resolveSubjects = (slugs) =>
@@ -68,7 +68,7 @@ export function PartnerTutorsEditor({
       const creating = !id;
 
       if (creating) {
-        const res = await fetch("/api/partners/tutors", {
+        const res = await fetch("/api/companies/tutors", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name }),
@@ -94,9 +94,9 @@ export function PartnerTutorsEditor({
             avatarImg: null,
             avatarBg: null,
             initial: name.charAt(0).toUpperCase(),
-            // provision_partner_tutor inherits the CENTRE's visibility, so a
-            // hidden centre's new tutor starts hidden too.
-            visibility: partnerVisibility,
+            // provision_partner_tutor inherits the COMPANY's visibility, so a
+            // hidden company's new tutor starts hidden too.
+            visibility: companyVisibility,
             credentials: [],
             yearMin: 0,
             yearMax: 12,
@@ -106,7 +106,7 @@ export function PartnerTutorsEditor({
       }
 
       // Step 2: everything else.
-      const result = await savePartnerTutor(supabase, id, draft);
+      const result = await saveCompanyTutor(supabase, id, draft);
       if (!result.ok) {
         onToast(
           "error",
@@ -160,7 +160,7 @@ export function PartnerTutorsEditor({
     if (!ok) return;
     setBusyId(tutor.id);
     try {
-      const res = await fetch("/api/partners/tutors", {
+      const res = await fetch("/api/companies/tutors", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tutorId: tutor.id }),
@@ -181,7 +181,7 @@ export function PartnerTutorsEditor({
     <div>
       <p className="text-[13px] text-slate-500 mb-4">
         Tutors you list here appear on your page and in the main tutor search, each carrying your
-        centre&rsquo;s name. They don&rsquo;t get their own login, and students enquire through you.
+        company&rsquo;s name. They don&rsquo;t get their own login, and students enquire through you.
       </p>
 
       {tutors.length === 0 ? (
@@ -196,7 +196,7 @@ export function PartnerTutorsEditor({
           {tutors.map((t) => (
             <li key={t.id} style={{ border: "1px solid var(--paper-line)", borderRadius: 12 }}>
               <div className="flex items-center gap-3 px-3 py-2.5">
-                <PartnerLogo partner={{ logoImg: t.avatarImg, avatarBg: t.avatarBg, initial: t.initial }} size={38} />
+                <CompanyLogo company={{ logoImg: t.avatarImg, avatarBg: t.avatarBg, initial: t.initial }} size={38} />
                 <div className="min-w-0 flex-1">
                   <div className="text-[14px] font-medium truncate" style={{ color: "var(--ink)" }}>
                     {t.name}
@@ -245,7 +245,7 @@ export function PartnerTutorsEditor({
       {editing && (
         // Keyed so reopening on a different tutor reseeds the draft rather than
         // reusing the last one's state.
-        <PartnerTutorModal
+        <CompanyTutorModal
           key={editing === "new" ? "new" : editing.id}
           initial={editing === "new" ? null : editing}
           ownerId={ownerId}

@@ -99,35 +99,35 @@ export async function POST(request) {
   }
 
   // Two kinds of review, told apart by the body shape the way /api/reports
-  // distinguishes its two: a tutor review or a CENTRE review (0067). The DB
+  // distinguishes its two: a tutor review or a COMPANY review (0067). The DB
   // CHECK enforces exactly-one-of, so rejecting both-or-neither here is about
   // giving a readable error rather than a constraint violation.
   const tutorId = payload?.tutorId ?? null;
-  const partnerId = payload?.partnerId ?? null;
+  const companyId = payload?.companyId ?? null;
   const { rating, body, error: fieldError } = parseReviewFields(payload);
   if (fieldError) {
     return NextResponse.json({ error: fieldError }, { status: 400 });
   }
-  if (Boolean(tutorId) === Boolean(partnerId)) {
-    return NextResponse.json({ error: "Review either a tutor or a centre." }, { status: 400 });
+  if (Boolean(tutorId) === Boolean(companyId)) {
+    return NextResponse.json({ error: "Review either a tutor or a company." }, { status: 400 });
   }
 
   let subjectName;
   let insertRow;
 
-  if (partnerId) {
-    // Visibility is the only app-level filter for a centre: there is no
+  if (companyId) {
+    // Visibility is the only app-level filter for a company: there is no
     // verification and no email confirmation in that design.
-    const { data: partner } = await supabase
+    const { data: company } = await supabase
       .from("partners")
       .select("id, name, visibility")
-      .eq("id", partnerId)
+      .eq("id", companyId)
       .maybeSingle();
-    if (!partner || partner.visibility !== "public") {
-      return NextResponse.json({ error: "Centre not found." }, { status: 404 });
+    if (!company || company.visibility !== "public") {
+      return NextResponse.json({ error: "Company not found." }, { status: 404 });
     }
-    subjectName = partner.name || "a centre";
-    insertRow = { partner_id: partnerId, student_id: user.id, rating, body };
+    subjectName = company.name || "a company";
+    insertRow = { partner_id: companyId, student_id: user.id, rating, body };
   } else {
     // The target must be a real, publicly listable tutor. RLS already hides
     // disabled owners (0055); visibility + confirmation are app-level filters, so
@@ -140,7 +140,7 @@ export async function POST(request) {
     if (!tutor || tutor.visibility !== "public" || !tutor.email_confirmed_at) {
       return NextResponse.json({ error: "Tutor not found." }, { status: 404 });
     }
-    // Reviews of a centre's tutor belong to the CENTRE, not the individual
+    // Reviews of a company's tutor belong to the COMPANY, not the individual
     // (0065/0067). The profile page already hides the review UI for these, but a
     // hidden control is not a boundary and this route is the only place that is:
     // reviews.tutor_id points straight at tutor_profiles, so without this check a
@@ -148,7 +148,7 @@ export async function POST(request) {
     // surface for, and which would silently move tutor_profiles.rating.
     if (tutor.partner_id) {
       return NextResponse.json(
-        { error: "Reviews for this tutor go to their centre." },
+        { error: "Reviews for this tutor go to their company." },
         { status: 403 }
       );
     }
@@ -167,7 +167,7 @@ export async function POST(request) {
       // One of the two partial unique indexes from 0067, whichever domain this
       // write was in.
       return NextResponse.json(
-        { error: `You've already reviewed this ${partnerId ? "centre" : "tutor"}.`, status: "exists" },
+        { error: `You've already reviewed this ${companyId ? "company" : "tutor"}.`, status: "exists" },
         { status: 409 }
       );
     }
@@ -188,7 +188,7 @@ export async function POST(request) {
     await notifyUser(admin, user.id, {
       type: "review_submitted",
       title: "Review submitted",
-      body: `Thanks for leaving a review. Our team checks every review before it appears on ${partnerId ? "the centre's" : "the tutor's"} page.`,
+      body: `Thanks for leaving a review. Our team checks every review before it appears on ${companyId ? "the company's" : "the tutor's"} page.`,
       email: { subject: "Thanks for leaving a review", html: reviewReceivedEmail({ name: studentName, tutorName: subjectName }) },
     });
   } catch (err) {
