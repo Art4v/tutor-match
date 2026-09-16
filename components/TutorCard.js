@@ -77,7 +77,7 @@ function FitText({ children, max = 18, min = 10, className = "", boxClassName = 
 // One of the twin stat tiles under the school/location line. `tone` picks the
 // pair from the design: "accent" is the credential tile (teal value on a teal
 // tint), "ink" is the rate tile (near-black value on a neutral tint).
-function StatTile({ value, label, tone = "accent" }) {
+function StatTile({ value, label, tone = "accent", compact = false }) {
   const tones = {
     accent: { border: "var(--chip-line)", bg: "var(--desk)", color: "var(--accent)" },
     ink: { border: "var(--paper-line)", bg: "var(--desk-deep)", color: "var(--ink)" },
@@ -86,7 +86,11 @@ function StatTile({ value, label, tone = "accent" }) {
   const t = tones[tone] || tones.accent;
   return (
     <div
-      className="flex flex-col items-center justify-center gap-0.5 md:gap-1 min-w-0 px-1 py-1 md:px-2 md:py-[9px]"
+      className={
+        compact
+          ? "flex flex-col items-center justify-center gap-0.5 min-w-0 px-1 py-1"
+          : "flex flex-col items-center justify-center gap-0.5 md:gap-1 min-w-0 px-1 py-1 md:px-2 md:py-[9px]"
+      }
       style={{ border: `1px solid ${t.border}`, background: t.bg, borderRadius: 9 }}
     >
       {/* The box's FIXED height does double duty: it caps the font size per
@@ -99,14 +103,18 @@ function StatTile({ value, label, tone = "accent" }) {
       <FitText
         max={21}
         min={9}
-        boxClassName="h-[15px] md:h-[23px]"
+        boxClassName={compact ? "h-[15px]" : "h-[15px] md:h-[23px]"}
         className="tabular-nums leading-none"
         style={{ color: t.color, fontWeight: 300 }}
       >
         {value}
       </FitText>
       <span
-        className="font-medium uppercase whitespace-nowrap text-[7px] md:text-[10px]"
+        className={
+          compact
+            ? "font-medium uppercase whitespace-nowrap text-[7px]"
+            : "font-medium uppercase whitespace-nowrap text-[7px] md:text-[10px]"
+        }
         style={{ letterSpacing: "0.06em", color: "var(--sage)" }}
       >
         {label}
@@ -117,10 +125,14 @@ function StatTile({ value, label, tone = "accent" }) {
 
 // Compact subject pill — fully rounded teal-tint chip, smaller than the shared
 // `Chip` so more subjects fit per row on the card.
-function SubjectChip({ children }) {
+function SubjectChip({ children, compact = false }) {
   return (
     <span
-      className="inline-flex items-center font-medium whitespace-nowrap text-[10.5px] md:text-[12px] px-2 py-[3px] md:px-[11px] md:py-1"
+      className={
+        compact
+          ? "inline-flex items-center font-medium whitespace-nowrap text-[10.5px] px-2 py-[3px]"
+          : "inline-flex items-center font-medium whitespace-nowrap text-[10.5px] md:text-[12px] px-2 py-[3px] md:px-[11px] md:py-1"
+      }
       style={{ borderRadius: 999, lineHeight: 1.2, color: "var(--pill-ink)", background: "var(--pill)" }}
     >
       {children}
@@ -133,7 +145,7 @@ function SubjectChip({ children }) {
 // (measured) so the visible rows never overflow / clip a chip mid-row. Re-runs
 // on width AND height changes (it lives in a flex region whose height shifts
 // with the rest of the card). `center` centres the rows.
-function SubjectChipsFill({ subjects, center = false }) {
+function SubjectChipsFill({ subjects, center = false, compact = false }) {
   const containerRef = useRef(null);
   const measureRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(subjects.length);
@@ -207,21 +219,21 @@ function SubjectChipsFill({ subjects, center = false }) {
       >
         {subjects.map((s, i) => (
           <span data-kind="chip" key={i}>
-            <SubjectChip>{subjectLabel(s)}</SubjectChip>
+            <SubjectChip compact={compact}>{subjectLabel(s)}</SubjectChip>
           </span>
         ))}
         <span data-kind="more">
-          <SubjectChip>+{subjects.length}</SubjectChip>
+          <SubjectChip compact={compact}>+{subjects.length}</SubjectChip>
         </span>
       </div>
       {visible.map((s, i) => (
         <span key={i} className="shrink-0">
-          <SubjectChip>{subjectLabel(s)}</SubjectChip>
+          <SubjectChip compact={compact}>{subjectLabel(s)}</SubjectChip>
         </span>
       ))}
       {extra > 0 && (
         <span className="shrink-0">
-          <SubjectChip>+{extra}</SubjectChip>
+          <SubjectChip compact={compact}>+{extra}</SubjectChip>
         </span>
       )}
     </div>
@@ -237,7 +249,7 @@ function SubjectChipsFill({ subjects, center = false }) {
 // as a constant here — the JIT scans source statically and can't see a class
 // name built from a variable. The set, phone -> md:
 //   body height    h-[140px]  md:h-[200px]
-//   rail width     w-[112px]  md:w-[210px]
+//   rail width     w-[88px]   md:w-[210px]
 //   strip height   (hidden)   md:h-[56px]
 //   chips box      (hidden)   md:h-[36px]
 //   avatar         80         132   (a size prop, see the two-Avatar note below)
@@ -254,6 +266,10 @@ function SubjectChipsFill({ subjects, center = false }) {
 // The chips box must stay a FIXED height at both sizes. SubjectChipsFill
 // measures offsetHeight, so an auto-height box collapses and it renders nothing
 // at all.
+//
+// The `compact` prop decouples that phone column of the table from the
+// viewport: a compact card takes the small size at EVERY width. See the `C`
+// table inside the component.
 
 // Bookmark placement. It's a sibling of the card <Link> (never nested), so it
 // can't flow inline in the text column and has to be positioned. It sits at the
@@ -263,6 +279,9 @@ function SubjectChipsFill({ subjects, center = false }) {
 // Written out in full rather than interpolated — Tailwind's JIT scans source
 // statically and can't see a class built from a template literal.
 const SAVE_POS = "top-2 right-[96px] md:top-3 md:right-[218px]";
+// A compact card keeps the 88px phone rail at every width, so the bookmark
+// keeps the phone offset at every width too.
+const SAVE_POS_COMPACT = "top-2 right-[96px]";
 
 // Resting shadow. Static — the card has NO hover animation at all: no lift, no
 // wobble, no shadow change, no border change. That's why this is a plain <div>
@@ -275,7 +294,7 @@ const CARD_SHADOW = "0 1px 2px 0 rgba(0,30,30,0.03), 0 18px 44px -20px rgba(0,49
 // home marquee (components/FeaturedTutors.jsx), which renders every card twice
 // to make the loop seamless: the duplicate passes -1 so it stays clickable with
 // the mouse without putting each tutor in the tab order twice.
-export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLabel = true }) {
+export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLabel = true, compact = false }) {
   // A centre's tutor (0065). Non-null swaps the verified rosette for the
   // centre's chip and suppresses the bookmark: saved_tutors FKs tutor_profiles
   // but the product has no "save a centre's tutor" story yet, and a control
@@ -302,6 +321,51 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
   // missing, so join only what's present rather than emitting a bare "·".
   const schoolLocation = [school, location].filter(Boolean).join(" · ");
 
+  // `compact` pins the card to its PHONE composition at EVERY width: the same
+  // three zones, the small sizes, and no "View full profile" (the 88px rail has
+  // no room for it). It exists for the centre page, where the card sits inside
+  // another card and the desktop size dwarfs its container.
+  //
+  // The subject strip is KEPT in compact, unlike on an actual phone. It's
+  // dropped there for want of width beside the rail; nested in a 1fr column
+  // there is plenty, and the rows this replaced listed subjects.
+  //
+  // Both branches are LITERAL class strings, never interpolations — same
+  // constraint as the size table in the note above the component: Tailwind's
+  // JIT scans source text, so it can see a class written out verbatim here but
+  // not one assembled at runtime.
+  const C = compact
+    ? {
+        body: "gap-3 p-3 min-h-[140px]",
+        avatarSm: "shrink-0 flex items-center",
+        avatarLg: "hidden",
+        nameRow: "gap-1",
+        name: "text-[15px]",
+        chip: "hidden",
+        tickLabel: "hidden",
+        tagline: "mt-0.5 text-[11.5px] pr-12",
+        longBio: "mt-1 text-[10.5px]",
+        school: "mt-1 text-[10px]",
+        strip: "shrink-0 flex items-center px-3 h-[44px]",
+        chipsBox: "w-full h-[26px]",
+        rail: "gap-1.5 p-2 w-[88px]",
+      }
+    : {
+        body: "gap-3 md:gap-5 p-3 md:p-5 min-h-[140px] md:min-h-[200px]",
+        avatarSm: "shrink-0 flex items-center md:hidden",
+        avatarLg: "shrink-0 hidden md:flex items-center",
+        nameRow: "gap-1 md:gap-1.5",
+        name: "text-[15px] md:text-[20px]",
+        chip: "hidden md:inline-flex",
+        tickLabel: "hidden md:inline",
+        tagline: "mt-0.5 md:mt-1 text-[11.5px] md:text-[14px] pr-12 md:pr-0",
+        longBio: "mt-1 md:mt-1.5 text-[10.5px] md:text-[12.5px]",
+        school: "mt-1 md:mt-1.5 text-[10px] md:text-[12px]",
+        strip: "shrink-0 hidden md:flex items-center px-3 md:px-5 h-[44px] md:h-[56px]",
+        chipsBox: "w-full h-[26px] md:h-[36px]",
+        rail: "gap-1.5 md:gap-2.5 p-2 md:p-5 w-[88px] md:w-[210px]",
+      };
+
   return (
     <div
       style={{
@@ -316,7 +380,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
       {/* Bookmark overlay — a sibling of the card <Link> (not nested, so the
           HTML stays valid). See SAVE_POS for why it's placed by class rather
           than the variant's own offset. Suppressed on showcase cards. */}
-      {showSave && !partner && <SaveTutorButton tutorId={tutor.id} variant="card" className={SAVE_POS} tabIndex={tabIndex} />}
+      {showSave && !partner && <SaveTutorButton tutorId={tutor.id} variant="card" className={compact ? SAVE_POS_COMPACT : SAVE_POS} tabIndex={tabIndex} />}
       <Link
         href={`/tutor/${tutor.slug}`}
         tabIndex={tabIndex}
@@ -331,7 +395,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
             it's the rail (which happens on phones, where the rail's contents
             don't shrink as far as the body's) the body has to absorb the extra
             or the surplus shows as a bare white sliver under the tinted strip. */}
-        <div className="flex-1 flex items-stretch gap-3 md:gap-5 p-3 md:p-5 min-h-[140px] md:min-h-[200px]">
+        <div className={"flex-1 flex items-stretch " + C.body}>
           {/* Avatar — a plain rounded square (no banner behind it to straddle,
               so no white ring either), centred in its own stretched cell so it
               lines up with the text column.
@@ -342,10 +406,10 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
               can't resize it. The hidden copy costs one DOM node and no
               network request — browsers don't fetch background-image on a
               display:none element, and the avatar is a background image. */}
-          <div className="shrink-0 flex items-center md:hidden">
+          <div className={C.avatarSm}>
             <Avatar tutor={tutor} size={80} radius={12} />
           </div>
-          <div className="shrink-0 hidden md:flex items-center">
+          <div className={C.avatarLg}>
             <Avatar tutor={tutor} size={132} radius={16} />
           </div>
 
@@ -356,9 +420,9 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
                 right edge at BOTH sizes now (it anchors to the rail divider,
                 which no longer moves), so the padding is unconditional — it
                 clears the 38px control plus its 8px offset. */}
-            <div className="flex items-center gap-1 md:gap-1.5 min-w-0 pr-12">
+            <div className={"flex items-center min-w-0 pr-12 " + C.nameRow}>
               <span
-                className="truncate leading-tight text-[15px] md:text-[20px]"
+                className={"truncate leading-tight " + C.name}
                 style={{ fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
               >
                 {tutor.name}
@@ -374,7 +438,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
                   label is: this row is already tight against the bookmark. */}
               {partner ? (
                 <span
-                  className="hidden md:inline-flex items-center gap-1 shrink-0 text-[11.5px] font-medium"
+                  className={"items-center gap-1 shrink-0 text-[11.5px] font-medium " + C.chip}
                   style={{
                     background: "var(--accent-softer)",
                     color: "var(--accent)",
@@ -388,7 +452,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
                 </span>
               ) : (
                 tutor.verified && (
-                  <VerifiedTick size={17} label={showVerifiedLabel} labelClassName="hidden md:inline" />
+                  <VerifiedTick size={17} label={showVerifiedLabel} labelClassName={C.tickLabel} />
                 )
               )}
             </div>
@@ -407,7 +471,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
                 tall enough to clear it. */}
             {tagline && (
               <div
-                className="mt-0.5 md:mt-1 max-w-full leading-[1.3] text-[11.5px] md:text-[14px] pr-12 md:pr-0"
+                className={"max-w-full leading-[1.3] " + C.tagline}
                 style={{
                   fontWeight: 500,
                   color: "var(--accent)",
@@ -415,22 +479,38 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
                   WebkitLineClamp: 1,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
+                  // See the long-bio note below.
+                  overflowWrap: "anywhere",
                 }}
               >
                 {tagline}
               </div>
             )}
 
-            {/* Long bio — capped at 2 lines. */}
+            {/* Long bio — capped at 2 lines.
+
+                `overflowWrap: anywhere` is what makes the clamp hold. A tutor
+                can type (or paste) a run of characters with no space in it, and
+                a clamp cannot end a line inside an unbreakable token: the text
+                keeps going on one line, and because the token's min-content
+                width is the whole string, it pushes the card, its grid track
+                and the page wider rather than spilling out of the card. Broken
+                anywhere, the clamp ends line two with its own ellipsis, which
+                is the same "there is more" signal the name's truncate gives.
+
+                `anywhere` rather than `break-word` on purpose — it is the one
+                that also collapses the min-content width, so a page that forgot
+                min-w-0 on the column gets a correctly-sized card anyway. */}
             {longBio && (
               <div
-                className="mt-1 md:mt-1.5 leading-[1.5] text-[10.5px] md:text-[12.5px]"
+                className={"leading-[1.5] " + C.longBio}
                 style={{
                   color: "var(--ink-muted)",
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
+                  overflowWrap: "anywhere",
                 }}
               >
                 {longBio}
@@ -440,7 +520,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
             {/* School · Location — deliberately quieter than the stat tiles. */}
             {schoolLocation && (
               <div
-                className="mt-1 md:mt-1.5 max-w-full truncate text-[10px] md:text-[12px]"
+                className={"max-w-full truncate " + C.school}
                 style={{ color: "var(--sage)" }}
               >
                 {schoolLocation}
@@ -455,14 +535,14 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
             an empty tinted band, and hidden below md at every width. */}
         {subjects.length > 0 && (
           <div
-            className="shrink-0 hidden md:flex items-center px-3 md:px-5 h-[44px] md:h-[56px]"
+            className={C.strip}
             style={{ borderTop: "1px solid var(--line)", background: "var(--desk)" }}
           >
             {/* Fixed height on purpose — SubjectChipsFill measures offsetHeight
                 and renders whole rows only, so an auto-height box collapses and
                 it renders nothing at all. */}
-            <div className="w-full h-[26px] md:h-[36px]">
-              <SubjectChipsFill subjects={subjects} />
+            <div className={C.chipsBox}>
+              <SubjectChipsFill subjects={subjects} compact={compact} />
             </div>
           </div>
         )}
@@ -471,29 +551,33 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
         {/* RIGHT COLUMN — the stat rail, a direct child of the <Link> so it
             spans the card's full height and its divider runs top to bottom.
             Contents centre against the whole card, not just the body band. */}
-        <div className="shrink-0 flex flex-col justify-center gap-1.5 md:gap-2.5 p-2 md:p-5 w-[88px] md:w-[210px] border-l border-[color:var(--line)]">
+        <div className={"shrink-0 flex flex-col justify-center border-l border-[color:var(--line)] " + C.rail}>
           {/* Twin stat tiles: top credential · rate. The first tile follows the
               tutor's chosen lead credential (see captionForIcon), so it reads
               "ATAR" for most tutors but "Award" / "Degree" / "State rank" when
               they've ordered a different one first. Always stacked now — the
               rail is a column at every width. */}
-          <div className="grid grid-cols-1 gap-1.5 md:gap-2.5">
-            <StatTile value={statValue} label={statLabel} tone={statTone} />
-            <StatTile value={`$${tutor.rate}`} label="per hour" tone="ink" />
+          <div className={compact ? "grid grid-cols-1 gap-1.5" : "grid grid-cols-1 gap-1.5 md:gap-2.5"}>
+            <StatTile value={statValue} label={statLabel} tone={statTone} compact={compact} />
+            <StatTile value={`$${tutor.rate}`} label="per hour" tone="ink" compact={compact} />
           </div>
 
           {/* CTA — visual only; the whole card is already the link, so this is
               a styled span (a nested <button>/<a> inside <a> is invalid).
               Desktop only: the phone rail is too narrow to carry it without the
               label wrapping awkwardly, and nothing is lost — tapping anywhere
-              on the card already navigates to the profile. */}
-          <span
-            className="w-full hidden md:inline-flex items-center justify-center gap-1.5 font-medium text-white text-[13px] px-[14px] py-[10px]"
-            style={{ background: "var(--ink-graphite)", borderRadius: 11 }}
-          >
-            View full profile
-            <Icon name="arrow-right" size={14} className="shrink-0" />
-          </span>
+              on the card already navigates to the profile. A compact card keeps
+              that narrow rail at every width, so it drops the CTA outright
+              rather than carrying a span that is hidden at every breakpoint. */}
+          {!compact && (
+            <span
+              className="w-full hidden md:inline-flex items-center justify-center gap-1.5 font-medium text-white text-[13px] px-[14px] py-[10px]"
+              style={{ background: "var(--ink-graphite)", borderRadius: 11 }}
+            >
+              View full profile
+              <Icon name="arrow-right" size={14} className="shrink-0" />
+            </span>
+          )}
         </div>
       </Link>
     </div>

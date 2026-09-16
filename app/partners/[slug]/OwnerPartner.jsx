@@ -187,7 +187,11 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          <div className="space-y-[10px]">
+          {/* min-w-0: a 1fr track is minmax(auto, 1fr), so without it the
+              column's min-content width — a single long unbroken word in a bio
+              is enough — widens the whole grid past the viewport. Same guard as
+              /browse and /tutor/[slug]. */}
+          <div className="min-w-0 space-y-[10px]">
             <EditRegion
               {...regionProps("tutors", "our tutors", 820)}
               closeOnly

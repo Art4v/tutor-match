@@ -69,7 +69,7 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
         </div>
 
         {tutor.bio && (
-          <div className="text-[17px] mt-[5px]" style={{ color: "var(--ink-muted)" }}>
+          <div className="text-[17px] mt-[5px] break-words" style={{ color: "var(--ink-muted)" }}>
             <InlineMarkdown text={tutor.bio} />
           </div>
         )}

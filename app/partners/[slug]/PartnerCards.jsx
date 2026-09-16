@@ -1,6 +1,7 @@
 import { Icon } from "@/components/Icon";
 import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
 import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
+import { TutorCard } from "@/components/TutorCard";
 
 // Shared partner card chrome, used by BOTH the public page (server) and the
 // owner inline-editing shell (OwnerPartner, client) so the two cannot drift.
@@ -51,13 +52,13 @@ export function PartnerHeaderCard({ partner }) {
       <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
         <PartnerLogo partner={partner} size={108} ring />
         <h1
-          className="text-[34px] leading-none mt-4"
+          className="text-[34px] leading-none mt-4 break-words"
           style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
         >
           {partner.name}
         </h1>
         {partner.bio && (
-          <p className="text-[15px] mt-2 max-w-[60ch]" style={{ color: "var(--sage)" }}>
+          <p className="text-[15px] mt-2 max-w-[60ch] break-words" style={{ color: "var(--sage)" }}>
             {partner.bio}
           </p>
         )}
@@ -179,9 +180,26 @@ export function PartnerRateCard({ partner, showEnquire = true }) {
 }
 
 /**
- * The centre's tutors. Each links to `/tutor/<slug>` — a partner tutor is an
- * ordinary tutor_profiles row, so it has a real profile page and appears in
- * /browse, which is the entire point of the shadow-account design.
+ * The centre's tutors, rendered with the SAME <TutorCard> as /browse rather
+ * than a bespoke row. A partner tutor is an ordinary tutor_profiles row, so it
+ * already has every field the card reads (rate / suburb / city arrive via the
+ * 0066 mirrors), and reusing the card is what stops the centre page drifting
+ * from the listing a student sees everywhere else.
+ *
+ * `compact` is what keeps the section the size it was before the card moved in
+ * here: it pins TutorCard to the phone composition (80px avatar, 88px rail, no
+ * "View full profile") at every width, because this card is nested one level
+ * deep inside another and the browse size dwarfs its container.
+ *
+ * Two more props are deliberately off here. `partner` is left unset by
+ * `partnerTutorRowToCard`, so the card falls back to its verified-tick slot and
+ * renders nothing there: the centre's own chip on every card of the centre's
+ * own page says nothing. `showSave` is false for the reason the card itself
+ * suppresses the bookmark for partner tutors (saved_tutors has no "save a
+ * centre's tutor" story yet).
+ *
+ * TutorCard is a client component. Importing it does not make this file or the
+ * public page a client component; it just marks that subtree.
  *
  * Hidden tutors are filtered here rather than in the query, because the owner
  * editor reuses `listPartnerTutors` and must see them.
@@ -195,29 +213,11 @@ export function PartnerTutorsCard({ tutors, partnerName }) {
       <p className="text-[13px] text-slate-500 mt-0.5 mb-4">
         {visible.length} {visible.length === 1 ? "tutor" : "tutors"} at {partnerName}.
       </p>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div className="flex flex-col gap-3">
         {visible.map((t) => (
-          <li key={t.id}>
-            <a
-              href={`/tutor/${t.slug}`}
-              className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-100"
-              style={{ background: "var(--bg-soft)", borderRadius: 10 }}
-            >
-              <PartnerLogo partner={{ logoImg: t.avatarImg, avatarBg: t.avatarBg, initial: t.initial }} size={38} />
-              <span className="min-w-0">
-                <span className="block text-[14px] font-medium truncate" style={{ color: "var(--ink)" }}>
-                  {t.name}
-                </span>
-                {t.subjects.length > 0 && (
-                  <span className="block text-[12.5px] text-slate-500 truncate">
-                    {t.subjects.slice(0, 3).map((s) => s.name).join(", ")}
-                  </span>
-                )}
-              </span>
-            </a>
-          </li>
+          <TutorCard key={t.id} tutor={t} compact showSave={false} />
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

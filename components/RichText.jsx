@@ -87,7 +87,9 @@ export function parseRichTextBlocks(text) {
 export function RichTextBlock({ block, idx = 0 }) {
   if (block.type === "p") {
     return (
-      <p>
+      // break-words so an unbroken run of characters (a URL, or keyboard mash)
+      // wraps inside the card instead of overflowing it.
+      <p className="break-words">
         {block.lines.map((ln, j) => (
           <Fragment key={j}>
             {j > 0 && <br />}
@@ -99,7 +101,7 @@ export function RichTextBlock({ block, idx = 0 }) {
   }
   const ListTag = block.type === "ol" ? "ol" : "ul";
   return (
-    <ListTag className={(block.type === "ol" ? "list-decimal" : "list-disc") + " pl-5 space-y-1"}>
+    <ListTag className={(block.type === "ol" ? "list-decimal" : "list-disc") + " pl-5 space-y-1 break-words"}>
       {block.items.map((it, j) => (
         <li key={j}>{renderInline(it, `${idx}-${j}-`)}</li>
       ))}
