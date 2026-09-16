@@ -6,8 +6,9 @@ import { listPartners } from "@/lib/supabase/partners";
 import { getSubjects } from "@/lib/supabase/tutors";
 import { isStateCode } from "@/lib/states";
 import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
-import { PartnerLogo } from "./[slug]/PartnerCards";
+import { PartnerCard } from "@/components/PartnerCard";
 import { PartnersFilters } from "./PartnersFilters";
+import { PartnersFeed, PartnersFeedItem } from "./PartnersFeed";
 
 export const metadata = {
   title: "Partners — tutoring centres",
@@ -71,77 +72,17 @@ export default async function PartnersPage({ searchParams }) {
                 )}
               </div>
             ) : (
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PartnersFeed>
                 {partners.map((p) => (
-                  <li key={p.id}>
+                  <PartnersFeedItem key={p.id}>
                     <PartnerCard partner={p} />
-                  </li>
+                  </PartnersFeedItem>
                 ))}
-              </ul>
+              </PartnersFeed>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function PartnerCard({ partner }) {
-  const location = [partner.suburb, partner.city].filter(Boolean).join(", ");
-  return (
-    <Link
-      href={`/partners/${partner.slug}`}
-      className="flex flex-col h-full bg-[color:var(--paper-card)] overflow-hidden transition-colors hover:bg-slate-50"
-      style={cardStyle}
-    >
-      <div
-        style={{
-          height: 84,
-          background: partner.bannerImg
-            ? `url(${partner.bannerImg}) center / cover no-repeat`
-            : `linear-gradient(135deg, ${partner.bannerBg ?? partner.avatarBg ?? "var(--accent-softer)"}, oklch(0.96 0.01 250))`,
-        }}
-      />
-      <div className="px-5 pb-5 flex-1 flex flex-col" style={{ marginTop: -28 }}>
-        <PartnerLogo partner={partner} size={56} ring />
-        <h2
-          className="text-[19px] leading-tight mt-3"
-          style={{ fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
-        >
-          {partner.name}
-        </h2>
-        {partner.bio && (
-          <p className="text-[13.5px] mt-1.5 line-clamp-2" style={{ color: "var(--ink-muted)" }}>
-            {partner.bio}
-          </p>
-        )}
-        <div
-          className="flex flex-wrap items-center gap-x-3.5 gap-y-1 mt-auto pt-3.5 text-[12.5px]"
-          style={{ color: "var(--ink-muted)" }}
-        >
-          {location && (
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="map-pin" size={12} /> {location}
-            </span>
-          )}
-          {partner.rating != null && (
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="star" size={12} /> {partner.rating.toFixed(1)} ({partner.reviewCount})
-            </span>
-          )}
-          {partner.tutorCount > 0 && (
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="users" size={12} /> {partner.tutorCount}{" "}
-              {partner.tutorCount === 1 ? "tutor" : "tutors"}
-            </span>
-          )}
-          {partner.fromPrice != null && (
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="trending-up" size={12} /> from ${partner.fromPrice}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
   );
 }
