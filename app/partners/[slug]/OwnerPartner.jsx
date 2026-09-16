@@ -210,6 +210,10 @@ export function OwnerPartner({ initialPartner, initialTutors, initialReviews, us
                   <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Our tutors</h2>
                   <PartnerTutorsEditor
                     partnerId={partner.id}
+                    // provision_partner_tutor inherits the centre's visibility,
+                    // so a new tutor's local row has to start there too or a
+                    // hidden centre shows a "public" tutor until reload.
+                    partnerVisibility={partner.visibility}
                     ownerId={userId}
                     tutors={tutors}
                     setTutors={setTutors}
