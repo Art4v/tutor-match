@@ -62,7 +62,7 @@ export function buildInitialAvailability() {
    Form primitives
    ============================================================ */
 
-function Field({ label, hint, error, children, optional, full = true, as: Tag = "label" }) {
+export function Field({ label, hint, error, children, optional, full = true, as: Tag = "label" }) {
   return (
     <Tag className={"block " + (full ? "w-full" : "")}>
       {label && (
@@ -79,7 +79,7 @@ function Field({ label, hint, error, children, optional, full = true, as: Tag = 
   );
 }
 
-function TextInput({ value, onChange, placeholder, type = "text", inputMode, prefix, suffix, multiline, rows = 4, maxLength, onBlur }) {
+export function TextInput({ value, onChange, placeholder, type = "text", inputMode, prefix, suffix, multiline, rows = 4, maxLength, onBlur }) {
   const [focus, setFocus] = useState(false);
   const Tag = multiline ? "textarea" : "input";
   return (
@@ -124,7 +124,7 @@ function TextInput({ value, onChange, placeholder, type = "text", inputMode, pre
  * bulleted + numbered lists). Writes the tiny markdown subset documented in
  * lib/richText.js; the public profile renders it via <RichText>.
  */
-function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false, ai }) {
+export function RichTextField({ value, onChange, placeholder, rows = 4, maxLength, lists = false, ai }) {
   const taRef = useRef(null);
   const [focus, setFocus] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -411,7 +411,7 @@ function Select({ value, onChange, options }) {
   );
 }
 
-function Toggle({ value, onChange, label, hint }) {
+export function Toggle({ value, onChange, label, hint }) {
   return (
     <button type="button" onClick={() => onChange(!value)} className="flex items-start gap-3 w-full text-left py-1">
       <span className="relative inline-block shrink-0 mt-0.5"
@@ -435,7 +435,7 @@ function Card({ children, padding = 24, className = "" }) {
   );
 }
 
-function SectionHeader({ title, subtitle, right, icon }) {
+export function SectionHeader({ title, subtitle, right, icon }) {
   return (
     <header className="flex items-start justify-between gap-4 mb-5">
       <div className="min-w-0">
@@ -543,7 +543,7 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
    Sections
    ============================================================ */
 
-function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape, maxOutputPx }) {
+export function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape, maxOutputPx }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);

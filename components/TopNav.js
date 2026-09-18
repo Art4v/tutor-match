@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { label: "Featured tutors", href: "/#featured-tutors", hash: "featured-tutors" },
   { label: "How it works", href: "/#how-it-works", hash: "how-it-works" },
   { label: "For tutors", href: "/#for-tutors", hash: "for-tutors" },
+  { label: "Companies", href: "/companies" },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -122,6 +123,7 @@ export function TopNav() {
   // yet; middleware keeps them off every real page, so the nav state is moot.
   const isStudent = role === "student";
   const isTutor = role === "tutor";
+  const isCompany = role === "partner"; // a tutoring company (0062)
 
   useEffect(() => {
     if (!user) {
@@ -342,6 +344,14 @@ export function TopNav() {
                               </span>
                             )}
                           </span>
+                        </NavMenuLink>
+                      )}
+                      {isCompany && (
+                        // Resolves through /company because the company's slug
+                        // isn't known when this fixed URL is built, exactly as
+                        // /profile does for tutors.
+                        <NavMenuLink href="/company" onClick={() => setMenuOpen(false)}>
+                          My company
                         </NavMenuLink>
                       )}
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>

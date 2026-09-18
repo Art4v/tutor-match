@@ -44,6 +44,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     // Filled mortarboard (Material Symbols "school") — the avatar fallback mark.
     case "grad-cap": return <svg {...props} viewBox="0 -960 960 960" fill="currentColor" stroke="none"><path d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 241 200-108v-151L480-360 280-470v151l200 108Zm0-241Zm0 90Zm0 0Z"/></svg>;
     case "briefcase": return <svg {...props}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M2 13h20"/></svg>;
+    case "building": return <svg {...props}><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M2 21h20"/><path d="M8 7h4M8 11h4M8 15h4"/></svg>;
     case "trending-up": return <svg {...props}><path d="m22 7-9 9-4-4-7 7"/><path d="M16 7h6v6"/></svg>;
     case "sparkle": return <svg {...props}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>;
     case "x": return <svg {...props}><path d="M18 6 6 18M6 6l12 12"/></svg>;

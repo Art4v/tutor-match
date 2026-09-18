@@ -1,0 +1,28 @@
+-- ============================================================================
+-- tutormatch — 0062: add the 'partner' role
+-- ----------------------------------------------------------------------------
+-- HOW TO APPLY:
+--   Supabase Studio -> SQL Editor -> paste the contents of this file -> Run.
+--   Run it ON ITS OWN and let it finish before running 0063.
+--
+-- DEPENDS ON: 0001..0061 (in order).
+--
+-- WHY THIS FILE CONTAINS EXACTLY ONE STATEMENT:
+--   `alter type ... add value` cannot run inside a transaction block on older
+--   Postgres, and anything that wraps statements (the SQL editor, a migration
+--   runner) will do exactly that. Bundling it with the table DDL in 0063 makes
+--   the whole migration fail in a way that reads like a syntax problem. One
+--   statement, one file, no ambiguity.
+--
+--   It is also IRREVERSIBLE: Postgres has no `drop value`. Removing 'partner'
+--   later means recreating the enum and rewriting every column that uses it.
+--
+-- WHAT A PARTNER IS:
+--   A tutoring centre. Unlike 'tutor' and 'student' this role is NOT selectable
+--   at /choose-role — 0063 recreates choose_role() to raise on it. The only way
+--   an account becomes a partner is by claiming a signed invite link, which is
+--   what makes "partners are invite only" a property of the database rather
+--   than a property of which buttons the UI happens to render.
+-- ============================================================================
+
+alter type public.user_role add value if not exists 'partner';

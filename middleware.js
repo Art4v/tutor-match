@@ -56,9 +56,17 @@ export async function middleware(request) {
     // disabled screen — the disabled gate below takes precedence and parks them
     // there, so the role gate must not pull a NULL-role disabled user off it to
     // /choose-role (that ping-pong was an infinite redirect loop).
+    // The company invite claim page (0063). A user claiming an invite has
+    // role = null at that exact moment, so without this exemption the NULL-role
+    // gate below bounces them to /choose-role — which does not offer Company,
+    // and whose choose_role() now RAISES on it. That is a dead end. Worse,
+    // redirectPreservingCookies clears url.search, so the bounce would destroy
+    // the invite token on the way past.
+    const onCompanyClaim = pathname.startsWith("/companies/claim");
     const exempt =
       onChooser ||
       onDisabled ||
+      onCompanyClaim ||
       pathname.startsWith("/auth") ||
       pathname.startsWith("/api") ||
       pathname.startsWith("/terms-of-service") ||

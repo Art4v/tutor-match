@@ -59,8 +59,10 @@ export default async function AdminReviewPage({ searchParams }) {
     );
   }
 
-  const { review, tutorSlug, tutorName, studentName } = found;
-  const profileHref = tutorSlug ? `/tutor/${tutorSlug}` : null;
+  // subjectName/subjectHref resolve to either the tutor or the company the
+  // review is about (0067), so this page needs no branch of its own.
+  const { review, subjectName, subjectHref, studentName } = found;
+  const profileHref = subjectHref;
 
   if (review.status !== "pending") {
     return (
@@ -95,7 +97,7 @@ export default async function AdminReviewPage({ searchParams }) {
             <span className="font-medium text-slate-900">{review.rating}/5</span>
           </div>
           <div className="text-slate-500 text-[13px] mt-1.5">
-            {studentName} on {tutorName}
+            {studentName} on {subjectName}
           </div>
           {review.body ? (
             <p className="text-[14px] leading-[1.6] mt-3 whitespace-pre-wrap" style={{ color: "var(--ink)" }}>
@@ -115,7 +117,7 @@ export default async function AdminReviewPage({ searchParams }) {
           Approving publishes it on the tutor&apos;s profile and updates their average rating. Rejecting keeps it hidden, and the student can edit it to send it back for another look. Either way they&apos;ll be notified by email.
         </p>
 
-        <ReviewDecision token={token} studentName={studentName} tutorName={tutorName} profileHref={profileHref} />
+        <ReviewDecision token={token} studentName={studentName} tutorName={subjectName} profileHref={profileHref} />
       </section>
     </Shell>
   );
