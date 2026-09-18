@@ -60,7 +60,7 @@ loadEnvFiles();
 // Imported AFTER loadEnvFiles(): lib/companyToken.js reads the secret lazily
 // inside secret(), so import order is not actually load-bearing, but keeping
 // it here makes that independence obvious rather than accidental.
-const { signCompanyInviteToken } = await import("../lib/companyToken.js");
+const { companyClaimUrl } = await import("../lib/companyToken.js");
 
 const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PARTNER_INVITE_SECRET } = process.env;
 const SITE_URL = (process.env.SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
@@ -86,7 +86,7 @@ const supabase = createClient(NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const claimUrl = (id) => `${SITE_URL}/companies/claim?token=${encodeURIComponent(signCompanyInviteToken(id))}`;
+const claimUrl = (id) => companyClaimUrl(SITE_URL, id);
 
 // ── Re-print a link for an existing company ──────────────────────────────────
 if (linkOnly) {

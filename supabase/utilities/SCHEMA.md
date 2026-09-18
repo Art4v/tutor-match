@@ -83,6 +83,7 @@ These duplications are **intentional** — don't "tidy them up" without understa
 | `messages_disclaimer_ack_at` | timestamptz | nullable; `/messages` first-open disclaimer acknowledgment, NULL/stale ⇒ show the blocking gate (versioned via `lib/messagesDisclaimer.js`). NOT stamped on signup, so new users see it once too (0046) |
 | `status` | text | NOT NULL default `'enabled'`, CHECK in (`enabled`,`disabled`) (0052). `disabled` ⇒ `middleware.js` gates the user to `/account-disabled`, hides a disabled tutor from public reads, and (structurally) freezes their messaging. Flipped by the report-resolve route; reverse manually via `supabase/utilities/enable_user.sql` |
 | `can_author_articles` | boolean | NOT NULL default `false` (0061). The blog authoring capability: `/author` and every `articles` write policy require it. **Not self-grantable** — the `profiles_guard_capabilities` trigger pins it for `authenticated`/`anon`, so the only grant path is `supabase/utilities/grant_author.sql` run as a superuser role. Independent of `role`: an author is a designated tutor, not a separate role |
+| `can_invite_companies` | boolean | NOT NULL default `false` (0068). The company-invite capability: `/companies/invite` and the three inviter RPCs (`create_partner_as_inviter`, `list_partners_for_inviter`, `partner_link_target`) require it, via `_is_company_inviter()`, which also requires `status = 'enabled'`. **Not self-grantable**, pinned by the same `profiles_guard_capabilities` trigger; grant with `supabase/utilities/grant_company_inviter.sql`. Any role may hold it |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
@@ -162,14 +163,19 @@ the entire invite model impossible. Do not "fix" this.
 | `service_lat` / `service_lng` | double precision | nullable; the centre is a fixed site |
 | `logo_url` / `banner_url` | text | nullable; `profile-images` bucket |
 | `avatar_bg` / `banner_bg` / `initials` | text | nullable; fallbacks when no image is set |
-| `visibility` | text | NOT NULL default `'public'`, CHECK in (`public`,`hidden`) |
+| `visibility` | text | NOT NULL default `'public'`, CHECK in (`public`,`hidden`). Companies created in-app via `create_partner_as_inviter` (0068) start `hidden`; the CLI script leaves the default |
+| `rating` | numeric(2,1) | nullable (0067); derived from approved company reviews by `recalc_partner_rating()`, pinned against client writes by `partners_guard_derived` |
+| `review_count` | int | NOT NULL default `0` (0067); derived, as above |
+| `created_by` | uuid | nullable → `profiles(id)` ON DELETE SET NULL (0068). The inviter who created the company in-app; NULL for companies made by `npm run create:company` |
 | `created_at` / `updated_at` | timestamptz | NOT NULL DEFAULT `now()`; `updated_at` maintained by `partners_touch_updated_at` |
 
 **Indexes:** `(visibility)`, `(city)`.
 **RLS:** public SELECT on `visibility = 'public' AND (owner_id IS NULL OR owner profiles.status = 'enabled')` —
 the `owner_id IS NULL` arm is what keeps an unclaimed page live. Owner SELECT/UPDATE on
-`owner_id = auth.uid()`. **No INSERT or DELETE policy at all:** partners are created by us through
-the service role (`npm run create:partner`) and are never created or destroyed from a browser.
+`owner_id = auth.uid()`. **No INSERT or DELETE policy at all:** partners are created by us, either
+through the service role (`npm run create:company`) or in-app by an inviter through the SECURITY
+DEFINER `create_partner_as_inviter()` (0068), which checks `can_invite_companies` itself. Nothing
+creates one through table RLS, and nothing destroys one from a browser.
 
 ### `partner_packages` (0063)
 The centre's one rate card. Every tutor listed under the partner displays these prices rather than
@@ -495,7 +501,11 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `save_partner_tutor_profile(p_tutor_id, p_payload)` | jsonb | Sibling of `save_tutor_profile`, scoped by partner ownership instead of `auth.uid() = id`. Updates name/bio/photo and replace-alls `tutor_subjects`; returns `{ dropped_subjects }`. **`save_tutor_profile` is untouched** — a tutor editing their own profile runs exactly the code they always did | 0065 |
 | `sync_partner_tutor_visibility(p_partner_id)` | void | Recomputes every listed tutor's `tutor_profiles.visibility` from the centre's visibility AND its owner's `profiles.status`. Drives `visibility`, **not** `profiles.status`: status is the moderation field (0052), and overloading it would let un-hiding a centre silently re-enable an account a report had disabled | 0065 |
 | `partners_cascade_visibility()` / `profiles_cascade_partner_visibility()` | trigger | Call the above when `partners.visibility`/`owner_id` changes, and when an owner's `profiles.status` changes. The second is needed because 0055's public read checks the TUTOR's own status, not the owner's | 0065 |
-| `_assign_partner_slug(p_id, p_name)` | text | Race-safe partner slug assignment, a clone of `_assign_tutor_slug`. SECURITY DEFINER; execute revoked from public, **granted to `service_role`** so `npm run create:partner` can name a new centre | 0063 |
+| `_assign_partner_slug(p_id, p_name)` | text | Race-safe partner slug assignment, a clone of `_assign_tutor_slug`. SECURITY DEFINER; execute revoked from public, **granted to `service_role`** so `npm run create:company` can name a new centre. Since 0068 the reserved words `claim` and `invite` (static routes under `/companies`) start at `-2` | 0063, 0068 |
+| `_is_company_inviter()` | boolean | STABLE SECURITY DEFINER: `profiles.can_invite_companies AND status = 'enabled'` for `auth.uid()`. The single capability check behind the three inviter RPCs. Execute revoked from public | 0068 |
+| `create_partner_as_inviter(p_name, p_website, p_suburb, p_state, p_allow_duplicate)` | jsonb | SECURITY DEFINER, granted to `authenticated`. Raises `42501` unless an inviter, `22023` on bad input (blank name, unknown state code). Without `p_allow_duplicate`, a case-insensitive name match returns `{status:'duplicate', matches}` instead of inserting. Otherwise inserts with `visibility='hidden'`, `created_by = auth.uid()`, assigns the slug, returns `{status:'created', id, slug}` | 0068 |
+| `list_partners_for_inviter()` | table | SECURITY DEFINER, granted to `authenticated`. Every company (hidden and claimed included) with `claimed` and `invited_by_name`, newest first. Raises unless an inviter | 0068 |
+| `partner_link_target(p_id)` | boolean | SECURITY DEFINER, granted to `authenticated`. Raises unless an inviter; true = unclaimed, false = claimed, NULL = no such id. The token itself is signed in Node (`lib/companyToken.js`) | 0068 |
 | `assign_partner_slug(p_name)` | text | Authenticated wrapper; resolves the target through `partners.owner_id = auth.uid()`, so a caller can only rename their own centre | 0063 |
 | `claim_partner_as(p_partner_id, p_user_id)` | text | Binds an invited partner to an account and sets `profiles.role = 'partner'`; returns the slug, or NULL when already claimed. Takes the user id **explicitly** because the claim route must call it through the service role (which has no `auth.uid()`). Execute revoked from public, granted only to `service_role` — if it were callable from a browser, anyone could claim any centre by guessing its uuid. The `where owner_id is null` guard on its UPDATE is the entire replay defence, which is why there is no invites table | 0063 |
 | `partners_touch_updated_at()` | trigger | Stamps `partners.updated_at = now()` before update | 0063 |
@@ -517,7 +527,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins the derived `rating` / `review_count` against client writes | 0057 |
 | `profiles_status_recalc_ratings` | `profiles` | AFTER UPDATE OF `status` (WHEN changed) | `profiles_status_recalc_ratings()` → refresh the aggregates of every tutor this user reviewed | 0058 |
 | `articles_touch_updated_at` | `articles` | BEFORE UPDATE | `articles_touch_updated_at()` — touches `updated_at` only, never the reader-visible `content_updated_at` | 0061 |
-| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` against client writes, so nobody can grant themselves blog authoring | 0061 |
+| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` and `can_invite_companies` against client writes, so nobody can grant themselves blog authoring or company inviting | 0061, 0068 |
 
 ---
 
@@ -525,7 +535,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 | Table | Read | Write |
 | --- | --- | --- |
-| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE, **except `can_author_articles`, pinned by the `profiles_guard_capabilities` trigger (0061)** — note the self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guard is a trigger |
+| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE, **except `can_author_articles` / `can_invite_companies`, pinned by the `profiles_guard_capabilities` trigger (0061)** — note the self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guard is a trigger |
 | `tutor_profiles` | public | tutor self (ALL), **except the derived `rating` / `review_count`, pinned by a guard trigger (0057)** |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
@@ -556,3 +566,6 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 > band via `supabase/utilities/grant_author.sql` and pinned against client writes by the
 > `profiles_guard_capabilities` trigger (0061), so a user cannot grant themselves the ability to
 > publish to the blog.
+>
+> **Invariant:** nothing in the app writes `profiles.can_invite_companies` either. It is granted
+> via `supabase/utilities/grant_company_inviter.sql` and pinned by the same trigger (0068).

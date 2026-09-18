@@ -382,7 +382,7 @@ export function RichTextField({ value, onChange, placeholder, rows = 4, maxLengt
   );
 }
 
-function Select({ value, onChange, options }) {
+export function Select({ value, onChange, options }) {
   const [focus, setFocus] = useState(false);
   return (
     <div
