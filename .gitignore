@@ -7,4 +7,4 @@ dist
 _design
 .env
 *.stackdump
-company-invites.txt
+supabase/utilities/company_invites.txt
