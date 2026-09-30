@@ -98,6 +98,9 @@ export function CompanyTutorsEditor({
             // hidden company's new tutor starts hidden too.
             visibility: companyVisibility,
             credentials: [],
+            // Matches companyTutorRowToCard's `row.rate ?? 0`, so the card reads
+            // "$0" rather than "$undefined" until the next reload.
+            rate: 0,
             yearMin: 0,
             yearMax: 12,
             subjects: [],

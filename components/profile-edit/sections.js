@@ -105,9 +105,13 @@ export function TextInput({ value, onChange, placeholder, type = "text", inputMo
         maxLength={maxLength}
         className="w-full bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
         style={{
-          padding: multiline ? "10px 16px" : "10px 16px",
-          paddingLeft: prefix ? 4 : undefined,
-          paddingRight: suffix ? 4 : undefined,
+          // Longhands only, never `padding` plus an `undefined` longhand: a
+          // client-rendered mount (e.g. a portal modal) writes undefined as ""
+          // and wipes that side of the shorthand, leaving text flush.
+          paddingTop: 10,
+          paddingBottom: 10,
+          paddingLeft: prefix ? 4 : 16,
+          paddingRight: suffix ? 4 : 16,
           resize: multiline ? "vertical" : "none",
           lineHeight: multiline ? 1.55 : 1.3,
           fontFamily: "inherit",

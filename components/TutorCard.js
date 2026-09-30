@@ -456,7 +456,7 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
               rail is a column at every width. */}
           <div className={compact ? "grid grid-cols-1 gap-1.5" : "grid grid-cols-1 gap-1.5 md:gap-2.5"}>
             <StatTile value={statValue} label={statLabel} tone={statTone} compact={compact} />
-            <StatTile value={`$${tutor.rate}`} label="per hour" tone="ink" compact={compact} />
+            <StatTile value={`$${tutor.rate ?? 0}`} label="per hour" tone="ink" compact={compact} />
           </div>
 
           {/* CTA — visual only; the whole card is already the link, so this is
