@@ -160,7 +160,7 @@ via a signed link. There are two ways in: `npm run create:company`, where the pa
 **immediately, before anyone claims it**, and `/companies/invite` (0068) for non-technical inviters
 holding `profiles.can_invite_companies`, where the page starts **hidden** until the company claims it
 and publishes it. `lib/companyToken.js` `companyClaimUrl()` builds the link for both. Existence is the endorsement: only we can create a company, so a verification step
-would add friction and buy nothing. A company can hide its own page once it owns it.
+would add friction and buy nothing. A company can hide its own page once it owns it. To delete one outright (its tutors' shadow accounts, packages and reviews included; a claimed owner's account is kept with `role` reset to NULL), run `supabase/utilities/delete_company.sql`.
 
 `lib/supabase/companies.js` is the only path to company data, exactly as `lib/supabase/tutors.js` is
 for tutors. `lib/companyToken.js` signs the invite token (`PARTNER_INVITE_SECRET`), and it is the
