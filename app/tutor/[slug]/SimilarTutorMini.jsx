@@ -28,9 +28,12 @@ export function SimilarTutorMini({ tutor }) {
       <div className="text-[12px] truncate mt-0.5 max-w-full" style={{ color: "var(--sage)", minHeight: "1.3em" }}>
         {stripMarkdown(tutor.bio) || " "}
       </div>
-      <div className="text-[12.5px] font-medium tabular-nums mt-1.5" style={{ color: "var(--pill-ink)" }}>
-        ${tutor.rate}/hr
-      </div>
+      {/* A company tutor has no hourly rate (0069). */}
+      {!tutor.isCompanyTutor && (
+        <div className="text-[12.5px] font-medium tabular-nums mt-1.5" style={{ color: "var(--pill-ink)" }}>
+          ${tutor.rate}/hr
+        </div>
+      )}
     </Link>
   );
 }

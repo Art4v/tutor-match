@@ -98,9 +98,9 @@ export function CompanyTutorsEditor({
             // hidden company's new tutor starts hidden too.
             visibility: companyVisibility,
             credentials: [],
-            // Matches companyTutorRowToCard's `row.rate ?? 0`, so the card reads
-            // "$0" rather than "$undefined" until the next reload.
-            rate: 0,
+            // Matches companyTutorRowToCard, so the card drops its per-hour
+            // tile before the next reload too.
+            isCompanyTutor: true,
             yearMin: 0,
             yearMax: 12,
             subjects: [],

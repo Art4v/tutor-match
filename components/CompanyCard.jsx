@@ -162,15 +162,9 @@ export function CompanyCard({ company }) {
             height of the header band. */}
         <div className="shrink-0 flex flex-col justify-center border-l border-[color:var(--line)] gap-1.5 md:gap-2.5 p-2 md:p-5 w-[88px] md:w-[210px]">
           <div className="grid grid-cols-1 gap-1.5 md:gap-2.5">
+            {/* No price tile: a company prices by package only (0069), and one
+                headline figure would claim a unit nobody set. */}
             <StatTile value={topValue} label={topLabel} tone={topTone} />
-            {/* A company with no rate card yet says "Ask", not a dash: the dash
-                reads as a rendering failure, and the brand's copy rule bars the
-                em dash from anything a visitor sees. */}
-            <StatTile
-              value={company.fromPrice != null ? `$${company.fromPrice}` : "Ask"}
-              label={company.fromPrice != null ? "from" : "for pricing"}
-              tone={company.fromPrice != null ? "ink" : "muted"}
-            />
           </div>
 
           {/* Visual only: the band is already the link, and a nested <a> would

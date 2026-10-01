@@ -206,6 +206,10 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
   const statValue = top?.label || "—";
   const statLabel = top ? captionForIcon(top.icon) : "None";
   const statTone = top ? "accent" : "muted";
+  // The second tile is the tutor's second credential when they have one. Without
+  // it, an ordinary tutor falls back to their hourly rate; a company tutor has no
+  // rate (0069), so their rail keeps a single tile.
+  const second = credentials[1] || null;
 
   // Trimmed because these gate whether their block renders at all: rich-text
   // fields that have been typed into and cleared can strip down to whitespace
@@ -449,14 +453,22 @@ export function TutorCard({ tutor, showSave = true, tabIndex = 0, showVerifiedLa
             spans the card's full height and its divider runs top to bottom.
             Contents centre against the whole card, not just the body band. */}
         <div className={"shrink-0 flex flex-col justify-center border-l border-[color:var(--line)] " + C.rail}>
-          {/* Twin stat tiles: top credential · rate. The first tile follows the
+          {/* Stat tiles: top credential · rate. The first tile follows the
               tutor's chosen lead credential (see captionForIcon), so it reads
               "ATAR" for most tutors but "Award" / "Degree" / "State rank" when
-              they've ordered a different one first. Always stacked now — the
-              rail is a column at every width. */}
+              they've ordered a different one first. The second tile is their
+              second credential, falling back to the hourly rate when there is
+              only one (never for a company tutor, who has no rate since 0069).
+              Always stacked now — the rail is a column at every width. */}
           <div className={compact ? "grid grid-cols-1 gap-1.5" : "grid grid-cols-1 gap-1.5 md:gap-2.5"}>
             <StatTile value={statValue} label={statLabel} tone={statTone} compact={compact} />
-            <StatTile value={`$${tutor.rate ?? 0}`} label="per hour" tone="ink" compact={compact} />
+            {second ? (
+              <StatTile value={second.label} label={captionForIcon(second.icon)} tone="accent" compact={compact} />
+            ) : (
+              !tutor.isCompanyTutor && (
+                <StatTile value={`$${tutor.rate ?? 0}`} label="per hour" tone="ink" compact={compact} />
+              )
+            )}
           </div>
 
           {/* CTA — visual only; the whole card is already the link, so this is

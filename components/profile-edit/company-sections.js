@@ -144,8 +144,9 @@ export function CompanyAboutSection({ company, set }) {
 }
 
 /**
- * The company's one rate card. Every tutor listed under this company renders
- * these prices, so this is the single place pricing is set.
+ * The company's one rate card, packages only (0069: no hourly rate). Every
+ * tutor listed under this company renders these packages, so this is the single
+ * place pricing is set.
  */
 export function CompanyRateSection({ company, set }) {
   const packages = company.packages ?? [];
@@ -157,8 +158,8 @@ export function CompanyRateSection({ company, set }) {
   return (
     <div>
       <p className="text-[13px] text-slate-500 mb-4">
-        These prices show on your page and on every tutor you list. Individual tutors don't set
-        their own rates.
+        These packages show on your page and on every tutor you list. Individual tutors don't set
+        their own prices.
       </p>
 
       {packages.length === 0 ? (
@@ -166,7 +167,7 @@ export function CompanyRateSection({ company, set }) {
           className="text-[13.5px] text-slate-500 py-4 px-4 text-center"
           style={{ background: "var(--bg-soft)", borderRadius: 10 }}
         >
-          No rates yet. Add your first one below.
+          No packages yet. Add your first one below.
         </div>
       ) : (
         <div className="space-y-3">
@@ -177,7 +178,7 @@ export function CompanyRateSection({ company, set }) {
                   <TextInput
                     value={p.label ?? ""}
                     onChange={(v) => update(i, { label: v })}
-                    placeholder="Single lesson"
+                    placeholder="Year 10, per term"
                     maxLength={60}
                   />
                 </Field>
@@ -196,7 +197,7 @@ export function CompanyRateSection({ company, set }) {
               <button
                 type="button"
                 onClick={() => remove(i)}
-                aria-label={`Remove ${p.label || "this rate"}`}
+                aria-label={`Remove ${p.label || "this package"}`}
                 className="shrink-0 inline-flex items-center justify-center mb-1 transition-colors hover:bg-slate-100"
                 style={{
                   width: 34,
@@ -219,7 +220,7 @@ export function CompanyRateSection({ company, set }) {
         className="inline-flex items-center gap-1.5 text-[13px] font-medium mt-4 transition-colors hover:bg-slate-100"
         style={{ border: "1px solid var(--paper-line)", borderRadius: 999, padding: "8px 14px", color: "var(--ink)" }}
       >
-        <Icon name="plus" size={14} /> Add a rate
+        <Icon name="plus" size={14} /> Add a package
       </button>
     </div>
   );

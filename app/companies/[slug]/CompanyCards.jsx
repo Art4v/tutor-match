@@ -1,6 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
-import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
+import { cardStyle, SidebarCard, SidebarHeading } from "@/app/tutor/[slug]/ProfileCards";
 import { TutorCard } from "@/components/TutorCard";
 
 // Shared company card chrome, used by BOTH the public page (server) and the
@@ -121,37 +121,26 @@ export function CompanyAboutCard({ company }) {
 }
 
 /**
- * The company's one rate card. Deliberately NOT interactive the way the tutor
- * RateCard is (which tracks a selected package): there is nothing to select
- * here, since every price applies to every tutor the company lists.
+ * The company's one rate card: packages only. There is no hourly rate and no
+ * "from $X" headline (0069), because a company's packages are rarely hourly and
+ * a single headline price would claim a unit nobody set. Deliberately NOT
+ * interactive the way the tutor RateCard is (which tracks a selected package):
+ * there is nothing to select here, since every price applies to every tutor the
+ * company lists.
  */
 export function CompanyRateCard({ company, showEnquire = true }) {
   const packages = company.packages ?? [];
   return (
     <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
-      {company.fromPrice != null ? (
-        <>
-          <div className="flex items-baseline gap-1">
-            <span className="text-[16px]" style={{ color: "var(--sage)" }}>from</span>
-            <span
-              className="text-[40px] font-light tabular-nums"
-              style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.02em" }}
-            >
-              ${company.fromPrice}
-            </span>
-          </div>
-          <div className="text-[13.5px] mt-1" style={{ color: "var(--sage)" }}>
-            Set by the company, the same for every tutor here.
-          </div>
-        </>
-      ) : (
-        <div className="text-[13.5px]" style={{ color: "var(--sage)" }}>
+      <SidebarHeading>Packages</SidebarHeading>
+      {packages.length === 0 && (
+        <div className="text-[13.5px] mt-0.5" style={{ color: "var(--sage)" }}>
           Contact the company for current pricing.
         </div>
       )}
 
       {packages.length > 0 && (
-        <div className="flex flex-col gap-[10px] mt-5">
+        <div className="flex flex-col gap-[10px] mt-4">
           {packages.map((p, i) => (
             <div
               key={i}
@@ -182,8 +171,9 @@ export function CompanyRateCard({ company, showEnquire = true }) {
 /**
  * The company's tutors, rendered with the SAME <TutorCard> as /browse rather
  * than a bespoke row. A company tutor is an ordinary tutor_profiles row, so it
- * already has every field the card reads (rate / suburb / city arrive via the
- * 0066 mirrors), and reusing the card is what stops the company page drifting
+ * already has every field the card reads (suburb / city arrive via the 0066
+ * mirrors; there is no rate since 0069, and `isCompanyTutor` drops the card's
+ * per-hour tile), and reusing the card is what stops the company page drifting
  * from the listing a student sees everywhere else.
  *
  * `compact` is what keeps the section the size it was before the card moved in

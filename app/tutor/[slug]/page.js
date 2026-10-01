@@ -68,9 +68,9 @@ export default async function ProfilePage({ params }) {
   const tiles = buildCredentialTiles(tutor.credentials);
 
   // A company tutor renders the COMPANY's rate card, never its own: the company
-  // owns pricing, and tutor_profiles.rate is only a derived mirror kept for the
-  // indexed /browse rateMax filter (0065). Null for an independent tutor, which
-  // leaves every branch below inert.
+  // owns pricing (packages only), and a company tutor has no rate at all
+  // (0069). Null for an independent tutor, which leaves every branch below
+  // inert.
   const company = tutor.company
     ? await getCompanyBySlug(supabase, tutor.company.slug)
     : null;
@@ -154,11 +154,11 @@ export default async function ProfilePage({ params }) {
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[color:var(--paper-card)] p-4 z-40 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
         <div>
           <div className="text-[20px] font-light tabular-nums" style={{ color: "var(--ink-graphite-deep)" }}>
-            {company ? (company.fromPrice != null ? `from $${company.fromPrice}` : company.name) : `$${tutor.rate}`}
+            {company ? company.name : `$${tutor.rate}`}
             {!company && <span className="text-[13px] font-normal" style={{ color: "var(--sage)" }}>/hr</span>}
           </div>
           <div className="text-[12.5px]" style={{ color: "var(--sage)" }}>
-            {company ? `At ${company.name}` : "Online or in person"}
+            {company ? "Priced by package" : "Online or in person"}
           </div>
         </div>
         {/* Companies are contacted through their own site, never by DM.

@@ -97,18 +97,7 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
       showToast("error", result.error?.message || "Save failed, please try again.", 4000);
       return;
     }
-    // `fromPrice` is derived from packages by the read mapper, so recompute it
-    // here rather than carrying the stale value the draft was seeded with —
-    // otherwise editing the rate card leaves the "from $X" line showing the old
-    // cheapest price until the next full page load.
-    const prices = (draft.packages ?? [])
-      .map((p) => Number(p.price))
-      .filter((n) => Number.isFinite(n));
-    const saved = {
-      ...draft,
-      slug: result.slug ?? draft.slug,
-      fromPrice: prices.length ? Math.min(...prices) : null,
-    };
+    const saved = { ...draft, slug: result.slug ?? draft.slug };
     setCompany(saved);
     setEditingKey(null);
     showToast("ok", "Section saved", 1600);
@@ -250,11 +239,11 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
             <VisibilityCard company={company} onChange={onVisibilityChange} />
 
             <EditRegion
-              {...regionProps("rate", "rates")}
+              {...regionProps("rate", "packages")}
               view={<CompanyRateCard company={company} showEnquire={false} />}
               edit={
                 <div>
-                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Rates</h2>
+                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Packages</h2>
                   <CompanyRateSection company={draft} set={set} />
                 </div>
               }
