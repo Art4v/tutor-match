@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getFeaturedTutors, getSubjects, getVerifiedTutorCount } from "@/lib/supabase/tutors";
+import { getFeaturedTutors, getSubjects, getPublicTutorCount } from "@/lib/supabase/tutors";
 import { rankTutors } from "@/lib/ranking";
 import { HomeHero } from "@/components/HomeHero";
 import { SchoolsStrip } from "@/components/SchoolsStrip";
@@ -16,10 +16,10 @@ const VERIFIED_POOL = 150;
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [featuredPool, subjectCatalog, verifiedCount] = await Promise.all([
+  const [featuredPool, subjectCatalog, tutorCount] = await Promise.all([
     getFeaturedTutors(supabase, VERIFIED_POOL, null, { verifiedOnly: true }),
     getSubjects(supabase),
-    getVerifiedTutorCount(supabase),
+    getPublicTutorCount(supabase),
   ]);
   // Marquee pool: the fetch above already narrowed to verified tutors, so this
   // ranks the whole verified population by the same algorithm as /browse
@@ -34,7 +34,7 @@ export default async function HomePage() {
     <main style={{ background: "var(--paper)" }}>
       <HomeHero catalog={subjectCatalog} />
       <SchoolsStrip />
-      <FeaturedTutors tutors={showcaseTutors} verifiedCount={verifiedCount} />
+      <FeaturedTutors tutors={showcaseTutors} tutorCount={tutorCount} />
       <HomeHowItWorks />
       <HomeCta />
     </main>

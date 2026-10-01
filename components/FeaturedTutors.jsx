@@ -113,7 +113,7 @@ function MarqueeRow({ tutors, direction, duration }) {
   );
 }
 
-export function FeaturedTutors({ tutors = [], verifiedCount }) {
+export function FeaturedTutors({ tutors = [], tutorCount }) {
   if (!tutors.length) return null;
 
   // Alternate by index so both rows carry a comparable slice of the ranking
@@ -190,23 +190,23 @@ export function FeaturedTutors({ tutors = [], verifiedCount }) {
       </div>
 
       <div className="flex justify-center mt-5 md:mt-6 px-6">
-        <BrowseAllTutorsLink verifiedCount={verifiedCount} />
+        <BrowseAllTutorsLink tutorCount={tutorCount} />
       </div>
     </section>
   );
 }
 
-// "Browse all N verified tutors" link with the animated underline and trailing
+// "Browse all N tutors" link with the animated underline and trailing
 // arrow, the same control that used to sit under the hero carousel, inverted to
 // white for the green band. `relative` anchors the underline span to the link.
-function BrowseAllTutorsLink({ verifiedCount }) {
+function BrowseAllTutorsLink({ tutorCount }) {
   return (
     <Link
       href="/browse"
       className="group relative inline-flex items-center gap-2 text-[14px] font-medium whitespace-nowrap"
       style={{ color: "#FFFFFF" }}
     >
-      Browse all{typeof verifiedCount === "number" ? ` ${verifiedCount}` : ""} verified tutors
+      Browse all{typeof tutorCount === "number" ? ` ${tutorCount}` : ""} tutors
       <Icon
         name="arrow-right"
         size={14}
