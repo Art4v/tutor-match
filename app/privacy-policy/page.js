@@ -193,6 +193,10 @@ export default function PrivacyPolicyPage() {
                 function. These cannot be disabled.
               </li>
               <li>
+                <strong>Functional:</strong> Cookies that support browsing tutors on the Platform. They do not
+                identify you and are not used for tracking.
+              </li>
+              <li>
                 <strong>Analytics:</strong> Anonymous usage data to improve the Platform. You can opt out via
                 your browser settings or a cookie preference tool.
               </li>
