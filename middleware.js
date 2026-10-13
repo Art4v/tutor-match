@@ -125,7 +125,40 @@ export async function middleware(request) {
     }
   }
 
+  if (request.nextUrl.pathname === "/browse") {
+    response = withBrowseSeed(request, response);
+  }
+
   return response;
+}
+
+// /browse breaks equal-score ties with a seeded shuffle (lib/ranking.js). The
+// seed rides in a cookie, minted here so the very first render already has it
+// (a server component can't set cookies, and a client-side URL rewrite meant
+// every load rendered twice). A document request (hard load / refresh) rolls a
+// fresh seed so the order reshuffles; a soft navigation (RSC fetch: paging,
+// filter changes, prefetch) keeps it, so paging is a true continuation.
+// Next strips the RSC header and `_rsc` query before middleware sees them, so a
+// document load is recognised by what the browser sends for navigations only.
+const BROWSE_SEED = "browse_seed";
+
+function isDocumentLoad(request) {
+  const mode = request.headers.get("sec-fetch-mode");
+  if (mode) return mode === "navigate";
+  return (request.headers.get("accept") ?? "").includes("text/html");
+}
+
+function withBrowseSeed(request, response) {
+  if (!isDocumentLoad(request) && request.cookies.has(BROWSE_SEED)) return response;
+
+  const seed = String(1 + Math.floor(Math.random() * 0x7ffffffe));
+  // Set on the request so this render reads it, then rebuild the response to
+  // forward it, carrying over any auth cookies the session refresh already set.
+  request.cookies.set(BROWSE_SEED, seed);
+  const next = NextResponse.next({ request });
+  response.cookies.getAll().forEach((cookie) => next.cookies.set(cookie));
+  next.cookies.set(BROWSE_SEED, seed, { path: "/browse", httpOnly: true, sameSite: "lax" });
+  return next;
 }
 
 // Redirect while keeping the auth cookies the session refresh just set on
