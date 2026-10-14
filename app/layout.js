@@ -6,8 +6,8 @@ import PolicyConsentGate from "@/components/PolicyConsentGate";
 import VerificationPrompt from "@/components/VerificationPrompt";
 import { SavedTutorsProvider } from "@/components/SavedTutorsProvider";
 import { RouteLoadingProvider } from "@/components/RouteLoadingProvider";
+import { SITE_URL } from "@/lib/site";
 
-const SITE_URL = "https://www.matchtutor.com.au";
 const SITE_DESCRIPTION =
   "A directory for high school students looking for serious, verified tutors across Australia.";
 
