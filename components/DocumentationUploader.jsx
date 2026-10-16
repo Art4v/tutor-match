@@ -3,12 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import {
-  MAX_TUTOR_DOCS,
-  deleteTutorDoc,
-  updateTutorDocTitle,
-  uploadTutorDoc,
-} from "@/lib/supabase/storage";
+import { MAX_TUTOR_DOCS, uploadTutorDocFile } from "@/lib/supabase/storage";
 
 // Strip the extension for the title prefill — "WWCC.pdf" suggests "WWCC".
 function titleFromFileName(fileName) {
@@ -24,8 +19,10 @@ function titleFromFileName(fileName) {
 // zone is both the button (click -> hidden file input) and the drag-and-drop
 // target. Picking files first STAGES them behind the public-visibility
 // warning panel — they join the draft only once the tutor confirms, and
-// upload (to the PUBLIC `tutor-docs` bucket + a `tutor_documents` row,
-// migration 0034) only on Save. `onDirtyChange` drives the Save button's
+// upload (to the PUBLIC `tutor-docs` bucket, migration 0034) only on Save.
+// commit() only uploads files; the parent then saves the returned list
+// through saveTutorProfile, which writes every row change (add, remove,
+// rename) in one transaction (0070). `onDirtyChange` drives the Save button's
 // enabled state in the parent.
 export const DocumentationUploader = forwardRef(function DocumentationUploader(
   { userId, docs, onDirtyChange },
@@ -55,47 +52,39 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
     items.some((it) => it.removed || it.title.trim() !== it.originalTitle);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
-  // Applies the draft: removals first (frees cap room), then renames, then
-  // uploads. Partial failures are collected, not fatal — the parent shows a
-  // warn toast and the returned list reflects what actually persisted.
+  // Uploads the newly added files and returns the full intended list for
+  // saveTutorProfile: [{ id, path, title }], kept rows first (in their
+  // existing order) then the new uploads. Removed rows are simply left out.
+  // `uploaded` is every path this call created, so the parent can delete them
+  // again if the save fails. A file that fails to upload is skipped and
+  // reported in `errors`; the rest still save.
   useImperativeHandle(ref, () => ({
     async commit() {
-      const errs = [];
-      const finalDocs = [];
-      for (const it of items) {
-        if (it.removed) {
-          const res = await deleteTutorDoc(supabase, it.id, it.path);
-          if (!res.ok) {
-            errs.push({ name: it.originalTitle, message: res.error });
-            finalDocs.push({ id: it.id, title: it.originalTitle, path: it.path, url: it.url });
-          }
-          continue;
-        }
-        let title = it.title.trim() || it.originalTitle;
-        if (title !== it.originalTitle) {
-          const res = await updateTutorDocTitle(supabase, it.id, title);
-          if (!res.ok) {
-            errs.push({ name: it.originalTitle, message: res.error });
-            title = it.originalTitle;
-          }
-        }
-        finalDocs.push({ id: it.id, title, path: it.path, url: it.url });
-      }
+      const errors = [];
+      const uploaded = [];
+      const documents = items
+        .filter((it) => !it.removed)
+        .map((it) => ({ id: it.id, path: it.path, title: it.title.trim() || it.originalTitle }));
       for (const a of added) {
-        if (finalDocs.length >= MAX_TUTOR_DOCS) {
-          errs.push({ name: a.file.name, message: `Up to ${MAX_TUTOR_DOCS} documents.` });
+        if (documents.length >= MAX_TUTOR_DOCS) {
+          errors.push({ name: a.file.name, message: `Up to ${MAX_TUTOR_DOCS} documents.` });
           continue;
         }
         // The `accept` attribute doesn't apply to dropped files — the helper
         // re-validates type and size either way.
-        const res = await uploadTutorDoc(supabase, userId, a.file, a.title);
+        const res = await uploadTutorDocFile(supabase, userId, a.file);
         if (!res.ok) {
-          errs.push({ name: a.file.name, message: res.error });
+          errors.push({ name: a.file.name, message: res.error });
           continue;
         }
-        finalDocs.push({ id: res.id, title: res.title, path: res.path, url: res.url });
+        uploaded.push(res.path);
+        documents.push({
+          id: null,
+          path: res.path,
+          title: a.title.trim() || titleFromFileName(a.file.name) || a.file.name,
+        });
       }
-      return { docs: finalDocs, errors: errs };
+      return { documents, uploaded, errors };
     },
   }));
 

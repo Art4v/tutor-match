@@ -100,8 +100,8 @@ export async function POST(request) {
 
   if (provisionError) {
     // Roll the auth user back, or we leave an orphan that nothing references and
-    // nothing can clean up (the same failure mode uploadTutorDoc guards against
-    // when its row insert fails after the file upload).
+    // nothing can clean up (the same failure mode OwnerProfile's
+    // saveDocumentation guards against when the save fails after the upload).
     await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
     return NextResponse.json(
       { error: provisionError.message || "Could not create the tutor." },

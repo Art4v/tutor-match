@@ -45,10 +45,23 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, alreadyRejected: true });
   }
 
-  const { error: updateErr } = await admin
+  // Only a PENDING request can be decided. The link is signed for the tutor,
+  // not for one request, so without this predicate an old email could act on
+  // a tutor who has since withdrawn (none) or been decided another way. It is
+  // in the UPDATE itself, not just the read above, so two clicks racing each
+  // other can't both win (the 0060 pattern).
+  const { data: updated, error: updateErr } = await admin
     .from("tutor_profiles")
     .update({ verification_status: "rejected" })
-    .eq("id", tutorId);
+    .eq("id", tutorId)
+    .eq("verification_status", "pending")
+    .select("id");
+  if (!updateErr && (!Array.isArray(updated) || updated.length === 0)) {
+    return NextResponse.json(
+      { error: "This request is no longer waiting for review. The tutor may have withdrawn it by editing their profile." },
+      { status: 409 }
+    );
+  }
   if (updateErr) {
     return NextResponse.json({ error: "Could not reject — please try again." }, { status: 500 });
   }

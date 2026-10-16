@@ -264,7 +264,7 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
           return;
         }
       }
-      await markOnboarded(supabase, userId);
+      await markOnboarded(supabase);
       // Land on /profile, which resolves the (possibly regenerated) slug and
       // redirects to the tutor's own profile for inline editing.
       router.replace("/profile");

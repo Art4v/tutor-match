@@ -6,8 +6,8 @@ import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getSubjects, getSchools, saveTutorProfile } from "@/lib/supabase/tutors";
-import { listTutorDocs } from "@/lib/supabase/storage";
+import { getSubjects, getSchools, saveTutorProfile, setTutorVisibility } from "@/lib/supabase/tutors";
+import { listTutorDocs, removeTutorDocFiles } from "@/lib/supabase/storage";
 import { DocumentationUploader } from "@/components/DocumentationUploader";
 import { subjectLabel } from "@/lib/subjects";
 import { editorToDisplay } from "@/lib/tutorShape";
@@ -142,39 +142,49 @@ export function OwnerProfile({ editorTutor, userId }) {
     }
   };
 
-  // Documentation saves outside saveTutorProfile: the editor's commit() applies
-  // its draft (uploads / removals / renames) against Storage + tutor_documents
-  // and returns the persisted list plus any per-file failures.
+  // Documentation: the editor's commit() uploads any new files and returns
+  // the intended list, which then saves through saveTutorProfile like every
+  // other section, so adds, removals and renames commit in one transaction
+  // (0070). It sends the committed `profile`, not the draft, so no other
+  // section's unsaved edits ride along. If the save fails, the files commit()
+  // just uploaded are deleted again.
   const saveDocumentation = async () => {
     if (savingKey) return;
     setSavingKey("documentation");
-    const result = await docsEditorRef.current?.commit();
-    setSavingKey(null);
-    if (!result) {
-      showToast("error", "Save failed — please try again.", 4000);
+    const committed = await docsEditorRef.current?.commit();
+    if (!committed) {
+      setSavingKey(null);
+      showToast("error", "Save failed. Please try again.", 4000);
       return;
     }
-    setDocs(result.docs);
+    const result = await saveTutorProfile(supabase, userId, profile, { documents: committed.documents });
+    setSavingKey(null);
+    if (!result.ok) {
+      await removeTutorDocFiles(supabase, committed.uploaded);
+      console.error("[profile] documentation save failed:", result.error);
+      showToast("error", result.error?.message || "Save failed. Please try again.", 4000);
+      return;
+    }
+    setDocs(result.documents);
     setDocsDirty(false);
     setEditingKey(null);
-    if (result.errors.length > 0) {
-      showToast("warn", `Saved, with issues: ${result.errors.map((e) => `${e.name} (${e.message})`).join("; ")}`, 6000);
+    if (committed.errors.length > 0) {
+      showToast("warn", `Saved, but some files didn't upload: ${committed.errors.map((e) => `${e.name} (${e.message})`).join("; ")}`, 6000);
     } else {
       showToast("ok", "Section saved", 1600);
     }
   };
 
   // Visibility lives in the owner card and has no section editor, so it persists
-  // immediately. Keep any open draft in sync so a later section save doesn't
-  // revert the visibility change.
+  // immediately, on its own RPC so it never resends the rest of the profile.
+  // Keep any open draft in sync so a later section save doesn't revert it.
   const onVisibilityChange = async (value) => {
-    const next = { ...profile, visibility: value };
-    const result = await saveTutorProfile(supabase, userId, next);
+    const result = await setTutorVisibility(supabase, value);
     if (!result.ok) {
       showToast("error", result.error?.message || "Couldn't update visibility.", 3500);
       return false;
     }
-    setProfile(next);
+    setProfile((p) => ({ ...p, visibility: value }));
     setDraft((d) => ({ ...d, visibility: value }));
     return true;
   };
