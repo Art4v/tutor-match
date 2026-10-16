@@ -10,8 +10,9 @@ import { blogImageUrl } from "@/lib/supabase/storage";
 // NOTHING. Article bodies ARE author-supplied, and there is no escape from a
 // switch that only knows six node types, which is why the pipeline is
 // Markdown -> nodes -> JSX and never touches an HTML string. Together with
-// `html: false` in lib/markdown.js this is what keeps the repo's zero
-// dangerouslySetInnerHTML true. components/RichText.jsx does the same thing for
+// `html: false` in lib/markdown.js this is what keeps user content out of
+// dangerouslySetInnerHTML (the repo's only use is components/JsonLd.jsx, which
+// serialises an object, never markup). components/RichText.jsx does the same thing for
 // tutor-authored bios, one level simpler.
 //
 // The shape, which is also documented on the column:

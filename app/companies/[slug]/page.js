@@ -13,6 +13,8 @@ import {
   EnquireButton,
 } from "./CompanyCards";
 import { OwnerCompany } from "./OwnerCompany";
+import { JsonLd } from "@/components/JsonLd";
+import { companyJsonLd } from "@/lib/seo/schema";
 
 export async function generateMetadata({ params }) {
   const supabase = createSupabaseServerClient();
@@ -21,6 +23,7 @@ export async function generateMetadata({ params }) {
   return {
     title: `${company.name}, tutoring company`,
     description: company.bio || undefined,
+    alternates: { canonical: `/companies/${company.slug}` },
   };
 }
 
@@ -61,6 +64,7 @@ export default async function CompanyPage({ params }) {
 
   return (
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
+      <JsonLd data={companyJsonLd(company)} />
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
         <CompanyHeaderCard company={company} />

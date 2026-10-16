@@ -6,6 +6,13 @@ import { SchoolsStrip } from "@/components/SchoolsStrip";
 import { FeaturedTutors } from "@/components/FeaturedTutors";
 import { HomeHowItWorks } from "@/components/HomeHowItWorks";
 import { HomeCta } from "@/components/HomeCta";
+import { JsonLd } from "@/components/JsonLd";
+import { siteJsonLd } from "@/lib/seo/schema";
+import { SITE_DESCRIPTION } from "@/lib/site";
+
+// Set here, not in the root layout: a canonical in the layout would be
+// inherited by every page that doesn't override it, pointing them all at "/".
+export const metadata = { alternates: { canonical: "/" } };
 
 // 12 cards, split across the marquee's two rows.
 const FEATURED_SLOTS = 12;
@@ -32,6 +39,7 @@ export default async function HomePage() {
 
   return (
     <main style={{ background: "var(--paper)" }}>
+      <JsonLd data={siteJsonLd({ description: SITE_DESCRIPTION })} />
       <HomeHero catalog={subjectCatalog} />
       <SchoolsStrip />
       <FeaturedTutors tutors={showcaseTutors} tutorCount={tutorCount} />
