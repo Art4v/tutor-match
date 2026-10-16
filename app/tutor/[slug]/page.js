@@ -23,6 +23,10 @@ import { getTutorReviews } from "@/lib/supabase/reviews";
 import { getCompanyBySlug } from "@/lib/supabase/companies";
 import { CompanyRateCard, EnquireButton } from "@/app/companies/[slug]/CompanyCards";
 import { ReviewsCard } from "./ReviewsCard";
+import { JsonLd } from "@/components/JsonLd";
+import { tutorJsonLd } from "@/lib/seo/schema";
+import { subjectLabel } from "@/lib/subjects";
+import { stateName } from "@/lib/states";
 import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
 export async function generateMetadata({ params }) {
@@ -30,7 +34,36 @@ export async function generateMetadata({ params }) {
   const tutor = await getTutorBySlug(supabase, params.slug);
   // Plain-string title flows through the root template -> "MatchTutor · <name>".
   // No match -> {} falls back to the "MatchTutor" default (page calls notFound).
-  return tutor?.name ? { title: tutor.name } : {};
+  if (!tutor?.name) return {};
+  const description = tutorDescription(tutor);
+  const path = `/tutor/${tutor.slug}`;
+  return {
+    title: tutor.name,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: "profile",
+      title: `MatchTutor · ${tutor.name}`,
+      description,
+      url: path,
+      ...(tutor.avatarImg ? { images: [tutor.avatarImg] } : {}),
+    },
+  };
+}
+
+// One factual sentence for the meta description and link previews: the
+// tagline when there is one, then subjects, location and ATAR as listed.
+function tutorDescription(tutor) {
+  const subjects = tutor.subjects.slice(0, 3).map((s) => subjectLabel(s));
+  const where = [tutor.suburb, stateName(tutor.city)].filter(Boolean).join(", ");
+  const facts = [
+    subjects.length ? `${subjects.join(", ")} tutor` : "Private tutor",
+    where ? `based in ${where}` : null,
+    tutor.atar ? `ATAR ${Number(tutor.atar).toFixed(2)}` : null,
+  ].filter(Boolean).join(", ");
+  const tagline = tutor.bio.trim();
+  if (!tagline) return `${facts}.`;
+  return `${/[.!?]$/.test(tagline) ? tagline : `${tagline}.`} ${facts}.`;
 }
 
 export default async function ProfilePage({ params }) {
@@ -78,6 +111,7 @@ export default async function ProfilePage({ params }) {
   return (
     <TutorBlockProvider tutorId={tutor.id} tutorName={tutor.name}>
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden">
+      <JsonLd data={tutorJsonLd(tutor)} />
       {/* Same cream desk + floating stationery as the featured section. */}
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6 pb-24">

@@ -8,12 +8,16 @@ import { ArticleByline } from "./ArticleByline";
 import { ArticleToc } from "./ArticleToc";
 import { RelatedArticles } from "./RelatedArticles";
 import { CtaBand } from "../CtaBand";
+import { JsonLd } from "@/components/JsonLd";
+import { articleJsonLd } from "@/lib/seo/schema";
 
 export async function generateMetadata({ params }) {
   const article = await getArticleBySlug(createSupabaseServerClient(), params.slug);
   // Returning {} on a miss leaves the root layout's defaults in place, the same
   // way /tutor/[slug] does; the page below is what actually 404s.
-  return article ? { title: article.title, description: article.excerpt } : {};
+  return article
+    ? { title: article.title, description: article.excerpt, alternates: { canonical: `/blog/${article.slug}` } }
+    : {};
 }
 
 export default async function ArticlePage({ params }) {
@@ -31,6 +35,7 @@ export default async function ArticlePage({ params }) {
 
   return (
     <div className="bg-[color:var(--paper-card)] scroll-smooth">
+      <JsonLd data={articleJsonLd(article)} />
       <div className="max-w-[1040px] mx-auto px-6 pt-16 pb-20">
         {/* The header spans both columns; below it the body keeps the header's
             left edge and the chapter rail sticks to its right. The rail stays

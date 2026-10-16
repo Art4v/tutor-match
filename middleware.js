@@ -72,6 +72,7 @@ export async function middleware(request) {
       pathname.startsWith("/terms-of-service") ||
       pathname.startsWith("/privacy-policy") ||
       pathname.startsWith("/blog") ||
+      pathname.startsWith("/tutors") ||
       pathname.startsWith("/forgot-password") ||
       pathname.startsWith("/reset-password");
 
@@ -85,7 +86,8 @@ export async function middleware(request) {
       pathname.startsWith("/api") ||
       pathname.startsWith("/terms-of-service") ||
       pathname.startsWith("/privacy-policy") ||
-      pathname.startsWith("/blog");
+      pathname.startsWith("/blog") ||
+      pathname.startsWith("/tutors");
 
     // We only need the profile when a redirect is possible: an enforceable page
     // (to push NULL-role/disabled users to their gate), the chooser, the auth
@@ -174,7 +176,9 @@ function redirectPreservingCookies(request, refreshed, path) {
 
 export const config = {
   matcher: [
-    // Run on every request except static assets and image optimization.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Run on every request except static assets, image optimization, and the
+    // crawler files (robots.txt, sitemap.xml, llms.txt, llms-full.txt), which
+    // are public, cached and need no session refresh.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|llms-full.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

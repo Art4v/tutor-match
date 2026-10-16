@@ -206,7 +206,46 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
-              7. Your Rights
+              7. Search Engines and AI Services
+            </h2>
+            <p>
+              Public tutor profiles are meant to be found. When a tutor profile is set to public, the
+              information shown on it (name, photo, tagline, subjects, ATAR and other credentials, education,
+              suburb and state, hourly rate, and published reviews) can be:
+            </p>
+            <ul className="mt-3 list-disc pl-6 space-y-1">
+              <li>
+                <strong>Indexed by search engines</strong> such as Google and Bing, and shown in their results.
+              </li>
+              <li>
+                <strong>Read and cited by AI services</strong> such as ChatGPT, Claude, Gemini and Perplexity
+                when they answer questions about finding a tutor.
+              </li>
+              <li>
+                <strong>Used to train AI models</strong> by the companies that operate those services, where
+                their crawlers collect publicly available web pages.
+              </li>
+            </ul>
+            <p className="mt-3">
+              To help with this, we publish a machine-readable summary of public profiles (at /sitemap.xml,
+              /llms.txt and /llms-full.txt). It contains only information already shown on public profiles,
+              and only for tutors who are verified or who belong to a tutoring company listed on MatchTutor.
+            </p>
+            <p className="mt-3">
+              Tutors can remove their profile from these services at any time by setting its visibility to
+              anything other than public in their profile settings. The profile leaves MatchTutor&apos;s public
+              pages immediately and its machine-readable summaries within an hour. Copies that search engines or
+              AI services already hold are controlled by those companies, and may take longer to update.
+            </p>
+            <p className="mt-3">
+              Student accounts, email addresses, messages and other private account information are never
+              published or included in these summaries.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+              8. Your Rights
             </h2>
             <p>Depending on your location, you may have the following rights:</p>
             <ul className="mt-3 list-disc pl-6 space-y-1">
@@ -252,7 +291,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
-              8. Security
+              9. Security
             </h2>
             <p>
               We implement appropriate technical and organisational security measures to protect your data,
@@ -264,7 +303,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
-              9. Children&apos;s Privacy
+              10. Children&apos;s Privacy
             </h2>
             <p>
               Users must be at least 16 years old. We do not knowingly collect personal data from children under
@@ -276,7 +315,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
-              10. Changes to This Policy
+              11. Changes to This Policy
             </h2>
             <p>
               We may update this Privacy Policy from time to time. We will notify registered users by email at
@@ -288,7 +327,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
-              11. Contact
+              12. Contact
             </h2>
             <p>
               For privacy-related questions, requests, or complaints, please contact our Privacy team:{" "}
