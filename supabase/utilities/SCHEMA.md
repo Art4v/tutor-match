@@ -343,7 +343,7 @@ Reference catalog of exam systems.
 | `subject_id` | uuid | PK part → `subjects(id)` ON DELETE CASCADE |
 | `position` | int | NOT NULL DEFAULT 0; drag-order, 0-indexed (0014) |
 
-**Index:** `(tutor_id, position)`. Public read; tutor self-write.
+**Index:** `(tutor_id, position)`. Public read; writes RPC-only since 0071 (`save_tutor_profile`).
 
 ### `tutor_packages`
 | Column | Type | Constraints / Notes |
@@ -354,7 +354,7 @@ Reference catalog of exam systems.
 | `price` | int | NOT NULL; AUD |
 | `position` | int | NOT NULL DEFAULT 0 |
 
-**Index:** `(tutor_id, position)`. Public read; tutor self-write.
+**Index:** `(tutor_id, position)`. Public read; writes RPC-only since 0071 (`save_tutor_profile`).
 
 ### `tutor_experience`
 | Column | Type | Constraints / Notes |
@@ -367,7 +367,7 @@ Reference catalog of exam systems.
 | `note` | text | |
 | `position` | int | NOT NULL DEFAULT 0 |
 
-**Index:** `(tutor_id, position)`. Public read; tutor self-write.
+**Index:** `(tutor_id, position)`. Public read; writes RPC-only since 0071 (`save_tutor_profile`).
 
 ### `tutor_education`
 | Column | Type | Constraints / Notes |
@@ -380,7 +380,7 @@ Reference catalog of exam systems.
 | `school_id` | uuid | → `schools(id)` ON DELETE SET NULL; set only for high-school rows matching a listed school (0026) |
 | `position` | int | NOT NULL DEFAULT 0 |
 
-**Indexes:** `(tutor_id, position)`, `(school_id)` (0026). Public read; tutor self-write.
+**Indexes:** `(tutor_id, position)`, `(school_id)` (0026). Public read; writes RPC-only since 0071 (`save_tutor_profile`).
 
 ### `schools` (0026)
 | Column | Type | Constraints / Notes |
@@ -445,10 +445,10 @@ Two partial unique indexes, split by kind (0059), so a pending conversation repo
 | `title` | text | NOT NULL, CHECK non-blank — tutor-chosen display title (app defaults to the cleaned filename) |
 | `uploaded_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
-Index on `tutor_id`. Public SELECT (the profile page reads any tutor's rows with the anon client); owner-scoped INSERT/UPDATE/DELETE (UPDATE = retitling). This table is the source of truth for the profile "Documentation" card — the app never lists the bucket. On account deletion rows cascade; the storage files orphan (accepted, like 0015's profile-images note).
+Index on `tutor_id`. Public SELECT (the profile page reads any tutor's rows with the anon client). **Writes are RPC-only** (0071 dropped the 0034 owner INSERT/UPDATE/DELETE policies): `add_tutor_document` (checks the folder, that the object exists in `tutor-docs`, and the 5-document cap), `rename_tutor_document`, `delete_tutor_document` (returns the storage path for file cleanup). This table is the source of truth for the profile "Documentation" card — the app never lists the bucket. On account deletion rows cascade; the storage files orphan (accepted, like 0015's profile-images note).
 
 ### Storage: `profile-images` bucket (0006)
-Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`.
+Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`. Bucket-level `file_size_limit` 5 MB + `allowed_mime_types` `{image/jpeg, image/png, image/webp, image/gif}` since 0070 (no SVG: public bucket). A stored `avatar_url` / `banner_url` must point into the writer's own folder of this bucket (`_valid_profile_image`, 0070), or be unchanged.
 
 ### Storage: `tutor-docs` bucket (0034; replaced the private `verification-docs` bucket from 0033)
 **Public** — the files behind `tutor_documents`, at `<uid>/<timestamp>-<name>`. Bucket-level `file_size_limit` 10 MB + `allowed_mime_types` `{application/pdf, image/*}`. Owner-scoped SELECT (0035) / INSERT / DELETE (folder = uid) — the app never lists the bucket (reads go through the table; public-bucket downloads bypass RLS), but the owner SELECT is required because the Storage API's `remove()` checks SELECT as well as DELETE (without it the owner's delete silently no-ops). **No UPDATE policy** — files are immutable, so uploads must not use upsert. Not part of the verification flow. 0034 dropped the old bucket's policies; the bucket itself is emptied + deleted in the dashboard (Supabase's `storage.protect_delete()` trigger blocks SQL DELETEs on storage tables) rather than migrating the files — they were uploaded under a private-and-deleted-after-review promise.
@@ -469,7 +469,7 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `handle_user_email_confirmed()` | trigger | Mirror `auth.users.email_confirmed_at` onto `tutor_profiles` on confirmation | 0007 |
 | `generate_unique_slug(p_name)` | text | Name→slug with collision suffix; superseded by `_assign_tutor_slug` (0013) but still present | 0004 |
 | `_assign_tutor_slug(p_id, p_name)` | text | Race-safe slug assignment (retry on unique_violation). SECURITY DEFINER; execute revoked from anon/authenticated | 0013 |
-| `assign_tutor_slug(p_name)` | text | Authenticated wrapper scoped to `auth.uid()`; called by `saveTutorProfile` on rename | 0013 |
+| `assign_tutor_slug(p_name)` | text | Authenticated wrapper scoped to `auth.uid()`. **Execute revoked from every client role in 0071**; renames go through `save_tutor_profile` → `_apply_tutor_name` | 0013, 0071 |
 | `tutors_within_service_radius(lat, lng, include_online)` | TABLE(id uuid) | Haversine (no PostGIS) — ids of public+confirmed tutors whose radius covers the point, OR online when `include_online`. Public execute | 0008 |
 | `delete_own_account()` | void | Delete caller's `auth.users` row (cascades everything). SECURITY DEFINER, `auth.uid()`-scoped | 0015 |
 | `consume_ai_credit()` | TABLE(allowed bool, used int, day_limit int) | Atomic conditional increment of `ai_usage` (limit hardcoded 10/day) | 0020 |
@@ -477,7 +477,11 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `request_tutor_verification()` | text | `none`/`rejected` → `pending`, idempotent; returns new status. `auth.uid()`-scoped | 0021 |
 | `accept_current_terms()` | void | Stamp caller's `profiles.terms_agreed_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0025 → 0039 |
 | `acknowledge_messages_disclaimer()` | void | Stamp caller's `profiles.messages_disclaimer_ack_at = now()` server-side. SECURITY DEFINER, `auth.uid()`-scoped | 0046 |
-| `save_tutor_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `tutor_profiles` scalars + replace-all the four child tables (resolving subject/school slugs server-side); returns `{ dropped_subjects }`. SECURITY DEFINER, `auth.uid()`-scoped. Replaces the old non-transactional JS save path. Raises `Only one ATAR credential is allowed` if the payload carries >1 `icon="atar"` credential (0036) | 0029, 0036 |
+| `save_tutor_profile(p_payload jsonb)` | jsonb | The tutor's only profile write. One transaction: optional `full_name` (+ slug on a real rename, via `_apply_tutor_name`), then `_apply_tutor_payload` (scalars + replace-all of the four child tables, slugs resolved server-side). Returns `{ dropped_subjects }` (correct since 0070; 0029-0037 always returned an empty list). SECURITY DEFINER, `auth.uid()`-scoped via `_require_own_tutor()` (raises for company tutors). Since 0070 it **derives `atar` itself** (`_atar_from_credentials`, raises on >1 ATAR or > 99.95) and refuses an `avatar_url` / `banner_url` that is not unchanged or inside the caller's own `profile-images` folder of this project (`_valid_profile_image`, origin taken from the JWT issuer) | 0029, 0036, 0070 |
+| `set_tutor_visibility(p_visibility)` | text | Caller's own visibility (`public`/`unlisted`/`hidden`), persisted immediately from the owner card | 0070 |
+| `mark_tutor_onboarded()` | void | Flips the caller's `onboarded` flag (the first-login wizard gate) | 0070 |
+| `add_tutor_document(p_path, p_title)` / `rename_tutor_document(p_id, p_title)` / `delete_tutor_document(p_id)` | uuid / text / text | The `tutor_documents` write path (see that table). Title 1-200 chars | 0070 |
+| `_require_own_tutor()` / `_apply_tutor_payload(id, payload, apply_visibility)` / `_apply_tutor_name(id, name)` / `_atar_from_credentials(jsonb)` / `_valid_profile_image(url, current, folder)` | — | Internal helpers behind the RPCs above, revoked from every client role. `_apply_tutor_payload` is the body `save_tutor_profile` had in 0037, kept in one place so later write paths reuse it | 0070 |
 | `start_conversation(p_tutor_id)` | uuid | Student-only gate (raises otherwise): validates the target is a public, email-confirmed tutor **with `partner_id IS NULL`** (0065 — a centre's tutor is contacted through the centre's website; with partner tutors sharing `tutor_profiles` this guard has to be explicit, where a separate table would have made it structural), **that no block exists in either direction** (0049), **and that neither party is disabled** (0052), then find-or-creates the `(student, tutor)` conversation and returns its id. Invoked at first-send. SECURITY DEFINER, `auth.uid()`-scoped | 0044, 0049, 0052 |
 | `conversation_block_state(p_conversation_id)` | `(blocked_by_me bool, blocked_by_other bool)` | Reports the block state of a conversation the caller participates in (raises for non-participants). Lets the blocked party see a closed composer without broadening `blocked_users` RLS. SECURITY DEFINER, `auth.uid()`-scoped | 0050 |
 | `mark_conversation_read(p_conversation_id)` | void | Set the caller's own read cursor (`student_`/`tutor_last_read_at = now()`); raises if not a participant | 0044 |
@@ -490,7 +494,8 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `profiles_status_recalc_ratings()` | trigger | On a `profiles.status` change, recalculate every tutor the user has reviewed — the aggregate depends on author status, and the review trigger alone would leave it stale. No-op for tutors (`reviews.student_id` → `student_profiles`) | 0058 |
 | `reviews_recalc_rating()` | trigger | Calls `recalc_tutor_rating` after any review insert/update/delete (and for the old tutor too if `tutor_id` ever changed). Fires on UPDATE as well, because every status transition moves the aggregate without a row appearing/disappearing | 0057 |
 | `reviews_touch_updated_at()` | trigger | Stamps `reviews.updated_at = now()` before update | 0057 |
-| `tutor_profiles_guard_derived()` | trigger | Pins `rating` / `review_count` to their stored values when `current_user` is `anon`/`authenticated`, so the 0001 `for all` self-write policy can't be used to self-award a rating. Pins rather than raises. Passes through for the SECURITY DEFINER recalc path and `service_role` | 0057 |
+| `tutor_profiles_guard_derived()` | trigger | When `current_user` is `anon`/`authenticated`: pins `rating` / `review_count` (0057, silently) and **raises** `42501 protected_column:<name>` on a change to `verification_status`, `verification_requested_at`, `partner_id`, `slug`, `email_confirmed_at` (0070) or `onboarded` (0071). An unchanged value passes. SECURITY DEFINER callers and `service_role` pass through | 0057, 0070, 0071 |
+| `profiles_guard_tutor_name()` | trigger | Raises when `anon`/`authenticated` changes `full_name` on a tutor's `profiles` row | 0071 |
 | `save_partner_profile(p_payload jsonb)` | jsonb | Atomically update the caller's `partners` scalars + replace-all `partner_packages`. SECURITY DEFINER, resolves the target through `owner_id = auth.uid()`. **Deliberately does not write `owner_id`, `id` or `slug`** — with no verification column, ownership is the security-relevant field, so the same "the only write path doesn't mention it" trick `save_tutor_profile` uses for `verification_status` applies here; slug renames go through the race-safe `assign_partner_slug()` | 0064 |
 | `get_partner_reviews(p_partner_id)` | TABLE(id, rating, body, created_at, updated_at, author_name, author_avatar_url) | Sibling of `get_tutor_reviews`, and SECURITY DEFINER for the same reason: 0055 narrowed the public `profiles` read to tutor rows and `student_profiles` is self-only, so a public page cannot join a reviewer's name itself. Approved-only, and skips authors whose account is disabled. Granted to anon + authenticated | 0067 |
 | `recalc_partner_rating(p_partner_id)` | void | Recomputes `partners.rating` / `review_count` by **aggregating over `get_partner_reviews()`**, so the stored average is by construction the average of exactly the rows the page renders. Execute revoked from anon/authenticated | 0067 |
@@ -499,7 +504,7 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `partners_sync_tutors()` / `tutor_profiles_sync_from_partner()` | trigger | Call the above from each source: a change to the centre's address, and a tutor joining a centre. The last is scoped to `insert or update of partner_id` so the sync's own write can't re-fire it. (0066's `partner_packages_sync_tutors` fed the rate mirror and was dropped in 0069) | 0066, 0069 |
 | `partner_owns_tutor(p_tutor_id)` | boolean | STABLE SECURITY DEFINER predicate shared by every partner-write policy, so the same condition can't drift across six tables. DEFINER because it reads `partners`, which the caller only sees through its own policies (same reasoning as `conversation_writable` in 0054) | 0065 |
 | `provision_partner_tutor(p_uid, p_partner_id, p_name)` | text | Promotes a freshly created shadow `auth.users` row into a partner tutor: sets `profiles.role='tutor'` + `full_name`, inserts `tutor_profiles` with `partner_id`, stamps `email_confirmed_at`, assigns the slug. `full_name` and `email_confirmed_at` are load-bearing (a null name drops the tutor from the `profiles!inner` browse join; a null confirmation fails all five public read filters) and are set here so they're atomic with the insert. Granted only to `service_role` | 0065 |
-| `save_partner_tutor_profile(p_tutor_id, p_payload)` | jsonb | Sibling of `save_tutor_profile`, scoped by partner ownership instead of `auth.uid() = id`. Updates name/bio/photo and replace-alls `tutor_subjects`; returns `{ dropped_subjects }`. **`save_tutor_profile` is untouched** — a tutor editing their own profile runs exactly the code they always did | 0065 |
+| `save_partner_tutor_profile(p_tutor_id, p_payload)` | jsonb | Sibling of `save_tutor_profile`, scoped by partner ownership instead of `auth.uid() = id`. Updates name/bio/photo/year range, **credentials + the derived `atar`** (0070; previously a second, non-atomic direct write) and replace-alls `tutor_subjects`; returns `{ dropped_subjects }`. The only way a company owner writes a tutor since 0071. The photo must be unchanged or in the owner's own `profile-images` folder | 0065, 0070 |
 | `sync_partner_tutor_visibility(p_partner_id)` | void | Recomputes every listed tutor's `tutor_profiles.visibility` from the centre's visibility AND its owner's `profiles.status`. Drives `visibility`, **not** `profiles.status`: status is the moderation field (0052), and overloading it would let un-hiding a centre silently re-enable an account a report had disabled | 0065 |
 | `partners_cascade_visibility()` / `profiles_cascade_partner_visibility()` | trigger | Call the above when `partners.visibility`/`owner_id` changes, and when an owner's `profiles.status` changes. The second is needed because 0055's public read checks the TUTOR's own status, not the owner's | 0065 |
 | `_assign_partner_slug(p_id, p_name)` | text | Race-safe partner slug assignment, a clone of `_assign_tutor_slug`. SECURITY DEFINER; execute revoked from public, **granted to `service_role`** so `npm run create:company` can name a new centre. Since 0068 the reserved words `claim` and `invite` (static routes under `/companies`) start at `-2` | 0063, 0068 |
@@ -525,10 +530,11 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `messages_bump_conversation` | `messages` | AFTER INSERT | `bump_conversation_last_message()` (sets `conversations.last_message_at`) | 0044 |
 | `reviews_recalc_rating` | `reviews` | AFTER INSERT/UPDATE/DELETE | `reviews_recalc_rating()` → recomputes the tutor's `rating` / `review_count` | 0057 |
 | `reviews_touch_updated_at` | `reviews` | BEFORE UPDATE | `reviews_touch_updated_at()` | 0057 |
-| `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins the derived `rating` / `review_count` against client writes | 0057 |
+| `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins `rating` / `review_count`; raises on client changes to the system columns | 0057, 0070, 0071 |
 | `profiles_status_recalc_ratings` | `profiles` | AFTER UPDATE OF `status` (WHEN changed) | `profiles_status_recalc_ratings()` → refresh the aggregates of every tutor this user reviewed | 0058 |
 | `articles_touch_updated_at` | `articles` | BEFORE UPDATE | `articles_touch_updated_at()` — touches `updated_at` only, never the reader-visible `content_updated_at` | 0061 |
-| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` and `can_invite_companies` against client writes, so nobody can grant themselves blog authoring or company inviting | 0061, 0068 |
+| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` and `can_invite_companies`; raises on client changes to `role` / `status` (0070) | 0061, 0068, 0070 |
+| `profiles_guard_tutor_name` | `profiles` | BEFORE UPDATE | `profiles_guard_tutor_name()` → a tutor's name changes only through an RPC | 0071 |
 
 ---
 
@@ -536,8 +542,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 | Table | Read | Write |
 | --- | --- | --- |
-| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044) | self UPDATE, **except `can_author_articles` / `can_invite_companies`, pinned by the `profiles_guard_capabilities` trigger (0061)** — note the self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guard is a trigger |
-| `tutor_profiles` | public | tutor self (ALL), **except the derived `rating` / `review_count`, pinned by a guard trigger (0057)** |
+| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044); **+ a company owner reads its tutors** (0065) | self UPDATE, **except `can_author_articles` / `can_invite_companies` (silently pinned, 0061/0068), `role` / `status` (raise, 0070) and a tutor's `full_name` (raises, 0071; renamed only through `save_tutor_profile` / `save_partner_tutor_profile`)**. The self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guards are triggers. Students rename themselves through it. 0065's company-owner UPDATE policy was dropped in 0071 |
+| `tutor_profiles` | public (enabled accounts, 0055); **+ own row** (`tutor self read`, 0071); **+ a company owner reads its tutors** (0065) | **none: RPC-only since 0071.** Tutors write through `save_tutor_profile`, `set_tutor_visibility`, `mark_tutor_onboarded`; company owners through `save_partner_tutor_profile`. The guard trigger additionally raises on any `authenticated`/`anon` change to `verification_status`, `verification_requested_at`, `partner_id`, `slug`, `email_confirmed_at`, `onboarded` (0070/0071) and pins `rating` / `review_count` (0057) |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
 | `reviews` | public where `status='approved'`; **+ author reads own row in any status** | author (`student_id` = uid) INSERT/UPDATE/DELETE, with INSERT+UPDATE forced to `status='pending'` so a student can't self-approve (0057) |
@@ -546,18 +552,27 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `messages` | participants of the conversation | participant INSERT, `sender_id` = uid + first message must be the student's (0044) + no block between participants (0049) + neither participant disabled (0052); no UPDATE/DELETE — edit/unsend via RPC (0045) |
 | `message_reactions` | participants of the reacted message's conversation (0045) | `user_id` = uid (+ participant) INSERT/UPDATE/DELETE (0045) |
 | `subjects` / `exams` / `schools` | public | none (reference data) |
-| `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | tutor self-write |
+| `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | **none: RPC-only since 0071** (`save_tutor_profile`; `save_partner_tutor_profile` for subjects of company tutors). The 0002 self-write and 0065 company-write policies are gone |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |
 | `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
 | `reports` | reporter self (own `reporter_id`) | none (service-role only, 0053) |
-| `tutor_documents` | public | owner-scoped INSERT/UPDATE/DELETE |
-| `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid |
+| `tutor_documents` | public | **none: RPC-only since 0071** (`add_tutor_document`, `rename_tutor_document`, `delete_tutor_document`) |
+| `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid; bucket limits 5 MB, jpeg/png/webp/gif (0070) |
 | `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE |
 | `articles` | public where `status='published'`; **+ author reads own row in any status** | author (`author_id` = uid) **who also holds `profiles.can_author_articles`** — INSERT/UPDATE may set `status in ('draft','pending','published')` (designated authors self-publish); UPDATE/DELETE blocked once `status='removed'` (0061) |
 | `storage.objects` (`blog-images`) | public | owner-scoped by folder = uid, INSERT/UPDATE/DELETE (0061) |
 
-> **Invariant:** `saveTutorProfile` never writes `verified` / `verification_status` — those are
-> server-controlled so a tutor cannot self-verify.
+> **Invariant:** tutor and company-tutor writes are **RPC-only** (0070/0071). No client role holds
+> a write policy on `tutor_profiles`, its four child tables or `tutor_documents`, so every write
+> passes through a SECURITY DEFINER function that checks who is writing and what. Read access is
+> unchanged.
+>
+> **Invariant:** no save path writes `verification_status`, `slug`, `partner_id`,
+> `email_confirmed_at`, `verification_requested_at` or `onboarded`, and the
+> `tutor_profiles_guard_derived` trigger raises if `authenticated`/`anon` changes any of them, so a
+> tutor (or a company owner) cannot self-verify or re-point a row. Likewise `profiles.role` /
+> `status` raise via `profiles_guard_capabilities` (0070), so a disabled account cannot re-enable
+> itself.
 >
 > **Invariant:** nothing in the app writes `tutor_profiles.rating` / `review_count`. They are
 > derived from approved `reviews` by `recalc_tutor_rating()` and pinned against client writes by

@@ -11,6 +11,29 @@ export const dynamic = "force-dynamic";
 // ?token= is the authorization (no login). We validate it, show the tutor, and
 // let the admin confirm with the Approve button — a GET never mutates, so an
 // email prefetch can't auto-approve.
+// What a non-pending status means for the admin holding an old link. `none` is
+// a request the tutor withdrew (or one that was never made).
+const DECIDED = {
+  verified: {
+    tone: "ok",
+    icon: "shield-check",
+    title: (name) => `${name} is already verified`,
+    body: "No further action needed. Their profile already shows the verified badge.",
+  },
+  rejected: {
+    tone: "neutral",
+    icon: "info",
+    title: () => "Already decided",
+    body: "This request was already rejected. If the tutor asks again, you'll get a new link.",
+  },
+  none: {
+    tone: "neutral",
+    icon: "info",
+    title: () => "Request withdrawn",
+    body: "The tutor withdrew this verification request, so there is nothing to decide. If they ask again, you'll get a new link.",
+  },
+};
+
 export default async function AdminVerifyPage({ searchParams }) {
   const token = searchParams?.token ?? "";
   const { tutorId, error } = verifyApproveToken(token);
@@ -59,14 +82,18 @@ export default async function AdminVerifyPage({ searchParams }) {
   const name = tutor.profile?.full_name || "This tutor";
   const location = [tutor.suburb, tutor.city].filter(Boolean).join(", ");
 
-  if (tutor.verification_status === "verified") {
+  // Only a pending request can be decided. Anything else is a stale link, and
+  // the page says what actually happened rather than offering buttons the
+  // routes would refuse anyway.
+  if (tutor.verification_status !== "pending") {
+    const decided = DECIDED[tutor.verification_status] || DECIDED.none;
     return (
       <Shell>
         <StateCard
-          tone="ok"
-          icon="shield-check"
-          title={`${name} is already verified`}
-          body="No further action needed — their profile already shows the verified badge."
+          tone={decided.tone}
+          icon={decided.icon}
+          title={decided.title(name)}
+          body={decided.body}
           profileHref={tutor.slug ? `/tutor/${tutor.slug}` : null}
         />
       </Shell>

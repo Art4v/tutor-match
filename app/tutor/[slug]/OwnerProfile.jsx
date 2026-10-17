@@ -6,7 +6,7 @@ import { Icon } from "@/components/Icon";
 import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getSubjects, getSchools, saveTutorProfile } from "@/lib/supabase/tutors";
+import { getSubjects, getSchools, saveTutorProfile, setTutorVisibility } from "@/lib/supabase/tutors";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { DocumentationUploader } from "@/components/DocumentationUploader";
 import { subjectLabel } from "@/lib/subjects";
@@ -165,16 +165,15 @@ export function OwnerProfile({ editorTutor, userId }) {
   };
 
   // Visibility lives in the owner card and has no section editor, so it persists
-  // immediately. Keep any open draft in sync so a later section save doesn't
-  // revert the visibility change.
+  // immediately through its own RPC (only the visibility column changes). Keep
+  // any open draft in sync so a later section save doesn't revert it.
   const onVisibilityChange = async (value) => {
-    const next = { ...profile, visibility: value };
-    const result = await saveTutorProfile(supabase, userId, next);
+    const result = await setTutorVisibility(supabase, value);
     if (!result.ok) {
       showToast("error", result.error?.message || "Couldn't update visibility.", 3500);
       return false;
     }
-    setProfile(next);
+    setProfile((p) => ({ ...p, visibility: value }));
     setDraft((d) => ({ ...d, visibility: value }));
     return true;
   };
