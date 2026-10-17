@@ -11,6 +11,9 @@ export function VerifyDecision({ token, tutorName, profileHref }) {
   const [state, setState] = useState("idle"); // idle | working | done | error
   const [action, setAction] = useState(null); // "approve" | "reject" — which one ran
   const [message, setMessage] = useState("");
+  // Set when the route reports the request was no longer pending (a stale
+  // link, the other button, or a withdrawal). The status it ended up in.
+  const [decidedStatus, setDecidedStatus] = useState(null);
 
   const submit = async (which) => {
     setState("working");
@@ -25,15 +28,32 @@ export function VerifyDecision({ token, tutorName, profileHref }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setState("error");
-        setMessage(data?.error || "Something went wrong — please try again.");
+        setMessage(data?.error || "Something went wrong. Please try again.");
         return;
       }
+      if (data?.alreadyDecided) setDecidedStatus(data.status ?? "none");
       setState("done");
     } catch {
       setState("error");
-      setMessage("Network error — please try again.");
+      setMessage("Network error. Please try again.");
     }
   };
+
+  if (state === "done" && decidedStatus) {
+    const text = {
+      verified: `${tutorName} is already verified.`,
+      rejected: `${tutorName}'s request was already rejected.`,
+    }[decidedStatus] || `${tutorName} withdrew this request, so nothing was changed.`;
+    return (
+      <div
+        className="flex items-center gap-2.5 text-[14px] font-medium"
+        style={{ background: "var(--desk)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: "14px 16px" }}
+      >
+        <Icon name="info" size={18} />
+        <span>{text}</span>
+      </div>
+    );
+  }
 
   if (state === "done") {
     const approved = action === "approve";
