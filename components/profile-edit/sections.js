@@ -547,7 +547,12 @@ function TagInput({ values, onChange, suggestions = [], placeholder = "Add" }) {
    Sections
    ============================================================ */
 
-export function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape, maxOutputPx }) {
+// `upload` / `resolve` let a caller store the image somewhere other than the
+// public profile-images bucket: a verified tutor's draft uploads to private
+// staging and stores a "staging:<path>" reference (0072), which `resolve` turns
+// back into a previewable URL. Both default to the plain public upload, so
+// every other caller (onboarding, company tutors) is unchanged.
+export function ImageUploadControl({ label, value, kind, supabase, userId, onChange, hint, aspect, cropShape, maxOutputPx, upload, resolve }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -566,7 +571,9 @@ export function ImageUploadControl({ label, value, kind, supabase, userId, onCha
   const onCropConfirm = async (croppedFile) => {
     setPendingFile(null);
     setBusy(true);
-    const res = await uploadProfileImage(supabase, userId, kind, croppedFile);
+    const res = upload
+      ? await upload(croppedFile, kind)
+      : await uploadProfileImage(supabase, userId, kind, croppedFile);
     setBusy(false);
     if (!res.ok) { setErr(res.error); return; }
     onChange(res.url);
@@ -589,9 +596,9 @@ export function ImageUploadControl({ label, value, kind, supabase, userId, onCha
             border: "1px solid var(--paper-line)",
           }}
         >
-          {value ? (
+          {value && (resolve ? resolve(value) : value) ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt={`${label} preview`} className="w-full h-full object-cover" />
+            <img src={resolve ? resolve(value) : value} alt={`${label} preview`} className="w-full h-full object-cover" />
           ) : (
             <Icon name="image" size={20} className="text-slate-300" />
           )}
@@ -629,7 +636,7 @@ export function ImageUploadControl({ label, value, kind, supabase, userId, onCha
 // and the banner-colour swatch. Split out so the onboarding wizard can surface
 // image upload on step 1 without dragging in the delivery toggles (which it
 // asks separately). BannerAvatarSection composes this + delivery + response.
-export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
+export function ProfileImagesSection({ tutor, set, supabase, bare = false, uploadImage, resolveImage }) {
   const swatchesDisabled = !!tutor.bannerImg;
   const body = (
     <>
@@ -641,6 +648,8 @@ export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
           supabase={supabase}
           userId={tutor.id}
           onChange={(url) => set({ avatarImg: url })}
+          upload={uploadImage}
+          resolve={resolveImage}
           hint="Square works best. Falls back to a graduation cap when empty."
           aspect={1}
           cropShape="round"
@@ -653,6 +662,8 @@ export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
           supabase={supabase}
           userId={tutor.id}
           onChange={(url) => set({ bannerImg: url })}
+          upload={uploadImage}
+          resolve={resolveImage}
           hint="Wide image, ~1200×320. Falls back to the colour below."
           aspect={1200 / 320}
           cropShape="rect"
@@ -701,10 +712,10 @@ export function ProfileImagesSection({ tutor, set, supabase, bare = false }) {
   );
 }
 
-export function BannerAvatarSection({ tutor, set, supabase, bare = false }) {
+export function BannerAvatarSection({ tutor, set, supabase, bare = false, uploadImage, resolveImage }) {
   const body = (
     <>
-      <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} bare />
+      <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} bare uploadImage={uploadImage} resolveImage={resolveImage} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
         <Toggle value={tutor.deliversInPerson} onChange={(v) => set({ deliversInPerson: v })} label="Accepts in-person lessons" hint="Inside the service area you set below." />
         <Toggle value={tutor.deliversOnline} onChange={(v) => set({ deliversOnline: v })} label="Accepts online lessons" hint="Over Zoom or Google Meet." />

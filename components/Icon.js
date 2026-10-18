@@ -60,6 +60,7 @@ export function Icon({ name, size = 16, className = "", strokeWidth = 1.75 }) {
     case "arrow-right": return <svg {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
     case "arrow-up-right": return <svg {...props}><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>;
     case "plus": return <svg {...props}><path d="M12 5v14M5 12h14"/></svg>;
+    case "minus": return <svg {...props}><path d="M5 12h14"/></svg>;
     case "chevron-up": return <svg {...props}><path d="m6 15 6-6 6 6"/></svg>;
     case "trash": return <svg {...props}><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="m5 6 1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14"/><path d="M10 11v6M14 11v6"/></svg>;
     case "grip": return <svg {...props} fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/></svg>;
