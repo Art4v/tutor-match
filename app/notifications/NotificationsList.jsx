@@ -14,6 +14,9 @@ const TYPES = {
   review_approved: { icon: "check-circle", color: "var(--stamp)", bg: "#ECFDF5" },
   review_published: { icon: "star", color: "var(--stamp)", bg: "#ECFDF5" },
   review_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
+  profile_revision_submitted: { icon: "clock", color: "var(--accent)", bg: "var(--accent-softer)" },
+  profile_revision_approved: { icon: "check-circle", color: "var(--stamp)", bg: "#ECFDF5" },
+  profile_revision_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
 };
 const FALLBACK = { icon: "bell", color: "var(--ink-muted)", bg: "var(--desk)" };
 
