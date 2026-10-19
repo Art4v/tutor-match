@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { RequestVerification } from "@/components/RequestVerification";
+import { ProfileReviewStatus } from "./ProfileReviewStatus";
 import { calcCompletion } from "@/components/profile-edit/sections";
 
 /**
@@ -13,8 +14,12 @@ import { calcCompletion } from "@/components/profile-edit/sections";
  *
  * There is no global save in the per-section model, so the visibility toggle
  * persists immediately via `onVisibilityChange` (OwnerProfile owns the write).
+ * `onVerificationRequested` lifts a new request into OwnerProfile, which needs
+ * to know a request is pending so a later save can warn that it withdraws it.
+ * `review` (verified tutors only, 0072) carries the draft's review state and
+ * handlers for ProfileReviewStatus; null for everyone else.
  */
-export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }) {
+export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested, review, publicHref, publicUrl }) {
   const c = useMemo(() => calcCompletion(profile), [profile]);
   const visibility = profile.visibility ?? "public";
 
@@ -76,9 +81,25 @@ export function OwnerCard({ profile, onVisibilityChange, publicHref, publicUrl }
           <span className="ml-auto text-[11.5px] text-slate-400">Only you see this</span>
         </div>
 
+        {/* Verified tutors: where their reviewed draft stands. Leads the card,
+            since it is the thing they act on. */}
+        {review && (
+          <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
+            <ProfileReviewStatus {...review} />
+          </div>
+        )}
+
         {/* Verification — top of the card so the get-verified nudge leads. */}
         <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
-          <RequestVerification status={profile.verificationStatus} completionPct={c.pct} unstyled />
+          {/* Keyed on the status: RequestVerification seeds its own state once,
+              so a withdrawal (a save while pending, 0072) must remount it. */}
+          <RequestVerification
+            key={profile.verificationStatus ?? "none"}
+            status={profile.verificationStatus}
+            completionPct={c.pct}
+            onRequested={onVerificationRequested}
+            unstyled
+          />
         </div>
 
         {/* Completion */}

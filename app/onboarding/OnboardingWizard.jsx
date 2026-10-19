@@ -245,7 +245,18 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
       } catch { /* save with whatever's there */ }
     }
     const result = await saveTutorProfile(supabase, userId, toSave);
-    if (!result.ok) return { ok: false, error: result.error?.message || "Couldn't save — please try again." };
+    if (!result.ok) return { ok: false, error: result.error?.message || "Couldn't save. Please try again." };
+    // Keep what was saved (including any geocode just resolved) so the next
+    // save sends the same thing. The wizard saves twice when the tutor requests
+    // verification (before the request, then on Finish), and the second save
+    // must be a no-op or it would withdraw the request it just made (0072).
+    setTutor((t) => ({
+      ...toSave,
+      verificationStatus: result.verificationWithdrawn ? "none" : t.verificationStatus,
+    }));
+    if (result.verificationWithdrawn) {
+      showToast("warn", "Your verification request was withdrawn because your profile changed. You can request it again any time.");
+    }
     return { ok: true };
   };
 
@@ -357,14 +368,14 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
           style={{
-            background: toast.kind === "error" ? "#B91C1C" : "var(--ink)",
+            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
             color: "#fff",
             borderRadius: 999,
             boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
             maxWidth: "calc(100vw - 32px)",
           }}
         >
-          <Icon name={toast.kind === "error" ? "x" : "check"} size={14} strokeWidth={3} />
+          <Icon name={toast.kind === "error" ? "x" : toast.kind === "warn" ? "shield" : "check"} size={14} strokeWidth={3} />
           <span className="truncate">{toast.text}</span>
         </div>
       )}

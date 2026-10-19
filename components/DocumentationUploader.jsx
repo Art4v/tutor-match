@@ -7,6 +7,7 @@ import {
   MAX_TUTOR_DOCS,
   deleteTutorDoc,
   updateTutorDocTitle,
+  uploadStagedDoc,
   uploadTutorDoc,
 } from "@/lib/supabase/storage";
 
@@ -27,15 +28,21 @@ function titleFromFileName(fileName) {
 // upload (to the PUBLIC `tutor-docs` bucket + a `tutor_documents` row,
 // migration 0034) only on Save. `onDirtyChange` drives the Save button's
 // enabled state in the parent.
+//
+// mode="draft" is for verified tutors, whose documents change only through a
+// reviewed draft (0072): commit() writes nothing live. It uploads new files to
+// the PRIVATE staging bucket and returns the resulting list
+// ([{ id | null, title, path, stagedPath, url }]) for the parent to save into
+// the draft. Items may then be staged files (id null, stagedPath set).
 export const DocumentationUploader = forwardRef(function DocumentationUploader(
-  { userId, docs, onDirtyChange },
+  { userId, docs, onDirtyChange, mode = "live" },
   ref
 ) {
   const [supabase] = useState(() => createSupabaseBrowserClient());
   // Existing docs, seeded once — the modal remounts on every open, so this is
   // always fresh. `removed` / `title` edits stay draft-only until commit().
   const [items, setItems] = useState(() =>
-    docs.map((d) => ({ ...d, originalTitle: d.title, removed: false }))
+    docs.map((d) => ({ ...d, key: d.id ?? d.stagedPath, originalTitle: d.title, removed: false }))
   );
   const [added, setAdded] = useState([]); // [{ key, file, title }] — upload on Save
   const [pending, setPending] = useState([]); // [{ file, title }] awaiting the warning confirm
@@ -60,6 +67,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
   // warn toast and the returned list reflects what actually persisted.
   useImperativeHandle(ref, () => ({
     async commit() {
+      if (mode === "draft") return commitDraft();
       const errs = [];
       const finalDocs = [];
       for (const it of items) {
@@ -99,6 +107,40 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
     },
   }));
 
+  // Draft mode: nothing live is touched. Removed and renamed items are just
+  // reflected in the returned list; new files go to private staging.
+  const commitDraft = async () => {
+    const errs = [];
+    const finalDocs = items
+      .filter((it) => !it.removed)
+      .map((it) => ({
+        id: it.id ?? null,
+        title: it.title.trim() || it.originalTitle,
+        path: it.path ?? "",
+        stagedPath: it.stagedPath ?? null,
+        url: it.url ?? null,
+      }));
+    for (const a of added) {
+      if (finalDocs.length >= MAX_TUTOR_DOCS) {
+        errs.push({ name: a.file.name, message: `Up to ${MAX_TUTOR_DOCS} documents.` });
+        continue;
+      }
+      const res = await uploadStagedDoc(supabase, userId, a.file);
+      if (!res.ok) {
+        errs.push({ name: a.file.name, message: res.error });
+        continue;
+      }
+      finalDocs.push({
+        id: null,
+        title: (a.title || "").trim() || titleFromFileName(a.file.name) || a.file.name,
+        path: "",
+        stagedPath: res.path,
+        url: res.url,
+      });
+    }
+    return { docs: finalDocs, errors: errs };
+  };
+
   const stage = (fileList) => {
     const files = Array.from(fileList || []);
     if (files.length === 0) return;
@@ -125,7 +167,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
     const next = editValue.trim();
     setEditingKey(null);
     if (!next) return;
-    setItems((list) => list.map((it) => (it.id === key ? { ...it, title: next } : it)));
+    setItems((list) => list.map((it) => (it.key === key ? { ...it, title: next } : it)));
     setAdded((list) => list.map((a) => (a.key === key ? { ...a, title: next } : a)));
   };
 
@@ -300,11 +342,11 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
         <ul className="mt-2 space-y-1">
           {visibleItems.map((it) =>
             row({
-              key: it.id,
+              key: it.key,
               title: it.title,
-              isPdf: it.path.toLowerCase().endsWith(".pdf"),
+              isPdf: (it.path || it.stagedPath || "").toLowerCase().endsWith(".pdf"),
               isNew: false,
-              onRemove: () => setItems((list) => list.map((x) => (x.id === it.id ? { ...x, removed: true } : x))),
+              onRemove: () => setItems((list) => list.map((x) => (x.key === it.key ? { ...x, removed: true } : x))),
             })
           )}
           {added.map((a) =>
@@ -326,7 +368,9 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
       ))}
 
       <p className="mt-2 text-[11.5px] text-slate-400 leading-[1.5]">
-        Nothing changes until you save. Save uploads new files and applies removals and renames.
+        {mode === "draft"
+          ? "Nothing changes until you save. Saved changes go into your draft and show on your profile once approved."
+          : "Nothing changes until you save. Save uploads new files and applies removals and renames."}
       </p>
     </div>
   );

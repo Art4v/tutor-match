@@ -453,6 +453,28 @@ Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(nam
 ### Storage: `tutor-docs` bucket (0034; replaced the private `verification-docs` bucket from 0033)
 **Public** — the files behind `tutor_documents`, at `<uid>/<timestamp>-<name>`. Bucket-level `file_size_limit` 10 MB + `allowed_mime_types` `{application/pdf, image/*}`. Owner-scoped SELECT (0035) / INSERT / DELETE (folder = uid) — the app never lists the bucket (reads go through the table; public-bucket downloads bypass RLS), but the owner SELECT is required because the Storage API's `remove()` checks SELECT as well as DELETE (without it the owner's delete silently no-ops). **No UPDATE policy** — files are immutable, so uploads must not use upsert. Not part of the verification flow. 0034 dropped the old bucket's policies; the bucket itself is emptied + deleted in the dashboard (Supabase's `storage.protect_delete()` trigger blocks SQL DELETEs on storage tables) rather than migrating the files — they were uploaded under a private-and-deleted-after-review promise.
 
+### `tutor_profile_revisions` (0072)
+A verified tutor's reviewed profile draft. Verified, non-company tutors (`tutor_edits_gated()`) edit through this table instead of the live profile; nothing reaches `tutor_profiles` until an admin approves a submission.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid | PK, `gen_random_uuid()` |
+| `tutor_id` | uuid | FK → `tutor_profiles.id`, ON DELETE CASCADE |
+| `status` | text | NOT NULL default `'draft'`, CHECK in `draft` / `pending` / `approved` / `rejected` / `withdrawn` / `discarded` / `cancelled` |
+| `payload` | jsonb | NOT NULL. The `save_tutor_profile` payload (minus visibility) plus `full_name` and `documents: [{ id \| null, title, path \| null, staged_path \| null }]`. A new photo is `'staging:<uid>/<file>'` in `profile.avatar_url` / `banner_url` |
+| `applied_payload` | jsonb | The payload as applied, staged references swapped for public ones |
+| `parent_id` | uuid | FK → self, ON DELETE SET NULL. The rejected/withdrawn revision this draft was copied from |
+| `reason` | text | Admin's optional rejection note; CHECK non-blank and ≤ 500 chars |
+| `created_at` / `updated_at` | timestamptz | |
+| `submitted_at` | timestamptz | Set by `submit_profile_revision` |
+| `admin_notified_at` | timestamptz | Last admin email; enforces the once-a-day resend durably |
+| `decided_at` | timestamptz | Approve / reject / withdraw / discard / cancel time |
+
+Partial UNIQUE index `tutor_profile_revisions_one_open (tutor_id) WHERE status IN ('draft','pending')`: one open revision per tutor. `rejected` and `withdrawn` are final; each opens a fresh draft copying the content (`parent_id` back), so an old email link always reports the true outcome. RLS: owner SELECT only; every write is an RPC.
+
+### Storage: `profile-staging` bucket (0072)
+**Private.** Draft photos and documents of verified tutors at `<uid>/<file>`, until approval copies them into `profile-images` / `tutor-docs` under the same path. `file_size_limit` 10 MB, `allowed_mime_types` `{image/*, application/pdf}`. Owner SELECT / DELETE on their own folder; owner INSERT additionally requires `tutor_edits_gated(auth.uid())`. The owner previews through signed URLs, the admin page through the service role.
+
 ### Storage: `blog-images` bucket (0061)
 **Public** — article cover art behind `articles.cover_path`, at `<author_uid>/<slug>-<timestamp>.<ext>`. Bucket-level `file_size_limit` 5 MB + `allowed_mime_types` `{image/*}`. Public SELECT; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`. Modelled on `profile-images`, **not** `tutor-docs`: cover art is replaceable, so UPDATE exists and uploads may use upsert. The public SELECT policy is also what keeps owner deletes working (the 0035 lesson: `remove()` checks SELECT as well as DELETE) — do not narrow it without adding an owner SELECT policy in the same change.
 
@@ -521,6 +543,14 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 ---
 
+| `_tutor_snapshot(id)` / `_withdraw_pending_verification(id)` | jsonb / boolean | Internal (0072). The comparable stored profile, compared before/after a live save: a real change by a `pending` tutor sends the request back to `none`, a no-op save doesn't. The document RPCs withdraw too. `save_tutor_profile` returns `verification_withdrawn` | 0072 |
+| `tutor_edits_gated(id)` | boolean | Verified and not a company tutor: whose edits need review. Granted to `authenticated` (the storage policies call it) | 0072 |
+| `_assert_live_edit_allowed(id)` | void | Called first by every RPC that edits the live profile (`save_tutor_profile`, the three document RPCs). A no-op in 0072; **0073 makes it raise `profile_changes_require_review` for gated tutors**, which is the whole gate | 0072, 0073 |
+| `save_profile_draft(p_payload)` | jsonb | Gated tutor's draft save. Strips visibility, validates name, ATAR, photos (`_valid_draft_image`: unchanged, empty or a file in the caller's own staging folder) and documents (ids must be theirs; new files a staged path in their folder). Withdraws a submission under review (final row + fresh draft). Returns `{ revision_id, withdrew_submission, orphaned_staged }` | 0072 |
+| `submit_profile_revision()` / `discard_profile_draft()` / `resend_profile_revision()` | uuid / jsonb / uuid | Owner: draft → `pending`; drop the open revision (returns staged paths to delete); re-stamp `admin_notified_at`, at most once per 24 h (hint `too_soon`) | 0072 |
+| `apply_profile_revision(p_revision_id, p_file_map)` | jsonb | **service_role only.** Locks the revision, requires `pending` and a still-gated tutor, swaps staged references via `p_file_map`, applies documents (retitle / delete / insert), name + slug and `_apply_tutor_payload(…, false)`, marks it approved. Returns `{ applied, replaced_images, removed_docs }` or `{ applied: false, status \| reason }` | 0072 |
+| `reject_profile_revision(p_revision_id, p_reason)` | jsonb | **service_role only.** Pending → `rejected` (+ reason), and a fresh draft copying the content | 0072 |
+
 ## Triggers
 
 | Trigger | Table | Event | Function | Migration |
@@ -535,6 +565,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `articles_touch_updated_at` | `articles` | BEFORE UPDATE | `articles_touch_updated_at()` — touches `updated_at` only, never the reader-visible `content_updated_at` | 0061 |
 | `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` and `can_invite_companies`; raises on client changes to `role` / `status` (0070) | 0061, 0068, 0070 |
 | `profiles_guard_tutor_name` | `profiles` | BEFORE UPDATE | `profiles_guard_tutor_name()` → a tutor's name changes only through an RPC | 0071 |
+| `tutor_profiles_cancel_revisions` | `tutor_profiles` | AFTER UPDATE OF `verification_status` | `tutor_profiles_cancel_revisions()` → leaving `verified` cancels the open revision | 0072 |
 
 ---
 
@@ -557,8 +588,10 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
 | `reports` | reporter self (own `reporter_id`) | none (service-role only, 0053) |
 | `tutor_documents` | public | **none: RPC-only since 0071** (`add_tutor_document`, `rename_tutor_document`, `delete_tutor_document`) |
-| `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid; bucket limits 5 MB, jpeg/png/webp/gif (0070) |
-| `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE |
+| `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid; bucket limits 5 MB, jpeg/png/webp/gif (0070); INSERT/UPDATE refused for gated tutors (0073) |
+| `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE; INSERT refused for gated tutors (0073) |
+| `tutor_profile_revisions` | owner (`tutor_id` = uid) | none (RPCs only, 0072) |
+| `storage.objects` (`profile-staging`) | owner by folder (private bucket) | owner INSERT (gated tutors only) / DELETE by folder (0072) |
 | `articles` | public where `status='published'`; **+ author reads own row in any status** | author (`author_id` = uid) **who also holds `profiles.can_author_articles`** — INSERT/UPDATE may set `status in ('draft','pending','published')` (designated authors self-publish); UPDATE/DELETE blocked once `status='removed'` (0061) |
 | `storage.objects` (`blog-images`) | public | owner-scoped by folder = uid, INSERT/UPDATE/DELETE (0061) |
 
@@ -566,6 +599,10 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 > a write policy on `tutor_profiles`, its four child tables or `tutor_documents`, so every write
 > passes through a SECURITY DEFINER function that checks who is writing and what. Read access is
 > unchanged.
+>
+> **Invariant:** a verified, non-company tutor's live profile changes only through an admin-approved
+> revision (0072/0073): `_assert_live_edit_allowed` refuses their live saves and document writes,
+> and they cannot upload to the public buckets. Visibility stays instant for everyone.
 >
 > **Invariant:** no save path writes `verification_status`, `slug`, `partner_id`,
 > `email_confirmed_at`, `verification_requested_at` or `onboarded`, and the
