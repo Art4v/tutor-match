@@ -8,3 +8,4 @@ _design
 .env
 *.stackdump
 supabase/utilities/company_invites.txt
+.env.prod
