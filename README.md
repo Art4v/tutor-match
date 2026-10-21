@@ -120,15 +120,15 @@ sequenceDiagram
     participant RQ as /api/verification/request
     participant DB as Supabase
     participant N as notifyUser() (service-role)
-    participant A as Admin (email)
-    participant AP as /api/verification/approve
+    participant A as Admin (alert email → /admin)
+    participant AP as /api/admin/verification
 
     T->>RQ: POST (auth-gated)
     RQ->>DB: request_tutor_verification() RPC → status 'pending'
     RQ->>N: notify tutor ("request received")
-    RQ->>A: email approve link (HMAC token, lib/verifyToken.js)
-    A->>AP: open /admin/verify?token → click Approve (POST { token })
-    AP->>DB: verify token → set verification_status = 'verified'
+    RQ->>A: alert every unmuted admin (lib/admin/alerts.js) with /admin/verification/<id>
+    A->>AP: sign in as an admin → click Approve (POST { tutorId, decision, reason? })
+    AP->>DB: admin_decide_verification() RPC → checks is_admin, sets 'verified', logs History
     AP->>N: notify tutor ("you're verified ✓")
     N-->>T: in-app notification + email
 ```
@@ -176,7 +176,7 @@ graph TD
     app --> onboard["onboarding/ — first-login wizard"]
     app --> account["account/ — change password · delete account"]
     app --> notif["notifications/ — list + mark-read"]
-    app --> admin["admin/verify/ — approve-link landing"]
+    app --> admin["admin/ — admin dashboard (is_admin only)"]
     app --> pages["page.js (home) · layout.js · messages/"]
 
     comp --> ui["ui.js · Icon.js · TopNav · Footer · TutorCard"]
@@ -210,7 +210,7 @@ graph TD
 | `/onboarding` | `app/onboarding/page.js` | First-login one-question-per-step wizard that reuses the real `/settings` section components. Redirects to `/settings` once `onboarded`. Saves once on finish, then `markOnboarded()`. |
 | `/account` | `app/account/page.js` | Change password (re-verifies current) + delete account (`delete_own_account` RPC). |
 | `/notifications` | `app/notifications/page.js` | The user's notifications (verification request sent / approved). Marks unread rows read on view. |
-| `/admin/verify` | `app/admin/verify/page.js` | Approve-link landing page (no login — a signed `?token=` is the authorization). Shows the tutor + an Approve button. |
+| `/admin` | `app/admin/…` | Admin dashboard, for accounts with `profiles.is_admin` (404 for everyone else): verification, reviews, reports, profile changes, companies (invites), users and History. Reached from the avatar menu. |
 | `/signup`, `/login` | `app/(auth)/…` | Email + password forms + Google OAuth. Tutor-only (Student "coming soon"). |
 | `/forgot-password`, `/reset-password` | `app/(auth)/…` | Password recovery (no email enumeration). |
 | `/auth/callback` | `app/auth/callback/route.js` | Landing for OAuth (`?code=` → `exchangeCodeForSession`), signup confirmation (`token_hash`/`type=signup` → `verifyOtp`, lands at `/settings`), and recovery (`token_hash`/`type=recovery` → `verifyOtp`). Sends the one-time welcome notification + email on OAuth + signup confirmation (idempotent; not on recovery). |
@@ -277,17 +277,17 @@ Leaving `GROQ_API_KEY` unset simply disables the feature — the button surfaces
 
 ### 6. Configure tutor verification — optional
 
-Tutors can request a **verified badge** from `/settings` (sidebar) or the final `/onboarding` step. The request emails the admin a one-click approve link; approving flips the badge on and ranks that tutor above unverified ones. Both "request sent" and "approved" appear on `/notifications` and are emailed to the tutor.
+Tutors can request a **verified badge** from `/settings` (sidebar) or the final `/onboarding` step. The request alerts the admins by email with a link into the `/admin` dashboard; approving there flips the badge on and ranks that tutor above unverified ones. Both "request sent" and "approved" appear on `/notifications` and are emailed to the tutor.
 
 This is the one place the **app itself** sends mail (separate from the Supabase auth SMTP above). Set these **server-only** vars in `.env.local`:
 
 1. `RESEND_API_KEY` — a [Resend](https://resend.com) API key (`re_…`). The app calls Resend's HTTP API directly. **Leaving it unset disables sending** — emails are logged to the server console instead, so the flow still works end-to-end locally.
 2. `EMAIL_FROM` — the From address (e.g. `matchtutor <noreply@yourdomain.com>`). Must be on a **verified Resend domain** or Resend only delivers to your own account email.
-3. `ADMIN_EMAIL` — where verification requests land (defaults to `matchtutoraustralia@gmail.com`).
-4. `SUPABASE_SERVICE_ROLE_KEY` — **Project Settings → API → service_role key**. Bypasses RLS; used server-side only to write notifications and to approve (the admin has no session when clicking the email link). **Never expose it.**
-5. `VERIFICATION_APPROVE_SECRET` — any long random string (`openssl rand -hex 32`). Signs the approve link's HMAC token.
-6. `REPORT_REVIEW_SECRET` — same idea, for the report-resolution link (`/admin/report`).
-7. `REVIEW_APPROVE_SECRET` — same idea, for the student-review moderation link (`/admin/review`). Each link class gets its **own** secret so a token minted for one can never authorize another.
+3. `ADMIN_EMAIL` — bug reports land here, and admin alerts fall back to it when no admin is set up (defaults to `matchtutoraustralia@gmail.com`). Alerts normally go to every admin who hasn't muted them on `/admin`.
+4. `SUPABASE_SERVICE_ROLE_KEY` — **Project Settings → API → service_role key**. Bypasses RLS; used server-side only, to write notifications, look up admins' email addresses and read the dashboard queues after the admin check. **Never expose it.**
+5. `VERIFICATION_APPROVE_SECRET`, `REPORT_REVIEW_SECRET`, `REVIEW_APPROVE_SECRET`, `PROFILE_REVISION_SECRET` — **retired by 0074.** Nothing signs these links any more; they are only read so an old email link redirects into the dashboard. Remove them 30 days after deploying 0074.
+
+**Admins** are granted (and revoked) only in SQL: run `supabase/utilities/grant_admin.sql` once per admin per environment after applying `0074_admin_dashboard.sql`.
 
 Apply migration `0021_verification_and_notifications.sql`. Dev shortcut: `supabase/utilities/verify_user.sql` flips one tutor verified by id without the email round-trip.
 
