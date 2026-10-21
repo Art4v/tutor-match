@@ -20,21 +20,6 @@ function asArray(v) {
   return Array.isArray(v) ? v : [v];
 }
 
-// Shows the "Invite a company" button. Display only: /companies/invite and its
-// RPCs re-check the flag (0068), so hiding the button is not the gate.
-async function viewerCanInvite(supabase) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-  const { data } = await supabase
-    .from("profiles")
-    .select("can_invite_companies")
-    .eq("id", user.id)
-    .maybeSingle();
-  return Boolean(data?.can_invite_companies);
-}
-
 export default async function CompaniesPage({ searchParams }) {
   const supabase = createSupabaseServerClient();
 
@@ -44,10 +29,9 @@ export default async function CompaniesPage({ searchParams }) {
   const states = asArray(searchParams?.state).filter(isStateCode);
   const subjectSlugs = asArray(searchParams?.subject);
 
-  const [companies, catalog, canInvite] = await Promise.all([
+  const [companies, catalog] = await Promise.all([
     listCompanies(supabase, { q, states, subjectSlugs }),
     getSubjects(supabase),
-    viewerCanInvite(supabase),
   ]);
 
   const hasFilters = q !== "" || states.length > 0 || subjectSlugs.length > 0;
@@ -64,17 +48,6 @@ export default async function CompaniesPage({ searchParams }) {
           />
 
           <div className="min-w-0">
-            {canInvite && (
-              <div className="flex justify-end mb-4">
-                <Link
-                  href="/companies/invite"
-                  className="inline-flex items-center gap-2 text-[14px] font-medium text-white"
-                  style={{ background: "var(--accent)", borderRadius: 9, height: 38, padding: "0 16px" }}
-                >
-                  <Icon name="plus" size={16} /> Invite a company
-                </Link>
-              </div>
-            )}
             {companies.length === 0 ? (
               <div
                 className="bg-[color:var(--paper-card)] text-center py-16 px-6"

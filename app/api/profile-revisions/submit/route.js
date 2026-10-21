@@ -14,8 +14,8 @@ const RATE = { limit: 10, windowMs: 60 * 60 * 1000 };
 
 // A verified tutor sends their draft for review. Auth-gated. Refuses an empty
 // diff (nothing to review), flips the draft to 'pending' via
-// submit_profile_revision, then notifies the tutor and emails the admin a
-// signed review link.
+// submit_profile_revision, then notifies the tutor and alerts the admins with a
+// dashboard link.
 export async function POST(request) {
   const supabase = createSupabaseServerClient();
   const gate = await requireGatedTutor(supabase);
@@ -35,15 +35,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "Your draft matches your live profile, so there is nothing to review." }, { status: 400 });
   }
 
-  // Sign before changing anything: a missing secret must not leave a
-  // submission the admin was never told about. Submitting keeps the row id.
-  let links;
-  try {
-    links = revisionLinks(request, revision.id);
-  } catch (err) {
-    console.error("[revisions/submit] could not sign link:", err);
-    return NextResponse.json({ error: "Server is not configured for reviews." }, { status: 500 });
-  }
+  // Submitting keeps the row id, so the dashboard link is stable.
+  const links = revisionLinks(request, revision.id);
 
   const { error: rpcError } = await supabase.rpc("submit_profile_revision");
   if (rpcError) {

@@ -19,7 +19,7 @@ import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCa
 /**
  * The public tutor profile, as students see it. Rendered by /tutor/[slug]
  * (inside TutorBlockProvider, with JSON-LD alongside) and by the admin preview
- * of a verified tutor's submitted changes (/admin/profile-revision/preview), so
+ * of a verified tutor's submitted changes (/admin/profile-changes/[id]/preview), so
  * what an admin approves is exactly what will publish.
  *
  * `tutor` is the display shape (tutorRowToDetail, or editorToDisplay of a

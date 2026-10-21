@@ -11,8 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Landing page for the company invite link. The signed token in ?token= is the
-// authorization, so this page is deliberately login-unguarded, exactly like
-// /admin/verify. A GET never mutates: the claim is a POST behind a button, so
+// authorization, so this page is deliberately login-unguarded. A GET never mutates: the claim is a POST behind a button, so
 // an email client prefetching the link cannot silently bind the company to
 // whoever happens to be signed in.
 export default async function ClaimCompanyPage({ searchParams }) {

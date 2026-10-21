@@ -15,7 +15,7 @@ import { Icon } from "@/components/Icon";
 //
 // Keep these values in sync with the 0059 CHECK, CATEGORIES in
 // app/api/reports/route.js, and the two label maps (lib/email/send.js,
-// app/admin/report/page.js).
+// app/admin/_components/format.js).
 export const REPORT_CATEGORIES = [
   { value: "harassment", label: "Harassment or abuse" },
   { value: "spam", label: "Spam" },

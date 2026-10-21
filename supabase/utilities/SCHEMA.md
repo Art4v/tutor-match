@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0067_partner_reviews.sql`
-**Last reviewed:** 2026-09-11
+**Applied through:** `0075_drop_company_inviters.sql`
+**Last reviewed:** 2026-10-19
 
 ---
 
@@ -83,7 +83,8 @@ These duplications are **intentional** — don't "tidy them up" without understa
 | `messages_disclaimer_ack_at` | timestamptz | nullable; `/messages` first-open disclaimer acknowledgment, NULL/stale ⇒ show the blocking gate (versioned via `lib/messagesDisclaimer.js`). NOT stamped on signup, so new users see it once too (0046) |
 | `status` | text | NOT NULL default `'enabled'`, CHECK in (`enabled`,`disabled`) (0052). `disabled` ⇒ `middleware.js` gates the user to `/account-disabled`, hides a disabled tutor from public reads, and (structurally) freezes their messaging. Flipped by the report-resolve route; reverse manually via `supabase/utilities/enable_user.sql` |
 | `can_author_articles` | boolean | NOT NULL default `false` (0061). The blog authoring capability: `/author` and every `articles` write policy require it. **Not self-grantable** — the `profiles_guard_capabilities` trigger pins it for `authenticated`/`anon`, so the only grant path is `supabase/utilities/grant_author.sql` run as a superuser role. Independent of `role`: an author is a designated tutor, not a separate role |
-| `can_invite_companies` | boolean | NOT NULL default `false` (0068). The company-invite capability: `/companies/invite` and the three inviter RPCs (`create_partner_as_inviter`, `list_partners_for_inviter`, `partner_link_target`) require it, via `_is_company_inviter()`, which also requires `status = 'enabled'`. **Not self-grantable**, pinned by the same `profiles_guard_capabilities` trigger; grant with `supabase/utilities/grant_company_inviter.sql`. Any role may hold it |
+| `is_admin` | boolean | NOT NULL default `false` (0074). The admin capability: every `/admin` page (404 otherwise) and every `admin_*` RPC require it, via `is_admin()`, which also requires `status = 'enabled'`. **Changed only in SQL** with `supabase/utilities/grant_admin.sql`: no RPC, route or UI writes it, and `profiles_guard_capabilities` RAISES on a client change. Any role may hold it. The dashboard refuses to disable an admin or change their authoring |
+| `admin_alerts_muted` | boolean | NOT NULL default `false` (0074). An admin's opt-out of the alert emails (`lib/admin/alerts.js`). Self-writable through `"profile self update"`; meaningless for a non-admin |
 | `created_at` | timestamptz | NOT NULL DEFAULT `now()` |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
@@ -174,8 +175,9 @@ the entire invite model impossible. Do not "fix" this.
 the `owner_id IS NULL` arm is what keeps an unclaimed page live. Owner SELECT/UPDATE on
 `owner_id = auth.uid()`. **No INSERT or DELETE policy at all:** partners are created by us, either
 through the service role (`npm run create:company`) or in-app by an inviter through the SECURITY
-DEFINER `create_partner_as_inviter()` (0068), which checks `can_invite_companies` itself. Nothing
-creates one through table RLS, and nothing destroys one from a browser.
+DEFINER `create_partner_as_inviter()` (0068), which checks the caller is an admin (0074). Nothing
+creates one through table RLS. Deletion is the admin RPC `admin_delete_company` (0074) or
+`supabase/utilities/delete_company.sql`.
 
 ### `partner_packages` (0063)
 The centre's one rate card, and since 0069 its only pricing: there is no hourly rate for a centre or
@@ -253,7 +255,7 @@ CHECK `articles_cover_in_author_folder`: `cover_path IS NULL OR author_id IS NUL
 
 Revoking `can_author_articles` freezes everything that author owns: published articles stay live (public SELECT only looks at status) but every write policy fails from then on. To take an article down, set its `status` to `removed` instead.
 
-`pending` is in the CHECK but nothing sets it. It is kept so an editorial review step is later a route plus a UI rather than a schema change: the signed-link pattern (`lib/reviewToken.js` → `/api/reviews/approve` → `/admin/review`) drops straight on top.
+`pending` is in the CHECK but nothing sets it. It is kept so an editorial review step is later a route plus a UI rather than a schema change: an admin-RPC + `/admin` section in the shape of reviews (`admin_decide_review` → `/api/admin/reviews` → `/admin/reviews`) drops straight on top.
 
 **No SECURITY DEFINER read function**, unlike `reviews`. That one exists because a public page cannot join a *student's* name; article authors are tutors, so a plain PostgREST select with embeds works for anonymous readers. The author embed is a **LEFT join** in `lib/blog.js`, deliberately: an inner join would silently unpublish every article an author ever wrote the moment their account was disabled (0055 hides the rows). Left-joined, the byline degrades to nothing and the article stays up — account status governs the account, `articles.status` governs the article.
 
@@ -415,7 +417,7 @@ Self-only SELECT; **no write policy** (writes only via `consume_ai_credit()` / `
 Self-only SELECT + UPDATE (mark-read); **no INSERT policy** — written by the service-role client in API routes.
 
 ### `reports` (0053)
-"Report and block": a user reports the other party in a conversation; an admin reviews on `/admin/report` (signed-token, no login) and resolves by disabling an account or dismissing.
+"Report and block": a user reports the other party in a conversation; an admin reviews on `/admin/reports/[id]` (0074, admin session) and resolves through `admin_resolve_report` by disabling an account, removing the review, or dismissing.
 | Column | Type | Constraints / Notes |
 | --- | --- | --- |
 | `id` | uuid | PK DEFAULT `gen_random_uuid()` |
@@ -435,6 +437,24 @@ A report is about **either** a conversation **or** a review (0059): `review_id` 
 Two partial unique indexes, split by kind (0059), so a pending conversation report can't silently swallow a report about the same person's review: `reports_one_open_per_pair` on `(reporter_id, reported_id) WHERE status='pending' AND conversation_id IS NOT NULL` (re-keyed in 0060 — the 0059 predicate was `review_id IS NULL`, which the ON DELETE SET NULL FK would migrate an orphaned review report into, aborting the review delete on collision or squatting the pair slot so a later conversation report silently no-oped), and `reports_one_open_per_review` on `(reporter_id, review_id) WHERE status='pending' AND review_id IS NOT NULL`. Indexes on `conversation_id` and `review_id`. RLS: reporter self-SELECT only; **no INSERT/UPDATE policy** — written by the service-role client in the report routes (like `notifications`).
 
 **Filing a review report does not block anyone**, unlike the conversation path where the block is a server-owned invariant: you may be reporting a stranger's review of a third party, and a tutor auto-blocking a critic would read as retaliation.
+
+### `admin_actions` (0074)
+Append-only History of every admin action, shown at `/admin/history`, on each user's page, and as the "decided by" line on a decided item.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid | PK, `gen_random_uuid()` |
+| `admin_id` | uuid | FK → `profiles.id`, ON DELETE SET NULL |
+| `admin_name` | text | Snapshot of the admin's name, so the row survives their account |
+| `action` | text | NOT NULL, CHECK in `verification_approved/rejected`, `review_approved/rejected`, `report_disable_reported/disable_reporter/dismiss/remove_review`, `revision_approved/rejected`, `account_disabled/enabled`, `author_granted/revoked`, `company_invited/link_issued/hidden/shown/deleted` |
+| `target_type` | text | NOT NULL, CHECK in `tutor` / `review` / `report` / `revision` / `company` / `user` |
+| `target_id` | uuid | **No FK**, so the record outlives a deleted target |
+| `target_label` | text | Readable snapshot ("Review of …", the company name) |
+| `reason` | text | The admin's optional note, ≤ 500 chars |
+| `details` | jsonb | NOT NULL default `{}` (e.g. a deleted company's slug and tutor count) |
+| `created_at` | timestamptz | NOT NULL default `now()` |
+
+Indexes on `(created_at desc)`, `(admin_id, created_at desc)`, `(target_type, target_id, created_at desc)`. **RLS:** SELECT where `is_admin()`; no write policy. Rows are written only by `_log_admin_action`, called from the admin RPCs.
 
 ### `tutor_documents` (0034)
 | Column | Type | Constraints / Notes |
@@ -467,7 +487,7 @@ A verified tutor's reviewed profile draft. Verified, non-company tutors (`tutor_
 | `reason` | text | Admin's optional rejection note; CHECK non-blank and ≤ 500 chars |
 | `created_at` / `updated_at` | timestamptz | |
 | `submitted_at` | timestamptz | Set by `submit_profile_revision` |
-| `admin_notified_at` | timestamptz | Last admin email; enforces the once-a-day resend durably |
+| `admin_notified_at` | timestamptz | Last admin alert; enforces the once-a-day resend durably |
 | `decided_at` | timestamptz | Approve / reject / withdraw / discard / cancel time |
 
 Partial UNIQUE index `tutor_profile_revisions_one_open (tutor_id) WHERE status IN ('draft','pending')`: one open revision per tutor. `rejected` and `withdrawn` are final; each opens a fresh draft copying the content (`parent_id` back), so an old email link always reports the true outcome. RLS: owner SELECT only; every write is an RPC.
@@ -530,10 +550,10 @@ The bucket holds **two** object shapes. Cover art as above, and **body images** 
 | `sync_partner_tutor_visibility(p_partner_id)` | void | Recomputes every listed tutor's `tutor_profiles.visibility` from the centre's visibility AND its owner's `profiles.status`. Drives `visibility`, **not** `profiles.status`: status is the moderation field (0052), and overloading it would let un-hiding a centre silently re-enable an account a report had disabled | 0065 |
 | `partners_cascade_visibility()` / `profiles_cascade_partner_visibility()` | trigger | Call the above when `partners.visibility`/`owner_id` changes, and when an owner's `profiles.status` changes. The second is needed because 0055's public read checks the TUTOR's own status, not the owner's | 0065 |
 | `_assign_partner_slug(p_id, p_name)` | text | Race-safe partner slug assignment, a clone of `_assign_tutor_slug`. SECURITY DEFINER; execute revoked from public, **granted to `service_role`** so `npm run create:company` can name a new centre. Since 0068 the reserved words `claim` and `invite` (static routes under `/companies`) start at `-2` | 0063, 0068 |
-| `_is_company_inviter()` | boolean | STABLE SECURITY DEFINER: `profiles.can_invite_companies AND status = 'enabled'` for `auth.uid()`. The single capability check behind the three inviter RPCs. Execute revoked from public | 0068 |
-| `create_partner_as_inviter(p_name, p_website, p_suburb, p_state, p_allow_duplicate)` | jsonb | SECURITY DEFINER, granted to `authenticated`. Raises `42501` unless an inviter, `22023` on bad input (blank name, unknown state code). Without `p_allow_duplicate`, a case-insensitive name match returns `{status:'duplicate', matches}` instead of inserting. Otherwise inserts with `visibility='hidden'`, `created_by = auth.uid()`, assigns the slug, returns `{status:'created', id, slug}` | 0068 |
-| `list_partners_for_inviter()` | table | SECURITY DEFINER, granted to `authenticated`. Every company (hidden and claimed included) with `claimed` and `invited_by_name`, newest first. Raises unless an inviter | 0068 |
-| `partner_link_target(p_id)` | boolean | SECURITY DEFINER, granted to `authenticated`. Raises unless an inviter; true = unclaimed, false = claimed, NULL = no such id. The token itself is signed in Node (`lib/companyToken.js`) | 0068 |
+| `_is_company_inviter()` | boolean | STABLE SECURITY DEFINER alias for `is_admin()` since 0074 (0068 checked `can_invite_companies`, dropped in 0075). The check behind the three invite RPCs | 0068, 0074 |
+| `create_partner_as_inviter(p_name, p_website, p_suburb, p_state, p_allow_duplicate)` | jsonb | SECURITY DEFINER, granted to `authenticated`. Raises `42501` unless an admin, `22023` on bad input (blank name, unknown state code). Without `p_allow_duplicate`, a case-insensitive name match returns `{status:'duplicate', matches}` instead of inserting. Otherwise inserts with `visibility='hidden'`, `created_by = auth.uid()`, assigns the slug, logs `company_invited`, returns `{status:'created', id, slug}` | 0068, 0074 |
+| `list_partners_for_inviter()` | table | SECURITY DEFINER, granted to `authenticated`. Every company (hidden and claimed included) with `claimed` and `invited_by_name`, newest first. Raises unless an admin | 0068 |
+| `partner_link_target(p_id)` | boolean | SECURITY DEFINER (volatile since 0074, because it logs `company_link_issued`), granted to `authenticated`. Raises unless an admin; true = unclaimed, false = claimed, NULL = no such id. The token itself is signed in Node (`lib/companyToken.js`) | 0068, 0074 |
 | `assign_partner_slug(p_name)` | text | Authenticated wrapper; resolves the target through `partners.owner_id = auth.uid()`, so a caller can only rename their own centre | 0063 |
 | `claim_partner_as(p_partner_id, p_user_id)` | text | Binds an invited partner to an account and sets `profiles.role = 'partner'`; returns the slug, or NULL when already claimed. Takes the user id **explicitly** because the claim route must call it through the service role (which has no `auth.uid()`). Execute revoked from public, granted only to `service_role` — if it were callable from a browser, anyone could claim any centre by guessing its uuid. The `where owner_id is null` guard on its UPDATE is the entire replay defence, which is why there is no invites table | 0063 |
 | `partners_touch_updated_at()` | trigger | Stamps `partners.updated_at = now()` before update | 0063 |
@@ -550,6 +570,16 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `submit_profile_revision()` / `discard_profile_draft()` / `resend_profile_revision()` | uuid / jsonb / uuid | Owner: draft → `pending`; drop the open revision (returns staged paths to delete); re-stamp `admin_notified_at`, at most once per 24 h (hint `too_soon`) | 0072 |
 | `apply_profile_revision(p_revision_id, p_file_map)` | jsonb | **service_role only.** Locks the revision, requires `pending` and a still-gated tutor, swaps staged references via `p_file_map`, applies documents (retitle / delete / insert), name + slug and `_apply_tutor_payload(…, false)`, marks it approved. Returns `{ applied, replaced_images, removed_docs }` or `{ applied: false, status \| reason }` | 0072 |
 | `reject_profile_revision(p_revision_id, p_reason)` | jsonb | **service_role only.** Pending → `rejected` (+ reason), and a fresh draft copying the content | 0072 |
+| `is_admin()` | boolean | STABLE SECURITY DEFINER: `profiles.is_admin AND status = 'enabled'` for `auth.uid()`. The single admin check, called by every admin RPC, the `admin_actions` policy (which runs as the caller) and the app (TopNav, the `/admin` guard, the API routes). Granted to `authenticated`; it takes no arguments and answers only about the caller | 0074 |
+| `_require_admin()` / `_log_admin_action(…)` / `_assert_admin_target(id)` / `_clean_reason(text)` | | Internal (0074). Raise 42501 unless an admin; insert an `admin_actions` row with the caller's name snapshot; refuse the caller themselves or any admin as a target (22023); trim, blank → NULL, cap at 500 | 0074 |
+| `admin_decide_verification(p_tutor_id, p_decision, p_reason)` | jsonb | `approve` / `reject` a **pending** request (`verified` / `rejected`), logs; otherwise `{ applied: false, status }`. Returns `name`, `slug` for the route's email | 0074 |
+| `admin_decide_review(p_review_id, p_decision, p_reason)` | jsonb | Pending → `approved` (+ `approved_at`) / `rejected`; `removed` stays terminal because only pending moves. Logs | 0074 |
+| `admin_resolve_report(p_report_id, p_action, p_reason)` | jsonb | `disable_reported` / `disable_reporter` / `dismiss` / `remove_review` in one transaction, **only while the report is pending** (the old token route had no such guard). Refuses to disable an admin or the caller. Logs | 0074 |
+| `admin_apply_profile_revision(p_revision_id, p_file_map, p_reason)` / `admin_reject_profile_revision(p_revision_id, p_reason)` | jsonb | Admin-checked wrappers over the service-role `apply_profile_revision` / `reject_profile_revision`; log on success | 0074 |
+| `admin_set_account_status(p_user_id, p_status, p_reason)` | jsonb | Enable / disable any non-admin account other than the caller's. Logs | 0074 |
+| `admin_set_author(p_user_id, p_enabled, p_reason)` | jsonb | Grant / revoke `can_author_articles`; target must be a non-company tutor and not an admin. Logs | 0074 |
+| `admin_set_company_visibility(p_partner_id, p_visibility, p_reason)` / `admin_delete_company(p_partner_id, p_reason)` | jsonb | Hide / show (through the 0065 cascade) and delete (the body of `delete_company.sql`: shadow tutor accounts, owner's role → NULL, the row with its packages and reviews). Log | 0074 |
+| `admin_pending_counts()` | jsonb | `{ verifications, reviews, reports, revisions }` pending counts, for the dashboard sidebar and the TopNav badge | 0074 |
 
 ## Triggers
 
@@ -563,7 +593,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `tutor_profiles_guard_derived` | `tutor_profiles` | BEFORE UPDATE | `tutor_profiles_guard_derived()` → pins `rating` / `review_count`; raises on client changes to the system columns | 0057, 0070, 0071 |
 | `profiles_status_recalc_ratings` | `profiles` | AFTER UPDATE OF `status` (WHEN changed) | `profiles_status_recalc_ratings()` → refresh the aggregates of every tutor this user reviewed | 0058 |
 | `articles_touch_updated_at` | `articles` | BEFORE UPDATE | `articles_touch_updated_at()` — touches `updated_at` only, never the reader-visible `content_updated_at` | 0061 |
-| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles` and `can_invite_companies`; raises on client changes to `role` / `status` (0070) | 0061, 0068, 0070 |
+| `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles`; raises on client changes to `is_admin` (0074), `role` / `status` (0070) | 0061, 0068, 0070, 0074, 0075 |
 | `profiles_guard_tutor_name` | `profiles` | BEFORE UPDATE | `profiles_guard_tutor_name()` → a tutor's name changes only through an RPC | 0071 |
 | `tutor_profiles_cancel_revisions` | `tutor_profiles` | AFTER UPDATE OF `verification_status` | `tutor_profiles_cancel_revisions()` → leaving `verified` cancels the open revision | 0072 |
 
@@ -573,7 +603,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 
 | Table | Read | Write |
 | --- | --- | --- |
-| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044); **+ a company owner reads its tutors** (0065) | self UPDATE, **except `can_author_articles` / `can_invite_companies` (silently pinned, 0061/0068), `role` / `status` (raise, 0070) and a tutor's `full_name` (raises, 0071; renamed only through `save_tutor_profile` / `save_partner_tutor_profile`)**. The self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guards are triggers. Students rename themselves through it. 0065's company-owner UPDATE policy was dropped in 0071 |
+| `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044); **+ a company owner reads its tutors** (0065) | self UPDATE, **except `can_author_articles` (silently pinned, 0061), `is_admin` (raises, 0074), `role` / `status` (raise, 0070) and a tutor's `full_name` (raises, 0071; renamed only through `save_tutor_profile` / `save_partner_tutor_profile`)**. The self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guards are triggers. Students rename themselves through it. 0065's company-owner UPDATE policy was dropped in 0071 |
 | `tutor_profiles` | public (enabled accounts, 0055); **+ own row** (`tutor self read`, 0071); **+ a company owner reads its tutors** (0065) | **none: RPC-only since 0071.** Tutors write through `save_tutor_profile`, `set_tutor_visibility`, `mark_tutor_onboarded`; company owners through `save_partner_tutor_profile`. The guard trigger additionally raises on any `authenticated`/`anon` change to `verification_status`, `verification_requested_at`, `partner_id`, `slug`, `email_confirmed_at`, `onboarded` (0070/0071) and pins `rating` / `review_count` (0057) |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
@@ -586,7 +616,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `tutor_subjects` / `tutor_packages` / `tutor_experience` / `tutor_education` | public | **none: RPC-only since 0071** (`save_tutor_profile`; `save_partner_tutor_profile` for subjects of company tutors). The 0002 self-write and 0065 company-write policies are gone |
 | `ai_usage` | self | none (SECURITY DEFINER fns only) |
 | `notifications` | self | self UPDATE (mark-read); no INSERT (service-role only) |
-| `reports` | reporter self (own `reporter_id`) | none (service-role only, 0053) |
+| `reports` | reporter self (own `reporter_id`) | none (service-role insert, 0053; resolved by `admin_resolve_report`, 0074) |
+| `admin_actions` | admins (`is_admin()`, 0074) | none (written by the admin RPCs only) |
 | `tutor_documents` | public | **none: RPC-only since 0071** (`add_tutor_document`, `rename_tutor_document`, `delete_tutor_document`) |
 | `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid; bucket limits 5 MB, jpeg/png/webp/gif (0070); INSERT/UPDATE refused for gated tutors (0073) |
 | `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE; INSERT refused for gated tutors (0073) |
@@ -620,5 +651,9 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 > `profiles_guard_capabilities` trigger (0061), so a user cannot grant themselves the ability to
 > publish to the blog.
 >
-> **Invariant:** nothing in the app writes `profiles.can_invite_companies` either. It is granted
-> via `supabase/utilities/grant_company_inviter.sql` and pinned by the same trigger (0068).
+> The one exception (0074): an admin can grant or revoke it from `/admin/users`, through the
+> SECURITY DEFINER `admin_set_author`, which logs to `admin_actions`.
+>
+> **Invariant:** nothing in the app writes `profiles.is_admin`, not even an admin. It is changed
+> only with `supabase/utilities/grant_admin.sql`, and the guard trigger RAISES on any client
+> attempt (0074). `can_invite_companies` (0068) was dropped in 0075; invites are an admin power.

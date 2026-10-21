@@ -37,6 +37,19 @@ export async function middleware(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // /admin (0074): a signed-out visitor goes to log in and comes straight back,
+  // so an alert email's deep link survives the sign-in. This is the only place
+  // that knows the full path (a layout can't see it). A signed-in non-admin is
+  // 404'd by app/admin/layout.js, which is the real page gate.
+  if (!user && isAdminPath(request.nextUrl.pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search)}`;
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  }
+
   // Deferred role choice (0041): every new account is created with a NULL role
   // and MUST pass through /choose-role before doing anything else. Enforce that
   // here so it can't be skipped by navigating directly. profiles.role is the
@@ -161,6 +174,10 @@ function withBrowseSeed(request, response) {
   response.cookies.getAll().forEach((cookie) => next.cookies.set(cookie));
   next.cookies.set(BROWSE_SEED, seed, { path: "/browse", httpOnly: true, sameSite: "lax" });
   return next;
+}
+
+function isAdminPath(pathname) {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
 // Redirect while keeping the auth cookies the session refresh just set on

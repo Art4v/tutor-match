@@ -25,6 +25,8 @@ export function TopNav() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null); // profiles.role — source of truth
   const [canAuthor, setCanAuthor] = useState(false); // profiles.can_author_articles (0061)
+  const [isAdmin, setIsAdmin] = useState(false); // profiles.is_admin (0074)
+  const [adminPending, setAdminPending] = useState(0); // sum of admin_pending_counts
   const [tutorSlug, setTutorSlug] = useState(null);
   const [profile, setProfile] = useState(null); // { name, avatarUrl } from the DB
   const [unread, setUnread] = useState(0);
@@ -129,6 +131,8 @@ export function TopNav() {
     if (!user) {
       setRole(null);
       setCanAuthor(false);
+      setIsAdmin(false);
+      setAdminPending(0);
       setTutorSlug(null);
       setProfile(null);
       setUnread(0);
@@ -142,7 +146,7 @@ export function TopNav() {
     // (keyed on pathname so it refetches after navigating away from /settings).
     supabase
       .from("profiles")
-      .select("role, full_name, can_author_articles")
+      .select("role, full_name, can_author_articles, is_admin")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -153,6 +157,21 @@ export function TopNav() {
         // 0061. Independent of role: an author is an ordinary tutor who has
         // been designated, so this is a second flag rather than a role branch.
         setCanAuthor(Boolean(data?.can_author_articles));
+        // 0074. Display only: /admin 404s non-admins and every admin RPC
+        // re-checks. The count is the live queue size, refetched with the
+        // profile on every navigation, so it drops as decisions are made.
+        const admin = Boolean(data?.is_admin);
+        setIsAdmin(admin);
+        if (admin) {
+          supabase.rpc("admin_pending_counts").then(({ data: counts }) => {
+            if (!active || !counts) return;
+            setAdminPending(
+              (counts.verifications ?? 0) + (counts.reviews ?? 0) + (counts.reports ?? 0) + (counts.revisions ?? 0)
+            );
+          });
+        } else {
+          setAdminPending(0);
+        }
         if (r === "tutor") {
           supabase
             .from("tutor_profiles")
@@ -371,6 +390,23 @@ export function TopNav() {
                         // capability rather than an everyday destination.
                         <NavMenuLink href="/author" onClick={() => setMenuOpen(false)}>
                           Write
+                        </NavMenuLink>
+                      )}
+                      {isAdmin && (
+                        // The dashboard (0074). Shown only to admins; the pill
+                        // is everything waiting for a decision.
+                        <NavMenuLink href="/admin" onClick={() => setMenuOpen(false)}>
+                          <span className="flex items-center justify-between gap-2">
+                            Admin
+                            {adminPending > 0 && (
+                              <span
+                                className="inline-flex items-center justify-center text-[11px] font-medium text-white tabular-nums"
+                                style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
+                              >
+                                {adminPending > 9 ? "9+" : adminPending}
+                              </span>
+                            )}
+                          </span>
                         </NavMenuLink>
                       )}
                       <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>

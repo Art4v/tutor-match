@@ -4,9 +4,9 @@ import { requireGatedTutor, loadOwnRevisionDiff, revisionLinks, emailAdminAboutR
 
 export const runtime = "nodejs";
 
-// Re-send the admin a fresh 30-day link for the caller's submission, without
-// withdrawing it. At most once a day: resend_profile_revision enforces that on
-// a durable column (admin_notified_at), not the in-memory rate limiter.
+// Re-alert the admins about the caller's submission, without withdrawing it.
+// At most once a day: resend_profile_revision enforces that on a durable
+// column (admin_notified_at), not the in-memory rate limiter.
 export async function POST(request) {
   const supabase = createSupabaseServerClient();
   const gate = await requireGatedTutor(supabase);
@@ -18,13 +18,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Nothing is under review." }, { status: 400 });
   }
 
-  let links;
-  try {
-    links = revisionLinks(request, revision.id);
-  } catch (err) {
-    console.error("[revisions/resend] could not sign link:", err);
-    return NextResponse.json({ error: "Server is not configured for reviews." }, { status: 500 });
-  }
+  const links = revisionLinks(request, revision.id);
 
   const { error } = await supabase.rpc("resend_profile_revision");
   if (error) {

@@ -1,163 +1,18 @@
-import { Icon } from "@/components/Icon";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { redirect } from "next/navigation";
 import { verifyApproveToken } from "@/lib/verifyToken";
-import { VerifyDecision } from "./VerifyDecision";
+import { adminPaths } from "@/lib/admin/urls";
 
-export const metadata = { title: "Review verification" };
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
-// Landing page for the approve link in the admin email. The signed token in
-// ?token= is the authorization (no login). We validate it, show the tutor, and
-// let the admin confirm with the Approve button — a GET never mutates, so an
-// email prefetch can't auto-approve.
-// What a non-pending status means for the admin holding an old link. `none` is
-// a request the tutor withdrew (or one that was never made).
-const DECIDED = {
-  verified: {
-    tone: "ok",
-    icon: "shield-check",
-    title: (name) => `${name} is already verified`,
-    body: "No further action needed. Their profile already shows the verified badge.",
-  },
-  rejected: {
-    tone: "neutral",
-    icon: "info",
-    title: () => "Already decided",
-    body: "This request was already rejected. If the tutor asks again, you'll get a new link.",
-  },
-  none: {
-    tone: "neutral",
-    icon: "info",
-    title: () => "Request withdrawn",
-    body: "The tutor withdrew this verification request, so there is nothing to decide. If they ask again, you'll get a new link.",
-  },
-};
-
-export default async function AdminVerifyPage({ searchParams }) {
-  const token = searchParams?.token ?? "";
-  const { tutorId, error } = verifyApproveToken(token);
-
-  if (error) {
-    return (
-      <Shell>
-        <StateCard
-          tone="error"
-          icon="alert-triangle"
-          title="Link invalid or expired"
-          body="This approval link can't be used. Ask the tutor to resubmit their verification request for a fresh link."
-        />
-      </Shell>
-    );
+// Old email link (?token=…) from before the admin dashboard (0074). The token
+// authorizes nothing now: it only names the item, and this page sends the
+// admin to it. app/admin/layout.js has already 404'd anyone who isn't one.
+export default function OldAdminLink({ searchParams }) {
+  let id = null;
+  try {
+    id = verifyApproveToken(searchParams?.token ?? "").tutorId ?? null;
+  } catch {
+    // Secret unset: the link can't be read, so go to the queue.
   }
-
-  const admin = createSupabaseAdminClient();
-  if (!admin) {
-    return (
-      <Shell>
-        <StateCard
-          tone="error"
-          icon="alert-triangle"
-          title="Server not configured"
-          body="Approvals need SUPABASE_SERVICE_ROLE_KEY set on the server."
-        />
-      </Shell>
-    );
-  }
-
-  const { data: tutor } = await admin
-    .from("tutor_profiles")
-    .select("verification_status, slug, suburb, city, profile:profiles!inner ( full_name )")
-    .eq("id", tutorId)
-    .maybeSingle();
-
-  if (!tutor) {
-    return (
-      <Shell>
-        <StateCard tone="error" icon="alert-triangle" title="Tutor not found" body="This account may have been deleted." />
-      </Shell>
-    );
-  }
-
-  const name = tutor.profile?.full_name || "This tutor";
-  const location = [tutor.suburb, tutor.city].filter(Boolean).join(", ");
-
-  // Only a pending request can be decided. Anything else is a stale link, and
-  // the page says what actually happened rather than offering buttons the
-  // routes would refuse anyway.
-  if (tutor.verification_status !== "pending") {
-    const decided = DECIDED[tutor.verification_status] || DECIDED.none;
-    return (
-      <Shell>
-        <StateCard
-          tone={decided.tone}
-          icon={decided.icon}
-          title={decided.title(name)}
-          body={decided.body}
-          profileHref={tutor.slug ? `/tutor/${tutor.slug}` : null}
-        />
-      </Shell>
-    );
-  }
-
-  return (
-    <Shell>
-      <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
-        <div className="flex items-start gap-3 mb-5">
-          <span className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}>
-            <Icon name="shield-check" size={20} />
-          </span>
-          <div>
-            <h1 className="text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Review verification</h1>
-            <p className="text-[13.5px] text-slate-500 mt-1">Review this tutor's profile, then approve or reject.</p>
-          </div>
-        </div>
-
-        <div className="text-[14px]" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
-          <div className="font-medium text-slate-900">{name}</div>
-          {location && <div className="text-slate-500 text-[13px] mt-0.5">{location}</div>}
-          {tutor.slug && (
-            <a href={`/tutor/${tutor.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] mt-3" style={{ color: "var(--accent)" }}>
-              View public profile <Icon name="external" size={13} />
-            </a>
-          )}
-        </div>
-
-        <p className="text-[12.5px] text-slate-500 mt-4 mb-5">
-          Approving turns on their verified badge and ranks them above unverified tutors. Rejecting lets them update their profile and request another review. Either way they'll be notified by email.
-        </p>
-
-        <VerifyDecision token={token} tutorName={name} profileHref={tutor.slug ? `/tutor/${tutor.slug}` : null} />
-      </section>
-    </Shell>
-  );
-}
-
-function Shell({ children }) {
-  return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen">
-      <div className="max-w-[520px] mx-auto px-6 pt-16 pb-24">{children}</div>
-    </div>
-  );
-}
-
-function StateCard({ tone, icon, title, body, profileHref }) {
-  const colors = {
-    ok: { bg: "var(--accent-softer)", fg: "var(--accent)" },
-    error: { bg: "#FEF2F2", fg: "#DC2626" },
-  }[tone] || { bg: "var(--desk)", fg: "var(--ink-muted)" };
-  return (
-    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}>
-      <span className="inline-flex items-center justify-center mb-4" style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}>
-        <Icon name={icon} size={22} />
-      </span>
-      <h1 className="text-[30px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>{title}</h1>
-      <p className="text-[14px] text-slate-500 mt-1.5 leading-[1.55]">{body}</p>
-      {profileHref && (
-        <a href={profileHref} className="inline-flex items-center gap-1.5 text-[13.5px] mt-4" style={{ color: "var(--accent)" }}>
-          View profile <Icon name="arrow-right" size={14} />
-        </a>
-      )}
-    </section>
-  );
+  redirect(id ? adminPaths.verification(id) : "/admin/verification");
 }
