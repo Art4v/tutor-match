@@ -54,7 +54,6 @@ const DISALLOW = [
   "/profile",
   "/company",
   "/companies/claim",
-  "/companies/invite",
   "/choose-role",
   "/reset-password",
 ];
