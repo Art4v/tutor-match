@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
-import { sendEmail, adminReportEmail, reportReceivedEmail } from "@/lib/email/send";
-import { signReportToken } from "@/lib/reportToken";
+import { adminReportEmail, reportReceivedEmail } from "@/lib/email/send";
+import { emailAdmins } from "@/lib/admin/alerts";
+import { adminPaths } from "@/lib/admin/urls";
 import { isAccountEnabled } from "@/lib/supabase/account";
 
 export const runtime = "nodejs";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "matchtutoraustralia@gmail.com";
 // Keep in sync with the 0059 CHECK + ReportModal + the two label maps.
 const CATEGORIES = ["harassment", "spam", "inappropriate", "scam", "other", "inappropriate_review"];
 const MAX_DETAILS = 2000;
@@ -135,14 +135,13 @@ export async function POST(request) {
     return NextResponse.json({ error: "Could not submit your report." }, { status: 500 });
   }
 
-  // Side effects only on a genuinely new report. Signing the review token throws
-  // when REPORT_REVIEW_SECRET is unset; if that (or any side effect) fails, delete
+  // Side effects only on a genuinely new report. If any side effect fails, delete
   // the just-inserted row so the report is not stranded — otherwise the 0053 partial
   // unique index would make every retry a silent "pending" no-op, hiding it from
   // admins forever. The block above is left in place (it's the protective action).
   try {
     const origin = new URL(request.url).origin;
-    const reviewUrl = `${origin}/admin/report?token=${encodeURIComponent(signReportToken(inserted.id))}`;
+    const reviewUrl = `${origin}${adminPaths.report(inserted.id)}`;
 
     // Resolve display names for the admin email.
     const { data: names } = await admin
@@ -153,9 +152,8 @@ export async function POST(request) {
     const reporterName = nameOf(user.id) || "A user";
     const reportedName = nameOf(reportedId) || "another user";
 
-    // Admin: the review link.
-    await sendEmail({
-      to: ADMIN_EMAIL,
+    // Admins: an alert linking to the report in /admin.
+    await emailAdmins({
       subject: isReviewReport
         ? `Review reported: ${reporterName} reported ${reportedName}`
         : `Report: ${reporterName} reported ${reportedName}`,

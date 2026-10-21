@@ -3,16 +3,15 @@
 // the admin email in one place so submit and resend cannot drift.
 
 import { NextResponse } from "next/server";
-import { sendEmail, adminProfileRevisionEmail } from "@/lib/email/send";
+import { adminProfileRevisionEmail } from "@/lib/email/send";
+import { emailAdmins } from "@/lib/admin/alerts";
+import { adminPaths } from "@/lib/admin/urls";
 import { getTutorProfileForEditor, getSubjects } from "@/lib/supabase/tutors";
 import { listTutorDocs } from "@/lib/supabase/storage";
 import { getMyOpenRevision } from "@/lib/supabase/profileRevisions";
 import { isAccountEnabled } from "@/lib/supabase/account";
 import { payloadToEditor, payloadDocsToList } from "@/lib/profileRevision";
 import { diffProfiles } from "@/lib/profileDiff";
-import { signRevisionToken } from "@/lib/revisionToken";
-
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "matchtutoraustralia@gmail.com";
 
 /**
  * Signed in, enabled, and a GATED tutor (verified, not a company tutor).
@@ -79,25 +78,20 @@ export function changeLines(diff) {
   });
 }
 
-/**
- * Sign a moderation link for `revisionId`. Throws when PROFILE_REVISION_SECRET
- * is unset, so callers sign BEFORE changing any state.
- */
+/** Dashboard links for `revisionId` (both need an admin session). */
 export function revisionLinks(request, revisionId) {
   const origin = new URL(request.url).origin;
-  const token = encodeURIComponent(signRevisionToken(revisionId));
   return {
     origin,
-    reviewUrl: `${origin}/admin/profile-revision?token=${token}`,
-    previewUrl: `${origin}/admin/profile-revision/preview?token=${token}`,
+    reviewUrl: `${origin}${adminPaths.revision(revisionId)}`,
+    previewUrl: `${origin}${adminPaths.revisionPreview(revisionId)}`,
   };
 }
 
-/** Email the admin the review + preview links. Never throws (sendEmail doesn't). */
+/** Alert the admins with the review + preview links. Never throws. */
 export async function emailAdminAboutRevision({ links, me, diff, resent = false }) {
   const tutorName = me.name || "A verified tutor";
-  return sendEmail({
-    to: ADMIN_EMAIL,
+  return emailAdmins({
     subject: `${resent ? "Reminder: profile" : "Profile"} changes to review: ${tutorName}`,
     html: adminProfileRevisionEmail({
       tutorName,

@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
-import { sendEmail, adminReviewEmail, reviewReceivedEmail } from "@/lib/email/send";
-import { signReviewToken } from "@/lib/reviewToken";
+import { adminReviewEmail, reviewReceivedEmail } from "@/lib/email/send";
+import { emailAdmins } from "@/lib/admin/alerts";
+import { adminPaths } from "@/lib/admin/urls";
 import { getReviewForModeration } from "@/lib/supabase/reviews";
 import { isAccountEnabled } from "@/lib/supabase/account";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "matchtutoraustralia@gmail.com";
 const MAX_BODY = 500; // must match the 0057 CHECK
 // Soft cap so one account can't flood the admin inbox. Submits and edits share
 // the budget, because an edit re-queues the review and sends a fresh link. It is
@@ -71,12 +71,11 @@ function parseReviewFields(payload) {
   return { rating, body };
 }
 
-/** Email the admin a fresh one-click moderation link. Throws if the secret is unset. */
+/** Alert the admins, linking to the review in /admin. */
 async function emailAdminForReview({ request, reviewId, studentName, tutorName, rating, body }) {
   const origin = new URL(request.url).origin;
-  const reviewUrl = `${origin}/admin/review?token=${encodeURIComponent(signReviewToken(reviewId))}`;
-  await sendEmail({
-    to: ADMIN_EMAIL,
+  const reviewUrl = `${origin}${adminPaths.review(reviewId)}`;
+  await emailAdmins({
     subject: `Review: ${studentName} reviewed ${tutorName}`,
     html: adminReviewEmail({ studentName, tutorName, rating, body, reviewUrl }),
   });
@@ -255,7 +254,7 @@ export async function PATCH(request) {
       request,
       reviewId,
       studentName: found?.studentName || me?.full_name || "A student",
-      tutorName: found?.tutorName || "a tutor",
+      tutorName: found?.subjectName || "a tutor",
       rating,
       body,
     });

@@ -2,17 +2,16 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
-import { sendEmail, adminRequestEmail, userRequestedEmail } from "@/lib/email/send";
-import { signApproveToken } from "@/lib/verifyToken";
+import { adminRequestEmail, userRequestedEmail } from "@/lib/email/send";
+import { emailAdmins } from "@/lib/admin/alerts";
+import { adminPaths } from "@/lib/admin/urls";
 import { isAccountEnabled } from "@/lib/supabase/account";
 
 export const runtime = "nodejs";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "matchtutoraustralia@gmail.com";
-
 // A tutor requests that their account be verified. Auth-gated. Flips them to
 // 'pending' via the request_tutor_verification RPC, then (only on a real
-// transition) notifies the tutor and emails the admin a one-click approve link.
+// transition) notifies the tutor and alerts the admins with a dashboard link.
 // Idempotent: re-requesting while already pending/verified sends no new email.
 export async function POST(request) {
   const supabase = createSupabaseServerClient();
@@ -51,7 +50,7 @@ export async function POST(request) {
     const tutorName = before.profile?.full_name || "A tutor";
     const origin = new URL(request.url).origin;
     const profileUrl = before.slug ? `${origin}/tutor/${before.slug}` : null;
-    const approveUrl = `${origin}/admin/verify?token=${encodeURIComponent(signApproveToken(user.id))}`;
+    const approveUrl = `${origin}${adminPaths.verification(user.id)}`;
 
     // Tutor: "we've got your request" (in-app notification + email).
     await notifyUser(admin, user.id, {
@@ -61,10 +60,9 @@ export async function POST(request) {
       email: { subject: "We've got your verification request", html: userRequestedEmail({ name: tutorName }) },
     });
 
-    // Admin: the approve link.
-    await sendEmail({
-      to: ADMIN_EMAIL,
-      subject: `Verification request — ${tutorName}`,
+    // Admins: an alert linking to the request in /admin.
+    await emailAdmins({
+      subject: `Verification request: ${tutorName}`,
       html: adminRequestEmail({ tutorName, approveUrl, profileUrl }),
     });
   }
