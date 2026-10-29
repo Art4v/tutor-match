@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, getSchools, saveTutorProfile, setTutorVisibility, getMyVerificationStatus } from "@/lib/supabase/tutors";
+import { adminTutorWriter } from "@/lib/admin/managedTutorWriter";
 import { listTutorDocs, signStagedUrls, uploadStagedImage } from "@/lib/supabase/storage";
 import { saveProfileDraft, discardProfileDraft } from "@/lib/supabase/profileRevisions";
 import { collectStagedPaths, payloadDocsToList, payloadToEditor, resolveImage, stagedPath } from "@/lib/profileRevision";
@@ -55,13 +56,21 @@ import { RevealStack } from "./RevealStack";
  * or submission from the server (null when there is none). `profile` then holds
  * the draft and `live` the approved profile; the owner card switches the page
  * between them (Live is read-only) and offers Submit / Discard / Resend.
+ *
+ * ADMIN mode (`admin` set, 0076): an admin editing a tutor who consented to
+ * being managed, from /admin/tutor-invites/[id]/edit. Same editor, but every
+ * save is LIVE and goes through the /api/admin/managed-tutors routes
+ * (adminTutorWriter), since the admin's own session cannot write another
+ * tutor's rows or storage folders. No draft, no verification prompts.
  */
-export function OwnerProfile({ editorTutor, userId, revision = null }) {
+export function OwnerProfile({ editorTutor, userId, revision = null, admin = null }) {
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
   const supabase = supabaseRef.current;
+  const writer = useMemo(() => (admin ? adminTutorWriter(userId) : null), [admin, userId]);
 
-  const gated = !!editorTutor.gated;
+  // An admin edits the live profile directly, so the draft machinery is off.
+  const gated = !admin && !!editorTutor.gated;
   const [initialProfile] = useState(() =>
     gated && revision ? payloadToEditor(revision.payload, editorTutor) : editorTutor
   );
@@ -141,7 +150,9 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
   // it, so a real change withdraws it (0072). Likewise a verified tutor's
   // submission under review: editing takes it out of review. Ask once per save
   // before doing either; returns true when the save may go ahead now.
-  const pending = profile.verificationStatus === "pending";
+  // Only a LIVE save withdraws a request: a gated tutor's save goes to a draft,
+  // and a managed tutor (0076) can be gated while still pending.
+  const pending = !admin && !gated && profile.verificationStatus === "pending";
   const underReview = gated && rev?.status === "pending";
   const confirmText = underReview
     ? "Your changes are under review. Saving this will take them out of review, and you'll need to submit again."
@@ -288,7 +299,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
       return;
     }
     setSavingKey(k);
-    const result = await saveTutorProfile(supabase, userId, toSave);
+    const result = writer ? await writer.saveProfile(toSave) : await saveTutorProfile(supabase, userId, toSave);
     setSavingKey(null);
     if (!result.ok) {
       console.error("[profile] save failed:", result.error);
@@ -296,7 +307,8 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
       return;
     }
     const verificationStatus = result.verificationWithdrawn ? "none" : profile.verificationStatus;
-    setProfile({ ...toSave, verificationStatus });
+    // Admin mode: adopt the profile's new version, sent back with the next save.
+    setProfile({ ...toSave, verificationStatus, ...(result.updatedAt ? { updatedAt: result.updatedAt } : {}) });
     setEditingKey(null);
     setConfirmKey(null);
     if (result.verificationWithdrawn) {
@@ -306,7 +318,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
       const labels = result.droppedSubjects.map((slug) => subjectLabel(bySlug.get(slug) ?? { name: slug }));
       showToast("warn", `Saved. Skipped unrecognised subjects: ${labels.join(", ")}.`, 5000);
     } else {
-      showToast("ok", "Section saved", 1600);
+      showToast("ok", writer ? "Saved. The tutor has been emailed the change." : "Section saved", writer ? 2600 : 1600);
     }
   };
 
@@ -351,6 +363,9 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
     }
     setSavingKey("documentation");
     const result = await docsEditorRef.current?.commit();
+    // Admin mode: the per-document calls were quiet; tell the tutor about the
+    // whole save in one email (`docs` is still the list the editor opened with).
+    if (writer && result) await writer.docs.notify(docs);
     // The document RPCs withdraw a pending request themselves but return no
     // flag, so re-read the status to find out.
     const withdrawn = pending && (await getMyVerificationStatus(supabase, userId)) === "none";
@@ -369,7 +384,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
     } else if (result.errors.length > 0) {
       showToast("warn", `Saved, with issues: ${result.errors.map((e) => `${e.name} (${e.message})`).join("; ")}`, 6000);
     } else {
-      showToast("ok", "Section saved", 1600);
+      showToast("ok", writer ? "Saved. The tutor has been emailed the change." : "Section saved", writer ? 2600 : 1600);
     }
   };
 
@@ -377,14 +392,16 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
   // immediately through its own RPC (only the visibility column changes). Keep
   // any open draft in sync so a later section save doesn't revert it.
   const onVisibilityChange = async (value) => {
-    const result = await setTutorVisibility(supabase, value);
+    const result = writer ? await writer.setVisibility(value) : await setTutorVisibility(supabase, value);
     if (!result.ok) {
       showToast("error", result.error?.message || "Couldn't update visibility.", 3500);
       return false;
     }
-    setProfile((p) => ({ ...p, visibility: value }));
-    setLive((p) => ({ ...p, visibility: value }));
-    setDraft((d) => ({ ...d, visibility: value }));
+    // Admin mode: visibility moved the profile's version too (see saveSection).
+    const version = result.updatedAt ? { updatedAt: result.updatedAt } : {};
+    setProfile((p) => ({ ...p, visibility: value, ...version }));
+    setLive((p) => ({ ...p, visibility: value, ...version }));
+    setDraft((d) => ({ ...d, visibility: value, ...version }));
     return true;
   };
 
@@ -468,6 +485,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
       review={review}
       publicHref={publicHref}
       publicUrl={publicUrl}
+      adminMode={!!admin}
     />
   );
 
@@ -512,6 +530,22 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
+        {admin && (
+          <div
+            className="mb-[10px] flex flex-wrap items-center gap-3 px-4 py-3 text-[13px]"
+            style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 12 }}
+          >
+            <Icon name="shield" size={15} />
+            <span className="flex-1 min-w-0">
+              Editing as admin. Every save goes live straight away and emails the tutor what changed.
+            </span>
+            {admin.backHref && (
+              <a href={admin.backHref} className="font-medium underline underline-offset-2">
+                Back to dashboard
+              </a>
+            )}
+          </div>
+        )}
         <RevealStack>
         <EditRegion
           {...regionProps("header", "profile header", 1100)}
@@ -525,7 +559,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
                 set={set}
                 supabase={supabase}
                 bare
-                uploadImage={gated ? uploadStaged : undefined}
+                uploadImage={gated ? uploadStaged : writer ? writer.uploadImage : undefined}
                 resolveImage={gated ? resolveImg : undefined}
               />
               <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
@@ -629,6 +663,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null }) {
                   docs={gated ? currentDraftDocs : docs}
                   onDirtyChange={setDocsDirty}
                   mode={gated ? "draft" : "live"}
+                  ops={writer?.docs}
                 />
               }
             />

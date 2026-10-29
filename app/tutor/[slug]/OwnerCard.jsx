@@ -18,10 +18,17 @@ import { calcCompletion } from "@/components/profile-edit/sections";
  * to know a request is pending so a later save can warn that it withdraws it.
  * `review` (verified tutors only, 0072) carries the draft's review state and
  * handlers for ProfileReviewStatus; null for everyone else.
+ *
+ * Admin-managed tutors (0076): the tutor sees a "managed by MatchTutor" note,
+ * no verification request (admins set it) and a read-only visibility toggle.
+ * `adminMode` is the admin editing that tutor: visibility works, and the
+ * tutor-only controls are hidden.
  */
-export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested, review, publicHref, publicUrl }) {
+export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested, review, publicHref, publicUrl, adminMode = false }) {
   const c = useMemo(() => calcCompletion(profile), [profile]);
   const visibility = profile.visibility ?? "public";
+  const managedByUs = !!profile.managed && !adminMode;
+  const visibilityLocked = managedByUs;
 
   const [savingVis, setSavingVis] = useState(false);
   const [savedVis, setSavedVis] = useState(false);
@@ -34,7 +41,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
   }, []);
 
   const changeVisibility = async (value) => {
-    if (value === visibility || savingVis) return;
+    if (value === visibility || savingVis || visibilityLocked) return;
     setSavingVis(true);
     setSavedVis(false);
     const ok = await onVisibilityChange(value);
@@ -78,8 +85,33 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
         <div className="flex items-center gap-2 mb-3">
           <Icon name="eye" size={15} className="text-slate-500" />
           <h3 className="text-[19px] font-light text-slate-800 tracking-tight">Your profile</h3>
-          <span className="ml-auto text-[11.5px] text-slate-400">Only you see this</span>
+          <span className="ml-auto text-[11.5px] text-slate-400">{adminMode ? "Admin view" : "Only you see this"}</span>
         </div>
+
+        {managedByUs && (
+          <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
+            <p className="text-[12.5px] leading-[1.5] flex items-start gap-2" style={{ color: "var(--ink-muted)" }}>
+              <span className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }}><Icon name="shield-check" size={14} /></span>
+              <span>
+                <span className="font-medium" style={{ color: "var(--ink)" }}>MatchTutor manages your profile.</span>{" "}
+                {profile.managedSetupDone
+                  ? "Changes you make are sent to us for approval, and we decide when it is shown."
+                  : "We're setting it up for you and will make it public when it's ready. Changes you make are sent to us for approval."}{" "}
+                You can stop this in{" "}
+                <a href="/account" className="underline underline-offset-2">Account settings</a>.
+              </span>
+            </p>
+            {!profile.inviteMaterialsSubmitted && (
+              <a
+                href="/join/details"
+                className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium"
+                style={{ color: "var(--accent)" }}
+              >
+                <Icon name="upload" size={13} /> Send us your resume, certificates or links
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Verified tutors: where their reviewed draft stands. Leads the card,
             since it is the thing they act on. */}
@@ -89,7 +121,9 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
           </div>
         )}
 
-        {/* Verification — top of the card so the get-verified nudge leads. */}
+        {/* Verification — top of the card so the get-verified nudge leads.
+            Not for managed tutors: admins set their verification (0076). */}
+        {!adminMode && !profile.managed && (
         <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
           {/* Keyed on the status: RequestVerification seeds its own state once,
               so a withdrawal (a save while pending, 0072) must remount it. */}
@@ -101,6 +135,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
             unstyled
           />
         </div>
+        )}
 
         {/* Completion */}
         <div className="flex items-center justify-between text-[12.5px] mb-1.5">
@@ -139,11 +174,14 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
               </span>
             )}
           </div>
-          <div className="space-y-1.5">
+          {visibilityLocked && (
+            <p className="text-[12px] text-slate-500 mb-2">MatchTutor decides when your profile is shown while we manage it.</p>
+          )}
+          <div className="space-y-1.5" style={visibilityLocked ? { opacity: 0.65 } : undefined}>
             {visOptions.map((o) => {
               const active = visibility === o.value;
               return (
-                <button key={o.value} type="button" onClick={() => changeVisibility(o.value)} disabled={savingVis}
+                <button key={o.value} type="button" onClick={() => changeVisibility(o.value)} disabled={savingVis || visibilityLocked}
                   className="w-full text-left flex items-start gap-3 px-3 py-2.5 transition-colors"
                   style={{ background: active ? "var(--ink)" : "var(--bg-soft)", color: active ? "#fff" : "var(--ink)", borderRadius: 10, border: `1px solid ${active ? "var(--ink)" : "transparent"}` }}>
                   <span className="inline-flex items-center justify-center shrink-0 mt-0.5"

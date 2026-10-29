@@ -17,6 +17,8 @@ const TYPES = {
   profile_revision_submitted: { icon: "clock", color: "var(--accent)", bg: "var(--accent-softer)" },
   profile_revision_approved: { icon: "check-circle", color: "var(--stamp)", bg: "#ECFDF5" },
   profile_revision_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
+  managed_profile_updated: { icon: "pencil", color: "var(--accent)", bg: "var(--accent-softer)" },
+  managed_verification_set: { icon: "shield-check", color: "var(--accent)", bg: "var(--accent-softer)" },
 };
 const FALLBACK = { icon: "bell", color: "var(--ink-muted)", bg: "var(--desk)" };
 

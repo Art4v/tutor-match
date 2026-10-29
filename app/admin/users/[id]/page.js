@@ -5,6 +5,7 @@ import { requireAdmin } from "../../guard";
 import { PageHeader, Panel, Inset, Chip, HistoryList } from "../../_components/ui";
 import { DecisionPanel } from "../../_components/DecisionPanel";
 import { formatDate, formatDateTime } from "../../_components/format";
+import { adminPaths } from "@/lib/admin/urls";
 
 export const metadata = { title: "Account" };
 
@@ -39,6 +40,7 @@ export default async function UserDetailPage({ params }) {
                 {user.can_author_articles && <Chip>Author</Chip>}
                 <Chip tone={disabled ? "bad" : "good"}>{disabled ? "Disabled" : "Enabled"}</Chip>
                 {user.tutor && <Chip>Verification: {user.tutor.verification_status}</Chip>}
+                {user.tutor?.managed_at && <Chip tone="good">Managed</Chip>}
               </div>
               <dl className="grid grid-cols-[110px_1fr] gap-y-1 text-[13.5px]">
                 <dt className="text-slate-500">Email</dt>
@@ -52,6 +54,11 @@ export default async function UserDetailPage({ params }) {
                 {user.tutor?.slug && (
                   <a href={`/tutor/${user.tutor.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
                     Tutor profile <Icon name="external" size={13} />
+                  </a>
+                )}
+                {user.tutor?.managed_at && (
+                  <a href={adminPaths.managedTutor(user.id)} className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
+                    Manage profile
                   </a>
                 )}
                 {user.company?.slug && (

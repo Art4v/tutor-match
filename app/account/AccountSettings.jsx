@@ -9,10 +9,11 @@ import { PasswordChecklist } from "@/components/PasswordChecklist";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 import { ImageCropModal } from "@/components/ImageCropModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 const DELETE_WORD = "DELETE";
 
-export function AccountSettings({ userEmail, userId, role, fullName, initialAvatarUrl }) {
+export function AccountSettings({ userEmail, userId, role, fullName, initialAvatarUrl, managed = false }) {
   const isStudent = role === "student";
   const router = useRouter();
   const supabaseRef = useRef(null);
@@ -206,6 +207,9 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
             </form>
           </Card>
 
+          {/* Profile management (admin-managed tutors only, 0076) ---------- */}
+          {managed && <ManagedProfileCard showToast={showToast} />}
+
           {/* Delete account ------------------------------------------------- */}
           <section
             className="bg-[color:var(--paper-card)]"
@@ -287,6 +291,66 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
         </div>
       )}
     </div>
+  );
+}
+
+// Admin-managed tutors (0076): stop MatchTutor managing the profile. Final from
+// here (a new invite link is the only way back in), so it confirms first and
+// spells out what is lost.
+function ManagedProfileCard({ showToast }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const onConfirm = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/account/management/opt-out", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBusy(false);
+        setOpen(false);
+        showToast("error", data?.error || "Couldn't update this. Please try again.", 4000);
+        return;
+      }
+      setOpen(false);
+      showToast("ok", "You now manage your own profile", 2600);
+      router.refresh();
+    } catch {
+      setBusy(false);
+      setOpen(false);
+      showToast("error", "Network error. Please try again.", 4000);
+    }
+  };
+
+  return (
+    <Card>
+      <SectionHeader
+        icon="shield-check"
+        title="Profile management"
+        subtitle="MatchTutor admins are managing your tutor profile for you."
+      />
+      <p className="text-[13.5px] text-slate-600 leading-[1.6]">
+        While this is on, our team can edit your profile, choose when it is shown and set your verification.
+        Changes you make yourself are sent to us for approval.
+      </p>
+      <div className="mt-5">
+        <Button variant="outline" size="lg" onClick={() => setOpen(true)}>
+          Stop managing my profile
+        </Button>
+      </div>
+      {open && (
+        <ConfirmModal
+          title="Stop MatchTutor managing your profile?"
+          body="You'll edit your profile yourself from now on. Your verification will be removed, so you'll need to request it again. Any changes waiting for our approval will be discarded, and the documents you sent at signup will be deleted. You can't turn management back on from here."
+          confirmLabel="Stop managing my profile"
+          confirmingLabel="Saving…"
+          busy={busy}
+          onCancel={() => { if (!busy) setOpen(false); }}
+          onConfirm={onConfirm}
+        />
+      )}
+    </Card>
   );
 }
 

@@ -60,6 +60,8 @@ export default function VerificationPrompt() {
     pathname === "/reset-password" ||
     pathname === "/terms-of-service" ||
     pathname === "/privacy-policy" ||
+    pathname === "/join" ||
+    pathname.startsWith("/join/") ||
     pathname.startsWith("/auth");
 
   useEffect(() => {
@@ -80,12 +82,14 @@ export default function VerificationPrompt() {
       }
       const { data, error: qErr } = await supabase
         .from("tutor_profiles")
-        .select("verification_status")
+        .select("verification_status, managed_at")
         .eq("id", user.id)
         .maybeSingle();
 
-      // No tutor row (e.g. a student) or a read error → don't prompt.
-      if (cancelled || qErr || !data) return;
+      // No tutor row (e.g. a student) or a read error → don't prompt. Nor for
+      // an admin-managed tutor (0076): admins set their verification, and
+      // their profile offers no request to make.
+      if (cancelled || qErr || !data || data.managed_at) return;
       const status = data.verification_status ?? "none";
       if ((status === "none" || status === "rejected") && !dismissedThisSession()) {
         setOpen(true);

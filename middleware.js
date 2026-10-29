@@ -193,9 +193,13 @@ function redirectPreservingCookies(request, refreshed, path) {
 
 export const config = {
   matcher: [
-    // Run on every request except static assets, image optimization, and the
+    // Run on every request except static assets, image optimization, the
     // crawler files (robots.txt, sitemap.xml, llms.txt, llms-full.txt), which
-    // are public, cached and need no session refresh.
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|llms-full.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // are public, cached and need no session refresh, and the tutor invite
+    // page (exactly /join, 0076). /join is a static file that checks its key
+    // only on submit; skipping middleware means a crawler loading it costs no
+    // function run and no Supabase call (the Oct 2026 meta-externalagent
+    // outage was middleware + uncached pages). /join/details keeps middleware.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|llms-full.txt|join$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

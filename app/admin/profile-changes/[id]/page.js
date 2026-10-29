@@ -41,6 +41,18 @@ export default async function RevisionDetailPage({ params }) {
     subjectCatalog: found.subjectCatalog,
   });
   const blocked = !found.gated || found.accountStatus === "disabled";
+  // A managed tutor's draft is a full copy of the profile (0076). If an admin
+  // edited the live profile after the draft's content was copied, approving
+  // the draft writes back over those edits, so say so. contentSince is the
+  // start of the revision chain: a rejected or re-edited draft is a new row
+  // carrying the old copy, so its own createdAt would hide the overlap.
+  const draftSince = revision.contentSince || revision.createdAt;
+  const staleDraft =
+    pending &&
+    found.live.managed &&
+    found.live.adminEditedAt &&
+    draftSince &&
+    new Date(found.live.adminEditedAt) > new Date(draftSince);
 
   return (
     <>
@@ -70,10 +82,24 @@ export default async function RevisionDetailPage({ params }) {
               <DecidedNote text={DECIDED[revision.status] || "Already decided."} last={last} />
             ) : blocked ? (
               <p className="text-[13px]" style={{ color: "#B45309" }}>
-                This tutor is no longer verified or their account is disabled, so these changes can&apos;t be applied.
+                This tutor is no longer verified or managed, or their account is disabled, so these changes can&apos;t be applied.
               </p>
             ) : (
               <>
+                {staleDraft && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2.5 px-4 py-3 mb-4 text-[13px]"
+                    style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 10 }}
+                  >
+                    <span className="shrink-0 mt-0.5"><Icon name="alert-triangle" size={14} /></span>
+                    <span className="leading-[1.5]">
+                      An admin edited this tutor&apos;s live profile on {formatDate(found.live.adminEditedAt)}, after the tutor started
+                      these changes. Approving replaces the whole profile with this draft, which undoes those admin edits. Check
+                      the changes above, then approve anyway or reject with a note.
+                    </span>
+                  </div>
+                )}
                 <p className="text-[12.5px] text-slate-500 mb-4">
                   Approving publishes every change above, including new photos and documents. Rejecting keeps the current profile; the tutor stays verified and gets your note. Either way they&apos;re emailed.
                 </p>

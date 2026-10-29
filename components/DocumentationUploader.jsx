@@ -34,11 +34,23 @@ function titleFromFileName(fileName) {
 // the PRIVATE staging bucket and returns the resulting list
 // ([{ id | null, title, path, stagedPath, url }]) for the parent to save into
 // the draft. Items may then be staged files (id null, stagedPath set).
+//
+// `ops` (live mode only) replaces the three live writes. The admin editor of
+// a managed tutor (0076) passes ops that go through /api/admin routes, since
+// an admin cannot write another tutor's documents with their own session.
+// Each op resolves like the storage helper it replaces:
+//   remove(item) -> { ok, error }, rename(item, title) -> { ok, error },
+//   upload(file, title) -> { ok, id, title, path, url } | { ok: false, error }
 export const DocumentationUploader = forwardRef(function DocumentationUploader(
-  { userId, docs, onDirtyChange, mode = "live" },
+  { userId, docs, onDirtyChange, mode = "live", ops },
   ref
 ) {
   const [supabase] = useState(() => createSupabaseBrowserClient());
+  const live = ops ?? {
+    remove: (it) => deleteTutorDoc(supabase, it.id, it.path),
+    rename: (it, title) => updateTutorDocTitle(supabase, it.id, title),
+    upload: (file, title) => uploadTutorDoc(supabase, userId, file, title),
+  };
   // Existing docs, seeded once — the modal remounts on every open, so this is
   // always fresh. `removed` / `title` edits stay draft-only until commit().
   const [items, setItems] = useState(() =>
@@ -72,7 +84,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
       const finalDocs = [];
       for (const it of items) {
         if (it.removed) {
-          const res = await deleteTutorDoc(supabase, it.id, it.path);
+          const res = await live.remove(it);
           if (!res.ok) {
             errs.push({ name: it.originalTitle, message: res.error });
             finalDocs.push({ id: it.id, title: it.originalTitle, path: it.path, url: it.url });
@@ -81,7 +93,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
         }
         let title = it.title.trim() || it.originalTitle;
         if (title !== it.originalTitle) {
-          const res = await updateTutorDocTitle(supabase, it.id, title);
+          const res = await live.rename(it, title);
           if (!res.ok) {
             errs.push({ name: it.originalTitle, message: res.error });
             title = it.originalTitle;
@@ -96,7 +108,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
         }
         // The `accept` attribute doesn't apply to dropped files — the helper
         // re-validates type and size either way.
-        const res = await uploadTutorDoc(supabase, userId, a.file, a.title);
+        const res = await live.upload(a.file, a.title);
         if (!res.ok) {
           errs.push({ name: a.file.name, message: res.error });
           continue;

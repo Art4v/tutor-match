@@ -32,7 +32,7 @@ export default async function VerificationDetailPage({ params }) {
   const location = [tutor.suburb, tutor.city].filter(Boolean).join(", ");
   const profileHref = tutor.slug ? `/tutor/${tutor.slug}` : null;
   const pending = tutor.verification_status === "pending";
-  const last = pending ? null : await lastActionFor(supabase, "tutor", tutor.id);
+  const last = pending ? null : await lastActionFor(supabase, "tutor", tutor.id, "verification_");
 
   return (
     <>

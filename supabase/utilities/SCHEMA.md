@@ -128,6 +128,10 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `rate` | int | AUD/hour. **Always NULL for partner tutors** since 0069 (a centre prices by package only; 0066's cheapest-package mirror showed a package price as hourly, so it was removed and the column cleared). Enforced by CHECK `tutor_profiles_partner_no_rate` (`partner_id IS NULL OR rate IS NULL`), since 0065's partner write policy would otherwise let an owner set it via PostgREST. /browse's `rateMax` filter lets partner tutors through explicitly. An ordinary tutor still sets it themselves |
 | `partner_id` | uuid | nullable → `partners(id)` ON DELETE CASCADE (0065). **Non-null ⇒ a partner tutor**: listed and controlled by a tutoring centre, backed by a shadow `auth.users` row that cannot sign in. One nullable FK rather than a boolean plus a link, so the two can't disagree. Drives the partner chip, the centre's rate card, the Enquire button, the `start_conversation` refusal and the `/api/reviews` 403 |
 | `onboarded` | bool | NOT NULL DEFAULT false; drives `/onboarding` gate (0018) |
+| `managed_at` | timestamptz | (0076) **Non-null ⇒ admin-managed**: the tutor consented on `/join` to MatchTutor managing the profile (doubles as the consent time). Makes `tutor_edits_gated()` true, so the tutor's own edits become drafts; visibility is admin-only. Cleared only by `opt_out_of_management()` |
+| `managed_setup_done_at` | timestamptz | (0076) NULL ⇒ in the admin "New tutors" queue (`admin_pending_counts().invites`) |
+| `invite_materials_submitted_at` | timestamptz | (0076) The once-only `/join/details` submit (or Skip) |
+| `admin_edited_at` | timestamptz | (0076) Last live admin edit; drives the stale-draft warning on `/admin/profile-changes/[id]` |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` (0002) |
 
 **Indexes:** `(visibility)`, `(city)`, `(atar)`, `(rate)` (0004); `(email_confirmed_at)` (0007); `(service_lat, service_lng)` (0008).
@@ -446,7 +450,7 @@ Append-only History of every admin action, shown at `/admin/history`, on each us
 | `id` | uuid | PK, `gen_random_uuid()` |
 | `admin_id` | uuid | FK → `profiles.id`, ON DELETE SET NULL |
 | `admin_name` | text | Snapshot of the admin's name, so the row survives their account |
-| `action` | text | NOT NULL, CHECK in `verification_approved/rejected`, `review_approved/rejected`, `report_disable_reported/disable_reporter/dismiss/remove_review`, `revision_approved/rejected`, `account_disabled/enabled`, `author_granted/revoked`, `company_invited/link_issued/hidden/shown/deleted` |
+| `action` | text | NOT NULL, CHECK in `verification_approved/rejected`, `review_approved/rejected`, `report_disable_reported/disable_reporter/dismiss/remove_review`, `revision_approved/rejected`, `account_disabled/enabled`, `author_granted/revoked`, `company_invited/link_issued/hidden/shown/deleted`, and (0076) `tutor_invite_rotated`, `managed_profile_edited`, `managed_visibility_set`, `managed_document_changed`, `verification_set`, `managed_setup_done` |
 | `target_type` | text | NOT NULL, CHECK in `tutor` / `review` / `report` / `revision` / `company` / `user` |
 | `target_id` | uuid | **No FK**, so the record outlives a deleted target |
 | `target_label` | text | Readable snapshot ("Review of …", the company name) |
@@ -493,7 +497,16 @@ A verified tutor's reviewed profile draft. Verified, non-company tutors (`tutor_
 Partial UNIQUE index `tutor_profile_revisions_one_open (tutor_id) WHERE status IN ('draft','pending')`: one open revision per tutor. `rejected` and `withdrawn` are final; each opens a fresh draft copying the content (`parent_id` back), so an old email link always reports the true outcome. RLS: owner SELECT only; every write is an RPC.
 
 ### Storage: `profile-staging` bucket (0072)
-**Private.** Draft photos and documents of verified tutors at `<uid>/<file>`, until approval copies them into `profile-images` / `tutor-docs` under the same path. `file_size_limit` 10 MB, `allowed_mime_types` `{image/*, application/pdf}`. Owner SELECT / DELETE on their own folder; owner INSERT additionally requires `tutor_edits_gated(auth.uid())`. The owner previews through signed URLs, the admin page through the service role.
+**Private.** Draft photos and documents of verified tutors at `<uid>/<file>`, until approval copies them into `profile-images` / `tutor-docs` under the same path. `file_size_limit` 10 MB, `allowed_mime_types` `{image/*, application/pdf}`. Owner SELECT / DELETE on their own folder; owner INSERT additionally requires `caller_edits_gated()` (0076; `tutor_edits_gated(auth.uid())` before). The owner previews through signed URLs, the admin page through the service role.
+
+### `tutor_invite_key` (0076)
+Singleton (`id boolean PK CHECK (id)`): `key` (32 hex chars), `rotated_at`, `rotated_by` → `profiles` ON DELETE SET NULL. The key in the universal tutor invite link `/join?k=<key>`. RLS on, **no policies**: read and rotated only by `admin_get_tutor_invite_key` / `admin_rotate_tutor_invite_key`, compared only inside `tutor_invite_key_valid` / `redeem_tutor_invite` (service role). No expiry, by decision; rotating kills the old link.
+
+### `tutor_invite_materials` (0076)
+The optional private documents and links a tutor sends from `/join/details`. `id`, `tutor_id` → `tutor_profiles` ON DELETE CASCADE, `kind` (`document` / `link`), `storage_path` (documents; CHECK first folder = `tutor_id`), `title` (documents only; a link's must be NULL), `url` (links only; CHECK `^https?://[^\s]+$`, ≤ 500), `position`, `created_at`. RLS on, **no client policies**: written by `submit_invite_materials`, read by admins through the service role, deleted by `opt_out_of_management`.
+
+### Storage: `tutor-invite-materials` bucket (0076)
+**Private**, 10 MB, `{application/pdf, image/jpeg, image/png, image/webp, image/gif}` (explicit, so no SVG). **No client policies at all.** The tutor uploads only through a signed upload URL from `/api/join/materials/upload`, which first checks the session, `can_upload_invite_materials` (managed and not yet submitted), type, size and that the folder holds fewer than 10 files. The tutor never reads these back; admins use signed URLs; `/api/join/materials` sweeps unsent files and the opt-out route removes the rest, both with the service role.
 
 ### Storage: `blog-images` bucket (0061)
 **Public** — article cover art behind `articles.cover_path`, at `<author_uid>/<slug>-<timestamp>.<ext>`. Bucket-level `file_size_limit` 5 MB + `allowed_mime_types` `{image/*}`. Public SELECT; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`. Modelled on `profile-images`, **not** `tutor-docs`: cover art is replaceable, so UPDATE exists and uploads may use upsert. The public SELECT policy is also what keeps owner deletes working (the 0035 lesson: `remove()` checks SELECT as well as DELETE) — do not narrow it without adding an owner SELECT policy in the same change.
@@ -564,7 +577,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 ---
 
 | `_tutor_snapshot(id)` / `_withdraw_pending_verification(id)` | jsonb / boolean | Internal (0072). The comparable stored profile, compared before/after a live save: a real change by a `pending` tutor sends the request back to `none`, a no-op save doesn't. The document RPCs withdraw too. `save_tutor_profile` returns `verification_withdrawn` | 0072 |
-| `tutor_edits_gated(id)` | boolean | Verified and not a company tutor: whose edits need review. Granted to `authenticated` (the storage policies call it) | 0072 |
+| `tutor_edits_gated(id)` | boolean | Verified and not a company tutor: whose edits need review. Granted to `authenticated` until 0076 (the storage policies called it) | 0072 |
 | `_assert_live_edit_allowed(id)` | void | Called first by every RPC that edits the live profile (`save_tutor_profile`, the three document RPCs). A no-op in 0072; **0073 makes it raise `profile_changes_require_review` for gated tutors**, which is the whole gate | 0072, 0073 |
 | `save_profile_draft(p_payload)` | jsonb | Gated tutor's draft save. Strips visibility, validates name, ATAR, photos (`_valid_draft_image`: unchanged, empty or a file in the caller's own staging folder) and documents (ids must be theirs; new files a staged path in their folder). Withdraws a submission under review (final row + fresh draft). Returns `{ revision_id, withdrew_submission, orphaned_staged }` | 0072 |
 | `submit_profile_revision()` / `discard_profile_draft()` / `resend_profile_revision()` | uuid / jsonb / uuid | Owner: draft → `pending`; drop the open revision (returns staged paths to delete); re-stamp `admin_notified_at`, at most once per 24 h (hint `too_soon`) | 0072 |
@@ -579,7 +592,18 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `admin_set_account_status(p_user_id, p_status, p_reason)` | jsonb | Enable / disable any non-admin account other than the caller's. Logs | 0074 |
 | `admin_set_author(p_user_id, p_enabled, p_reason)` | jsonb | Grant / revoke `can_author_articles`; target must be a non-company tutor and not an admin. Logs | 0074 |
 | `admin_set_company_visibility(p_partner_id, p_visibility, p_reason)` / `admin_delete_company(p_partner_id, p_reason)` | jsonb | Hide / show (through the 0065 cascade) and delete (the body of `delete_company.sql`: shadow tutor accounts, owner's role → NULL, the row with its packages and reviews). Log | 0074 |
-| `admin_pending_counts()` | jsonb | `{ verifications, reviews, reports, revisions }` pending counts, for the dashboard sidebar and the TopNav badge | 0074 |
+| `admin_pending_counts()` | jsonb | `{ verifications, reviews, reports, revisions, invites }` pending counts, for the dashboard sidebar and the TopNav badge (`invites` = managed tutors not yet marked set up, 0076) | 0074, 0076 |
+| `tutor_edits_gated(id)` (0076) | boolean | Now `(verified OR managed_at IS NOT NULL) AND partner_id IS NULL`, so managed tutors use the draft flow everywhere the 0072/0073 gate applies. **No longer granted to `authenticated`** (with any id it would reveal who is managed); only SECURITY DEFINER functions and the service role call it | 0076 |
+| `caller_edits_gated()` | boolean | `tutor_edits_gated(auth.uid())`, about the caller only (like `is_admin()`). Granted to `authenticated`; the `profile-images` INSERT/UPDATE, `tutor-docs` INSERT and `profile-staging` INSERT policies use it | 0076 |
+| `can_upload_invite_materials(p_id)` | boolean | Managed and `invite_materials_submitted_at` NULL. **service_role only**: called by `/api/join/materials/upload` before it signs an upload, and inside `submit_invite_materials` | 0076 |
+| `redeem_tutor_invite(p_user_id, p_key)` | jsonb | **service_role only.** Binds an account to the invite: role NULL → a hidden, onboarded tutor (choose_role's tutor branch); a tutor keeps everything; anything else raises hint `wrong_role`, and an admin account hint `admin_account` (no admin action could ever reach it). Sets `managed_at`. Hint `invalid_key` on a dead key. Idempotent (`already`) | 0076 |
+| `tutor_invite_key_valid(p_key)` | boolean | **service_role only.** Lets `/api/join/signup` refuse a dead link before it creates an account | 0076 |
+| `submit_invite_materials(p_docs, p_links)` | void | Tutor, once (hint `already_submitted`): ≤ 5 documents already uploaded to their folder of `tutor-invite-materials`, ≤ 5 http(s) links | 0076 |
+| `opt_out_of_management()` | jsonb | Tutor: clears `managed_*`, verification → `none`, withdraws the open revision, deletes the materials rows; returns `{ materials, staged }` storage paths for the route to remove | 0076 |
+| `admin_get_tutor_invite_key()` / `admin_rotate_tutor_invite_key()` | jsonb | Admin read / replace the invite key (rotate logs) | 0076 |
+| `admin_save_managed_tutor_profile(p_tutor_id, p_payload, p_expected_updated_at)` | jsonb | Admin LIVE save of a managed tutor (`_apply_tutor_name` + `_apply_tutor_payload`, photos must be in the tutor's folder). The payload is the whole profile, so a save whose `p_expected_updated_at` is older than the row is refused (hint `stale_profile`) instead of reverting a newer save or an approved draft. Stamps `admin_edited_at` and logs only on a real change; returns `changed`, `dropped_subjects`, `updated_at`. A photo the tutor's open draft had not changed follows the new live one, so the draft stays saveable | 0076 |
+| `admin_set_managed_tutor_visibility` / `admin_set_tutor_verification(p_tutor_id, p_verified, p_reason)` / `admin_mark_managed_setup_done(p_tutor_id, p_reason)` | jsonb | Managed tutors only (`_require_managed_tutor`, which also refuses admins and the caller). Verification toggles `verified` ↔ `none` with no request. Log | 0076 |
+| `admin_add/rename/delete_managed_tutor_document` | uuid / text / text | The 0072 document bodies keyed on `p_tutor_id`; the browser puts the file in `tutor-docs/<tutor_id>/` first, on an upload URL the admin upload route signs. Each also updates the tutor's open draft (adds the new document, carries an unchanged title, drops a deleted id) | 0076 |
 
 ## Triggers
 
@@ -595,7 +619,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `articles_touch_updated_at` | `articles` | BEFORE UPDATE | `articles_touch_updated_at()` — touches `updated_at` only, never the reader-visible `content_updated_at` | 0061 |
 | `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles`; raises on client changes to `is_admin` (0074), `role` / `status` (0070) | 0061, 0068, 0070, 0074, 0075 |
 | `profiles_guard_tutor_name` | `profiles` | BEFORE UPDATE | `profiles_guard_tutor_name()` → a tutor's name changes only through an RPC | 0071 |
-| `tutor_profiles_cancel_revisions` | `tutor_profiles` | AFTER UPDATE OF `verification_status` | `tutor_profiles_cancel_revisions()` → leaving `verified` cancels the open revision | 0072 |
+| `tutor_profiles_cancel_revisions` | `tutor_profiles` | AFTER UPDATE OF `verification_status` | `tutor_profiles_cancel_revisions()` → leaving `verified` cancels the open revision, unless the tutor is managed (still gated, 0076) | 0072, 0076 |
 
 ---
 
@@ -604,7 +628,7 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | Table | Read | Write |
 | --- | --- | --- |
 | `profiles` | self; **+ public read for tutor rows** (0004); **+ conversation participants read each other** (0044); **+ a company owner reads its tutors** (0065) | self UPDATE, **except `can_author_articles` (silently pinned, 0061), `is_admin` (raises, 0074), `role` / `status` (raise, 0070) and a tutor's `full_name` (raises, 0071; renamed only through `save_tutor_profile` / `save_partner_tutor_profile`)**. The self-update policy has no `WITH CHECK` and no column restriction, which is exactly why the guards are triggers. Students rename themselves through it. 0065's company-owner UPDATE policy was dropped in 0071 |
-| `tutor_profiles` | public (enabled accounts, 0055); **+ own row** (`tutor self read`, 0071); **+ a company owner reads its tutors** (0065) | **none: RPC-only since 0071.** Tutors write through `save_tutor_profile`, `set_tutor_visibility`, `mark_tutor_onboarded`; company owners through `save_partner_tutor_profile`. The guard trigger additionally raises on any `authenticated`/`anon` change to `verification_status`, `verification_requested_at`, `partner_id`, `slug`, `email_confirmed_at`, `onboarded` (0070/0071) and pins `rating` / `review_count` (0057) |
+| `tutor_profiles` | public (enabled accounts, 0055); **+ own row** (`tutor self read`, 0071); **+ a company owner reads its tutors** (0065) | **none: RPC-only since 0071.** Tutors write through `save_tutor_profile`, `set_tutor_visibility`, `mark_tutor_onboarded`; company owners through `save_partner_tutor_profile`. The guard trigger additionally raises on any `authenticated`/`anon` change to `verification_status`, `verification_requested_at`, `partner_id`, `slug`, `email_confirmed_at`, `onboarded` (0070/0071), `managed_at`, `managed_setup_done_at`, `invite_materials_submitted_at`, `admin_edited_at` (0076) and pins `rating` / `review_count` (0057) |
 | `student_profiles` | self; **+ the tutor in a shared conversation may read the student** (0044, for name/avatar) | self (ALL) |
 | `saved_tutors` | self (own `student_id`) | self (ALL) |
 | `reviews` | public where `status='approved'`; **+ author reads own row in any status** | author (`student_id` = uid) INSERT/UPDATE/DELETE, with INSERT+UPDATE forced to `status='pending'` so a student can't self-approve (0057) |
@@ -622,6 +646,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `storage.objects` (`profile-images`) | public | owner-scoped by folder = uid; bucket limits 5 MB, jpeg/png/webp/gif (0070); INSERT/UPDATE refused for gated tutors (0073) |
 | `storage.objects` (`tutor-docs`) | public bucket (downloads bypass RLS; owner-only SELECT, needed by remove()) | owner-scoped INSERT/DELETE, no UPDATE; INSERT refused for gated tutors (0073) |
 | `tutor_profile_revisions` | owner (`tutor_id` = uid) | none (RPCs only, 0072) |
+| `tutor_invite_key` / `tutor_invite_materials` | none (admin RPCs / service role, 0076) | none (RPCs only, 0076) |
+| `storage.objects` (`tutor-invite-materials`) | none (private; admins via service role) | none; uploads only via signed URLs from `/api/join/materials/upload` (0076) |
 | `storage.objects` (`profile-staging`) | owner by folder (private bucket) | owner INSERT (gated tutors only) / DELETE by folder (0072) |
 | `articles` | public where `status='published'`; **+ author reads own row in any status** | author (`author_id` = uid) **who also holds `profiles.can_author_articles`** — INSERT/UPDATE may set `status in ('draft','pending','published')` (designated authors self-publish); UPDATE/DELETE blocked once `status='removed'` (0061) |
 | `storage.objects` (`blog-images`) | public | owner-scoped by folder = uid, INSERT/UPDATE/DELETE (0061) |
