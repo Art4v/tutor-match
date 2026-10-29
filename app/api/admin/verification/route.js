@@ -39,7 +39,7 @@ export async function POST(request) {
   if (error) return adminRpcErrorResponse(error, "Could not save the decision, please try again.");
 
   if (!result?.applied) {
-    const decided = await lastAdminAction(supabase, "tutor", body.tutorId);
+    const decided = await lastAdminAction(supabase, "tutor", body.tutorId, "verification_");
     return NextResponse.json({ ok: true, alreadyDecided: true, status: result?.status ?? null, decided });
   }
 

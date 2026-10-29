@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { validatePassword } from "@/lib/password";
-import { validateEmailFormat, getEmailDomain } from "@/lib/email";
-import { domainCanReceiveMail } from "@/lib/mailDomain";
+import { checkSignupInput } from "@/lib/signupValidation";
 import { safeNext } from "@/lib/roles";
 
 export const runtime = "nodejs";
@@ -26,45 +24,9 @@ export async function POST(request) {
   // an attacker-supplied destination.
   const nextPath = safeNext(next);
 
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: "Email and password are required." },
-      { status: 400 }
-    );
-  }
-
-  // Email: syntax first (cheap), then confirm the domain actually exists.
-  if (!validateEmailFormat(email)) {
-    return NextResponse.json(
-      { error: "Please enter a valid email address." },
-      { status: 400 }
-    );
-  }
-  if (!(await domainCanReceiveMail(getEmailDomain(email)))) {
-    return NextResponse.json(
-      { error: "That email domain doesn't appear to exist. Check for typos." },
-      { status: 400 }
-    );
-  }
-
-  const { valid, failed } = validatePassword(password);
-  if (!valid) {
-    return NextResponse.json(
-      {
-        error: "Password does not meet the security requirements.",
-        failed: failed.map((rule) => rule.id),
-      },
-      { status: 400 }
-    );
-  }
-
-  // Legal agreement is required to create an account. The browser gates the
-  // submit button on this too, but a raw POST must not bypass it.
-  if (agreed !== true) {
-    return NextResponse.json(
-      { error: "You must agree to the Terms of Service and Privacy Policy." },
-      { status: 400 }
-    );
+  const invalid = await checkSignupInput({ email, password, agreed });
+  if (invalid) {
+    return NextResponse.json(invalid, { status: 400 });
   }
 
   const supabase = createSupabaseServerClient();
