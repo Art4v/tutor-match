@@ -23,7 +23,9 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendWelcomeIfNeeded } from "@/lib/notifications";
-import { postAuthDest } from "@/lib/roles";
+import { postAuthDest, safeNext } from "@/lib/roles";
+import { INVITE_COOKIE, JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
+import { redeemInvite } from "@/app/api/join/shared";
 
 export const runtime = "nodejs";
 
@@ -32,7 +34,18 @@ export async function GET(request) {
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  // Same-origin paths only: `${origin}${next}` with next="@evil.example" (or
+  // ".evil.example") would leave the site.
+  const next = safeNext(searchParams.get("next"), "/");
+
+  // The tutor invite key parked by /api/join/start for a Google sign-in. It is
+  // cleared on every way out of this route, so a sign-in that never completed
+  // cannot leave it lying around for the next one.
+  const inviteKey = request.cookies.get(INVITE_COOKIE)?.value;
+  const finish = (res) => {
+    if (inviteKey) res.cookies.delete(INVITE_COOKIE);
+    return res;
+  };
 
   const supabase = createSupabaseServerClient();
   let ok = false;
@@ -57,10 +70,23 @@ export async function GET(request) {
     if (isOAuth || isSignupConfirm) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await sendWelcomeIfNeeded(createSupabaseAdminClient(), user.id, {
+        const admin = createSupabaseAdminClient();
+        await sendWelcomeIfNeeded(admin, user.id, {
           name: user.user_metadata?.full_name || user.user_metadata?.name || null,
           origin,
         });
+        // Tutor invite (0076): a Google sign-in started on /join parked the
+        // key in a cookie. Redeem it now that we know who signed in, but only
+        // for that flow (its `next` is the details step): a cookie left by an
+        // abandoned attempt must never bind whoever signs in next, through
+        // /login's Google button or an ordinary signup confirmation. On
+        // failure (rotated key, a student account) the user just carries on
+        // through the normal flow below.
+        let invited = false;
+        if (inviteKey && isOAuth && next.startsWith(JOIN_DETAILS_PATH)) {
+          const redeemed = await redeemInvite(admin, { userId: user.id, key: inviteKey, origin });
+          invited = redeemed.ok;
+        }
         // Role-aware landing (0041): profiles.role is the source of truth. A
         // brand-new account (email confirm or OAuth) has role NULL and MUST pick
         // one at /choose-role before continuing; a returning user lands on their
@@ -71,20 +97,25 @@ export async function GET(request) {
           .eq("id", user.id)
           .maybeSingle();
         const role = profile?.role ?? null;
-        return NextResponse.redirect(`${origin}${postAuthDest(role)}`);
+        // An invited tutor continues to the optional documents step, whether
+        // they came back from Google or from the confirmation email (whose
+        // `next` the invite signup route set). /join/details itself sends
+        // anyone it has nothing for on to /profile.
+        const toDetails = role === "tutor" && (invited || next.startsWith(JOIN_DETAILS_PATH));
+        return finish(NextResponse.redirect(`${origin}${toDetails ? JOIN_DETAILS_PATH : postAuthDest(role)}`));
       }
     }
-    return NextResponse.redirect(`${origin}${next}`);
+    return finish(NextResponse.redirect(`${origin}${next}`));
   }
 
   // Send each failure to the page that requested the flow: OAuth failures back
   // to /login (its ?error=oauth banner), a signup-confirm failure to /login, and
   // recovery (token_hash) failures to the reset page's invalid state.
   if (isOAuth) {
-    return NextResponse.redirect(`${origin}/login?error=oauth`);
+    return finish(NextResponse.redirect(`${origin}/login?error=oauth`));
   }
   if (type === "signup" || type === "email") {
-    return NextResponse.redirect(`${origin}/login?error=link_invalid`);
+    return finish(NextResponse.redirect(`${origin}/login?error=link_invalid`));
   }
-  return NextResponse.redirect(`${origin}/reset-password?error=link_invalid`);
+  return finish(NextResponse.redirect(`${origin}/reset-password?error=link_invalid`));
 }

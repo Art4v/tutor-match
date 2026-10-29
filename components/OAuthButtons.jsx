@@ -7,13 +7,21 @@
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function OAuthButtons({ divider = "bottom", next = "/profile" }) {
+// `beforeSignIn` (optional, async) runs first and must resolve true for the
+// redirect to go ahead: the tutor invite page uses it to check its key and
+// park it in a cookie before the browser leaves for Google. `disabled` greys
+// the button out (e.g. until a required checkbox is ticked).
+export default function OAuthButtons({ divider = "bottom", next = "/profile", beforeSignIn, disabled = false }) {
   // Holds the provider currently redirecting ("google"), so only the clicked
   // button shows its loading state.
   const [loadingProvider, setLoadingProvider] = useState(null);
 
   const signInWithProvider = async (provider) => {
     setLoadingProvider(provider);
+    if (beforeSignIn && !(await beforeSignIn(provider))) {
+      setLoadingProvider(null);
+      return;
+    }
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -33,13 +41,14 @@ export default function OAuthButtons({ divider = "bottom", next = "/profile" }) 
         glyph={<GoogleGlyph />}
         onClick={() => signInWithProvider("google")}
         loading={loadingProvider === "google"}
+        inactive={disabled}
       />
       {divider === "bottom" && <Divider label="or continue with email" />}
     </div>
   );
 }
 
-function ProviderButton({ label, glyph, onClick, disabled = false, loading = false }) {
+function ProviderButton({ label, glyph, onClick, disabled = false, loading = false, inactive = false }) {
   if (disabled) {
     return (
       <div
@@ -88,7 +97,7 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
     <button
       type="button"
       onClick={onClick}
-      disabled={loading}
+      disabled={loading || inactive}
       className="relative w-full inline-flex items-center justify-center font-medium transition-colors"
       style={{
         height: 42,
@@ -98,8 +107,8 @@ function ProviderButton({ label, glyph, onClick, disabled = false, loading = fal
         borderRadius: 8,
         fontSize: 14,
         letterSpacing: "-0.005em",
-        cursor: loading ? "wait" : "pointer",
-        opacity: loading ? 0.8 : 1,
+        cursor: loading ? "wait" : inactive ? "not-allowed" : "pointer",
+        opacity: loading ? 0.8 : inactive ? 0.55 : 1,
       }}
     >
       <span style={{ position: "absolute", left: 14, display: "inline-flex" }}>{glyph}</span>

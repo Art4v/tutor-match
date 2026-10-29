@@ -10,6 +10,7 @@ export const ADMIN_SECTIONS = [
   { href: "/admin/reviews", label: "Reviews", icon: "star", count: "reviews" },
   { href: "/admin/reports", label: "Reports", icon: "flag", count: "reports" },
   { href: "/admin/profile-changes", label: "Profile changes", icon: "pencil", count: "revisions" },
+  { href: "/admin/tutor-invites", label: "Tutor invites", icon: "send", count: "invites" },
   { href: "/admin/companies", label: "Companies", icon: "building" },
   { href: "/admin/users", label: "Users", icon: "users" },
   { href: "/admin/history", label: "History", icon: "clock" },

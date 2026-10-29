@@ -33,6 +33,18 @@ export default async function AccountPage() {
     initialAvatarUrl = student?.avatar_url ?? null;
   }
 
+  // Admin-managed tutors (0076) get the opt-out card. Self-read under the
+  // tutor's own row policy.
+  let managed = false;
+  if (role === "tutor") {
+    const { data: tutor } = await supabase
+      .from("tutor_profiles")
+      .select("managed_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    managed = !!tutor?.managed_at;
+  }
+
   return (
     <AccountSettings
       userEmail={user.email}
@@ -40,6 +52,7 @@ export default async function AccountPage() {
       role={role}
       fullName={profile?.full_name ?? null}
       initialAvatarUrl={initialAvatarUrl}
+      managed={managed}
     />
   );
 }
