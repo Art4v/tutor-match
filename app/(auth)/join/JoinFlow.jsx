@@ -373,10 +373,10 @@ function ConsentBox({ checked, onChange }) {
   return (
     <div className="p-3.5" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 10 }}>
       <Check checked={checked} onChange={onChange}>
-        I authorise MatchTutor admins to set up and manage my tutor profile for me, including editing it,
-        choosing when it is public, and verifying it. Changes I make myself will be sent to them for
-        approval. I can stop this at any time in Account settings.
+        I authorise MatchTutor admins to set up and publish my tutor profile for me. I can suggest edits,
+        or take it back and hide or delete it, anytime.
       </Check>
+      <p className="text-[12px] text-slate-500 leading-[1.5] mt-1.5 pl-[26px]">You’ll be emailed when your profile is live.</p>
     </div>
   );
 }
