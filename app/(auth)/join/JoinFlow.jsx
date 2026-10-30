@@ -40,22 +40,16 @@ export default function JoinFlow() {
         if (!cancelled) setAccount({ signedIn: false });
         return;
       }
+      // One round trip: the tutor row rides along as an embed (null for
+      // anyone without one), since this read is what the visitor waits on.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, tutor:tutor_profiles ( managed_at, invite_materials_submitted_at )")
         .eq("id", session.user.id)
         .maybeSingle();
-      let managed = false;
-      let submitted = false;
-      if (profile?.role === "tutor") {
-        const { data: tutor } = await supabase
-          .from("tutor_profiles")
-          .select("managed_at, invite_materials_submitted_at")
-          .eq("id", session.user.id)
-          .maybeSingle();
-        managed = !!tutor?.managed_at;
-        submitted = !!tutor?.invite_materials_submitted_at;
-      }
+      const tutor = profile?.role === "tutor" ? profile.tutor : null;
+      const managed = !!tutor?.managed_at;
+      const submitted = !!tutor?.invite_materials_submitted_at;
       if (!cancelled) setAccount({ signedIn: true, role: profile?.role ?? null, managed, submitted });
     })();
     return () => {
@@ -71,7 +65,7 @@ export default function JoinFlow() {
       </Notice>
     );
   } else if (!account) {
-    body = <div className="h-40" aria-hidden />;
+    body = <LoadingPlaceholder />;
   } else if (!account.signedIn) {
     body = <SignupForm inviteKey={key} />;
   } else if (account.managed) {
@@ -369,6 +363,23 @@ function OptInPanel({ inviteKey, existing }) {
 }
 
 // ── bits ──────────────────────────────────────────────────────────────────────
+// Grey bars shaped like the form, shown while the session is read so the card
+// reads as loading rather than empty.
+function LoadingPlaceholder() {
+  const bar = { background: "var(--bg-soft)", border: "1px solid var(--paper-line)" };
+  return (
+    <div className="space-y-5 motion-safe:animate-pulse" role="status" aria-label="Loading">
+      {[0, 1, 2].map((i) => (
+        <div key={i}>
+          <div className="h-3 w-24 mb-2.5" style={{ ...bar, borderRadius: 4 }} />
+          <div className="h-9 w-full" style={{ ...bar, borderRadius: 8 }} />
+        </div>
+      ))}
+      <div className="h-11 w-full" style={{ ...bar, borderRadius: 10 }} />
+    </div>
+  );
+}
+
 function ConsentBox({ checked, onChange }) {
   return (
     <div className="p-3.5" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 10 }}>
