@@ -286,9 +286,10 @@ dropdown instead of the chip row.
 - **H.** Placeholder people remain outside signup: "Alex Nguyen" (`app/(auth)/join/JoinFlow.jsx:222`), "Amelia Tran"
   (`components/profile-edit/sections.js:744`), "Jane Liu" (`app/companies/[slug]/CompanyTutorModal.jsx:156`), and the
   real brand "Kumon Chatswood" (`components/profile-edit/company-sections.js:96`).
-- **CLAUDE.md** must be updated with DESIGN.md: Typography, Theme, the inline-style convention, removed components
-  (TutorCard internals, HomeHero, TypewriterWord, HomeHowItWorks, HomeCta, CtaBand), the `/browse` State note (R3), and
-  already-stale notes (`/messages` stub, home composition, "Request review").
+- **CLAUDE.md** (updated 2026-11-05 on DESIGN.md approval): it now points to `DESIGN.md` as the authority, marks the
+  Styling, Theme, Typography and component notes as describing today's code, notes R3 as approved but unbuilt, and fixes
+  the stale `/`, `/messages` and `/account-disabled` rows. Still to do in Phase 3: rewrite those sections once the code
+  matches.
 
 ## Changelog (how decisions moved)
 - **Item 1:** system UI stack picked, then replaced by Source Sans 3 after the specimen.

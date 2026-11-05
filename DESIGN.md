@@ -3,8 +3,8 @@
 Every UI change must conform to this file. Where it is silent, follow the nearest rule here, not an older pattern in the
 code. The reasoning behind each rule is in `REDESIGN_DECISIONS.md`.
 
-**Status: draft for approval (2026-11-05).** Values marked ◆ were chosen while writing this document rather than
-decided in the walkthrough; they need explicit approval.
+**Status: approved (2026-11-05), including every value marked ◆** (◆ marks values chosen while writing this document
+rather than in the walkthrough). Not yet implemented: the code still reflects the previous design until Phase 3.
 
 **Direction:** an established marketplace, not a startup landing page. Light neutral page, one restrained brand colour,
 small radii, borders instead of decoration, real information doing the work. References: Wyzant (search, rows,
