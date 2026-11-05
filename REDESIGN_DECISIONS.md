@@ -66,7 +66,8 @@ Note: CLAUDE.md is stale in two places (it calls `/messages` a stub, and describ
 
 ### Data flags (need a decision, not a UI change)
 1. **WWCC is not a verified field.** It exists only as an optional uploaded document title. "Verified" today means ATAR/marks were checked by an admin.
-2. **Response time is self-reported free text** (`responsiveText`, `components/profile-edit/sections.js:724`).
+2. **Response time is self-reported**, chosen from a 4-option select (`RESPONSE_OPTIONS`, `components/profile-edit/sections.js:45`),
+   defaulting to "Usually responds in <1 hr" (`components/profile-edit/defaults.js:24`, `lib/supabase/tutors.js:116`).
 3. **No lesson count or hours tutored**, and **no public "last active"** (messaging has presence internally).
 4. **80 profiles hold the old prefilled response time "Usually responds in <1 hr".** Whether to clear them (one-off
    UPDATE, run by the user) is deferred to Phase 3 (item 7).
@@ -127,6 +128,9 @@ flatten hierarchy; 34 font sizes with half-pixel steps; ~16 radii; border + shad
 
 - **Phone (below 640px):** the type scale does not shrink, except that 32px and 24px headings step down one size.
   16px side gutter. Tap targets at least 44px tall even when their text is 14px.
+
+> **Amended by review flags R8, R10, R11 (2026-11-05):** breakpoints, tap targets and phone heading step-down; see
+> "Review flags" at the end.
 
 **Open questions:** none. Confirmed complete by user.
 
@@ -268,6 +272,8 @@ year-level link lists at the bottom.
 - **Logged-out nav (amends item 2):** Find a tutor (`/browse`), Companies, Blog, Become a tutor, Log in, Sign up.
   Signed-in bar loses only the search box.
 
+> **Amended by review flags R3, R4 (2026-11-05):** the State search includes online tutors; counts use the total.
+
 **Open questions:** none. Confirmed complete by user.
 
 ## 4. Browse + TutorCard
@@ -318,6 +324,9 @@ tutor type and a bio excerpt; Wyzant is the lead for this screen.
 - **No photo (29 of 114 today):** initials in grey on a light grey square, same size and 4px radius as photos
   (LinkedIn). Replaces the graduation-cap icon on a tutor-picked colour, site-wide wherever `Avatar` renders.
   Uses the existing `initials` column; no data change.
+
+> **Amended by review flags R1, R2, R3, R6 (2026-11-05):** rows keep "First L."; rate rule for missing rates; State
+> filter includes online tutors; photos are circles (the initials fallback is a circle, not a 4px square).
 
 **Open questions:** none. Confirmed complete by user.
 
@@ -377,6 +386,9 @@ Services list, Subjects), centre (About), right (Availability, service-area maps
 - **Related tutors:** keep the current query (`getFeaturedTutors`, top-rated excluding this tutor) but label it
   honestly, e.g. "Other verified tutors". No data change.
 - **Copy:** Availability's "When you can book a session each week" is rewritten without "book" (no booking feature).
+
+> **Amended by review flag R1 (2026-11-05):** the profile page shows the **full name** (title, header, JSON-LD); only
+> listing rows use "First L.". The "First name + initial on the profile too" bullet above is superseded.
 
 **Open questions:** none. Confirmed complete by user.
 
@@ -460,6 +472,9 @@ Verification wording itself stays as written (user skipped that question in item
   its bottom-left edge and the name block sits below (LinkedIn proportions).
 - **Companies (amends item 6):** same rule. A company banner shows only if uploaded, placed exactly like a tutor's.
 - **Response-time reset:** deferred. Logged as an open data question for Phase 3 (see Data flags).
+
+> **Amended by review flag R13 (2026-11-05):** the response-time default **stays** ("Usually responds in <1 hr" is
+> kept as the editor default). The "no prefilled default" part of the response-time bullet above is superseded.
 
 **Open questions:** none. Confirmed complete by user.
 
@@ -545,6 +560,9 @@ issues are emoji/symbols as decoration, the low-contrast sign-off, 10 to 16px ra
   titles (👋, ✓; 10 occurrences in `lib/email/send.js` and `app/api/**`). Neutral greys; body and sign-off at 4.5:1
   contrast; buttons 4px radius; headings weight 600. Same changes in both Supabase templates, which the user re-pastes
   into the Supabase dashboard. The `email-updates/` newsletter was not discussed and is left alone.
+
+> **Amended by review flag R12 (2026-11-05):** no person photos in notification rows (the table has no actor);
+> rows use the grey type icon only.
 
 **Open questions:** none. Confirmed complete by user.
 
@@ -735,3 +753,68 @@ blurred scrims; five toast copies.
    below 640px; short confirms and the consent gate stay small centred dialogs (refines item 16).
 
 **Open questions:** none. Walkthrough complete; next is Phase 2 (`DESIGN.md`) on the user's go.
+
+---
+
+## Review flags (2026-11-05)
+
+A review of this log against the code and live data. Resolutions below are the user's answers; they override the
+items they name.
+
+### Resolved
+- **R1 Names.** Listing rows and cards (home list, `/browse`, `/companies/[slug]` "Our tutors", `/tutors` pages, related
+  tutors) show **first name + last initial**. Pages about one tutor show the **full name**: the profile header, page
+  title and JSON-LD (now consistent with the visible page), plus `llms-full.txt`. Blog bylines, messages and reviews keep
+  their current full names. Context: 113 of 114 profile URLs contain the surname, so "First L." is a display convention,
+  not privacy.
+- **R2 Rate rule.** 17 individual tutors have no rate and 1 has $0. A missing or zero rate shows **"Rate not listed"**
+  in the rate slot (rows and profile), never "$0" or "$null". Company tutors keep showing their company's packages
+  instead of a rate.
+- **R3 State search includes online tutors.** Selecting a state (home panel and `/browse` State filter) returns tutors
+  based in that state **plus every tutor who teaches online**. Approved query change in `getTutorsForBrowse`
+  (`lib/supabase/tutors.js`: the `city` equality filter becomes "city = state OR delivers_online"); no schema change.
+  `/tutors` landing pages keep their own local / "Also teaching online" split. CLAUDE.md's `/browse` note ("State
+  means based in and does NOT OR in online tutors") must be updated. Context: QLD, TAS and NT have 0 based-in tutors,
+  25 tutors have no state, 97 teach online.
+- **R4 Counts.** Every mention of how many tutors there are uses the **total public tutor count** (114 today,
+  `getPublicTutorCount`). "Verified" is dropped from count copy (the home line reads "114 tutors", not "114 tutors,
+  88 verified"). The "See all 114 tutors" link stays a plain `/browse` link; the user accepted that it lands on a
+  page showing its own, smaller count (89 today) because the verified filter is on by default (R5).
+- **R5 Verification filter.** Left as decided in item 4 (under "More filters", on by default).
+- **R6 Shapes.** LinkedIn rule: **people are circles, companies are squares** (4px radius). Applies to photos,
+  initials fallbacks, nav avatar, messages, notifications, company logos.
+- **R7 Colour roles** for badges, focus ring, selected states, spinner: left as is (to be settled in DESIGN.md).
+- **R8 Breakpoints (chosen for the user): 640px and 1024px** (Tailwind `sm` and `lg`).
+  - Below 1024 ("compact"): nav collapses to logo + Find a tutor icon + menu sheet (signed in: plus Messages and
+    Notifications icons); `/browse` and `/companies` filters move into the "Filters (n)" sheet; profile and company
+    pages drop the sticky right column, rate/packages + Message/Enquire sit inline under the header.
+  - Below 640 ("phone"): 32px headings step down to 24px; home State/Subject fields stack; result rows use the 56px
+    photo layout; form modals become full-screen sheets.
+  - `md:` (768px, 110 uses today) is retired during implementation; each use moves to `sm:` or `lg:`.
+- **R9 Widths.** Ignored by the user (auth stays about 400px; onboarding, admin, messaging widths unspecified).
+- **R10 Tap targets.** 44px minimum height for buttons, controls and tappable rows; 24px minimum for text links
+  (footer row, link lists, breadcrumbs, inline links), per WCAG 2.2 AA.
+- **R11 Phone headings.** Only the 32px size steps down (to 24px) below 640px; 24px and 20px headings stay as they are,
+  so the two heading levels never merge.
+- **R12 Notification photos.** Dropped (no actor data). Rows show the grey type icon only.
+- **R13 Response time default.** Kept: new profiles still default to "Usually responds in <1 hr". The public profile
+  shows the stored value as the tutor's claim (item 7).
+
+### Still open (raised in review, no answer yet)
+- **A.** With R13 keeping the default and the 80-profile reset deferred, the profile will show "Usually responds in
+  <1 hr" for tutors who may never have chosen it. Not re-asked; carried here.
+- **B.** "No reviews yet" on every row while 0 tutors have reviews.
+- **C.** The verified tick is unlabelled; parents may read it as a background or WWCC check (verification wording was
+  skipped in item 3; data flag 1 still open).
+- **D.** The home page has no sentence explaining what MatchTutor is.
+- **E.** The blog keeps a card grid while every other list is rows.
+- **F.** The route-loading overlay still hides the page after 250ms.
+- **G.** "Become a tutor" lands on a role-neutral signup, then `/choose-role` asks again.
+- **H.** Placeholder people remain: "Alex Nguyen" (`app/(auth)/join/JoinFlow.jsx:222`), "Amelia Tran"
+  (`components/profile-edit/sections.js:744`), "Jane Liu" (`app/companies/[slug]/CompanyTutorModal.jsx:156`), and the real
+  brand "Kumon Chatswood" (`components/profile-edit/company-sections.js:96`).
+- **Log hygiene.** Items 2, 3 and 5 still carry superseded bullets inline (item 3's "Model" bullet still says
+  subject/suburb search). Consolidate to final state before writing DESIGN.md.
+- **CLAUDE.md.** Typography, theme, inline-style convention, removed components (TutorCard internals, HomeHero,
+  TypewriterWord, HomeHowItWorks, HomeCta, CtaBand), the `/browse` State note (R3), and already-stale notes (`/messages`
+  stub, home composition, "Request review") all need updating alongside DESIGN.md.
