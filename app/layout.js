@@ -34,29 +34,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* General Sans (body + headings) is Fontshare-only, not on Google
-            Fonts, so it needs its own origin. Caveat stays on Google Fonts and
-            is used only for small accents (hero subject word, eyebrows, step
-            numbers). */}
-        {/* The stylesheet is served by api.fontshare.com but the woff2 files it
-            points at live on cdn.fontshare.com, so both origins get a
-            preconnect (otherwise the fonts stall on a cold connection). */}
-        <link rel="preconnect" href="https://api.fontshare.com" />
-        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
-        {/* referrerPolicy: Fontshare's CSS endpoint restricts by Referer and
-            answers a restricted origin with an HTTP 200 whose body is a comment
-            and zero @font-face rules, so the page silently falls back to
-            -apple-system and every weight renders heavier. localhost gets
-            restricted (dev-reload volume); sending no Referer sidesteps the
-            check. The woff2 files on cdn.fontshare.com are not restricted. */}
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500&display=swap"
-          rel="stylesheet"
-          referrerPolicy="no-referrer"
-        />
+        {/* DESIGN.md: Source Sans 3 is the only web font, at 400 and 600. The
+            logo wordmark is an SVG (components/Logo.jsx), so it needs no font. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
       </head>
       <body>
         {/* Saved-tutors state is shared across every TutorCard + the profile

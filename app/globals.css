@@ -3,64 +3,80 @@
 @tailwind utilities;
 
 :root {
-  /* Cool teal-on-white palette. Teal — interactive accent (buttons, links,
-     chips, CTAs, rings). Token NAMES are historical (the site was previously a
-     warm botanical theme); only their values are teal now, so every existing
-     `var(--…)` usage site retints without an edit. */
-  --accent: #016764;
+  /* ── DESIGN.md tokens (approved 2026-11-05). The only colour values in the app;
+     tailwind.config.js references these variables rather than repeating hexes. ── */
+  --accent: #016764;            /* links, primary buttons, verified mark, badges, focus, selected */
   --accent-hover: #005958;
-  --accent-soft: #E9F3F2;       /* badge / tag fills */
-  --accent-softer: #F3F8F8;     /* hover fills */
-  --accent-line: #CCE2E0;       /* teal-derived borders */
-  --accent-ring: rgba(1, 103, 100, 0.15);
-  /* Deep teal "ink" — headings + secondary marks */
-  --ink-graphite: #014848;      /* heading colour */
-  --ink-graphite-deep: #00312F;
-  --ink-graphite-line: #E3EAEA;
-  --ink: #001E1E;               /* near-black teal — primary text */
-  --ink-muted: #33514F;         /* secondary text */
-  --sage: #6B8A88;              /* mid tones, icons, secondary marks */
-  --line: #E3EAEA;
-  --line-soft: #EEF2F2;         /* lighter hairline: hero base, search bar, schools band */
-  --line-strong: #B9D5D3;
-  --bg: #FFFFFF;
-  --bg-soft: #F7FAFA;
-  /* Paper surfaces (white — borders and shadows do the separating) */
-  --paper: #FFFFFF;             /* page base */
-  --paper-card: #FFFFFF;        /* card surface */
-  --paper-line: #E7EDEC;        /* card borders */
-  --pill: #F0F6F6;              /* subject-pill fill */
-  --pill-ink: #015F5C;          /* subject-pill text */
-  --chip-line: #DDE9E8;         /* accent-tone chip / stat-tile border */
-  --desk: #F7FBFB;              /* section surface behind cards */
-  --stamp: #016764;             /* retired rust accent — folded into teal */
-  --footer-bg: #001E1E;
-  --card-shadow: 0 1px 2px rgba(0, 30, 30, 0.03), 0 18px 44px -20px rgba(0, 49, 47, 0.14);
-  --radius-card: 14px;          /* card corner radius */
-  /* Desk surface (browse + tutor-page backdrop) */
-  --desk-deep: #FAFBFB;
+  --text: #1A1A1A;              /* primary text, headings */
+  --text-2: #4A4A4A;            /* secondary text */
+  --muted: #666666;             /* timestamps, captions, the 12px floor */
+  --placeholder: #707070;       /* input placeholders */
+  --border-input: #8A8A8A;      /* input, select, checkbox, radio borders (3:1) */
+  --rule: #E3E3E3;              /* dividers; borders of static containers */
+  --surface: #FFFFFF;           /* page and every container */
+  --surface-2: #F5F5F5;         /* hover rows, unread rows, no-photo fallback: the only tint */
+  --error: #B42318;
+  --warning: #B54708;
+  --success: #067647;
+  --shadow-float: 0 4px 16px rgba(0, 0, 0, 0.12); /* floating elements only */
+  --scrim: rgba(0, 0, 0, 0.4);
+  --overlay: rgba(255, 255, 255, 0.7);
+  --radius: 4px;
+  /* Logo colours. The book-and-sprout mark and the wordmark keep their original
+     teals (DESIGN.md: the logo is not recoloured), so they get their own tokens
+     instead of following --text / --muted. */
+  --logo-ink: #014848;
+  --logo-leaf: #6B8A88;
   --nav-h: 64px;
+
+  /* ── Legacy token names (transitional). Components written for the July 2026
+     teal skin still read these; pointing them at the DESIGN.md tokens retints
+     every existing screen without editing it. Each name is removed as the
+     screens that use it are rebuilt in Phase 3. ── */
+  --accent-soft: var(--surface-2);
+  --accent-softer: var(--surface-2);
+  --accent-line: var(--rule);
+  --accent-ring: rgba(1, 103, 100, 0.15);
+  --ink-graphite: var(--text);
+  --ink-graphite-deep: var(--text);
+  --ink-graphite-line: var(--rule);
+  --ink: var(--text);
+  --ink-muted: var(--text-2);
+  --sage: var(--muted);
+  --line: var(--rule);
+  --line-soft: var(--rule);
+  --line-strong: var(--border-input);
+  --bg: var(--surface);
+  --bg-soft: var(--surface-2);
+  --paper: var(--surface);
+  --paper-card: var(--surface);
+  --paper-line: var(--rule);
+  --pill: var(--surface-2);
+  --pill-ink: var(--text-2);
+  --chip-line: var(--rule);
+  --desk: var(--surface-2);
+  --desk-deep: var(--surface-2);
+  --stamp: var(--accent);
+  --footer-bg: #001E1E;         /* dark footer band until the footer is rebuilt (item 2) */
+  --card-shadow: none;          /* static elements never carry a shadow */
+  --radius-card: var(--radius);
 }
 
 html, body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.006em;
 }
 
 .font-display {
-  font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: -0.025em;
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* The brand has no bold weight: headings are light 300 and labels/buttons 500.
-   The UA renders <strong>/<b> at 700, which would reintroduce bold in legal
-   prose and in tutor-authored bios (RichText emits <strong>), so emphasis is
-   carried at 500 instead. Semantics are untouched. */
+/* DESIGN.md: two weights only, 400 and 600. Emphasis renders at 600 (this also
+   covers tutor-authored bios, since RichText emits <strong>). */
 strong, b {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
@@ -94,13 +110,11 @@ strong, b {
   padding-top: var(--nav-h);
 }
 
-/* Global focus-visible ring in the accent color — biggest "blue everywhere" win. */
+/* Focus (DESIGN.md): a 2px accent outline offset 2px on every focusable element. */
 *:focus { outline: none; }
 *:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--accent-ring);
-  border-color: var(--accent);
-  transition: box-shadow 160ms ease-out, border-color 160ms ease-out;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Anchor accent (skipped inside .no-accent regions like tutor cards).
@@ -276,8 +290,11 @@ input[type="number"] {
 /* Caveat script. Reserved for small accents only — the hero's cycling subject
    word, section eyebrows and the "How it works" step numbers. Headings are
    General Sans 300 (see --ink-graphite), never Caveat. */
+/* Transitional: Caveat is no longer loaded (DESIGN.md). Until step 2 removes the
+   eight remaining `.font-hand` uses, they render in the body face instead of
+   falling back to the system "cursive" font. */
 .font-hand {
-  font-family: 'Caveat', 'General Sans', cursive;
+  font-family: inherit;
   letter-spacing: 0;
 }
 
