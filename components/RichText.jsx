@@ -17,7 +17,7 @@ function renderInline(text, keyPrefix = "") {
   while ((m = regex.exec(str)) !== null) {
     if (m.index > last) nodes.push(str.slice(last, m.index));
     if (m[2] !== undefined) {
-      nodes.push(<strong key={`${keyPrefix}b${i}`} className="font-medium text-slate-900">{m[2]}</strong>);
+      nodes.push(<strong key={`${keyPrefix}b${i}`} className="font-semibold text-[color:var(--text)]">{m[2]}</strong>);
     } else {
       nodes.push(<em key={`${keyPrefix}i${i}`}>{m[3]}</em>);
     }
@@ -101,7 +101,7 @@ export function RichTextBlock({ block, idx = 0 }) {
   }
   const ListTag = block.type === "ol" ? "ol" : "ul";
   return (
-    <ListTag className={(block.type === "ol" ? "list-decimal" : "list-disc") + " pl-5 space-y-1 break-words"}>
+    <ListTag className={(block.type === "ol" ? "list-decimal" : "list-disc") + " pl-6 space-y-1 break-words"}>
       {block.items.map((it, j) => (
         <li key={j}>{renderInline(it, `${idx}-${j}-`)}</li>
       ))}

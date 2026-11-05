@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCompanyBySlug, getMyCompany, listCompanyTutors } from "@/lib/supabase/companies";
 import { getCompanyReviews } from "@/lib/supabase/reviews";
@@ -10,7 +9,6 @@ import {
   CompanyRateCard,
   CompanyLocationCard,
   CompanyTutorsCard,
-  EnquireButton,
 } from "./CompanyCards";
 import { OwnerCompany } from "./OwnerCompany";
 import { JsonLd } from "@/components/JsonLd";
@@ -62,28 +60,30 @@ export default async function CompanyPage({ params }) {
     getCompanyReviews(supabase, company.id),
   ]);
 
+  // Same structure as the tutor profile (REDESIGN_DECISIONS.md item 6): header,
+  // main-column sections, and a contact column that sticks on the right from
+  // 1024px and sits inline under the header below (first in source order for
+  // that reason). No fixed bottom bar.
   return (
-    <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
+    <div className="bg-surface">
       <JsonLd data={companyJsonLd(company)} />
-      <DeskBackdrop />
-      <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 pt-6 pb-16">
         <CompanyHeaderCard company={company} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_344px] lg:gap-x-12">
+          <aside className="pt-6 lg:col-start-2 lg:row-start-1 lg:mt-6 lg:pt-0 lg:sticky lg:top-20 lg:self-start">
+            <CompanyRateCard company={company} />
+          </aside>
+
           {/* min-w-0: a 1fr track is minmax(auto, 1fr), so without it the
-              column's min-content width — a single long unbroken word in a bio
-              is enough — widens the whole grid past the viewport. Same guard as
-              /browse and /tutor/[slug]. */}
-          <div className="min-w-0 space-y-[10px]">
+              column's min-content width (a single long unbroken word in a bio
+              is enough) widens the whole grid past the viewport. */}
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
             {company.bioLong && <CompanyAboutCard company={company} />}
             <CompanyTutorsCard tutors={tutors} companyName={company.name} />
-          </div>
-
-          <aside className="space-y-[10px]">
-            <CompanyRateCard company={company} />
             {/* Reviews attach to the COMPANY, never to the individual tutors it
-                lists (0067). The same card the tutor sidebar uses, switched to
-                its company mode. */}
+                lists (0067). The same section the tutor profile uses, switched
+                to its company mode. */}
             <ReviewsCard
               companyId={company.id}
               tutorName={company.name}
@@ -92,19 +92,9 @@ export default async function CompanyPage({ params }) {
               reviews={reviews}
             />
             <CompanyLocationCard company={company} />
-          </aside>
+          </div>
         </div>
       </div>
-
-      {/* Mobile sticky enquiry bar, mirroring the tutor page's message bar. */}
-      {company.websiteUrl && (
-        <div
-          className="lg:hidden fixed bottom-0 inset-x-0 z-30 px-4 py-3"
-          style={{ background: "var(--paper-card)", borderTop: "1px solid var(--paper-line)" }}
-        >
-          <EnquireButton company={company} />
-        </div>
-      )}
     </div>
   );
 }

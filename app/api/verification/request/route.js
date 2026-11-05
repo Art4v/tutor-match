@@ -56,7 +56,7 @@ export async function POST(request) {
     await notifyUser(admin, user.id, {
       type: "verification_requested",
       title: "Verification request sent",
-      body: "We've received your request — an admin will review your profile shortly.",
+      body: "We've received your request. An admin will review your profile shortly.",
       email: { subject: "We've got your verification request", html: userRequestedEmail({ name: tutorName }) },
     });
 

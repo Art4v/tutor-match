@@ -31,15 +31,15 @@ export function AlertsToggle({ initialMuted }) {
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-      <p className="flex-1 text-[14px] text-slate-600">
+      <p className="flex-1 text-[14px] leading-5 text-[color:var(--text-2)]">
         {muted
           ? "You won't get alert emails. Other admins still do."
           : "You get an email when a verification, review, report or profile change is waiting."}
       </p>
-      <Button size="sm" variant={muted ? "primary" : "outline"} icon="bell" onClick={toggle} disabled={saving}>
+      <Button variant={muted ? "primary" : "outline"} onClick={toggle} disabled={saving}>
         {saving ? "Saving…" : muted ? "Turn alerts on" : "Mute alerts"}
       </Button>
-      {error && <span className="text-[12.5px]" style={{ color: "#DC2626" }}>{error}</span>}
+      {error && <span role="alert" className="text-[14px] leading-5 text-error">{error}</span>}
     </div>
   );
 }

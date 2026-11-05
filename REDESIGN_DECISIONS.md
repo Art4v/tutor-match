@@ -274,6 +274,44 @@ dropdown instead of the chip row.
 
 ---
 
+## Phase 3: implementation (2026-11-05)
+
+**Status:** implemented on branch `UI-revamp`, uncommitted (the user commits).
+
+Built in three passes: foundation (tokens, Source Sans 3, SVG wordmark), strip (backdrops, blur, gradients, motion,
+Caveat, the verification nag modal), then every screen rebuilt to items 2 to 17 and review flags R1 to R13. Shared
+primitives: `components/ui.js`, `components/Modal.jsx`, `components/Toast.jsx`, `components/TutorCard.js` (now the
+tutor row), `components/TopNav.js`, `components/Footer.js`. The one approved query change (R3, State includes online
+tutors) is in `getTutorsForBrowse`; the browse select also reads `delivers_in_person` / `delivers_online` for the rows
+(existing columns, read only).
+
+**Verification:**
+- `npm run check:design`: 0 findings (from 1,504 at the start of Phase 3).
+- `next build` in an isolated copy: compiled successfully, no warnings; `/join` and `/_not-found` remain static.
+- impeccable on the Phase 0 pages: desktop 196 findings to 0, phone 182 to 0.
+- Public pages screenshotted at 1280 and 390. Signed-in pages (owner editor, onboarding, account, notifications,
+  messages, admin) compile but were **not seen rendered**: they need a session. Company pages were not seen with real
+  data (0 public companies in this database).
+
+**Follow-ups for the user:**
+1. Re-paste `supabase/email-templates/confirm-signup.html` and `reset-password.html` into Supabase (Authentication,
+   Emails) for each project.
+2. Click through the signed-in screens listed above as a tutor, a student and an admin.
+3. Data flag 4 (the 80 default response times) is still deferred; R13 kept the default.
+4. Messaging shows your own messages as "You" with a "Y" circle: showing your real photo and name needs one extra column
+   on the existing profiles select in `app/messages/page.js` (a query change, not made).
+5. The `motion` package is unused; `npm uninstall motion` would drop it (changes the lockfile, so left to you).
+6. Privacy policy section 11 still mentions a "Last updated" date the page does not show.
+
+**Interpretations made during the build (worth a glance):** browse's count reads "N results" (it counts only
+the default verified set); choose-role's heading is "Choose your account type"; the home State field is a native
+select (the shared picker shows "1 selected" in single mode); related tutors on a profile are filtered to individually
+verified tutors so the "Other verified tutors" label is true; a company's subjects come from the up to three preview
+tutors `listCompanies` loads; message groups split after a 10 minute gap; Availability reads "Times this tutor is
+usually free each week"; long-form text is capped at 65 characters a line (DESIGN.md updated).
+
+---
+
 ## Still open
 - **A.** With the response-time default kept (R13) and the 80-profile reset deferred, profiles show "Usually responds in
   <1 hr" as the tutor's own claim for tutors who may never have chosen it.
@@ -283,13 +321,11 @@ dropdown instead of the chip row.
 - **E.** The blog keeps a card grid while every other list is rows.
 - **F.** The route-loading overlay still hides the page after 250ms.
 - **G.** "Become a tutor" lands on a role-neutral signup, then `/choose-role` asks again.
-- **H.** Placeholder people remain outside signup: "Alex Nguyen" (`app/(auth)/join/JoinFlow.jsx:222`), "Amelia Tran"
+- **H.** (Resolved in Phase 3: every placeholder person and brand was removed.) Placeholder people remained outside signup: "Alex Nguyen" (`app/(auth)/join/JoinFlow.jsx:222`), "Amelia Tran"
   (`components/profile-edit/sections.js:744`), "Jane Liu" (`app/companies/[slug]/CompanyTutorModal.jsx:156`), and the
   real brand "Kumon Chatswood" (`components/profile-edit/company-sections.js:96`).
-- **CLAUDE.md** (updated 2026-11-05 on DESIGN.md approval): it now points to `DESIGN.md` as the authority, marks the
-  Styling, Theme, Typography and component notes as describing today's code, notes R3 as approved but unbuilt, and fixes
-  the stale `/`, `/messages` and `/account-disabled` rows. Still to do in Phase 3: rewrite those sections once the code
-  matches.
+- **CLAUDE.md:** updated after Phase 3 to describe the built design (Theme, Typography, `/`, `/browse` R3, `/blog`,
+  `/profile`, components, `npm run check:design`).
 
 ## Changelog (how decisions moved)
 - **Item 1:** system UI stack picked, then replaced by Source Sans 3 after the specimen.

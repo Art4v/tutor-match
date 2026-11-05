@@ -28,10 +28,10 @@ export default async function RevisionPreviewPage({ params }) {
   const reviews = await getTutorReviews(admin, found.revision.tutorId);
 
   return (
-    <div style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", overflow: "hidden" }}>
-      <div className="px-4 py-2.5 text-center text-[13px]" style={{ background: "#FFFBEB", color: "#92400E", borderBottom: "1px solid #FDE68A" }}>
+    <div>
+      <div role="status" className="mb-6 p-4 rounded border border-warning text-[14px] leading-5 text-[color:var(--text)]">
         Preview of {found.tutorName}&apos;s submitted changes ({found.revision.status}). Not public.{" "}
-        <a href={adminPaths.revision(found.revision.id)} className="font-medium underline underline-offset-2">Back to review</a>
+        <a href={adminPaths.revision(found.revision.id)} className="font-semibold text-accent underline underline-offset-2 hover:text-accent-hover">Back to review</a>
       </div>
       <PublicProfileView tutor={tutor} docs={found.draftDocs.map((d) => ({ ...d, path: d.path || d.stagedPath || "" }))} reviews={reviews} preview />
     </div>

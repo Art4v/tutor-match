@@ -49,10 +49,10 @@ export async function POST(request) {
   const origin = originOf(request);
   await notifyUser(admin, body.tutorId, {
     type: "managed_verification_set",
-    title: body.verified ? "You're verified ✓" : "Your verification was removed",
+    title: body.verified ? "You're verified" : "Your verification was removed",
     body: reason || (body.verified ? "Your profile now shows the verified badge." : "Your profile no longer shows the verified badge."),
     email: {
-      subject: body.verified ? "You're verified on MatchTutor ✓" : "Your MatchTutor verification was removed",
+      subject: body.verified ? "You're verified on MatchTutor" : "Your MatchTutor verification was removed",
       html: managedVerificationEmail({
         name: result.name,
         verified: body.verified,

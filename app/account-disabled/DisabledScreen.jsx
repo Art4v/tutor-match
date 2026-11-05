@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Icon } from "@/components/Icon";
+import { Button } from "@/components/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // Client half of /account-disabled. Log out is the only action. Kept deliberately
@@ -20,47 +20,20 @@ export function DisabledScreen() {
   };
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen">
-      <div className="max-w-[480px] mx-auto px-6 pt-24 pb-24">
-        <section
-          className="bg-[color:var(--paper-card)]"
-          style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28, textAlign: "center" }}
-        >
-          <span
-            className="inline-flex items-center justify-center mb-4"
-            style={{ width: 48, height: 48, borderRadius: 999, background: "#FEF2F2", color: "#DC2626" }}
-          >
-            <Icon name="ban" size={24} />
-          </span>
-          <h1 className="text-[32px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-            Your account has been disabled
-          </h1>
-          <p className="text-[14px] text-slate-500 mt-2.5 leading-[1.55]">
-            An admin has disabled your account following a report. You can't browse, message, or appear on
-            MatchTutor while your account is disabled.
-          </p>
-
-          <div className="flex flex-col gap-2.5 mt-7">
-            <button
-              type="button"
-              onClick={onLogout}
-              disabled={loggingOut}
-              className="inline-flex items-center justify-center gap-2 font-medium w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: "var(--paper-card)",
-                color: "var(--ink-graphite)",
-                border: "1px solid var(--paper-line)",
-                padding: "11px 20px",
-                fontSize: 15,
-                height: 44,
-                borderRadius: 10,
-                cursor: loggingOut ? "not-allowed" : "pointer",
-              }}
-            >
-              {loggingOut ? "Logging out…" : "Log out"}
-            </button>
-          </div>
-        </section>
+    <div className="bg-surface">
+      <div className="max-w-[400px] mx-auto px-4 pt-16 pb-16 text-center">
+        <h1 className="text-[24px] leading-8 font-semibold text-[color:var(--text)]">
+          Your account has been disabled
+        </h1>
+        <p className="mt-3 text-[14px] leading-5 text-[color:var(--text-2)]">
+          An admin has disabled your account following a report. You can't browse, message, or appear on
+          MatchTutor while your account is disabled.
+        </p>
+        <div className="mt-6 flex justify-center">
+          <Button variant="outline" onClick={onLogout} disabled={loggingOut}>
+            {loggingOut ? "Logging out…" : "Log out"}
+          </Button>
+        </div>
       </div>
     </div>
   );

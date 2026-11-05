@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
-import { Icon } from "@/components/Icon";
+import { Modal } from "@/components/Modal";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// "Report a bug" dialog. Chrome mirrors ReportModal, but this is self-contained:
-// it owns its form state and POSTs to /api/bug-report itself. Open to everyone;
-// name + email prefill from the logged-in user (still editable). Backdrop click
-// + Escape close unless mid-submit (busy).
+// "Report a bug" dialog on the shared Modal shell (a full-screen sheet below
+// 640px). Self-contained: it owns its form state and POSTs to /api/bug-report
+// itself. Open to everyone; name + email prefill from the logged-in user (still
+// editable). Scrim click + Escape close unless mid-submit (busy).
 const MAX_MESSAGE = 5000;
 
 export function BugReportModal({ onClose }) {
@@ -41,14 +41,11 @@ export function BugReportModal({ onClose }) {
     };
   }, []);
 
-  useEffect(() => {
-    const onKey = (e) => {
-      // Escape closes the form (unless mid-submit) or dismisses the sent state.
-      if (e.key === "Escape" && (sent || !busy)) onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [busy, sent, onClose]);
+  // Modal re-runs its effect when onClose changes identity; the caller passes
+  // an inline arrow, so hand it a stable function that reads the latest one.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const close = useCallback(() => closeRef.current?.(), []);
 
   const submit = async () => {
     if (busy) return;
@@ -77,168 +74,103 @@ export function BugReportModal({ onClose }) {
     }
   };
 
-  const inputStyle = {
-    background: "var(--paper-card)",
-    border: "1px solid var(--paper-line)",
-    outline: "none",
-  };
+  const inputCls =
+    "mt-2 block w-full h-11 rounded border border-input bg-surface px-3 text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder focus:border-accent disabled:opacity-50";
+  const labelCls = "text-[14px] leading-5 font-semibold text-[color:var(--text)]";
 
   // Success state.
   if (sent) {
     return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center px-4"
-        style={{ background: "rgba(0,30,30,0.5)" }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bug-sent-title"
-        onClick={onClose}
+      <Modal
+        title="Thanks, we got your report"
+        onClose={close}
+        width={420}
+        zIndex={80}
+        footer={<Button variant="primary" onClick={onClose}>Done</Button>}
       >
-        <div
-          className="bg-[color:var(--paper-card)] w-full"
-          style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)", textAlign: "center" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span
-            className="inline-flex items-center justify-center mb-3.5"
-            style={{ width: 44, height: 44, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
-          >
-            <Icon name="check-circle" size={22} />
-          </span>
-          <h2 id="bug-sent-title" className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink)" }}>
-            Thanks, we got your report
-          </h2>
-          <p className="text-[13.5px] text-slate-600 mt-1.5">
-            Our team will take a look. If we need more detail, we'll reply to the email you gave us.
-          </p>
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex items-center justify-center gap-2 font-medium w-full"
-              style={{
-                background: "var(--accent)",
-                color: "#fff",
-                border: "1px solid var(--accent)",
-                padding: "10px 20px",
-                fontSize: 14,
-                height: 42,
-                borderRadius: 10,
-                cursor: "pointer",
-                letterSpacing: "-0.005em",
-              }}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      </div>
+        <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
+          Our team will take a look. If we need more detail, we'll reply to the email you gave us.
+        </p>
+      </Modal>
     );
   }
 
+  const incomplete = !name.trim() || !email.trim() || !message.trim();
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,30,30,0.5)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="bug-modal-title"
-      onClick={busy ? undefined : onClose}
-    >
-      <div
-        className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div>
-          <h2 id="bug-modal-title" className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink)" }}>
-            Report a bug
-          </h2>
-          <p className="text-[13.5px] text-slate-600 mt-1.5">
-            Found something broken? Let us know and we'll look into it.
-          </p>
-        </div>
-
-        {/* Honeypot: hidden from real users, off the tab order. Bots that fill it
-            are silently discarded server-side. */}
-        <input
-          type="text"
-          name="company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
-          style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
-        />
-
-        <label className="block mt-5">
-          <span className="text-[12.5px] font-medium text-slate-500">Name</span>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value.slice(0, 200))}
-            disabled={busy}
-            placeholder="Your name"
-            className="mt-1.5 w-full text-[14px] text-slate-800 rounded-lg px-3 py-2 disabled:opacity-60"
-            style={inputStyle}
-          />
-        </label>
-
-        <label className="block mt-4">
-          <span className="text-[12.5px] font-medium text-slate-500">Email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={busy}
-            placeholder="you@example.com"
-            className="mt-1.5 w-full text-[14px] text-slate-800 rounded-lg px-3 py-2 disabled:opacity-60"
-            style={inputStyle}
-          />
-        </label>
-
-        <label className="block mt-4">
-          <span className="text-[12.5px] font-medium text-slate-500">Message</span>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE))}
-            disabled={busy}
-            rows={4}
-            placeholder="What went wrong? Where did it happen?"
-            className="mt-1.5 w-full text-[14px] text-slate-800 rounded-lg px-3 py-2 resize-none disabled:opacity-60"
-            style={inputStyle}
-          />
-        </label>
-
-        {error && <p className="mt-2 text-[13px]" style={{ color: "#DC2626" }}>{error}</p>}
-
-        <div className="flex items-center justify-end gap-2.5 mt-5">
-          <Button variant="outline" size="md" onClick={onClose} disabled={busy}>
+    <Modal
+      title="Report a bug"
+      onClose={close}
+      dismissable={!busy}
+      sheet
+      width={480}
+      zIndex={80}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={busy || !name.trim() || !email.trim() || !message.trim()}
-            className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              background: "var(--accent)",
-              color: "#fff",
-              border: "1px solid var(--accent)",
-              padding: "9px 16px",
-              fontSize: 14,
-              height: 40,
-              borderRadius: 10,
-              cursor: busy ? "not-allowed" : "pointer",
-              letterSpacing: "-0.005em",
-            }}
-          >
-            <Icon name="send" size={14} />
+          <Button variant="primary" onClick={submit} disabled={busy || incomplete}>
             {busy ? "Sending…" : "Send report"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
+        Found something broken? Let us know and we'll look into it.
+      </p>
+
+      <label className="mt-6 block">
+        <span className={labelCls}>Name</span>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value.slice(0, 200))}
+          disabled={busy}
+          autoComplete="name"
+          className={inputCls}
+        />
+      </label>
+
+      <label className="mt-4 block">
+        <span className={labelCls}>Email</span>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={busy}
+          autoComplete="email"
+          className={inputCls}
+        />
+      </label>
+
+      <label className="mt-4 block">
+        <span className={labelCls}>Message</span>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE))}
+          disabled={busy}
+          rows={4}
+          placeholder="What went wrong? Where did it happen?"
+          className="mt-2 block w-full resize-none rounded border border-input bg-surface px-3 py-2 text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder focus:border-accent disabled:opacity-50"
+        />
+      </label>
+
+      {/* Honeypot: hidden from real users, off the tab order. Bots that fill it
+          are silently discarded server-side. Placed after the real fields so the
+          Modal's initial focus lands on Name, not here. */}
+      <input
+        type="text"
+        name="company"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+      />
+
+      {error && <p role="alert" className="mt-2 text-[14px] leading-5 text-error">{error}</p>}
+    </Modal>
   );
 }

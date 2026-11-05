@@ -4,19 +4,20 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 import { BookSproutMark, Wordmark } from "./Logo";
-import { Button } from "./ui";
+import { Avatar } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// Primary links, left of the auth cluster. Browse and Blog are real routes; the
-// three between them are anchors into the home page sections (ids live on the
-// section tags in FeaturedTutors / HomeHowItWorks / HomeCta).
-const NAV_LINKS = [
-  { label: "Browse", href: "/browse" },
-  { label: "Featured tutors", href: "/#featured-tutors", hash: "featured-tutors" },
-  { label: "How it works", href: "/#how-it-works", hash: "how-it-works" },
-  { label: "For tutors", href: "/#for-tutors", hash: "for-tutors" },
+// The site nav (DESIGN.md §6, REDESIGN_DECISIONS.md item 2): a solid white bar,
+// always visible, 1px bottom rule, 1128px wide. No search box (search lives on
+// the home page). Below 1024px it collapses to logo, a "Find a tutor" magnifier,
+// the Messages / Notifications icons (signed in) and a menu button that opens a
+// full-width sheet.
+
+const PUBLIC_LINKS = [
+  { label: "Find a tutor", href: "/browse" },
   { label: "Companies", href: "/companies" },
   { label: "Blog", href: "/blog" },
+  { label: "Become a tutor", href: "/signup" },
 ];
 
 export function TopNav() {
@@ -32,9 +33,8 @@ export function TopNav() {
   const [unread, setUnread] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // desktop "Me" dropdown
+  const [sheetOpen, setSheetOpen] = useState(false); // compact menu sheet
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -42,7 +42,10 @@ export function TopNav() {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
     };
     const onKey = (e) => {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setSheetOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
@@ -52,51 +55,11 @@ export function TopNav() {
     };
   }, []);
 
-  // Auto-hide on scroll (meuze.ai-style): transparent at the very top, slides up
-  // and fades out when scrolling down, reappears (with a frosted backing) when
-  // scrolling up. rAF-throttled passive listener on native scroll events.
+  // Each navigation closes both menus.
   useEffect(() => {
-    const TOP = 8; // within this many px of the top = always shown, no backing
-    const HIDE_AFTER = 80; // only start hiding once past this depth
-    const DELTA = 4; // ignore micro-scrolls to avoid jitter
-    let lastY = window.scrollY;
-    let ticking = false;
-
-    const update = () => {
-      ticking = false;
-      const y = window.scrollY;
-      setScrolled(y > TOP);
-      const diff = y - lastY;
-      if (y <= TOP) {
-        setHidden(false);
-      } else if (Math.abs(diff) > DELTA) {
-        if (diff > 0 && y > HIDE_AFTER) setHidden(true); // scrolling down
-        else if (diff < 0) setHidden(false); // scrolling up
-      }
-      lastY = y;
-    };
-
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
-      }
-    };
-
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // Each new page starts with the nav shown.
-  useEffect(() => {
-    setHidden(false);
+    setMenuOpen(false);
+    setSheetOpen(false);
   }, [pathname]);
-
-  // Never hide the bar while its dropdown menu is open. The nav stays fixed on
-  // every route now (inline profile editing pins its own save bar below the
-  // fixed nav at top: var(--nav-h)), so there is no in-flow exception.
-  const navHidden = hidden && !menuOpen;
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -118,14 +81,12 @@ export function TopNav() {
     };
   }, []);
 
-  // Role drives the menu: tutors get the Profile link, students get the (v1
-  // placeholder) student items. profiles.role is the single source of truth
-  // (0041) — we read it from the DB rather than auth metadata, which OAuth
-  // accounts never carry. A NULL role means the user hasn't passed /choose-role
-  // yet; middleware keeps them off every real page, so the nav state is moot.
+  // profiles.role is the single source of truth (0041). A NULL role means the
+  // user hasn't passed /choose-role yet; middleware keeps them off every real
+  // page, so the nav state is moot.
   const isStudent = role === "student";
   const isTutor = role === "tutor";
-  const isCompany = role === "partner"; // a tutoring company (0062)
+  const isCompany = role === "partner"; // a tutoring company (0062); never shown to users
 
   useEffect(() => {
     if (!user) {
@@ -142,8 +103,8 @@ export function TopNav() {
     const supabase = createSupabaseBrowserClient();
     let active = true;
     // Resolve the role first, then fetch the tutor row only for tutors. The
-    // slug + live name/avatar keep the nav chip in sync with profile edits
-    // (keyed on pathname so it refetches after navigating away from /settings).
+    // slug + live name/avatar keep the nav in sync with profile edits (keyed on
+    // pathname so it refetches after navigating).
     supabase
       .from("profiles")
       .select("role, full_name, can_author_articles, is_admin")
@@ -154,12 +115,10 @@ export function TopNav() {
         const r = data?.role ?? null;
         const fullName = data?.full_name ?? null;
         setRole(r);
-        // 0061. Independent of role: an author is an ordinary tutor who has
-        // been designated, so this is a second flag rather than a role branch.
+        // 0061. Independent of role: an author is a designated tutor.
         setCanAuthor(Boolean(data?.can_author_articles));
         // 0074. Display only: /admin 404s non-admins and every admin RPC
-        // re-checks. The count is the live queue size, refetched with the
-        // profile on every navigation, so it drops as decisions are made.
+        // re-checks. The count is the live queue size, refetched on navigation.
         const admin = Boolean(data?.is_admin);
         setIsAdmin(admin);
         if (admin) {
@@ -181,16 +140,13 @@ export function TopNav() {
             .then(({ data: t }) => {
               if (!active) return;
               setTutorSlug(t?.slug ?? null);
-              setProfile(
-                t ? { name: t.profile?.full_name ?? null, avatarUrl: t.avatar_url ?? null } : null
-              );
+              setProfile(t ? { name: t.profile?.full_name ?? null, avatarUrl: t.avatar_url ?? null } : null);
             });
           return;
         }
         setTutorSlug(null);
         if (r === "student") {
-          // Students carry their photo on student_profiles.avatar_url (0042);
-          // surface it in the chip just like the tutor avatar.
+          // Students carry their photo on student_profiles.avatar_url (0042).
           supabase
             .from("student_profiles")
             .select("avatar_url")
@@ -202,10 +158,10 @@ export function TopNav() {
             });
           return;
         }
-        setProfile(null);
+        setProfile({ name: fullName, avatarUrl: null });
       });
-    // Unread notifications drive the dot on the avatar chip + menu item. Keyed on
-    // pathname too, so visiting /notifications (which marks them read) clears it.
+    // Unread notifications drive the Notifications badge. Keyed on pathname
+    // too, so visiting /notifications (which marks them read) clears it.
     supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
@@ -213,8 +169,7 @@ export function TopNav() {
       .then(({ count }) => {
         if (active) setUnread(count ?? 0);
       });
-    // Unread messages drive the Messages menu pill. Same pathname keying, so
-    // opening /messages (which marks the read thread) refreshes the count.
+    // Unread messages drive the Messages badge. Same pathname keying.
     supabase.rpc("unread_message_count").then(({ data }) => {
       if (active) setUnreadMessages(data ?? 0);
     });
@@ -223,270 +178,286 @@ export function TopNav() {
     };
   }, [user, pathname]);
 
-  // Anchor links only need intercepting when we're already on the home page —
-  // otherwise the Link navigates home and Next's own hash handling lands the
-  // section (cleared of the fixed nav by each section's scroll-mt).
-  const onAnchorClick = (e, hash) => {
-    if (!hash || pathname !== "/") return;
-    const el = document.getElementById(hash);
-    if (!el) return;
-    e.preventDefault();
-    // Flush to the top of the viewport, no nav-height offset: scrolling down to
-    // a section auto-hides the bar (see the scroll effect above), so reserving
-    // 64px for it would just leave a strip of the previous section on screen.
-    // scrollIntoView honours the reduced-motion preference at the browser level.
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-    // replace, not push, so Back means "previous page" and not "previous section".
-    window.history.replaceState(null, "", `/#${hash}`);
-  };
-
   const onLogout = async () => {
     setLoggingOut(true);
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     setLoggingOut(false);
     setMenuOpen(false);
+    setSheetOpen(false);
     router.push("/");
     router.refresh();
   };
 
+  const displayName = profile?.name || user?.user_metadata?.full_name || user?.email || "";
+  const showMessages = isStudent || isTutor; // companies have no messaging
+
+  // The "Me" items, gated exactly as before: role for Profile / My company /
+  // Saved tutors, capability for Write and Admin.
+  const meItems = [
+    isTutor && { label: "Profile", href: tutorSlug ? `/tutor/${tutorSlug}` : "/profile" },
+    isCompany && { label: "My company", href: "/company" },
+    { label: isStudent ? "Profile and account" : "Account", href: "/account" },
+    isStudent && { label: "Saved tutors", href: "/browse?saved=1" },
+    canAuthor && { label: "Write", href: "/author" },
+    isAdmin && { label: "Admin", href: "/admin", count: adminPending },
+  ].filter(Boolean);
+
+  const isActive = (href) => {
+    const path = href.split("?")[0];
+    return path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`);
+  };
+
   return (
-    <div
-      className="nav-floating fixed top-0 left-0 right-0 z-40"
-      style={{
-        transform: navHidden ? "translateY(-100%)" : "translateY(0)",
-        opacity: navHidden ? 0 : 1,
-        pointerEvents: navHidden ? "none" : "auto",
-        background: "transparent",
-        backdropFilter: "none",
-        WebkitBackdropFilter: "none",
-        borderBottom: "1px solid transparent",
-      }}
-    >
-      <div className="max-w-[1400px] mx-auto px-6 h-[64px] flex items-center gap-6">
-        <Link href="/" className="nav-logo flex items-center gap-2 group">
-          <BookSproutMark size={28} className="nav-logo-mark shrink-0" />
-          <Wordmark
-            className="text-[19px] leading-none"
-            wordClassName="nav-logo-word"
-            weight={400}
-            style={{ letterSpacing: "-0.01em" }}
-          />
+    <div className="fixed top-0 left-0 right-0 z-40 bg-surface border-b border-rule">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 h-16 flex items-center gap-4 lg:gap-6">
+        <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="MatchTutor home">
+          <BookSproutMark size={28} className="shrink-0" />
+          <Wordmark className="text-[20px]" />
         </Link>
 
-        {/* Hidden below md: the mobile bar stays logo + auth only. */}
-        <nav className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map((link) => (
-            <NavBarLink key={link.href} href={link.href} onClick={(e) => onAnchorClick(e, link.hash)}>
-              {link.label}
-            </NavBarLink>
-          ))}
+        {/* Wide: the full bar. */}
+        <nav aria-label="Main" className="hidden lg:flex items-center gap-1 flex-1">
+          {user ? (
+            <>
+              <NavItem href="/browse" active={isActive("/browse")}>Browse</NavItem>
+              {showMessages && (
+                <NavItem href="/messages" active={isActive("/messages")} icon="message" count={unreadMessages}>
+                  Messages
+                </NavItem>
+              )}
+              <NavItem href="/notifications" active={isActive("/notifications")} icon="bell" count={unread}>
+                Notifications
+              </NavItem>
+              <NavItem href="/companies" active={isActive("/companies")}>Companies</NavItem>
+              <NavItem href="/blog" active={isActive("/blog")}>Blog</NavItem>
+            </>
+          ) : (
+            PUBLIC_LINKS.map((l) => (
+              <NavItem key={l.href} href={l.href} active={isActive(l.href)}>
+                {l.label}
+              </NavItem>
+            ))
+          )}
         </nav>
 
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          {/* Compact: the icon cluster. */}
+          <Link
+            href="/browse"
+            aria-label="Find a tutor"
+            className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
+          >
+            <Icon name="search" size={20} />
+          </Link>
+          {user && showMessages && (
+            <IconLink href="/messages" icon="message" label="Messages" count={unreadMessages} />
+          )}
+          {user && <IconLink href="/notifications" icon="bell" label="Notifications" count={unread} />}
+
           {user ? (
-            (() => {
-              const displayName = profile?.name || user.user_metadata?.full_name || user.email || "";
-              const avatarUrl = profile?.avatarUrl || null;
-              return (
-                <div ref={menuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setMenuOpen((o) => !o)}
-                    aria-haspopup="menu"
-                    aria-expanded={menuOpen}
-                    className="relative inline-flex items-center gap-2 h-9 px-2.5 sm:px-3 text-[13px] font-medium text-slate-700 rounded-md transition-colors"
-                    style={{ background: menuOpen ? "var(--accent-softer)" : "var(--desk)", color: menuOpen ? "var(--accent)" : "var(--ink-muted)" }}
-                    title={displayName}
-                  >
-                    <span
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10.5px] font-medium text-white overflow-hidden bg-cover bg-center"
-                      style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : { background: "var(--ink)" }}
-                    >
-                      {!avatarUrl && <Icon name="grad-cap" size={12} />}
-                    </span>
-                    <span className="max-w-[110px] sm:max-w-[180px] truncate">{displayName}</span>
-                    <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
-                    {unread + unreadMessages > 0 && !menuOpen && (
-                      <span
-                        className="absolute"
-                        style={{ top: 5, left: 26, width: 9, height: 9, borderRadius: 999, background: "var(--accent)", border: "2px solid #fff" }}
-                        aria-label={`${unread + unreadMessages} unread notifications and messages`}
-                      />
-                    )}
-                  </button>
-                  {menuOpen && (
-                    <div
-                      role="menu"
-                      className="absolute right-0 top-full mt-2 z-40 bg-[color:var(--paper-card)]"
-                      style={{
-                        border: "1px solid var(--paper-line)",
-                        borderRadius: 12,
-                        boxShadow: "0 10px 24px -8px rgba(0,30,30,0.12)",
-                        minWidth: 200,
-                        padding: 4,
-                      }}
-                    >
-                      <NavMenuLink href="/browse" onClick={() => setMenuOpen(false)}>
-                        Browse
-                      </NavMenuLink>
-                      {isTutor && (
-                        <NavMenuLink href={tutorSlug ? `/tutor/${tutorSlug}` : "/profile"} onClick={() => setMenuOpen(false)}>
-                          Profile
-                        </NavMenuLink>
-                      )}
-                      <NavMenuLink href="/notifications" onClick={() => setMenuOpen(false)}>
-                        <span className="flex items-center justify-between gap-2">
-                          Notifications
-                          {unread > 0 && (
-                            <span
-                              className="inline-flex items-center justify-center text-[11px] font-medium text-white tabular-nums"
-                              style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
-                            >
-                              {unread > 9 ? "9+" : unread}
-                            </span>
-                          )}
-                        </span>
-                      </NavMenuLink>
-                      {(isStudent || isTutor) && (
-                        // Messaging is live for both roles: students initiate,
-                        // tutors reply. The pill mirrors the notifications count.
-                        <NavMenuLink href="/messages" onClick={() => setMenuOpen(false)}>
-                          <span className="flex items-center justify-between gap-2">
-                            Messages
-                            {unreadMessages > 0 && (
-                              <span
-                                className="inline-flex items-center justify-center text-[11px] font-medium text-white tabular-nums"
-                                style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
-                              >
-                                {unreadMessages > 9 ? "9+" : unreadMessages}
-                              </span>
-                            )}
-                          </span>
-                        </NavMenuLink>
-                      )}
-                      {isCompany && (
-                        // Resolves through /company because the company's slug
-                        // isn't known when this fixed URL is built, exactly as
-                        // /profile does for tutors.
-                        <NavMenuLink href="/company" onClick={() => setMenuOpen(false)}>
-                          My company
-                        </NavMenuLink>
-                      )}
-                      <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>
-                        {isStudent ? "Profile and Account" : "Account"}
-                      </NavMenuLink>
-                      {isStudent && (
-                        // Saved tutors is live (→ /browse with the saved filter pre-applied).
-                        <NavMenuLink href="/browse?saved=1" onClick={() => setMenuOpen(false)}>
-                          Saved Tutors
-                        </NavMenuLink>
-                      )}
-                      {canAuthor && (
-                        // The only in-app route to the blog editor (0061).
-                        // Gated on the capability, not the role, so revoking it
-                        // takes the entry point away in the same breath. Sits
-                        // last, directly above Log out, since it is a rare
-                        // capability rather than an everyday destination.
-                        <NavMenuLink href="/author" onClick={() => setMenuOpen(false)}>
-                          Write
-                        </NavMenuLink>
-                      )}
-                      {isAdmin && (
-                        // The dashboard (0074). Shown only to admins; the pill
-                        // is everything waiting for a decision.
-                        <NavMenuLink href="/admin" onClick={() => setMenuOpen(false)}>
-                          <span className="flex items-center justify-between gap-2">
-                            Admin
-                            {adminPending > 0 && (
-                              <span
-                                className="inline-flex items-center justify-center text-[11px] font-medium text-white tabular-nums"
-                                style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}
-                              >
-                                {adminPending > 9 ? "9+" : adminPending}
-                              </span>
-                            )}
-                          </span>
-                        </NavMenuLink>
-                      )}
-                      <NavMenuButton onClick={onLogout} disabled={loggingOut} danger>
-                        {loggingOut ? "Logging out…" : "Log out"}
-                      </NavMenuButton>
+            <div ref={menuRef} className="relative hidden lg:block">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                title={displayName}
+                className="inline-flex h-11 items-center gap-2 rounded px-2 text-[14px] leading-5 font-semibold text-[color:var(--text-2)] hover:bg-surface-2"
+              >
+                <Avatar tutor={{ avatarImg: profile?.avatarUrl, name: displayName }} size={24} />
+                Me
+                <Icon name="chevron-down" size={16} />
+              </button>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 min-w-[220px] rounded border border-rule bg-surface py-2"
+                  style={{ boxShadow: "var(--shadow-float)" }}
+                >
+                  {displayName && (
+                    <div className="px-4 pb-2 mb-2 border-b border-rule text-[12px] leading-4 text-[color:var(--muted)] truncate">
+                      {displayName}
                     </div>
                   )}
+                  {meItems.map((it) => (
+                    <MenuLink key={it.href} href={it.href} count={it.count}>
+                      {it.label}
+                    </MenuLink>
+                  ))}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={onLogout}
+                    disabled={loggingOut}
+                    className="block w-full text-left px-4 h-11 text-[14px] leading-5 text-error hover:bg-surface-2 disabled:opacity-50"
+                  >
+                    {loggingOut ? "Logging out…" : "Log out"}
+                  </button>
                 </div>
-              );
-            })()
+              )}
+            </div>
           ) : (
-            <>
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Log in</Button>
+            <div className="hidden lg:flex items-center gap-2">
+              <Link
+                href="/login"
+                className="inline-flex h-11 items-center rounded px-4 text-[14px] leading-5 font-semibold text-accent hover:bg-surface-2"
+              >
+                Log in
               </Link>
-              <Link href="/signup">
-                <Button variant="primary" size="sm">Sign Up</Button>
+              <Link
+                href="/signup"
+                className="inline-flex h-11 items-center rounded px-4 text-[14px] leading-5 font-semibold text-white bg-accent hover:bg-accent-hover"
+              >
+                Sign up
               </Link>
-            </>
+            </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => setSheetOpen((o) => !o)}
+            aria-expanded={sheetOpen}
+            aria-controls="nav-sheet"
+            aria-label={sheetOpen ? "Close menu" : "Open menu"}
+            className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
+          >
+            <Icon name={sheetOpen ? "x" : "menu"} size={20} />
+          </button>
         </div>
       </div>
+
+      {sheetOpen && (
+        <nav
+          id="nav-sheet"
+          aria-label="Menu"
+          className="lg:hidden fixed inset-x-0 bottom-0 top-16 overflow-y-auto bg-surface border-t border-rule"
+        >
+          <ul className="px-4 py-2">
+            {(user
+              ? [
+                  { label: "Browse", href: "/browse" },
+                  { label: "Companies", href: "/companies" },
+                  { label: "Blog", href: "/blog" },
+                ]
+              : PUBLIC_LINKS
+            ).map((l) => (
+              <SheetLink key={l.href} href={l.href}>
+                {l.label}
+              </SheetLink>
+            ))}
+          </ul>
+          <div className="border-t border-rule px-4 py-2">
+            {user ? (
+              <ul>
+                {displayName && (
+                  <li className="py-2 text-[12px] leading-4 text-[color:var(--muted)] truncate">{displayName}</li>
+                )}
+                {meItems.map((it) => (
+                  <SheetLink key={it.href} href={it.href} count={it.count}>
+                    {it.label}
+                  </SheetLink>
+                ))}
+                <li>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    disabled={loggingOut}
+                    className="flex w-full h-11 items-center text-[16px] leading-6 text-error disabled:opacity-50"
+                  >
+                    {loggingOut ? "Logging out…" : "Log out"}
+                  </button>
+                </li>
+              </ul>
+            ) : (
+              <div className="flex flex-col gap-2 py-2">
+                <Link
+                  href="/login"
+                  className="inline-flex h-11 items-center justify-center rounded border border-input text-[14px] leading-5 font-semibold text-[color:var(--text)]"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex h-11 items-center justify-center rounded bg-accent text-[14px] leading-5 font-semibold text-white"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
 
-// Bar-sized sibling of NavMenuLink: same hover tokens, laid out for the nav row.
-function NavBarLink({ href, onClick, children }) {
-  const [hover, setHover] = useState(false);
+// Numeric badge (DESIGN.md §6): 12px/600 white on --accent, 16px tall, 4px
+// radius, "9+" above nine. Never a dot.
+function Badge({ count, className = "" }) {
+  if (!count) return null;
+  return (
+    <span
+      className={`inline-flex h-4 min-w-4 items-center justify-center rounded bg-accent px-1 text-[12px] leading-4 font-semibold text-white tabular-nums ${className}`}
+      aria-label={`${count} unread`}
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
+function NavItem({ href, active, icon, count, children }) {
   return (
     <Link
       href={href}
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className="inline-flex items-center h-9 px-3 text-[13.5px] font-medium rounded-md transition-colors whitespace-nowrap"
-      style={{ color: hover ? "var(--accent)" : "var(--ink-muted)" }}
+      aria-current={active ? "page" : undefined}
+      className={`inline-flex h-11 items-center gap-2 rounded px-3 text-[14px] leading-5 font-semibold whitespace-nowrap hover:bg-surface-2 ${
+        active ? "text-accent" : "text-[color:var(--text-2)] hover:text-[color:var(--text)]"
+      }`}
     >
+      {icon && <Icon name={icon} size={16} />}
       {children}
+      <Badge count={count} />
     </Link>
   );
 }
 
-function NavMenuLink({ href, onClick, children }) {
-  const [hover, setHover] = useState(false);
+function IconLink({ href, icon, label, count }) {
   return (
     <Link
       href={href}
-      role="menuitem"
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className="block w-full text-left px-3 py-2 text-[13.5px] rounded-md transition-colors"
-      style={{
-        background: hover ? "var(--accent-softer)" : "transparent",
-        color: hover ? "var(--accent)" : "var(--ink-muted)",
-      }}
+      aria-label={count ? `${label}, ${count} unread` : label}
+      className="lg:hidden relative inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
     >
-      {children}
+      <Icon name={icon} size={20} />
+      <Badge count={count} className="absolute right-1 top-1" />
     </Link>
   );
 }
 
-function NavMenuButton({ onClick, disabled, danger, children }) {
-  const [hover, setHover] = useState(false);
+function MenuLink({ href, count, children }) {
   return (
-    <button
-      type="button"
+    <Link
+      href={href}
       role="menuitem"
-      onClick={onClick}
-      disabled={disabled}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className="block w-full text-left px-3 py-2 text-[13.5px] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{
-        color: danger ? "#DC2626" : "var(--ink-muted)",
-        background: hover && !disabled ? (danger ? "#FEF2F2" : "var(--accent-softer)") : "transparent",
-      }}
+      className="flex h-11 items-center justify-between gap-2 px-4 text-[14px] leading-5 text-[color:var(--text)] hover:bg-surface-2"
     >
       {children}
-    </button>
+      <Badge count={count} />
+    </Link>
+  );
+}
+
+function SheetLink({ href, count, children }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex h-11 items-center justify-between text-[16px] leading-6 text-[color:var(--text)]"
+      >
+        {children}
+        <Badge count={count} />
+      </Link>
+    </li>
   );
 }

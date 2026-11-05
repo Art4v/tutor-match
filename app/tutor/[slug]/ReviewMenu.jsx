@@ -42,8 +42,8 @@ export function ReviewMenu({ items = [], label = "Review options" }) {
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-        style={{ width: 28, height: 28, borderRadius: 999 }}
+        className="-mr-3 -mt-3 inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
+        style={{ transition: "background-color 120ms ease-out" }}
       >
         <Icon name="more" size={16} />
       </button>
@@ -51,13 +51,7 @@ export function ReviewMenu({ items = [], label = "Review options" }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-1.5 z-30 py-1 min-w-[170px]"
-          style={{
-            background: "var(--paper-card)",
-            border: "1px solid var(--paper-line)",
-            borderRadius: 12,
-            boxShadow: "0 12px 32px rgba(0,30,30,0.18)",
-          }}
+          className="absolute right-0 top-full z-30 mt-1 min-w-[176px] rounded border border-rule bg-surface py-1 shadow-float"
         >
           {items.map((item) => (
             <MenuItem
@@ -81,11 +75,13 @@ function MenuItem({ icon, label, onClick, danger }) {
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="w-full flex items-center justify-between gap-4 px-3.5 py-2 text-[13.5px] transition-colors hover:bg-slate-50"
-      style={{ color: danger ? "#dc2626" : "var(--ink)" }}
+      className={`flex h-11 w-full items-center justify-between gap-4 px-4 text-[14px] leading-5 hover:bg-surface-2 ${
+        danger ? "text-error" : "text-[color:var(--text)]"
+      }`}
+      style={{ transition: "background-color 120ms ease-out" }}
     >
       {label}
-      <Icon name={icon} size={15} />
+      <Icon name={icon} size={16} />
     </button>
   );
 }

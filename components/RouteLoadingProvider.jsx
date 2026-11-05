@@ -146,30 +146,27 @@ export function RouteLoadingProvider({ children }) {
   return (
     <RouteLoadingContext.Provider value={{ navigate }}>
       {children}
-      {/* Above TopNav (z-40); below the blocking VerificationPrompt (z-[90])
-          and PolicyConsentGate (z-[100]) modals. Kept mounted so opacity can
+      {/* Above TopNav (z-40); below the blocking PolicyConsentGate (z-[100]) modal. Kept mounted so opacity can
           transition; pointer-events off while hidden. */}
       <div
         aria-hidden={!visible}
         className="fixed inset-0 z-[80] flex items-center justify-center"
         style={{
-          background: "rgba(255, 255, 255, 0.45)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
+          background: "var(--overlay)", // DESIGN.md: translucent white, no blur
           opacity: visible ? 1 : 0,
           pointerEvents: visible ? "auto" : "none",
-          transition: "opacity 200ms ease",
+          transition: "opacity 150ms ease-out",
         }}
       >
         <div role="status" aria-live="polite">
           <div
             className={visible ? "route-loading-spinner" : ""}
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 999,
-              border: "3px solid var(--ink-graphite-line)",
-              borderTopColor: "var(--ink-graphite)",
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: "3px solid var(--rule)", // track
+              borderTopColor: "var(--accent)", // DESIGN.md: the accent spinner
             }}
           />
           {visible && <span className="sr-only">Loading</span>}

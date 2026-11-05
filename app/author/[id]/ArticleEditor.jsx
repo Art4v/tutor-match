@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
+import { Toast, useToast } from "@/components/Toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatArticleDate, getMyArticles, readingMinutes, saveArticle } from "@/lib/blog";
 import {
@@ -13,7 +14,6 @@ import {
   uploadArticleCover,
 } from "@/lib/supabase/storage";
 import { articleImages, parseArticleBody } from "@/lib/markdown";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { ArticleSections } from "@/app/blog/[slug]/ArticleSections";
 import { ArticleToc } from "@/app/blog/[slug]/ArticleToc";
 import { MarkdownField } from "./MarkdownField";
@@ -51,7 +51,7 @@ export function ArticleEditor({ userId, initial }) {
   // it appears. Without that, saving from the bottom of a 2000-word body showed
   // no failure at all: the button just flicked back to "Save".
   const errorRef = useRef(null);
-  const [toast, setToast] = useState("");
+  const [toast, showToast] = useToast();
   const [preview, setPreview] = useState(false);
   // A new article gets its slug from the title until the author edits the slug
   // themselves, at which point we stop overwriting their choice.
@@ -96,12 +96,6 @@ export function ArticleEditor({ userId, initial }) {
     // a stale closure that silently saves the wrong thing.
   });
 
-  function showToast(text) {
-    setToast(text);
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => setToast(""), 2600);
-  }
-
   function onTitle(title) {
     set({ title, ...(slugTouched.current ? {} : { slug: slugify(title) }) });
   }
@@ -137,7 +131,7 @@ export function ArticleEditor({ userId, initial }) {
     setSaved(res.article);
     setDraft(res.article);
     slugTouched.current = true;
-    showToast(nextStatus === "published" ? "Published." : "Saved.");
+    showToast("success", nextStatus === "published" ? "Published." : "Saved.", 2600);
 
     // A new article has no id in the URL yet, so move to its real one.
     if (!initial.id && res.article.id) router.replace(`/author/${res.article.id}`);
@@ -222,9 +216,14 @@ export function ArticleEditor({ userId, initial }) {
 
   const isPublished = saved.status === "published";
 
+  // Shared classes for the 44px controls this file draws itself (DESIGN.md
+  // inputs and buttons); the Button primitive covers the rest.
+  const outlineBtn =
+    "inline-flex items-center justify-center h-11 px-4 rounded border border-input bg-surface text-[14px] leading-5 font-semibold text-[color:var(--text)] whitespace-nowrap hover:bg-surface-2 cursor-pointer";
+
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen">
-      <div className="max-w-[1040px] mx-auto px-6 pt-10 pb-24">
+    <div className="bg-surface min-h-screen">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 pt-8 pb-16">
         {/* beforeunload does NOT fire on Next's client-side navigation, and this
             link sits directly above the editor, so without the guard one click
             silently discards unsaved work. window.confirm rather than
@@ -242,33 +241,19 @@ export function ArticleEditor({ userId, initial }) {
             if (window.confirm("You have unsaved changes. Leave without saving?")) return;
             e.preventDefault();
           }}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium"
-          style={{ color: "var(--sage)" }}
+          className="inline-flex items-center min-h-6 text-[14px] leading-5 accent-link"
         >
-          <Icon name="chevron-left" size={14} />
           Your articles
         </Link>
 
-        <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
-          <h1
-            className="text-[26px]"
-            style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.02em" }}
-          >
+        <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
+          <h1 className="text-[24px] leading-8 font-semibold text-[color:var(--text)]">
             {initial.id ? "Edit article" : "New article"}
           </h1>
 
-          <div className="flex items-center gap-2.5">
-            {dirty && (
-              <span className="text-[12.5px]" style={{ color: "var(--sage)" }}>
-                Unsaved changes
-              </span>
-            )}
-            <Button
-              variant="outline"
-              size="md"
-              icon={preview ? "pencil" : "eye"}
-              onClick={() => setPreview((p) => !p)}
-            >
+          <div className="flex items-center gap-2 flex-wrap">
+            {dirty && <span className="text-[12px] leading-4 text-muted">Unsaved changes</span>}
+            <Button variant="outline" size="md" onClick={() => setPreview((p) => !p)}>
               {preview ? "Write" : "Preview"}
             </Button>
             <Button
@@ -281,7 +266,7 @@ export function ArticleEditor({ userId, initial }) {
             </Button>
             {isPublished ? (
               <Button
-                variant="soft"
+                variant="outline"
                 size="md"
                 disabled={busy !== null}
                 onClick={() => persist("draft")}
@@ -302,7 +287,7 @@ export function ArticleEditor({ userId, initial }) {
         </div>
 
         {isPublished && (
-          <p className="mt-3 text-[13px]" style={{ color: "var(--sage)" }}>
+          <p className="mt-2 text-[14px] leading-5 text-[color:var(--text-2)]">
             Live at{" "}
             <Link href={`/blog/${saved.slug}`} className="accent-link">
               /blog/{saved.slug}
@@ -315,15 +300,9 @@ export function ArticleEditor({ userId, initial }) {
             ref={errorRef}
             role="alert"
             aria-live="assertive"
-            className="mt-5 px-4 py-3 text-[13.5px] flex items-start justify-between gap-3"
-            style={{
-              background: "#FBEAEA",
-              color: "#9B2C2C",
-              border: "1px solid #F0D2D2",
-              borderRadius: "var(--radius-card)",
-            }}
+            className="mt-4 pl-4 flex items-center justify-between gap-2 rounded border border-error text-error text-[14px] leading-5"
           >
-            <span>{error}</span>
+            <span className="py-3">{error}</span>
             {/* Dismissable because nothing else clears it: a failed cover upload
                 would otherwise leave a red banner sitting there through an hour
                 of unrelated editing. */}
@@ -331,10 +310,9 @@ export function ArticleEditor({ userId, initial }) {
               type="button"
               onClick={() => setError("")}
               aria-label="Dismiss error"
-              className="shrink-0 inline-flex items-center justify-center"
-              style={{ width: 20, height: 20, color: "#9B2C2C", opacity: 0.7 }}
+              className="shrink-0 inline-flex items-center justify-center w-11 h-11 text-error"
             >
-              <Icon name="x" size={14} />
+              <Icon name="x" size={16} />
             </button>
           </div>
         )}
@@ -343,46 +321,32 @@ export function ArticleEditor({ userId, initial }) {
           <div className="min-w-0">
             {preview ? (
               // Mirrors the header of app/blog/[slug]/page.js so an author sees
-              // what actually publishes. CHANGE THE TWO TOGETHER, the same
-              // convention CtaBand/HomeCta already follow. The sections and the
-              // contents rail are the SAME components the live page uses, which
-              // is what stops the two drifting again.
+              // what actually publishes. CHANGE THE TWO TOGETHER. The sections
+              // and the contents rail are the SAME components the live page
+              // uses, which is what stops the two drifting again.
               //
               // Still absent, deliberately: the byline (the editor holds no
-              // author data and fetching it for a preview is not worth a query),
-              // related articles and the CTA band, none of which are per-article
-              // authored content. Line length also differs slightly, since this
-              // column sits in the editor's [1fr_300px] grid rather than the
-              // article's [1fr_240px] with gap-x-12.
-              <div className="px-6 py-6" style={cardStyle}>
+              // author data and fetching it for a preview is not worth a query)
+              // and related articles, neither of which is per-article authored
+              // content. Line length also differs slightly, since this column
+              // sits in the editor's [1fr_300px] grid rather than the article's
+              // [1fr_240px] with gap-x-12.
+              <div className="max-w-[680px]">
                 {sections.length === 0 && !draft.title ? (
-                  <p style={{ color: "var(--ink-muted)" }}>Nothing to preview yet.</p>
+                  <p className="text-[14px] leading-5 text-[color:var(--text-2)]">Nothing to preview yet.</p>
                 ) : (
                   <>
                     <header>
                       {draft.category && (
-                        <div
-                          className="text-[12px] font-medium uppercase mb-3"
-                          style={{ color: "var(--accent)", letterSpacing: "0.08em" }}
-                        >
+                        <div className="text-[14px] leading-5 mb-2 text-[color:var(--text-2)]">
                           {draft.category}
                         </div>
                       )}
-                      <h1
-                        className="text-[30px] sm:text-[36px] leading-[1.12]"
-                        style={{
-                          color: "var(--ink-graphite)",
-                          fontWeight: 300,
-                          letterSpacing: "-0.025em",
-                        }}
-                      >
+                      <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">
                         {draft.title || "Untitled"}
                       </h1>
 
-                      <div
-                        className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]"
-                        style={{ color: "var(--sage)" }}
-                      >
+                      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-5 text-muted">
                         <span>
                           {draft.publishedAt
                             ? `Published ${formatArticleDate(draft.publishedAt)}`
@@ -401,20 +365,17 @@ export function ArticleEditor({ userId, initial }) {
                       </div>
 
                       {draft.excerpt && (
-                        <p
-                          className="mt-8 text-[16px] leading-[1.65]"
-                          style={{ color: "var(--ink-muted)" }}
-                        >
+                        <p className="mt-6 text-[16px] leading-6 text-[color:var(--text-2)]">
                           {draft.excerpt}
                         </p>
                       )}
                     </header>
 
-                    <div className="mt-10">
+                    <div className="mt-8">
                       <ArticleToc sections={sections} />
                     </div>
 
-                    <div className="mt-10">
+                    <div className="mt-8">
                       <ArticleSections sections={sections} />
                     </div>
                   </>
@@ -422,8 +383,8 @@ export function ArticleEditor({ userId, initial }) {
               </div>
             ) : (
               <>
-                <Field label="Title">
-                  <Input value={draft.title} onChange={onTitle} placeholder="The article title" />
+                <Field label="Title" htmlFor="article-title">
+                  <Input id="article-title" value={draft.title} onChange={onTitle} />
                 </Field>
 
                 <Field
@@ -438,32 +399,20 @@ export function ArticleEditor({ userId, initial }) {
                 </Field>
               </>
             )}
-          </div>  
+          </div>
 
-          <aside className="space-y-6">
-            <div className="px-5 py-5" style={cardStyle}>
+          {/* Sections divided by rules rather than boxed (DESIGN.md: prefer no
+              box, never a box inside a box). */}
+          <aside>
+            <div>
               <SideLabel>Cover photo</SideLabel>
-              <div
-                className="mt-3 relative overflow-hidden w-full aspect-[2/1]"
-                style={{
-                  background: "var(--desk)",
-                  border: "1px solid var(--paper-line)",
-                  borderRadius: "var(--radius-card)",
-                }}
-              >
-                {draft.coverUrl ? (
+              <div className="mt-2 relative overflow-hidden w-full aspect-[2/1] rounded border border-rule bg-surface-2">
+                {draft.coverUrl && (
                   <img
                     src={draft.coverUrl}
                     alt=""
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                ) : (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{ color: "var(--sage)" }}
-                  >
-                    <Icon name="image" size={28} />
-                  </div>
                 )}
               </div>
               <div className="mt-3 flex items-center gap-2">
@@ -471,7 +420,7 @@ export function ArticleEditor({ userId, initial }) {
                   <input
                     type="file"
                     accept="image/*"
-                    className="hidden"
+                    className="sr-only"
                     onChange={(e) => {
                       // Snapshot before clearing: e.target.files is a LIVE
                       // FileList. Clearing lets the same file be re-picked
@@ -481,18 +430,7 @@ export function ArticleEditor({ userId, initial }) {
                       onCover(f);
                     }}
                   />
-                  <span
-                    className="inline-flex items-center gap-1.5 cursor-pointer"
-                    style={{
-                      border: "1px solid var(--line-strong)",
-                      borderRadius: 8,
-                      padding: "6px 12px",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: "var(--ink)",
-                    }}
-                  >
-                    <Icon name="upload" size={14} />
+                  <span className={outlineBtn} style={{ transition: "background-color 120ms ease-out" }}>
                     {busy === "cover" ? "Uploading…" : draft.coverUrl ? "Replace" : "Upload"}
                   </span>
                 </label>
@@ -500,27 +438,30 @@ export function ArticleEditor({ userId, initial }) {
                   <button
                     type="button"
                     onClick={() => set({ coverPath: null, coverUrl: null })}
-                    className="text-[13px]"
-                    style={{ color: "var(--sage)" }}
+                    className="inline-flex items-center h-11 px-2 text-[14px] leading-5 font-semibold text-accent hover:text-[color:var(--accent-hover)]"
                   >
                     Remove
                   </button>
                 )}
               </div>
-              <div className="mt-3">
-                <Input
-                  value={draft.coverAlt}
-                  onChange={(coverAlt) => set({ coverAlt })}
-                  placeholder="Alt text (optional)"
-                />
+              <div className="mt-4">
+                <SideLabel htmlFor="article-cover-alt">Cover alt text (optional)</SideLabel>
+                <div className="mt-2">
+                  <Input
+                    id="article-cover-alt"
+                    value={draft.coverAlt}
+                    onChange={(coverAlt) => set({ coverAlt })}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="px-5 py-5 space-y-4" style={cardStyle}>
+            <div className="mt-6 pt-6 border-t border-rule space-y-4">
               <div>
-                <SideLabel>URL slug</SideLabel>
+                <SideLabel htmlFor="article-slug">URL slug</SideLabel>
                 <div className="mt-2">
                   <Input
+                    id="article-slug"
                     value={draft.slug}
                     onChange={(slug) => {
                       slugTouched.current = true;
@@ -531,9 +472,10 @@ export function ArticleEditor({ userId, initial }) {
                 </div>
               </div>
               <div>
-                <SideLabel>Category</SideLabel>
+                <SideLabel htmlFor="article-category">Category</SideLabel>
                 <div className="mt-2">
                   <Input
+                    id="article-category"
                     value={draft.category}
                     onChange={(category) => set({ category })}
                     placeholder="HSC"
@@ -541,12 +483,15 @@ export function ArticleEditor({ userId, initial }) {
                 </div>
               </div>
               <div>
-                <SideLabel>Excerpt</SideLabel>
+                <SideLabel htmlFor="article-excerpt">Excerpt</SideLabel>
+                <p className="mt-1 text-[12px] leading-4 text-muted">
+                  One or two sentences for the card and search results.
+                </p>
                 <div className="mt-2">
                   <Input
+                    id="article-excerpt"
                     value={draft.excerpt}
                     onChange={(excerpt) => set({ excerpt })}
-                    placeholder="One or two sentences for the card and search results."
                     multiline
                   />
                 </div>
@@ -554,78 +499,58 @@ export function ArticleEditor({ userId, initial }) {
             </div>
 
             {saved.id && (
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={busy !== null}
-                className="inline-flex items-center gap-1.5 text-[13px]"
-                style={{ color: "#9B2C2C" }}
-              >
-                <Icon name="trash" size={14} />
-                Delete article
-              </button>
+              <div className="mt-6 pt-6 border-t border-rule">
+                <Button variant="danger" size="md" onClick={onDelete} disabled={busy !== null}>
+                  Delete article
+                </Button>
+              </div>
             )}
           </aside>
         </div>
       </div>
 
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 text-[13.5px]"
-          style={{
-            background: "var(--ink)",
-            color: "#fff",
-            borderRadius: 10,
-            boxShadow: "var(--card-shadow)",
-          }}
-        >
-          {toast}
-        </div>
-      )}
+      <Toast toast={toast} />
     </div>
   );
 }
 
-function Field({ label, hint, children }) {
+function Field({ label, hint, htmlFor, children }) {
   return (
     <div className="mb-6">
-      <div className="mb-2 text-[13px] font-medium" style={{ color: "var(--ink-graphite)" }}>
+      <label htmlFor={htmlFor} className="block mb-2 text-[14px] leading-5 font-semibold text-[color:var(--text)]">
         {label}
-      </div>
-      {hint && (
-        <p className="mb-2 text-[12.5px]" style={{ color: "var(--sage)" }}>
-          {hint}
-        </p>
-      )}
+      </label>
+      {hint && <p className="-mt-1 mb-2 text-[12px] leading-4 text-muted">{hint}</p>}
       {children}
     </div>
   );
 }
 
-function SideLabel({ children }) {
-  return (
-    <div className="text-[13px] font-medium" style={{ color: "var(--ink-graphite)" }}>
+function SideLabel({ htmlFor, children }) {
+  const cls = "block text-[14px] leading-5 font-semibold text-[color:var(--text)]";
+  return htmlFor ? (
+    <label htmlFor={htmlFor} className={cls}>
       {children}
-    </div>
+    </label>
+  ) : (
+    <div className={cls}>{children}</div>
   );
 }
 
-function Input({ value, onChange, placeholder, multiline }) {
+function Input({ id, value, onChange, placeholder, multiline }) {
   const Tag = multiline ? "textarea" : "input";
   return (
     <Tag
+      id={id}
       value={value ?? ""}
       rows={multiline ? 3 : undefined}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 outline-none focus:border-[color:var(--accent)]"
+      className={`block w-full px-3 rounded border border-input bg-surface text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder focus:border-accent ${
+        multiline ? "py-3 min-h-11" : "h-11"
+      }`}
       style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: 9,
-        background: "var(--paper-card)",
-        color: "var(--ink)",
-        fontSize: 14,
-        transition: "border-color 150ms ease-out",
+        transition: "border-color 120ms ease-out",
         resize: multiline ? "vertical" : undefined,
       }}
     />

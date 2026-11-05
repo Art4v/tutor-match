@@ -141,7 +141,7 @@ export async function POST(request) {
   if (!gate?.allowed) {
     return NextResponse.json(
       {
-        error: "Daily AI limit reached — try again tomorrow.",
+        error: "Daily AI limit reached. Try again tomorrow.",
         used: gate?.used ?? limit,
         limit,
         remaining: 0,

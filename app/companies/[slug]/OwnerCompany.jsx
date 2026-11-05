@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
-import { DeskBackdrop } from "@/components/DeskBackdrop";
+import { Button } from "@/components/ui";
+import { Modal } from "@/components/Modal";
+import { Toast, useToast } from "@/components/Toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { saveCompanyProfile } from "@/lib/supabase/companies";
 import { getSubjects } from "@/lib/supabase/tutors";
 import { ReviewsCard } from "@/app/tutor/[slug]/ReviewsCard";
-import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
+import { Section } from "@/app/tutor/[slug]/ProfileCards";
 import {
   CompanyImagesSection,
   CompanyIdentitySection,
@@ -28,8 +29,10 @@ import { CompanyTutorsEditor } from "./CompanyTutorsEditor";
 
 /**
  * Inline company editor, the company counterpart of OwnerProfile. Renders the
- * company's own public page from the committed `company`, with a pen on each
- * card that opens its matching form in a modal. **Each section saves
+ * company's own public page from the committed `company`, in the SAME layout
+ * as the public page (REDESIGN_DECISIONS.md item 6), with a 44px pen on each
+ * section that opens its form in the shared Modal (a full-screen sheet below
+ * 640px). **Each section saves
  * independently**, and only one is open at a time, so a save can never clobber
  * another section's unsaved work.
  *
@@ -48,7 +51,7 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
   const [draft, setDraft] = useState(initialCompany);     // working copy
   const [editingKey, setEditingKey] = useState(null);
   const [savingKey, setSavingKey] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [toast, pushToast] = useToast();
   // Tutors are rows in `tutor_profiles`, not part of the companies row, so they
   // are state of their own and their editor persists independently.
   const [tutors, setTutors] = useState(initialTutors ?? []);
@@ -60,11 +63,9 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
     return () => { active = false; };
   }, [supabase]);
 
-  const showToast = (kind, text, ms = 2200) => {
-    setToast({ kind, text });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), ms);
-  };
+  // Same (kind, text, ms) calls as before, onto the shared Toast. Also handed
+  // to CompanyTutorsEditor as `onToast`.
+  const showToast = (kind, text, ms = 2200) => pushToast(kind === "ok" ? "success" : kind, text, ms);
 
   // Opening a section reseeds the draft from committed truth, so an abandoned
   // edit elsewhere can never leak into this one.
@@ -127,21 +128,22 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  // A section editor renders as a modal: lock background scroll and let Escape
-  // close it, same as OwnerProfile.
+  // A section editor renders in the shared Modal, which owns the
+  // (reference-counted) scroll lock. Escape closes it, same as OwnerProfile; a
+  // dialog stacked on top (the tutor modal, the image crop) handles its own
+  // Escape, so this only reacts when it is the only dialog open.
   useEffect(() => {
     if (!editingKey) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") setEditingKey(null); };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKey);
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (document.querySelectorAll('[role="dialog"]').length > 1) return;
+      setEditingKey(null);
     };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [editingKey]);
 
-  const regionProps = (k, label, maxW = 760) => ({
+  const regionProps = (k, label, maxW = 680) => ({
     label,
     maxW,
     editing: editingKey === k,
@@ -155,65 +157,47 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
   });
 
   return (
-    <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
-      <DeskBackdrop />
-      <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
+    <div className="bg-surface">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 pt-6 pb-16">
         <EditRegion
-          {...regionProps("header", "company details", 1100)}
+          {...regionProps("header", "company details", 680)}
+          penClass={company.bannerImg ? "right-0 top-[136px] sm:top-[176px]" : "right-0 top-0"}
           view={<CompanyHeaderCard company={company} />}
           edit={
             <div>
-              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Company details</h2>
-              <p className="text-[13px] text-slate-500 mt-1 mb-5">
+              <p className="mb-6 text-[14px] leading-5 text-[color:var(--text-2)]">
                 The logo, banner and name at the top of your page.
               </p>
               <CompanyImagesSection company={draft} set={set} supabase={supabase} userId={userId} />
-              <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+              <div className="mt-6 border-t border-rule pt-6">
                 <CompanyIdentitySection company={draft} set={set} />
               </div>
             </div>
           }
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          {/* min-w-0: a 1fr track is minmax(auto, 1fr), so without it the
-              column's min-content width — a single long unbroken word in a bio
-              is enough — widens the whole grid past the viewport. Same guard as
-              /browse and /tutor/[slug]. */}
-          <div className="min-w-0 space-y-[10px]">
-            <EditRegion
-              {...regionProps("tutors", "our tutors", 820)}
-              closeOnly
-              view={
-                tutors.length > 0 ? (
-                  <CompanyTutorsCard tutors={tutors} companyName={company.name} />
-                ) : (
-                  <PlaceholderCard
-                    title="Our tutors"
-                    body="Add your tutors and they'll show here, and in the main tutor search."
-                  />
-                )
-              }
-              edit={
-                <div>
-                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Our tutors</h2>
-                  <CompanyTutorsEditor
-                    companyId={company.id}
-                    // provision_partner_tutor inherits the company's visibility,
-                    // so a new tutor's local row has to start there too or a
-                    // hidden company shows a "public" tutor until reload.
-                    companyVisibility={company.visibility}
-                    ownerId={userId}
-                    tutors={tutors}
-                    setTutors={setTutors}
-                    supabase={supabase}
-                    subjectCatalog={subjectCatalog}
-                    onToast={showToast}
-                  />
-                </div>
-              }
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_344px] lg:gap-x-12">
+          {/* The contact column, first in source order so it sits under the
+              header below 1024px, as on the public page. Not sticky here: it
+              also holds the visibility controls, so it can be taller than the
+              viewport. */}
+          <aside className="lg:col-start-2 lg:row-start-1">
+            <VisibilityCard company={company} onChange={onVisibilityChange} />
+            <div className="pt-6">
+              <EditRegion
+                {...regionProps("rate", "packages", 560)}
+                penClass="right-0 top-0 lg:right-2 lg:top-2"
+                view={<CompanyRateCard company={company} showEnquire={false} />}
+                edit={<CompanyRateSection company={draft} set={set} />}
+              />
+            </div>
+          </aside>
 
+          {/* min-w-0: a 1fr track is minmax(auto, 1fr), so without it the
+              column's min-content width (a single long unbroken word in a bio
+              is enough) widens the whole grid past the viewport. Same guard as
+              /browse and /tutor/[slug]. */}
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
             <EditRegion
               {...regionProps("about", "about")}
               view={
@@ -226,26 +210,40 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
                   />
                 )
               }
-              edit={
-                <div>
-                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-5">About</h2>
-                  <CompanyAboutSection company={draft} set={set} />
-                </div>
-              }
+              edit={<CompanyAboutSection company={draft} set={set} />}
             />
-          </div>
-
-          <aside className="space-y-[10px]">
-            <VisibilityCard company={company} onChange={onVisibilityChange} />
 
             <EditRegion
-              {...regionProps("rate", "packages")}
-              view={<CompanyRateCard company={company} showEnquire={false} />}
+              {...regionProps("tutors", "our tutors", 680)}
+              closeOnly
+              view={
+                tutors.some((t) => t.visibility === "public") ? (
+                  <CompanyTutorsCard tutors={tutors} companyName={company.name} />
+                ) : (
+                  <PlaceholderCard
+                    title="Our tutors"
+                    body={
+                      tutors.length > 0
+                        ? "None of your tutors are visible to students right now."
+                        : "Add your tutors and they'll show here, and in the main tutor search."
+                    }
+                  />
+                )
+              }
               edit={
-                <div>
-                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-1">Packages</h2>
-                  <CompanyRateSection company={draft} set={set} />
-                </div>
+                <CompanyTutorsEditor
+                  companyId={company.id}
+                  // provision_partner_tutor inherits the company's visibility,
+                  // so a new tutor's local row has to start there too or a
+                  // hidden company shows a "public" tutor until reload.
+                  companyVisibility={company.visibility}
+                  ownerId={userId}
+                  tutors={tutors}
+                  setTutors={setTutors}
+                  supabase={supabase}
+                  subjectCatalog={subjectCatalog}
+                  onToast={showToast}
+                />
               }
             />
 
@@ -261,33 +259,19 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
             />
 
             <EditRegion
-              {...regionProps("location", "location")}
+              {...regionProps("location", "location", 560)}
               view={<CompanyLocationCard company={company} />}
-              edit={
-                <div>
-                  <h2 className="text-[18px] font-light text-slate-800 tracking-tight mb-5">Where we are</h2>
-                  <CompanyLocationSection company={draft} set={set} />
-                </div>
-              }
+              edit={<CompanyLocationSection company={draft} set={set} />}
             />
-          </aside>
+          </div>
         </div>
       </div>
 
-      {toast && (
-        <div
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 text-[13px] font-medium"
-          style={{
-            borderRadius: 999,
-            background: toast.kind === "error" ? "#FEF2F2" : "var(--ink)",
-            color: toast.kind === "error" ? "#DC2626" : "#fff",
-            border: toast.kind === "error" ? "1px solid #FECACA" : "none",
-            boxShadow: "0 20px 50px -20px rgba(0,30,30,0.4)",
-          }}
-        >
-          {toast.text}
-        </div>
-      )}
+      {/* Above the stacked tutor modal (z 95): every error in that flow is
+          reported here. A fixed wrapper lifts the shared Toast's own layer. */}
+      <div className="fixed z-[100]">
+        <Toast toast={toast} />
+      </div>
     </div>
   );
 }
@@ -295,46 +279,44 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
 /**
  * Live / hidden switch. Persists immediately rather than through a section
  * editor, because it is one boolean and a Save button would be ceremony.
+ * A flat section in the right column, like the tutor owner's.
  */
 function VisibilityCard({ company, onChange }) {
   const live = company.visibility === "public";
   return (
-    <SidebarCard title="Your page">
-      <div className="flex items-center gap-2 mt-2.5 text-[13.5px]" style={{ color: live ? "var(--accent)" : "var(--ink-muted)" }}>
-        <Icon name={live ? "check-circle" : "eye-off"} size={15} />
-        <span>{live ? "Live and visible to students" : "Hidden from students"}</span>
+    <section className="border-b border-rule py-6">
+      <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">Your page</h2>
+      <p className="mt-1 text-[14px] leading-5 text-[color:var(--text-2)]">
+        {live ? "Live and visible to students." : "Hidden from students."}
+      </p>
+      <div className="mt-4">
+        <Button variant="outline" onClick={() => onChange(live ? "hidden" : "public")}>
+          {live ? "Hide my page" : "Make my page live"}
+        </Button>
       </div>
-      <button
-        type="button"
-        onClick={() => onChange(live ? "hidden" : "public")}
-        className="mt-3 w-full text-[13px] font-medium transition-colors hover:bg-slate-100"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: 999, padding: "9px 14px", color: "var(--ink)" }}
-      >
-        {live ? "Hide my page" : "Make my page live"}
-      </button>
       {live && (
         <a
           href={`/companies/${company.slug}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-[12.5px] mt-3"
-          style={{ color: "var(--accent)" }}
+          className="mt-4 inline-flex min-h-6 items-center gap-1 text-[14px] leading-5 font-semibold text-accent hover:text-accent-hover"
+          style={{ transition: "color 120ms ease-out" }}
         >
-          See what students see <Icon name="external" size={12} />
+          See what students see <Icon name="external" size={16} />
+          <span className="sr-only">(opens in a new tab)</span>
         </a>
       )}
-    </SidebarCard>
+    </section>
   );
 }
 
+// An empty section: the heading, then one line in --text-2 (DESIGN.md "Empty
+// state"); the pen beside the heading is the action.
 function PlaceholderCard({ title, body }) {
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
-      <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-3">{title}</h2>
-      <div className="text-[13.5px] text-slate-500 py-4 px-4 text-center" style={{ background: "var(--bg-soft)", borderRadius: 10 }}>
-        {body}
-      </div>
-    </section>
+    <Section title={title}>
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">{body}</p>
+    </Section>
   );
 }
 
@@ -345,73 +327,46 @@ function PlaceholderCard({ title, body }) {
 // happens (adding a tutor mints an auth user, which cannot be drafted), so it
 // gets a single Done button instead of a Cancel/Save pair that would imply
 // changes are still pending.
-function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, view, edit, maxW = 640, closeOnly = false }) {
+function EditRegion({ editing, saving, dirty, onEdit, onCancel, onSave, label, view, edit, maxW = 680, closeOnly = false, penClass = "right-0 top-4" }) {
   return (
     <div className="relative">
       {view}
       {!editing && (
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={`Edit ${label}`}
-          title={`Edit ${label}`}
-          className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
-          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
-        >
-          <Icon name="pencil" size={14} strokeWidth={2} />
-        </button>
-      )}
-      {editing && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-6"
-          style={{ background: "rgba(0,49,47,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Edit ${label}`}
-        >
-          <div
-            className="w-full flex flex-col bg-[color:var(--paper-card)]"
-            style={{ maxWidth: maxW, maxHeight: "88vh", border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)" }}
+        <div className={`absolute z-10 ${penClass}`}>
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Edit ${label}`}
+            title={`Edit ${label}`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 hover:text-[color:var(--text)]"
+            style={{ transition: "background-color 120ms ease-out, color 120ms ease-out" }}
           >
-            <div className="shrink-0 flex items-center justify-end gap-2 px-5 sm:px-6 py-3" style={{ borderBottom: "1px solid var(--desk)" }}>
-              {closeOnly ? (
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full inline-flex items-center gap-1.5"
-                  style={{ background: "var(--ink)", color: "#fff" }}
-                >
-                  <Icon name="check" size={13} strokeWidth={2.4} /> Done
-                </button>
-              ) : (
+            <Icon name="pencil" size={20} />
+          </button>
+        </div>
+      )}
+      {editing && (
+        <Modal
+          title={`Edit ${label}`}
+          onClose={onCancel}
+          dismissable={false}
+          sheet
+          width={maxW}
+          footer={
+            closeOnly ? (
+              <Button variant="primary" onClick={onCancel}>Done</Button>
+            ) : (
               <>
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={saving}
-                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors hover:bg-slate-100 disabled:opacity-60"
-                style={{ background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={saving || !dirty}
-                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-                style={{ background: "var(--ink)", color: "#fff" }}
-              >
-                {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> Save</>)}
-              </button>
+                <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
+                <Button variant="primary" onClick={onSave} disabled={saving || !dirty}>
+                  {saving ? "Saving…" : "Save"}
+                </Button>
               </>
-              )}
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5">
-              {edit}
-            </div>
-          </div>
-        </div>,
-        document.body
+            )
+          }
+        >
+          {edit}
+        </Modal>
       )}
     </div>
   );

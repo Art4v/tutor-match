@@ -23,7 +23,7 @@ export function AvailabilityGrid({ availability }) {
   }
 
   if (firstRow === -1) {
-    return <p className="text-[13px] text-slate-400">No availability set yet.</p>;
+    return <p className="text-[14px] leading-5 text-[color:var(--text-2)]">No availability set yet.</p>;
   }
 
   // Inclusive [firstRow, lastRow], keeping the absolute index for hour labels.
@@ -33,22 +33,19 @@ export function AvailabilityGrid({ availability }) {
   return (
     <div>
       <div className="overflow-x-auto">
-        <table
-          className="w-full"
-          style={{ borderCollapse: "separate", borderSpacing: 8, tableLayout: "fixed" }}
-        >
+        <table className="w-full min-w-[360px]" style={{ borderCollapse: "separate", borderSpacing: 4, tableLayout: "fixed" }}>
           <thead>
             <tr>
-              <th style={{ width: 54 }}></th>
+              <th style={{ width: 56 }}><span className="sr-only">Time</span></th>
               {days.map((d) => (
-                <th key={d} className="text-center text-[13px] font-medium" style={{ color: "var(--ink-muted)" }}>{d}</th>
+                <th key={d} className="text-center text-[12px] leading-4 font-semibold text-[color:var(--text-2)]">{d}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rows.map(({ hi, label }) => (
               <tr key={hi}>
-                <td className="text-[12.5px] tabular-nums text-right" style={{ color: "var(--sage)" }}>{label}</td>
+                <td className="pr-1 text-right text-[12px] leading-4 tabular-nums text-[color:var(--muted)]">{label}</td>
                 {days.map((_, di) => (
                   <td key={di}>
                     <Cell v={grid[hi]?.[di] ?? 0} />
@@ -60,56 +57,36 @@ export function AvailabilityGrid({ availability }) {
         </table>
       </div>
 
-      <div className="flex items-center gap-4 mt-3 text-[13px] flex-wrap" style={{ color: "var(--sage)" }}>
-        <LegendSwatch
-          label="Free"
-          bg="var(--accent-soft)"
-          border="var(--accent-line)"
-          icon="check"
-          iconColor="var(--accent)"
-        />
-        <LegendSwatch label="Unavailable" bg="var(--bg-soft)" />
+      <div className="flex flex-wrap items-center gap-4 mt-3 text-[12px] leading-4 text-[color:var(--text-2)]">
+        <span className="flex items-center gap-2">
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-accent text-white">
+            <Icon name="check" size={12} strokeWidth={2.5} />
+          </span>
+          Free
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="inline-block h-4 w-4 rounded bg-surface-2" />
+          Unavailable
+        </span>
       </div>
     </div>
   );
 }
 
+// Free is the accent with a check (colour never carries meaning alone);
+// booked and unavailable are the neutral tint, booked with a cross.
 function Cell({ v }) {
-  const tone =
-    v === 1
-      ? { background: "var(--accent-soft)", color: "var(--accent)" }
-      : v === 2
-      ? { background: "var(--desk)", color: "var(--accent-hover)" }
-      : { background: "var(--bg-soft)", color: "var(--line-strong)" };
-
+  const label = v === 1 ? "Free" : v === 2 ? "Booked" : "Unavailable";
   return (
     <div
-      className="flex items-center justify-center font-medium"
-      style={{ height: 36, borderRadius: 8, ...tone }}
-      title={v === 1 ? "Free" : v === 2 ? "Booked" : "—"}
+      className={`flex h-8 items-center justify-center rounded ${
+        v === 1 ? "bg-accent text-white" : "bg-surface-2 text-[color:var(--muted)]"
+      }`}
+      title={label}
     >
-      {v === 1 && <Icon name="check" size={13} strokeWidth={2.5} />}
+      {v === 1 && <Icon name="check" size={12} strokeWidth={2.5} />}
       {v === 2 && <Icon name="x" size={12} strokeWidth={2.5} />}
+      <span className="sr-only">{label}</span>
     </div>
-  );
-}
-
-function LegendSwatch({ label, bg, border, icon, iconColor }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className="inline-flex items-center justify-center rounded"
-        style={{
-          width: 18,
-          height: 18,
-          background: bg,
-          border: border ? `1px solid ${border}` : "1px solid transparent",
-          color: iconColor,
-        }}
-      >
-        {icon && <Icon name={icon} size={11} strokeWidth={2.5} />}
-      </span>
-      {label}
-    </span>
   );
 }

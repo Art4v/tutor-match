@@ -43,48 +43,46 @@ export default async function VerificationDetailPage({ params }) {
         back={{ href: "/admin/verification", label: "Verification" }}
       />
       <Panel>
-        <div className="pt-5">
-          <Inset>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium text-slate-900">{name}</span>
-              {tutor.profile?.status === "disabled" && <Chip tone="bad">Account disabled</Chip>}
-            </div>
-            {location && <div className="text-slate-500 text-[13px] mt-0.5">{location}</div>}
-            {tutor.verification_requested_at && (
-              <div className="text-slate-500 text-[13px] mt-0.5">Requested {formatDate(tutor.verification_requested_at)}</div>
-            )}
-            <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[13px]">
-              {profileHref && (
-                <a href={profileHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                  View public profile <Icon name="external" size={13} />
-                </a>
-              )}
-              <a href={adminPaths.user(tutor.id)} className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                Account details <Icon name="arrow-right" size={13} />
-              </a>
-            </div>
-          </Inset>
-
-          <div className="mt-5">
-            {pending ? (
-              <>
-                <p className="text-[12.5px] text-slate-500 mb-4">
-                  Approving turns on their verified badge and ranks them above unverified tutors. Rejecting lets them update their profile and ask again. Either way they&apos;re emailed, with your note if you add one.
-                </p>
-                <DecisionPanel
-                  endpoint="/api/admin/verification"
-                  body={{ tutorId: tutor.id }}
-                  reasonHint="Sent to the tutor with the decision."
-                  actions={[
-                    { key: "approve", label: "Approve", busyLabel: "Approving…", tone: "primary", icon: "check", body: { decision: "approve" }, doneText: `${name} is now verified.` },
-                    { key: "reject", label: "Reject", busyLabel: "Rejecting…", tone: "danger-outline", icon: "x", body: { decision: "reject" }, doneText: `${name}'s request was rejected.` },
-                  ]}
-                />
-              </>
-            ) : (
-              <DecidedNote text={DECIDED[tutor.verification_status] || DECIDED.none} last={last} />
-            )}
+        <Inset>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold">{name}</span>
+            {tutor.profile?.status === "disabled" && <Chip tone="bad">Account disabled</Chip>}
           </div>
+          {location && <div className="mt-1 text-[color:var(--text-2)]">{location}</div>}
+          {tutor.verification_requested_at && (
+            <div className="mt-1 text-[color:var(--text-2)]">Requested {formatDate(tutor.verification_requested_at)}</div>
+          )}
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3">
+            {profileHref && (
+              <a href={profileHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 text-accent hover:text-accent-hover">
+                View public profile <Icon name="external" size={16} />
+              </a>
+            )}
+            <a href={adminPaths.user(tutor.id)} className="inline-flex items-center min-h-6 text-accent hover:text-accent-hover">
+              Account details
+            </a>
+          </div>
+        </Inset>
+
+        <div className="mt-6">
+          {pending ? (
+            <>
+              <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
+                Approving turns on their verified badge and ranks them above unverified tutors. Rejecting lets them update their profile and ask again. Either way they&apos;re emailed, with your note if you add one.
+              </p>
+              <DecisionPanel
+                endpoint="/api/admin/verification"
+                body={{ tutorId: tutor.id }}
+                reasonHint="Sent to the tutor with the decision."
+                actions={[
+                  { key: "approve", label: "Approve", busyLabel: "Approving…", tone: "primary", icon: "check", body: { decision: "approve" }, doneText: `${name} is now verified.` },
+                  { key: "reject", label: "Reject", busyLabel: "Rejecting…", tone: "danger-outline", icon: "x", body: { decision: "reject" }, doneText: `${name}'s request was rejected.` },
+                ]}
+              />
+            </>
+          ) : (
+            <DecidedNote text={DECIDED[tutor.verification_status] || DECIDED.none} last={last} />
+          )}
         </div>
       </Panel>
     </>

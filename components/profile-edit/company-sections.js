@@ -14,21 +14,24 @@
 // editors stay visually identical without either one owning the other.
 // ============================================================================
 
-import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import {
-  AVATAR_SWATCHES,
   Field,
   TextInput,
   RichTextField,
   ImageUploadControl,
 } from "./sections";
 
-/** Logo, banner and the fallback colours behind them. */
+/**
+ * Logo and banner. The banner-colour swatches are gone: the page shows a banner
+ * only when one is uploaded (DESIGN.md §6), so a picked colour had nowhere to
+ * show. The stored `bannerBg` is untouched.
+ */
 export function CompanyImagesSection({ company, set, supabase, userId }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <ImageUploadControl
         label="Logo"
         value={company.logoImg}
@@ -38,7 +41,9 @@ export function CompanyImagesSection({ company, set, supabase, userId }) {
         onChange={(url) => set({ logoImg: url })}
         hint="Square works best. Shown on your page and beside every tutor you list."
         aspect={1}
-        cropShape="round"
+        // Company logos are squares (DESIGN.md §4); the crop output is square
+        // either way, this only matches the crop frame and preview to it.
+        cropShape="rect"
         maxOutputPx={1024}
       />
       <ImageUploadControl
@@ -48,38 +53,11 @@ export function CompanyImagesSection({ company, set, supabase, userId }) {
         supabase={supabase}
         userId={userId}
         onChange={(url) => set({ bannerImg: url })}
-        hint="A wide photo of your company. Optional."
+        hint="Optional. A wide photo of your company. Without one, your page has no banner."
         aspect={1200 / 320}
         cropShape="rect"
         maxOutputPx={2400}
       />
-      <div>
-        <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-1.5">
-          Banner colour
-        </div>
-        <p className="text-[12.5px] text-slate-500 mb-2.5">
-          {company.bannerImg ? "Not used while a banner photo is set." : "Used when there's no banner photo."}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {AVATAR_SWATCHES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              disabled={!!company.bannerImg}
-              onClick={() => set({ bannerBg: c })}
-              aria-label={`Use banner colour ${c}`}
-              className="transition-transform hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 999,
-                background: c,
-                border: company.bannerBg === c ? "2px solid var(--ink)" : "1px solid var(--paper-line)",
-              }}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -88,26 +66,23 @@ export function CompanyImagesSection({ company, set, supabase, userId }) {
 export function CompanyIdentitySection({ company, set }) {
   const name = company.name ?? "";
   return (
-    <div className="space-y-5">
-      <Field label="Company name" hint="Your business name, as students should see it.">
+    <div className="space-y-6">
+      <Field
+        label="Company name"
+        hint="Your business name, as students should see it."
+        error={name.trim() === "" ? "A name is required. It's what students search for." : null}
+      >
         <TextInput
           value={name}
           onChange={(v) => set({ name: v, initial: v.trim().charAt(0).toUpperCase() || null })}
-          placeholder="Kumon Chatswood"
           maxLength={80}
         />
-        {name.trim() === "" && (
-          <p className="mt-2 text-[12.5px]" style={{ color: "#DC2626" }}>
-            A name is required, it's what students search for.
-          </p>
-        )}
       </Field>
 
       <Field label="Tagline" optional hint="One line, shown under your name.">
         <TextInput
           value={company.bio ?? ""}
           onChange={(v) => set({ bio: v })}
-          placeholder="Small-group maths and science in Chatswood since 2009."
           maxLength={140}
         />
       </Field>
@@ -157,38 +132,32 @@ export function CompanyRateSection({ company, set }) {
 
   return (
     <div>
-      <p className="text-[13px] text-slate-500 mb-4">
-        These packages show on your page and on every tutor you list. Individual tutors don't set
+      <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
+        These packages show on your page and on every tutor you list. Individual tutors don&apos;t set
         their own prices.
       </p>
 
       {packages.length === 0 ? (
-        <div
-          className="text-[13.5px] text-slate-500 py-4 px-4 text-center"
-          style={{ background: "var(--bg-soft)", borderRadius: 10 }}
-        >
-          No packages yet. Add your first one below.
-        </div>
+        <p className="text-[14px] leading-5 text-[color:var(--text-2)]">No packages yet.</p>
       ) : (
-        <div className="space-y-3">
+        <ul className="border-t border-rule">
           {packages.map((p, i) => (
-            <div key={i} className="flex items-end gap-2.5">
-              <div className="flex-1 min-w-0">
-                <Field label={i === 0 ? "What it's called" : null}>
+            <li key={i} className="flex items-end gap-2 border-b border-rule py-4">
+              <div className="min-w-0 flex-1">
+                <Field label="Package">
                   <TextInput
                     value={p.label ?? ""}
                     onChange={(v) => update(i, { label: v })}
-                    placeholder="Year 10, per term"
+                    placeholder="e.g. Year 10, per term"
                     maxLength={60}
                   />
                 </Field>
               </div>
-              <div style={{ width: 118 }}>
-                <Field label={i === 0 ? "Price" : null}>
+              <div className="w-[120px] shrink-0">
+                <Field label="Price">
                   <TextInput
                     value={p.price ?? ""}
                     onChange={(v) => update(i, { price: v.replace(/[^0-9]/g, "") })}
-                    placeholder="60"
                     inputMode="numeric"
                     prefix="$"
                   />
@@ -198,30 +167,19 @@ export function CompanyRateSection({ company, set }) {
                 type="button"
                 onClick={() => remove(i)}
                 aria-label={`Remove ${p.label || "this package"}`}
-                className="shrink-0 inline-flex items-center justify-center mb-1 transition-colors hover:bg-slate-100"
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 999,
-                  color: "var(--ink-muted)",
-                  border: "1px solid var(--paper-line)",
-                }}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 hover:text-error"
+                style={{ transition: "background-color 120ms ease-out, color 120ms ease-out" }}
               >
-                <Icon name="trash" size={14} />
+                <Icon name="trash" size={16} />
               </button>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
-      <button
-        type="button"
-        onClick={add}
-        className="inline-flex items-center gap-1.5 text-[13px] font-medium mt-4 transition-colors hover:bg-slate-100"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: 999, padding: "8px 14px", color: "var(--ink)" }}
-      >
-        <Icon name="plus" size={14} /> Add a package
-      </button>
+      <div className="mt-4">
+        <Button variant="outline" onClick={add}>Add a package</Button>
+      </div>
     </div>
   );
 }
@@ -255,8 +213,8 @@ export function CompanyLocationSection({ company, set }) {
         />
       </Field>
       {company.city && (
-        <p className="text-[12.5px] text-slate-500 mt-2">
-          State: <span className="font-medium text-slate-700">{company.city}</span>
+        <p className="mt-2 text-[14px] leading-5 text-[color:var(--text-2)]">
+          State: <span className="font-semibold text-[color:var(--text)]">{company.city}</span>
         </p>
       )}
     </div>

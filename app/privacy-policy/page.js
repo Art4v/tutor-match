@@ -14,15 +14,15 @@ const USE_ROWS = [
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="bg-[color:var(--paper-card)]">
-      <div className="max-w-[720px] mx-auto px-6 py-24">
-        <h1 className="text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
+    <div className="bg-surface">
+      <div className="max-w-[calc(65ch+48px)] mx-auto px-4 lg:px-6 pt-8 sm:pt-12 pb-16">
+        <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">
           Privacy Policy
         </h1>
 
-        <div className="mt-8 space-y-8 text-[15px] text-slate-700 leading-[1.7]">
+        <div className="mt-8 space-y-8 text-[16px] leading-6 text-[color:var(--text)]">
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               1. Introduction
             </h2>
             <p>
@@ -33,10 +33,10 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               2. Data We Collect
             </h2>
-            <h3 className="text-[16px] font-light mt-4 mb-2" style={{ color: "var(--ink-graphite)" }}>
+            <h3 className="text-[16px] leading-6 font-semibold mt-4 mb-2 text-[color:var(--text)]">
               2.1 Information you provide directly
             </h3>
             <ul className="list-disc pl-6 space-y-1">
@@ -59,7 +59,7 @@ export default function PrivacyPolicyPage() {
                 lessons.
               </li>
             </ul>
-            <h3 className="text-[16px] font-light mt-4 mb-2" style={{ color: "var(--ink-graphite)" }}>
+            <h3 className="text-[16px] leading-6 font-semibold mt-4 mb-2 text-[color:var(--text)]">
               2.2 Information collected automatically
             </h3>
             <ul className="list-disc pl-6 space-y-1">
@@ -76,7 +76,7 @@ export default function PrivacyPolicyPage() {
                 cookies to understand usage patterns. See Section 6 for more detail.
               </li>
             </ul>
-            <h3 className="text-[16px] font-light mt-4 mb-2" style={{ color: "var(--ink-graphite)" }}>
+            <h3 className="text-[16px] leading-6 font-semibold mt-4 mb-2 text-[color:var(--text)]">
               2.3 Information from third parties
             </h3>
             <ul className="list-disc pl-6 space-y-1">
@@ -88,23 +88,21 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               3. How We Use Your Data
             </h2>
             <p>We use personal data for the following purposes and legal bases:</p>
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-[14px] border-collapse">
+              <table className="w-full text-[14px] leading-5 border-collapse">
                 <thead>
                   <tr>
                     <th
-                      className="text-left font-medium p-3 border"
-                      style={{ borderColor: "var(--ink-graphite-line)", color: "var(--ink-graphite-deep)" }}
+                      className="text-left font-semibold p-3 border border-rule text-[color:var(--text)]"
                     >
                       Purpose
                     </th>
                     <th
-                      className="text-left font-medium p-3 border"
-                      style={{ borderColor: "var(--ink-graphite-line)", color: "var(--ink-graphite-deep)" }}
+                      className="text-left font-semibold p-3 border border-rule text-[color:var(--text)]"
                     >
                       Legal Basis (Privacy Act 1988, APPs)
                     </th>
@@ -113,10 +111,10 @@ export default function PrivacyPolicyPage() {
                 <tbody>
                   {USE_ROWS.map(([purpose, basis]) => (
                     <tr key={purpose}>
-                      <td className="p-3 border align-top" style={{ borderColor: "var(--ink-graphite-line)" }}>
+                      <td className="p-3 border border-rule align-top">
                         {purpose}
                       </td>
-                      <td className="p-3 border align-top" style={{ borderColor: "var(--ink-graphite-line)" }}>
+                      <td className="p-3 border border-rule align-top">
                         {basis}
                       </td>
                     </tr>
@@ -127,7 +125,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               4. Who We Share Data With
             </h2>
             <p>We do not sell your personal data. We share it only as described below:</p>
@@ -159,7 +157,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               5. Data Retention
             </h2>
             <ul className="list-disc pl-6 space-y-1">
@@ -183,7 +181,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               6. Cookies
             </h2>
             <p>We use the following types of cookies:</p>
@@ -205,7 +203,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               7. Search Engines and AI Services
             </h2>
             <p>
@@ -244,7 +242,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               8. Your Rights
             </h2>
             <p>Depending on your location, you may have the following rights:</p>
@@ -281,7 +279,7 @@ export default function PrivacyPolicyPage() {
             </p>
             <p className="mt-3">
               To exercise any of these rights, email us at{" "}
-              <a href="mailto:matchtutoraus@gmail.com" className="underline" style={{ color: "var(--ink-graphite)" }}>
+              <a href="mailto:matchtutoraus@gmail.com" className="accent-link accent-link--glow">
                 matchtutoraus@gmail.com
               </a>
               . We will respond within 30 days. You also have the right to lodge a complaint with your local
@@ -290,7 +288,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               9. Security
             </h2>
             <p>
@@ -302,7 +300,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               10. Children&apos;s Privacy
             </h2>
             <p>
@@ -314,7 +312,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               11. Changes to This Policy
             </h2>
             <p>
@@ -326,12 +324,12 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               12. Contact
             </h2>
             <p>
               For privacy-related questions, requests, or complaints, please contact our Privacy team:{" "}
-              <a href="mailto:matchtutoraus@gmail.com" className="underline" style={{ color: "var(--ink-graphite)" }}>
+              <a href="mailto:matchtutoraus@gmail.com" className="accent-link accent-link--glow">
                 matchtutoraus@gmail.com
               </a>
             </p>

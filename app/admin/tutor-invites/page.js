@@ -1,7 +1,7 @@
 import { listManagedTutors } from "@/lib/supabase/adminDashboard";
 import { adminPaths } from "@/lib/admin/urls";
 import { requireAdmin } from "../guard";
-import { PageHeader, Panel, QueueList, QueueRow, Chip } from "../_components/ui";
+import { PageHeader, Panel, QueueList, QueueRow } from "../_components/ui";
 import { formatDate } from "../_components/format";
 import { InviteLinkCard } from "./InviteLinkCard";
 
@@ -39,26 +39,24 @@ export default async function TutorInvitesPage() {
         title="Tutor invites"
         lead="Send this link to a tutor. They create an account and let MatchTutor set up and manage their profile."
       />
-      <div className="space-y-5">
-        <Panel
-          title="Invite link"
-          lead={
-            keyRow?.rotated_at
-              ? `Anyone with this link can sign up as a managed tutor. Last rotated ${formatDate(keyRow.rotated_at)}${keyRow.rotated_by ? ` by ${keyRow.rotated_by}` : ""}.`
-              : "Anyone with this link can sign up as a managed tutor."
-          }
-        >
-          {keyRow?.key ? <InviteLinkCard initialKey={keyRow.key} /> : <p className="text-[13.5px] text-slate-500">The invite link isn&apos;t set up. Apply migration 0076.</p>}
-        </Panel>
+      <Panel
+        title="Invite link"
+        lead={
+          keyRow?.rotated_at
+            ? `Anyone with this link can sign up as a managed tutor. Last rotated ${formatDate(keyRow.rotated_at)}${keyRow.rotated_by ? ` by ${keyRow.rotated_by}` : ""}.`
+            : "Anyone with this link can sign up as a managed tutor."
+        }
+      >
+        {keyRow?.key ? <InviteLinkCard initialKey={keyRow.key} /> : <p className="text-[14px] leading-5 text-[color:var(--text-2)]">The invite link isn&apos;t set up. Apply migration 0076.</p>}
+      </Panel>
 
-        <Panel title={<span className="inline-flex items-center gap-2">New tutors {fresh.length > 0 && <Chip tone="warn">{fresh.length}</Chip>}</span>} lead="Set up their profile, make it public, then mark it set up." padded={false}>
-          <QueueList items={fresh} empty="No new tutors are waiting to be set up." renderRow={row} />
-        </Panel>
+      <Panel title={fresh.length > 0 ? `New tutors (${fresh.length})` : "New tutors"} lead="Set up their profile, make it public, then mark it set up." padded={false}>
+        <QueueList items={fresh} empty="No new tutors are waiting to be set up." renderRow={row} />
+      </Panel>
 
-        <Panel title="Managed tutors" lead="Profiles already set up that MatchTutor still manages." padded={false}>
-          <QueueList items={rest} empty="No managed tutors yet." renderRow={row} />
-        </Panel>
-      </div>
+      <Panel title="Managed tutors" lead="Profiles already set up that MatchTutor still manages." padded={false}>
+        <QueueList items={rest} empty="No managed tutors yet." renderRow={row} />
+      </Panel>
     </>
   );
 }

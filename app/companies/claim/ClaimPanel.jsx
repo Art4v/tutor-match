@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Icon } from "@/components/Icon";
+import { StatusLine } from "@/app/(auth)/_components/fields";
 import { Button } from "@/components/ui";
 
 // Claim control for /companies/claim. POSTs the signed token (the GET page never
@@ -42,19 +42,11 @@ export function ClaimPanel({ token, companyName }) {
 
   return (
     <div>
-      <Button onClick={submit} disabled={working}>
+      <Button onClick={submit} disabled={working} size="lg">
         {working ? "Claiming…" : `Claim ${companyName}`}
       </Button>
 
-      {state === "error" && (
-        <div
-          className="flex items-start gap-2 text-[13px] mt-3"
-          style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 12, padding: "11px 13px" }}
-        >
-          <Icon name="alert-triangle" size={15} />
-          <span>{message}</span>
-        </div>
-      )}
+      {state === "error" && <StatusLine className="mt-3">{message}</StatusLine>}
     </div>
   );
 }

@@ -1,30 +1,21 @@
-import { Icon } from "@/components/Icon";
-
 /**
- * Flat credential tiles — a fixed-width type label on the left, the value on
- * the right. Static (no reveal): the profile page renders every card flat.
+ * Credentials as a ruled list: the type ("ATAR", "Degree", …) on the left in
+ * secondary text, the value on the right. No tiles, no icons (DESIGN.md §6).
  */
 export function CredentialsList({ tiles }) {
   if (!tiles?.length) return null;
   return (
-    <div className="flex flex-col gap-2">
+    <dl className="border-t border-rule">
       {tiles.map((c) => (
-        <div
-          key={c.key}
-          className="px-4 py-[11px] flex items-center gap-4"
-          style={{ border: "1px solid var(--line-soft)", borderRadius: 12, background: "var(--desk)" }}
-        >
-          <div className="flex items-center gap-1.5 text-[12px] uppercase tracking-[0.06em] font-medium w-[132px] shrink-0" style={{ color: "var(--sage)" }}>
-            <Icon name={c.icon} size={12} /> {c.caption}
-          </div>
-          <div
-            className={`text-[15.5px] font-medium leading-snug${c.kind === "stat" ? " tabular-nums" : ""}`}
-            style={{ color: "var(--ink-graphite)" }}
+        <div key={c.key} className="flex flex-col gap-1 border-b border-rule py-3 sm:flex-row sm:gap-4">
+          <dt className="shrink-0 text-[14px] leading-6 text-[color:var(--text-2)] sm:w-[128px]">{c.caption}</dt>
+          <dd
+            className={`min-w-0 break-words text-[16px] leading-6 font-semibold text-[color:var(--text)]${c.kind === "stat" ? " tabular-nums" : ""}`}
           >
             {c.value}
-          </div>
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

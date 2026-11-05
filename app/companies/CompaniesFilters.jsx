@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui";
+import { Modal } from "@/components/Modal";
 import { CatalogPicker } from "@/components/CatalogPicker";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { AU_STATES } from "@/lib/states";
@@ -15,6 +17,9 @@ import { AU_STATES } from "@/lib/states";
  * Deliberately a smaller filter set than /browse. A company has no ATAR, no year
  * range and no individual rate, so offering those controls would be offering
  * filters that cannot mean anything.
+ *
+ * Same frame as BrowseFilters: a sidebar at >= 1024px; below that, title +
+ * count + a "Filters (n)" button opening the same controls in a sheet.
  */
 export function CompaniesFilters({ catalog, filters, totalCount }) {
   const router = useRouter();
@@ -51,42 +56,20 @@ export function CompaniesFilters({ catalog, filters, totalCount }) {
 
   const hasFilters =
     filters.q !== "" || filters.states.length > 0 || filters.subjectSlugs.length > 0;
+  const activeCount =
+    (filters.q !== "" ? 1 : 0) + filters.states.length + filters.subjectSlugs.length;
 
-  return (
-    <aside className="space-y-6">
-      <div>
-        <h1
-          className="text-[30px] leading-none"
-          style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
-        >
-          Companies
-        </h1>
-        <p className="text-[13.5px] text-slate-500 mt-1.5">
-          {totalCount} {totalCount === 1 ? "company" : "companies"} on MatchTutor.
-        </p>
-        {hasFilters && (
-          <Link
-            href="/companies"
-            className="inline-block text-[12.5px] font-medium mt-2"
-            style={{ color: "var(--accent)" }}
-          >
-            Clear all filters
-          </Link>
-        )}
-      </div>
+  const [sheetOpen, setSheetOpen] = useState(false);
 
+  const controls = (
+    <div className="border-b border-rule">
       <FilterGroup title="Search">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Company name or suburb"
-          className="w-full text-[14px] px-3 py-2.5 outline-none"
-          style={{
-            border: "1px solid var(--paper-line)",
-            borderRadius: 10,
-            background: "var(--paper-card)",
-            color: "var(--ink)",
-          }}
+          aria-label="Search companies"
+          className="w-full h-11 px-3 bg-surface border border-input rounded outline-none focus:border-accent text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder"
         />
       </FilterGroup>
 
@@ -96,7 +79,7 @@ export function CompaniesFilters({ catalog, filters, totalCount }) {
           catalog={AU_STATES}
           value={filters.states}
           onChange={(next) => setMulti("state", next)}
-          placeholder="Add states"
+          placeholder="Any state"
         />
       </FilterGroup>
 
@@ -110,16 +93,71 @@ export function CompaniesFilters({ catalog, filters, totalCount }) {
           placeholder="Add subjects"
         />
       </FilterGroup>
+    </div>
+  );
+
+  const countLine = `${totalCount} ${totalCount === 1 ? "company" : "companies"}`;
+
+  return (
+    <aside className="min-w-0">
+      <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">
+        Companies
+      </h1>
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <p className="text-[14px] leading-5 text-[color:var(--text-2)] tabular-nums">{countLine}</p>
+        {hasFilters && (
+          <Link
+            href="/companies"
+            className="inline-flex items-center min-h-6 text-[14px] leading-5 text-accent hover:text-accent-hover"
+          >
+            Clear all
+          </Link>
+        )}
+      </div>
+
+      <div className="mt-4 lg:hidden">
+        <Button variant="outline" icon="sliders" onClick={() => setSheetOpen(true)}>
+          {activeCount > 0 ? `Filters (${activeCount})` : "Filters"}
+        </Button>
+      </div>
+
+      <div className="hidden lg:block mt-6">{controls}</div>
+
+      {sheetOpen && (
+        <Modal
+          title="Filters"
+          sheet
+          width={480}
+          onClose={() => setSheetOpen(false)}
+          footer={
+            <>
+              {hasFilters && (
+                <Link
+                  href="/companies"
+                  onClick={() => setSheetOpen(false)}
+                  className="inline-flex items-center h-11 px-4 text-[14px] leading-5 font-semibold text-accent hover:text-accent-hover"
+                >
+                  Clear all
+                </Link>
+              )}
+              <Button variant="primary" onClick={() => setSheetOpen(false)}>
+                {`Show ${countLine}`}
+              </Button>
+            </>
+          }
+        >
+          {controls}
+        </Modal>
+      )}
     </aside>
   );
 }
 
+// Plain sentence-case label, content, and a rule above (DESIGN.md).
 function FilterGroup({ title, children }) {
   return (
-    <div>
-      <div className="text-[11.5px] text-slate-500 uppercase tracking-wider font-medium mb-2">
-        {title}
-      </div>
+    <div className="border-t border-rule py-4">
+      <div className="text-[14px] leading-5 font-semibold text-[color:var(--text)] mb-2">{title}</div>
       {children}
     </div>
   );

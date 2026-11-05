@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useTutorBlock } from "./TutorBlockProvider";
 
-// The "Message <tutor>" CTA, shared by the rate card (sidebar) and the mobile
-// bottom bar. Extracted from the old MessageTutorCard so both call sites use one
+// The "Message <tutor>" CTA in the profile's contact column (sidebar from 1024px,
+// inline under the header below; there is no fixed bottom bar any more). Extracted from the old MessageTutorCard so both call sites use one
 // source of gating logic.
 //
 // Viewer gating (from TutorBlockProvider, sourced from SavedTutorsProvider):
@@ -35,7 +35,6 @@ export function MessageTutorButton({ tutor, full = true }) {
     <Button
       variant="primary"
       size={full ? "xl" : "lg"}
-      icon="message"
       full={full}
       disabled={!ready || navBusy || isTutorViewer}
       onClick={isTutorViewer ? undefined : onMessage}
@@ -47,9 +46,9 @@ export function MessageTutorButton({ tutor, full = true }) {
   // Caption only in the full (sidebar) layout — the mobile bar is a tight row.
   if (isTutorViewer && full) {
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {button}
-        <div className="text-center text-[12px] text-slate-400">Only available to students</div>
+        <p className="text-center text-[12px] leading-4 text-[color:var(--muted)]">Only available to students</p>
       </div>
     );
   }

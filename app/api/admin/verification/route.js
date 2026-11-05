@@ -53,9 +53,9 @@ export async function POST(request) {
     const profileUrl = result.slug ? `${origin}/tutor/${result.slug}` : null;
     await notifyUser(admin, body.tutorId, {
       type: "verification_approved",
-      title: "You're verified ✓",
+      title: "You're verified",
       body: "Your profile now shows the verified badge and ranks higher in search.",
-      email: { subject: "You're verified on MatchTutor ✓", html: userApprovedEmail({ name, profileUrl }) },
+      email: { subject: "You're verified on MatchTutor", html: userApprovedEmail({ name, profileUrl }) },
     });
   } else {
     await notifyUser(admin, body.tutorId, {

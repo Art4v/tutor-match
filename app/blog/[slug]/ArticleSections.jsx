@@ -24,13 +24,10 @@ export function ArticleSections({ sections }) {
   if (!Array.isArray(sections)) return null;
 
   return (
-    <div className="text-[15px] text-slate-700 leading-[1.7]">
+    <div className="text-[16px] leading-6 text-[color:var(--text)]">
       {sections.map((section) => (
         <section key={section.id} id={section.id} className="mt-12 first:mt-0 scroll-mt-24">
-          <h2
-            className="text-[24px] font-light mb-4"
-            style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.015em" }}
-          >
+          <h2 className="text-[24px] leading-8 font-semibold mb-4 text-[color:var(--text)]">
             {section.heading}
           </h2>
           <ArticleBody content={section.content} />

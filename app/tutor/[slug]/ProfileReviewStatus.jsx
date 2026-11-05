@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 
 const formatDate = (iso) =>
@@ -39,28 +38,35 @@ export function ProfileReviewStatus({
   const canResend = !adminNotifiedAt || Date.now() - new Date(adminNotifiedAt).getTime() >= DAY_MS;
   const hasDraft = state !== "live";
 
+  // Status is plain text: a heading, then one line (DESIGN.md: status colours
+  // are for text; the words carry the meaning).
   const head = {
-    live: { icon: "check-circle", color: "var(--accent)", title: "Profile up to date", body: "Edits you make are saved as a draft. Submit them for review when you're ready." },
-    draft: { icon: "pencil", color: "var(--ink)", title: "Unsubmitted changes", body: "Your draft is saved. Submit it so our team can review it." },
-    rejected: { icon: "alert-triangle", color: "#B45309", title: "Not approved", body: reason ? reason : "A reviewer couldn't approve these changes. Update your draft and submit again, or discard it." },
-    pending: { icon: "clock", color: "var(--accent)", title: `Under review since ${formatDate(submittedAt)}`, body: "We'll email you when it's been reviewed. Editing now takes it out of review." },
+    live: { title: "Profile up to date", body: "Edits you make are saved as a draft. Submit them for review when you're ready." },
+    draft: { title: "Unsubmitted changes", body: "Your draft is saved. Submit it so our team can review it." },
+    rejected: { title: "Not approved", body: reason ? reason : "A reviewer couldn't approve these changes. Update your draft and submit again, or discard it." },
+    pending: { title: `Under review since ${formatDate(submittedAt)}`, body: "We'll email you when it's been reviewed. Editing now takes it out of review." },
   }[state];
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-1">
-        <h3 className="text-[14px] font-light text-slate-800 tracking-tight">Profile changes</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-[16px] leading-6 font-semibold text-[color:var(--text)]">Profile changes</h3>
         {hasDraft && (
-          <div className="inline-flex p-0.5 text-[11.5px] font-medium" style={{ background: "var(--bg-soft)", borderRadius: 999, border: "1px solid var(--paper-line)" }} role="tablist" aria-label="Show">
-            {["draft", "live"].map((m) => (
+          // Segmented control, 4px radius (no pill). Switches what the page shows.
+          <div className="inline-flex rounded border border-input" role="tablist" aria-label="Show">
+            {["draft", "live"].map((m, i) => (
               <button
                 key={m}
                 type="button"
                 role="tab"
                 aria-selected={viewMode === m}
                 onClick={() => onViewMode(m)}
-                className="px-2.5 py-0.5 transition-colors"
-                style={{ borderRadius: 999, background: viewMode === m ? "var(--ink)" : "transparent", color: viewMode === m ? "#fff" : "var(--ink-muted)" }}
+                className={
+                  "h-11 px-4 text-[14px] leading-5 font-semibold " +
+                  (i === 0 ? "rounded-l " : "rounded-r border-l border-input ") +
+                  (viewMode === m ? "bg-accent text-white" : "bg-surface text-[color:var(--text)] hover:bg-surface-2")
+                }
+                style={{ transition: "background-color 120ms ease-out" }}
               >
                 {m === "draft" ? "Draft" : "Live"}
               </button>
@@ -69,66 +75,47 @@ export function ProfileReviewStatus({
         )}
       </div>
 
-      <p className="text-[12.5px] leading-[1.5] flex items-start gap-2 mt-2" style={{ color: state === "rejected" ? "#92400E" : "var(--ink-muted)" }}>
-        <span className="shrink-0 mt-0.5" style={{ color: head.color }}><Icon name={head.icon} size={14} /></span>
-        <span>
-          <span className="font-medium" style={{ color: state === "rejected" ? "#92400E" : "var(--ink)" }}>{head.title}.</span>{" "}
-          {state === "rejected" && reason ? <>Reviewer&apos;s note: &ldquo;{head.body}&rdquo;</> : head.body}
-        </span>
+      <p className={"mt-2 text-[14px] leading-5 font-semibold " + (state === "rejected" ? "text-warning" : "text-[color:var(--text)]")}>
+        {head.title}
+      </p>
+      <p className="mt-1 text-[14px] leading-5 text-[color:var(--text-2)]">
+        {state === "rejected" && reason ? <>Reviewer&apos;s note: &ldquo;{head.body}&rdquo;</> : head.body}
       </p>
 
       {viewMode === "live" && hasDraft && (
-        <p className="text-[12px] text-slate-500 mt-2">You&apos;re viewing your live profile. Switch to Draft to edit.</p>
+        <p className="mt-2 text-[12px] leading-4 text-muted">You&apos;re viewing your live profile. Switch to Draft to edit.</p>
       )}
 
       {hasDraft && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {(state === "draft" || state === "rejected") && (
-            <Button variant="primary" size="md" icon="shield-check" onClick={onSubmit} disabled={busy} full>
+            <Button variant="primary" onClick={onSubmit} disabled={busy}>
               {busy === "submit" ? "Submitting…" : "Submit for review"}
             </Button>
           )}
           {state === "pending" && (
-            <Button variant="outline" size="md" icon="send" onClick={onResend} disabled={!!busy || !canResend} full>
+            <Button variant="outline" onClick={onResend} disabled={!!busy || !canResend}>
               {busy === "resend" ? "Sending…" : canResend ? "Resend to reviewer" : "Resent today"}
             </Button>
           )}
           {confirmDiscard ? (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmDiscard(false)}
-                disabled={!!busy}
-                className="flex-1 px-3 py-1.5 text-[12.5px] font-medium rounded-full"
-                style={{ background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
-              >
+            <>
+              <Button variant="outline" onClick={() => setConfirmDiscard(false)} disabled={!!busy}>
                 Keep draft
-              </button>
-              <button
-                type="button"
-                onClick={async () => { await onDiscard(); setConfirmDiscard(false); }}
-                disabled={!!busy}
-                className="flex-1 px-3 py-1.5 text-[12.5px] font-medium rounded-full disabled:opacity-60"
-                style={{ background: "#DC2626", color: "#fff" }}
-              >
+              </Button>
+              <Button variant="danger" onClick={async () => { await onDiscard(); setConfirmDiscard(false); }} disabled={!!busy}>
                 {busy === "discard" ? "Discarding…" : "Discard changes"}
-              </button>
-            </div>
+              </Button>
+            </>
           ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmDiscard(true)}
-              disabled={!!busy}
-              className="w-full text-[12.5px] font-medium py-1 transition-colors hover:text-red-600 disabled:opacity-60"
-              style={{ color: "var(--ink-muted)" }}
-            >
+            <Button variant="ghost" onClick={() => setConfirmDiscard(true)} disabled={!!busy}>
               Discard changes
-            </button>
+            </Button>
           )}
         </div>
       )}
 
-      <p className="text-[11.5px] text-slate-400 mt-3 leading-[1.5]">
+      <p className="mt-4 text-[12px] leading-4 text-muted">
         Students see your live profile until changes are approved.
       </p>
     </div>

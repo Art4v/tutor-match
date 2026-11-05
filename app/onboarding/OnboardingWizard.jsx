@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
-import { Icon } from "@/components/Icon";
-import { Button, Chip } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { Toast, useToast } from "@/components/Toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, getSchools, saveTutorProfile, markOnboarded } from "@/lib/supabase/tutors";
 import { defaultTutor } from "@/components/profile-edit/defaults";
@@ -19,6 +18,7 @@ import {
   ExperienceSection,
   EducationSection,
   ProfileImagesSection,
+  Toggle,
   calcCompletion,
 } from "@/components/profile-edit/sections";
 import { RequestVerification } from "@/components/RequestVerification";
@@ -29,19 +29,15 @@ import { RequestVerification } from "@/components/RequestVerification";
 function DeliveryCard({ tutor, set }) {
   const inPerson = !!tutor.deliversInPerson;
   const online = !!tutor.deliversOnline;
+  // A flat section with two checkbox rows (no chips: DESIGN.md keeps chips for
+  // removable filter values).
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
-      <h3 className="text-[16px] font-light text-slate-800">How do you teach?</h3>
-      <p className="text-[13.5px] text-slate-500 mt-1 mb-4">Pick the lesson formats you offer — you can change these later.</p>
-      <div className="flex flex-wrap gap-2.5">
-        <Chip tone="grey" icon="map-pin" active={inPerson} onClick={() => set({ deliversInPerson: !inPerson })}>
-          In person
-        </Chip>
-        <Chip tone="grey" icon="globe" active={online} onClick={() => set({ deliversOnline: !online })}>
-          Online
-        </Chip>
-      </div>
-    </div>
+    <section className="py-6">
+      <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">How do you teach?</h2>
+      <p className="mt-1 mb-2 text-[14px] leading-5 text-[color:var(--text-2)]">Pick the lesson formats you offer. You can change these later.</p>
+      <Toggle value={inPerson} onChange={(v) => set({ deliversInPerson: v })} label="In person" />
+      <Toggle value={online} onChange={(v) => set({ deliversOnline: v })} label="Online" />
+    </section>
   );
 }
 
@@ -67,7 +63,7 @@ const STEPS = [
       (t.rate ?? 0) > 0 ||
       (t.packages?.length ?? 0) > 0,
     render: ({ tutor, set, supabase }) => (
-      <div className="space-y-5">
+      <div>
         <ProfileImagesSection tutor={tutor} set={set} supabase={supabase} />
         <IdentitySection tutor={tutor} set={set} />
         <RateSection tutor={tutor} set={set} />
@@ -78,7 +74,7 @@ const STEPS = [
     key: "subjects",
     isAnswered: (t) => (t.subjects?.length ?? 0) > 0 || t.yearMin !== 7 || t.yearMax !== 12,
     render: ({ tutor, set, catalog }) => (
-      <div className="space-y-5">
+      <div>
         <SubjectsSection tutor={tutor} set={set} catalog={catalog} />
         <YearLevelsSection tutor={tutor} set={set} />
       </div>
@@ -93,7 +89,7 @@ const STEPS = [
     key: "location",
     isAnswered: (t) => hasText(t.serviceArea?.suburb) || !!t.deliversInPerson || !!t.deliversOnline,
     render: ({ tutor, set }) => (
-      <div className="space-y-5">
+      <div>
         <ServiceAreaSection tutor={tutor} set={set} />
         <DeliveryCard tutor={tutor} set={set} />
       </div>
@@ -106,7 +102,7 @@ const STEPS = [
       (t.experience ?? []).some((e) => hasText(e?.role) || hasText(e?.org) || hasText(e?.note)) ||
       (t.education ?? []).some((e) => hasText(e?.school) || hasText(e?.detail)),
     render: ({ tutor, set, schoolCatalog }) => (
-      <div className="space-y-5">
+      <div>
         <CredentialsSection tutor={tutor} set={set} />
         <ExperienceSection tutor={tutor} set={set} />
         <EducationSection tutor={tutor} set={set} schoolCatalog={schoolCatalog} />
@@ -120,13 +116,13 @@ const STEPS = [
     key: "verify",
     isAnswered: () => true,
     render: ({ tutor, set, persistProfile, showToast }) => (
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-[28px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
+      <div>
+        <div className="mb-6">
+          <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">
             All done?
           </h2>
-          <p className="text-[14px] text-slate-500 mt-1">
-            Get verified now to boost your profile. You can request it anytime from Settings.
+          <p className="mt-1 text-[14px] leading-5 text-[color:var(--text-2)]">
+            Get verified now to strengthen your profile. You can also request it any time from your profile.
           </p>
         </div>
         <RequestVerification
@@ -135,7 +131,7 @@ const STEPS = [
           beforeRequest={async () => {
             const r = await persistProfile();
             if (!r.ok) {
-              showToast("error", r.error || "Couldn't save — please try again.");
+              showToast("error", r.error || "Couldn't save. Please try again.");
               return false;
             }
             return true;
@@ -146,12 +142,6 @@ const STEPS = [
     ),
   },
 ];
-
-const stepVariants = {
-  enter: (dir) => ({ x: dir > 0 ? 28 : -28, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir) => ({ x: dir > 0 ? -28 : 28, opacity: 0 }),
-};
 
 export function OnboardingWizard({ initialTutor, userId, userEmail }) {
   const supabaseRef = useRef(null);
@@ -175,9 +165,8 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
   const [catalog, setCatalog] = useState([]);
   const [schoolCatalog, setSchoolCatalog] = useState([]);
   const [stepIndex, setStepIndex] = useState(0);
-  const [dir, setDir] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState(null); // { kind, text }
+  const [toast, pushToast] = useToast();
 
   const set = (patch) => setTutor((t) => ({ ...t, ...patch }));
 
@@ -188,11 +177,8 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
     return () => { active = false; };
   }, [supabase]);
 
-  const showToast = (kind, text, ms = 3500) => {
-    setToast({ kind, text });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), ms);
-  };
+  // The shared Toast (same signature); its warning kind is "warning".
+  const showToast = (kind, text, ms = 3500) => pushToast(kind === "warn" ? "warning" : kind, text, ms);
 
   const step = STEPS[stepIndex];
   const isFirst = stepIndex === 0;
@@ -207,14 +193,12 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
 
   const goBack = () => {
     if (isFirst) return;
-    setDir(-1);
     setStepIndex((i) => i - 1);
   };
 
   const goNext = () => {
     if (advanceDisabled) return;
     if (isLast) { complete(); return; }
-    setDir(1);
     setStepIndex((i) => i + 1);
   };
 
@@ -281,104 +265,61 @@ export function OnboardingWizard({ initialTutor, userId, userEmail }) {
       router.replace("/profile");
     } catch (e) {
       setSubmitting(false);
-      showToast("error", "Something went wrong — please try again.");
+      showToast("error", "Something went wrong. Please try again.");
     }
   };
 
+  // Reading width (DESIGN.md §3: onboarding sits at 680px). No pill, no
+  // segmented bar, no slide between steps: plain "Step N of 6" text.
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-[calc(100vh-60px)]">
-      <div className="max-w-[760px] mx-auto px-6 pt-10 pb-32">
+    <div className="bg-surface">
+      <div className="max-w-[680px] mx-auto px-4 lg:px-6 pt-8 pb-16">
         {/* Intro */}
         <div className="mb-6">
-          <div className="inline-flex items-center gap-1.5 text-[12.5px] font-medium px-2.5 py-1 mb-3"
-            style={{ background: "var(--accent-softer)", color: "var(--accent)", border: "1px solid var(--accent-line)", borderRadius: 999 }}>
-            <Icon name="sparkle" size={13} /> Welcome to MatchTutor
-          </div>
-          <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Let’s set up your profile</h1>
-          <p className="text-[14.5px] text-slate-500 mt-1.5">
-            A few quick questions to get you listed. Skip anything you’re not ready for — you can edit it all later in Settings.
+          <p className="mb-2 text-[14px] leading-5 text-[color:var(--text-2)] tabular-nums" aria-live="polite">
+            Step {stepIndex + 1} of {STEPS.length}
+          </p>
+          <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">Set up your profile</h1>
+          <p className="mt-2 text-[16px] leading-6 text-[color:var(--text-2)]">
+            A few quick questions to get you listed. Skip anything you&apos;re not ready for. You can edit it all later on your profile.
           </p>
         </div>
 
-        {/* Progress */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center gap-1.5 flex-1">
-            {STEPS.map((s, i) => (
-              <div
-                key={s.key}
-                className="h-1.5 flex-1 rounded-full transition-colors"
-                style={{ background: i <= stepIndex ? "var(--accent)" : "var(--paper-line)" }}
-              />
-            ))}
-          </div>
-          <span className="text-[12.5px] text-slate-400 tabular-nums shrink-0">
-            Step {stepIndex + 1} of {STEPS.length}
-          </span>
-        </div>
-
         {/* Step content */}
-        <div className="min-h-[280px]">
-          <AnimatePresence mode="wait" custom={dir} initial={false}>
-            <motion.div
-              key={step.key}
-              custom={dir}
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {step.render({ tutor, set, catalog, schoolCatalog, supabase, persistProfile, showToast })}
-            </motion.div>
-          </AnimatePresence>
+        <div className="min-h-[280px] border-t border-rule pt-6">
+          {step.render({ tutor, set, catalog, schoolCatalog, supabase, persistProfile, showToast })}
         </div>
 
         {/* Nav */}
-        <div className="flex items-center justify-end gap-3 mt-8">
-          <div className="flex items-center gap-2">
-            {!isFirst && (
-              <Button variant="ghost" size="md" icon="chevron-left" onClick={goBack} disabled={submitting}>
-                Back
-              </Button>
-            )}
-            {isLast ? (
-              <Button variant="primary" size="md" icon="check" onClick={goNext} disabled={advanceDisabled || submitting}>
-                {submitting ? "Finishing…" : "Finish"}
-              </Button>
-            ) : showNext ? (
-              <Button variant="primary" size="md" iconRight="arrow-right" onClick={goNext} disabled={advanceDisabled || submitting}>
-                Next
-              </Button>
-            ) : (
-              <Button variant="outline" size="md" onClick={goNext} disabled={advanceDisabled || submitting}>
-                Skip
-              </Button>
-            )}
-          </div>
+        <div className="mt-8 flex items-center justify-end gap-2 border-t border-rule pt-6">
+          {!isFirst && (
+            <Button variant="ghost" onClick={goBack} disabled={submitting}>
+              Back
+            </Button>
+          )}
+          {isLast ? (
+            <Button variant="primary" onClick={goNext} disabled={advanceDisabled || submitting}>
+              {submitting ? "Finishing…" : "Finish"}
+            </Button>
+          ) : showNext ? (
+            <Button variant="primary" onClick={goNext} disabled={advanceDisabled || submitting}>
+              Next
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={goNext} disabled={advanceDisabled || submitting}>
+              Skip
+            </Button>
+          )}
         </div>
 
         {step.requireName && !nameValid && (
-          <p className="text-[12.5px] mt-3 text-right" style={{ color: "#B45309" }}>
+          <p className="mt-2 text-right text-[14px] leading-5 text-[color:var(--text-2)]">
             Enter your full name to continue.
           </p>
         )}
       </div>
 
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
-          style={{
-            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
-            color: "#fff",
-            borderRadius: 999,
-            boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
-            maxWidth: "calc(100vw - 32px)",
-          }}
-        >
-          <Icon name={toast.kind === "error" ? "x" : toast.kind === "warn" ? "shield" : "check"} size={14} strokeWidth={3} />
-          <span className="truncate">{toast.text}</span>
-        </div>
-      )}
+      <Toast toast={toast} />
     </div>
   );
 }

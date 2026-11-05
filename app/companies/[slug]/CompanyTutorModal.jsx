@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { Icon } from "@/components/Icon";
+import { Button } from "@/components/ui";
+import { Modal } from "@/components/Modal";
 import {
   Field,
   TextInput,
@@ -24,25 +24,25 @@ import {
  * That is what lets add and edit share everything — CompanyTutorsEditor has a
  * single submit() whose only branch is whether the draft has an id yet.
  *
- * It opens ON TOP OF another modal (the "our tutors" EditRegion), which drives
- * three things that look like oversights and are not:
+ * It is the shared Modal shell (a `sheet`: full screen below 640px), opened ON
+ * TOP OF another modal (the "our tutors" EditRegion), which drives three
+ * things that look like oversights and are not:
  *
- *   It does NOT lock scroll. OwnerCompany already froze the body with a raw
- *   style.overflow save/restore that does not participate in lib/scrollLock.js's
- *   reference count. Calling lockScroll() here would take that count to 0 on
- *   close and hand scrolling back to the page behind a still-open parent.
+ *   Scroll lock. Both this modal and the parent EditRegion are the shared
+ *   Modal, whose lib/scrollLock.js lock is reference counted, so closing this
+ *   one leaves the page behind the still-open parent frozen.
  *
  *   Escape is handled in the CAPTURE phase, with stopPropagation. The parent
  *   listens for Escape on `window` in the bubble phase and closes the whole
- *   section; window-capture runs first, so this closes only the top layer.
- *   Nothing inside needs Escape (SubjectPicker closes on outside mousedown and
- *   ImageCropModal has no Escape handler), so swallowing it costs nothing.
+ *   section; window-capture runs first, so this closes only the top layer (and
+ *   Modal's own Escape listener never sees it).
  *
- *   z-[95] sits above the parent's z-[90] and below the toast's z-[100], which
- *   is how every error in this flow is reported.
+ *   `dismissable={false}`: backdrop clicks do NOT close it, matching
+ *   EditRegion rather than ReviewFormModal, because this holds a whole unsaved
+ *   tutor. Cancel lives in the footer.
  *
- * Backdrop clicks do NOT close it, matching EditRegion rather than
- * ReviewFormModal: this holds a whole unsaved tutor.
+ *   zIndex 95 sits above the parent Modal and below the toast's z-[100],
+ *   which is how every error in this flow is reported.
  */
 
 // Matches the COLUMN defaults, not the editor's: year_min/year_max default to
@@ -85,9 +85,9 @@ export function CompanyTutorModal({
   useEffect(() => {
     // Capture phase + stopPropagation: see the note above the component.
     const onKey = (e) => {
-      if (e.key !== "Escape" || saving) return;
+      if (e.key !== "Escape") return;
       e.stopPropagation();
-      onCancel();
+      if (!saving) onCancel();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
@@ -95,65 +95,30 @@ export function CompanyTutorModal({
 
   const canSave = tutor.name.trim() !== "" && !saving;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[95] flex items-center justify-center px-4 py-6"
-      style={{ background: "rgba(0,49,47,0.45)", backdropFilter: "blur(2px)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={creating ? "Add a tutor" : `Edit ${initial?.name ?? "tutor"}`}
+  return (
+    <Modal
+      title={creating ? "Add a tutor" : tutor.name.trim() || "Edit tutor"}
+      onClose={onCancel}
+      dismissable={false}
+      sheet
+      width={680}
+      zIndex={95}
+      footer={
+        <>
+          <Button variant="outline" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => onSubmit(tutor)} disabled={!canSave}>
+            {saving ? "Saving…" : creating ? "Add tutor" : "Save tutor"}
+          </Button>
+        </>
+      }
     >
-      <div
-        className="bg-[color:var(--paper-card)] w-full flex flex-col"
-        style={{
-          maxWidth: 680,
-          maxHeight: "88vh",
-          borderRadius: "var(--radius-card)",
-          boxShadow: "0 24px 60px rgba(0,30,30,0.28)",
-        }}
-      >
-        <div
-          className="flex items-center justify-between gap-3 px-5 py-3.5 shrink-0"
-          style={{ borderBottom: "1px solid var(--paper-line)" }}
-        >
-          <h2 className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink-graphite)" }}>
-            {creating ? "Add a tutor" : tutor.name.trim() || "Edit tutor"}
-          </h2>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={saving}
-              className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full disabled:opacity-60"
-              style={{ border: "1px solid var(--paper-line)", color: "var(--ink-muted)" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => onSubmit(tutor)}
-              disabled={!canSave}
-              className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full inline-flex items-center gap-1.5 disabled:opacity-60"
-              style={{ background: "var(--ink)", color: "#fff" }}
-            >
-              {saving ? (
-                "Saving…"
-              ) : (
-                <>
-                  <Icon name="check" size={13} strokeWidth={2.4} />
-                  {creating ? "Add tutor" : "Save tutor"}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+        <div className="space-y-4">
           <Field label="Name">
             <TextInput
               value={tutor.name}
               onChange={(v) => set({ name: v, initial: v.trim().charAt(0).toUpperCase() || null })}
-              placeholder="Jane Liu"
               maxLength={80}
             />
           </Field>
@@ -211,8 +176,6 @@ export function CompanyTutorModal({
           <YearLevelsSection tutor={tutor} set={set} bare />
           <CredentialsSection tutor={tutor} set={set} bare />
         </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }

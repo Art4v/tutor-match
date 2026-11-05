@@ -75,7 +75,12 @@ export default async function ProfilePage({ params }) {
   if (!tutor) return notFound();
 
   const similarPool = await getFeaturedTutors(supabase, 50, tutor.id);
-  const similar = rankTutors(similarPool).slice(0, 4);
+  // Shown as "Other verified tutors", so only individually verified tutors
+  // qualify (a company tutor's `verified` is a browse-filter convenience, not
+  // the earned mark). Same query and ranking as before; this filters its result.
+  const similar = rankTutors(similarPool)
+    .filter((t) => t.verified && !t.isCompanyTutor && !t.company)
+    .slice(0, 4);
 
   // Public documents (`tutor_documents` is public-read, so the anon server
   // client can read any tutor's rows).

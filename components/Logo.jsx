@@ -64,7 +64,7 @@ export function BookSproutMark({
   size = 28,
   accent = "var(--accent)",
   sage = "var(--logo-leaf)",
-  seam = "var(--paper)",
+  seam = "var(--surface)",
   className,
   style,
 }) {

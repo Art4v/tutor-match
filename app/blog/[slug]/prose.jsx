@@ -11,29 +11,22 @@
 function Caption({ children }) {
   if (!children) return null;
   return (
-    <figcaption className="text-[12.5px] mt-2" style={{ color: "var(--sage)" }}>
+    <figcaption className="text-[12px] leading-4 mt-2 text-muted">
       {children}
     </figcaption>
   );
 }
 
-/** A soft accent panel for a definition, a warning, or a "in short" summary. */
+/** A plain bordered panel for a definition, a warning, or a "in short" summary. */
 export function Callout({ title, children }) {
   return (
-    <div
-      className="my-6 px-5 py-4"
-      style={{
-        background: "var(--accent-softer)",
-        border: "1px solid var(--accent-line)",
-        borderRadius: "var(--radius-card)",
-      }}
-    >
+    <div className="my-6 px-4 py-4 rounded border border-rule bg-surface-2">
       {title && (
-        <div className="text-[13px] font-medium mb-1.5" style={{ color: "var(--accent)" }}>
+        <div className="text-[16px] leading-6 font-semibold mb-1 text-[color:var(--text)]">
           {title}
         </div>
       )}
-      <div className="text-[14.5px] leading-[1.65]" style={{ color: "var(--ink-muted)" }}>
+      <div className="text-[16px] leading-6 text-[color:var(--text)]">
         {children}
       </div>
     </div>
@@ -48,15 +41,15 @@ export function Callout({ title, children }) {
 export function Table({ head, rows, caption }) {
   return (
     <figure className="my-6">
-      <div className="overflow-x-auto" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)" }}>
-        <table className="w-full text-[14px]" style={{ borderCollapse: "collapse" }}>
+      <div className="overflow-x-auto rounded border border-rule">
+        <table className="w-full text-[14px] leading-5" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "var(--desk)" }}>
+            <tr className="bg-surface-2">
               {head.map((h, i) => (
                 <th
                   key={i}
-                  className="text-left px-4 py-2.5 font-medium whitespace-nowrap"
-                  style={{ color: "var(--ink-graphite)", borderBottom: "1px solid var(--paper-line)" }}
+                  className="text-left px-4 py-3 font-semibold whitespace-nowrap text-[color:var(--text)]"
+                  style={{ borderBottom: "1px solid var(--rule)" }}
                 >
                   {h}
                 </th>
@@ -69,10 +62,9 @@ export function Table({ head, rows, caption }) {
                 {row.map((cell, j) => (
                   <td
                     key={j}
-                    className="px-4 py-2.5 align-top"
+                    className="px-4 py-3 align-top text-[color:var(--text)]"
                     style={{
-                      color: "var(--ink-muted)",
-                      borderBottom: i === rows.length - 1 ? "none" : "1px solid var(--paper-line)",
+                      borderBottom: i === rows.length - 1 ? "none" : "1px solid var(--rule)",
                     }}
                   >
                     {cell}
@@ -110,11 +102,8 @@ export function Figure({ src, alt, width, height, caption }) {
         height={height || undefined}
         loading="lazy"
         decoding="async"
-        className="block w-full h-auto"
+        className="block w-full h-auto rounded border border-rule bg-surface-2"
         style={{
-          border: "1px solid var(--paper-line)",
-          borderRadius: "var(--radius-card)",
-          background: "var(--desk)",
           aspectRatio: width && height ? `${width} / ${height}` : undefined,
         }}
       />

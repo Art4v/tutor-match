@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { Icon } from "@/components/Icon";
-import { Avatar } from "@/components/ui";
-import { DeskBackdrop } from "@/components/DeskBackdrop";
+import { Button } from "@/components/ui";
+import { Modal } from "@/components/Modal";
+import { Toast, useToast } from "@/components/Toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, getSchools, saveTutorProfile, setTutorVisibility, getMyVerificationStatus } from "@/lib/supabase/tutors";
 import { adminTutorWriter } from "@/lib/admin/managedTutorWriter";
@@ -28,26 +28,27 @@ import {
   ServiceAreaSection,
   AvailabilitySection,
 } from "@/components/profile-edit/sections";
-import { ProfileHeaderText } from "./ProfileHeaderText";
+import { ProfileHeader } from "./PublicProfileView";
 import { AboutCard } from "./AboutCard";
 import { RateCard } from "./RateCard";
 import { CredentialsList } from "./CredentialsList";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
-import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { Section, SubjectsCard, DocumentationCard, ServiceAreaCard, buildCredentialTiles } from "./ProfileCards";
 import { ReviewsCard } from "./ReviewsCard";
 import { getTutorReviews } from "@/lib/supabase/reviews";
 import { OwnerCard } from "./OwnerCard";
-import { RevealStack } from "./RevealStack";
 
 /**
- * Inline profile editor — the LinkedIn-style replacement for /settings. Renders
- * the tutor's own public profile from the committed `profile` (editor shape →
- * display shape via editorToDisplay). Each card carries a pen that opens its
- * matching settings section form; **each section saves independently** (Save /
- * Cancel live inside the card) — there is no global save bar and no top banner.
- * Only one section is open at a time, so a save never clobbers another section.
+ * Inline profile editor (REDESIGN_DECISIONS.md item 7, lead reference LinkedIn).
+ * Renders the tutor's own profile in the SAME layout as the public view
+ * (PublicProfileView: ProfileHeader, flat main-column sections, the contact
+ * column on the right) from the committed `profile` (editor shape to display
+ * shape via editorToDisplay). Each section carries a 44px pen that opens its
+ * form in the shared Modal (a full-screen sheet below 640px); **each section
+ * saves independently** (Cancel / Save in the modal footer). Only one section
+ * is open at a time, so a save never clobbers another section.
  *
  * VERIFIED tutors (`editorTutor.gated`, 0072) edit a reviewed DRAFT instead:
  * every section Save writes the whole draft through saveProfileDraft, new
@@ -79,7 +80,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
   const [editingKey, setEditingKey] = useState(null);  // open section, or null
   const [draft, setDraft] = useState(initialProfile);   // working copy of open section
   const [savingKey, setSavingKey] = useState(null);
-  const [toast, setToast] = useState(null);             // { kind, text }
+  const [toast, pushToast] = useToast();
   const [subjectCatalog, setSubjectCatalog] = useState([]);
   const [schoolCatalog, setSchoolCatalog] = useState([]);
   // Documents live in Storage + tutor_documents (not the profile row), so
@@ -127,11 +128,10 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId]);
 
-  const showToast = (kind, text, ms = 2200) => {
-    setToast({ kind, text });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), ms);
-  };
+  // Same (kind, text, ms) calls as before; the shared Toast names the kinds
+  // success / warning / error.
+  const showToast = (kind, text, ms = 2200) =>
+    pushToast(kind === "ok" ? "success" : kind === "warn" ? "warning" : kind, text, ms);
 
   // Opening a section reseeds the working draft from committed truth, so an
   // abandoned edit elsewhere can never leak into this one.
@@ -411,19 +411,20 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty, docsDirty]);
 
-  // While a section editor is open it renders as a modal: lock the background
-  // scroll (same approach as the image lightbox in HomeHowItWorks) and let
-  // Escape close it. Restored when the editor closes.
+  // While a section editor is open it renders in the shared Modal, which owns
+  // the (reference-counted) scroll lock. Escape closes it, as before; the
+  // Modal itself is non-dismissable so a stray scrim click can't drop edits.
+  // A dialog stacked on top (the image crop) handles its own Escape, so this
+  // one only reacts when it is the only dialog open.
   useEffect(() => {
     if (!editingKey) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e) => { if (e.key === "Escape") { setEditingKey(null); setConfirmKey(null); setDocsDirty(false); } };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKey);
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (document.querySelectorAll('[role="dialog"]').length > 1) return;
+      setEditingKey(null); setConfirmKey(null); setDocsDirty(false);
     };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [editingKey]);
 
   // What the page shows: the draft (editable) or, for a verified tutor who
@@ -474,9 +475,9 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
   const publicHref = `matchtutor.com.au/tutor/${profile.slug || userId}`;
   const publicUrl = `https://${publicHref}`;
 
-  // Rendered twice (mobile under the header, desktop at the top of the sidebar)
-  // so the completion/verification nudge leads on phones instead of sitting
-  // below all the profile content when the grid collapses to one column.
+  // Rendered once, at the top of the right column. The column comes first in
+  // source order, so below 1024px the verification notice and checklist sit
+  // directly under the header, ahead of the profile content.
   const ownerCard = (
     <OwnerCard
       profile={profile}
@@ -489,7 +490,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     />
   );
 
-  const regionProps = (k, label, maxW = 760) => ({
+  const regionProps = (k, label, maxW = 680) => ({
     label,
     maxW,
     editing: editingKey === k,
@@ -506,54 +507,31 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     onSave: () => saveSection(k),
   });
 
-  // Header view — flat, like every other card on the page.
-  const headerView = (
-    <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
-      <div
-        style={{
-          height: 150,
-          background: display.bannerImg
-            ? `url(${display.bannerImg}) center / cover no-repeat`
-            : `linear-gradient(135deg, ${display.bannerBg ?? display.avatarBg}, oklch(0.96 0.01 250))`,
-        }}
-      />
-      <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-          <Avatar tutor={display} size={108} ring />
-        </div>
-        <ProfileHeaderText tutor={display} deliveryLabel={formatDelivery(display)} />
-      </div>
-    </div>
-  );
-
   return (
-    <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
-      <DeskBackdrop />
-      <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
+    <div className="bg-surface">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 pt-6 pb-16">
         {admin && (
-          <div
-            className="mb-[10px] flex flex-wrap items-center gap-3 px-4 py-3 text-[13px]"
-            style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 12 }}
-          >
-            <Icon name="shield" size={15} />
-            <span className="flex-1 min-w-0">
+          <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded border border-rule px-4 py-3 text-[14px] leading-5 text-[color:var(--text)]">
+            <span className="min-w-0 flex-1">
               Editing as admin. Every save goes live straight away and emails the tutor what changed.
             </span>
             {admin.backHref && (
-              <a href={admin.backHref} className="font-medium underline underline-offset-2">
+              <a href={admin.backHref} className="inline-flex min-h-6 items-center font-semibold text-accent hover:text-accent-hover">
                 Back to dashboard
               </a>
             )}
           </div>
         )}
-        <RevealStack>
+
+        {/* The same header as the public view; its top-right slot holds the pen. */}
         <EditRegion
-          {...regionProps("header", "profile header", 1100)}
-          view={headerView}
+          {...regionProps("header", "profile header", 680)}
+          view={(pen) => <ProfileHeader tutor={display} action={pen} />}
           edit={
             <div>
-              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Profile header</h2>
-              <p className="text-[13px] text-slate-500 mt-1 mb-5">The banner, photo and intro at the top of your profile.</p>
+              <p className="mb-6 text-[14px] leading-5 text-[color:var(--text-2)]">
+                Your photo, banner and the details at the top of your profile.
+              </p>
               <BannerAvatarSection
                 tutor={draft}
                 set={set}
@@ -562,50 +540,80 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
                 uploadImage={gated ? uploadStaged : writer ? writer.uploadImage : undefined}
                 resolveImage={gated ? resolveImg : undefined}
               />
-              <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+              <div className="mt-6 border-t border-rule pt-6">
                 <IdentitySection tutor={draft} set={set} bare />
               </div>
-              <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
+              <div className="mt-6 border-t border-rule pt-6">
                 <YearLevelsSection tutor={draft} set={set} bare />
               </div>
             </div>
           }
         />
-        </RevealStack>
 
-        {/* Mobile only: "Your profile" card sits directly under the header,
-            above the profile content. On desktop it lives at the top of the
-            right sidebar (below), so it's hidden here. */}
-        <div className="lg:hidden mt-[10px]">{ownerCard}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_344px] lg:gap-x-12">
+          <aside className="lg:col-start-2 lg:row-start-1">
+            {ownerCard}
+            <div className="pt-6">
+              <EditRegion
+                {...regionProps("rate", "rate and packages", 560)}
+                penClass="right-0 top-0 lg:right-2 lg:top-2"
+                view={<RateCard tutor={display} showMessage={false} />}
+                edit={<RateSection tutor={draft} set={set} bare hideTitle />}
+              />
+            </div>
+          </aside>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          <RevealStack className="space-y-[10px] min-w-0" delayChildren={0.12}>
+          {/* Same order as the public view's main column. Empty sections stay
+              visible here (with one line saying what goes in them) so there is
+              always a pen to start from. */}
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
             <EditRegion
               {...regionProps("about", "about")}
               view={display.bioLong
                 ? <AboutCard text={display.bioLong} />
                 : <Section title="About"><EmptyHint>Tell students about your teaching approach.</EmptyHint></Section>}
-              edit={<AboutSection tutor={draft} set={set} bare />}
+              edit={<AboutSection tutor={draft} set={set} bare hideTitle />}
+            />
+
+            <EditRegion
+              {...regionProps("subjects", "subjects", 560)}
+              view={display.subjects.length > 0
+                ? <SubjectsCard subjects={display.subjects} />
+                : <Section title="Subjects"><EmptyHint>Add the subjects you tutor.</EmptyHint></Section>}
+              edit={<SubjectsSection tutor={draft} set={set} catalog={subjectCatalog} bare hideTitle />}
             />
 
             <EditRegion
               {...regionProps("credentials", "credentials")}
               view={
-                <Section title="Credentials" subtitle="What sets you apart">
+                <Section title="Credentials">
                   {credTiles.length > 0 ? <CredentialsList tiles={credTiles} /> : <EmptyHint>Add your ATAR, awards, degrees or state ranks.</EmptyHint>}
                 </Section>
               }
-              edit={<CredentialsSection tutor={draft} set={set} bare />}
+              edit={<CredentialsSection tutor={draft} set={set} bare hideTitle />}
             />
 
+            {/* Documentation saves to Storage + tutor_documents (not the
+                profile row), so this region overrides dirty/onSave with the
+                doc editor's own draft state and commit(). */}
             <EditRegion
-              {...regionProps("experience", "experience")}
-              view={
-                <Section title="Experience">
-                  {display.experience.length > 0 ? <ExperienceTimeline experience={display.experience} /> : <EmptyHint>Add your tutoring or teaching roles.</EmptyHint>}
-                </Section>
+              {...regionProps("documentation", "documents", 560)}
+              dirty={docsDirty}
+              onSave={saveDocumentation}
+              view={shownDocs.length > 0
+                ? <DocumentationCard docs={shownDocs.map((d) => ({ ...d, path: d.path || d.stagedPath || "" }))} />
+                : <Section title="Documents"><EmptyHint>Share documents that back up your credentials, like your WWCC, transcripts and certificates.</EmptyHint></Section>}
+              edit={
+                <DocumentationUploader
+                  ref={docsEditorRef}
+                  userId={userId}
+                  docs={gated ? currentDraftDocs : docs}
+                  onDirtyChange={setDocsDirty}
+                  mode={gated ? "draft" : "live"}
+                  ops={writer?.docs}
+                  hideTitle
+                />
               }
-              edit={<ExperienceSection tutor={draft} set={set} bare />}
             />
 
             <EditRegion
@@ -615,194 +623,116 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
                   {display.education.length > 0 ? <EducationTimeline education={display.education} /> : <EmptyHint>Add your high school and university.</EmptyHint>}
                 </Section>
               }
-              edit={<EducationSection tutor={draft} set={set} schoolCatalog={schoolCatalog} bare />}
+              edit={<EducationSection tutor={draft} set={set} schoolCatalog={schoolCatalog} bare hideTitle />}
             />
+
+            <EditRegion
+              {...regionProps("experience", "experience")}
+              view={
+                <Section title="Experience">
+                  {display.experience.length > 0 ? <ExperienceTimeline experience={display.experience} /> : <EmptyHint>Add your tutoring or teaching roles.</EmptyHint>}
+                </Section>
+              }
+              edit={<ExperienceSection tutor={draft} set={set} bare hideTitle />}
+            />
+
+            {/* Read-only: reviews are written by students and moderated, so
+                there is nothing here for the owner to edit. Same slot as on
+                the public profile. */}
+            <ReviewsCard tutorId={userId} tutorName={display.name} rating={display.rating} reviewCount={display.reviews} reviews={reviews} />
 
             <EditRegion
               {...regionProps("availability", "availability")}
               view={
-                <Section title="Availability" subtitle="When students can book a session each week">
+                <Section title="Availability" subtitle="Times you're usually free each week">
                   {display.availability ? <AvailabilityGrid availability={display.availability} /> : <EmptyHint>Set your weekly availability.</EmptyHint>}
                 </Section>
               }
-              edit={<AvailabilitySection tutor={draft} set={set} bare />}
-            />
-          </RevealStack>
-
-          <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
-            <div className="hidden lg:block">{ownerCard}</div>
-
-            <EditRegion
-              {...regionProps("rate", "rate", 480)}
-              view={<RateCard tutor={display} showMessage={false} />}
-              edit={<RateSection tutor={draft} set={set} bare />}
+              edit={<AvailabilitySection tutor={draft} set={set} bare hideTitle />}
             />
 
             <EditRegion
-              {...regionProps("subjects", "subjects", 560)}
-              view={display.subjects.length > 0
-                ? <SubjectsCard subjects={display.subjects} />
-                : <MiniCard title="Subjects"><EmptyHint>Add the subjects you tutor.</EmptyHint></MiniCard>}
-              edit={<SubjectsSection tutor={draft} set={set} catalog={subjectCatalog} bare />}
-            />
-
-            {/* Documentation saves to Storage + tutor_documents (not the
-                profile row), so this region overrides dirty/onSave with the
-                doc editor's own draft state and commit(). */}
-            <EditRegion
-              {...regionProps("documentation", "documentation", 520)}
-              dirty={docsDirty}
-              onSave={saveDocumentation}
-              view={shownDocs.length > 0
-                ? <DocumentationCard docs={shownDocs.map((d) => ({ ...d, path: d.path || d.stagedPath || "" }))} />
-                : <MiniCard title="Documentation"><EmptyHint>Share documents that back up your credentials, like your WWCC, transcripts and certificates.</EmptyHint></MiniCard>}
-              edit={
-                <DocumentationUploader
-                  ref={docsEditorRef}
-                  userId={userId}
-                  docs={gated ? currentDraftDocs : docs}
-                  onDirtyChange={setDocsDirty}
-                  mode={gated ? "draft" : "live"}
-                  ops={writer?.docs}
-                />
-              }
-            />
-
-            {/* Read-only: reviews are written by students and moderated, so
-                there is nothing here for the owner to edit. Sits in the same
-                sidebar slot as on the public profile. */}
-            <ReviewsCard tutorId={userId} tutorName={display.name} rating={display.rating} reviewCount={display.reviews} reviews={reviews} />
-
-            <EditRegion
-              {...regionProps("serviceArea", "service area", 520)}
+              {...regionProps("serviceArea", "location", 560)}
               view={(display.serviceArea?.suburb || display.suburb)
                 ? <ServiceAreaCard tutor={display} />
-                : <MiniCard title="Service area"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></MiniCard>}
-              edit={<ServiceAreaSection tutor={draft} set={set} bare />}
+                : <Section title="Location"><EmptyHint>Set the suburb you travel to for in-person lessons.</EmptyHint></Section>}
+              edit={<ServiceAreaSection tutor={draft} set={set} bare hideTitle />}
             />
-          </RevealStack>
+          </div>
         </div>
       </div>
 
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
-          style={{
-            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
-            color: "#fff",
-            borderRadius: 999,
-            boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
-            maxWidth: "calc(100vw - 32px)",
-          }}
-        >
-          <Icon name={toast.kind === "ok" ? "check" : toast.kind === "warn" ? "shield" : "x"} size={14} strokeWidth={3} />
-          <span className="truncate">{toast.text}</span>
-        </div>
-      )}
+      <Toast toast={toast} />
     </div>
   );
 }
 
 /**
- * Wraps a profile region with inline editing: a pen at the card's top-right in
- * view mode; the section form plus a Cancel / Save footer in edit mode. Save
- * persists only this section (handled by the parent's saveSection).
+ * Wraps a profile section with inline editing (LinkedIn pen + modal). In view
+ * mode a 44px pen sits at the section's top right; in edit mode the section's
+ * form opens in the shared Modal (`sheet`: full screen below 640px) titled
+ * "Edit <section>", with Cancel and Save in the footer. Save persists only
+ * this section (the parent's saveSection). The page itself stays visible
+ * behind the plain scrim, so it remains the preview.
+ *
+ * `view` may be a function of the pen, for a section with its own slot for it
+ * (the profile header's top-right action).
  */
-function EditRegion({ editing, saving, dirty, confirming, confirmText, readOnly, onKeepEditing, onEdit, onCancel, onSave, label, view, edit, maxW = 640 }) {
-  // Always render the read-only view; in edit mode it sits (blurred) behind a
-  // modal overlay so the page itself stays the preview. The overlay is
-  // portaled to <body> so ancestor overflow/transforms can't clip it. The
-  // editor is one card with a sticky Save/Cancel action bar at the top-right.
+function EditRegion({ editing, saving, dirty, confirming, confirmText, readOnly, onKeepEditing, onEdit, onCancel, onSave, label, view, edit, maxW = 680, penClass = "right-0 top-4" }) {
+  const pen = !readOnly ? (
+    <button
+      type="button"
+      onClick={onEdit}
+      aria-label={`Edit ${label}`}
+      title={`Edit ${label}`}
+      className="inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 hover:text-[color:var(--text)]"
+      style={{ transition: "background-color 120ms ease-out, color 120ms ease-out" }}
+    >
+      <Icon name="pencil" size={20} />
+    </button>
+  ) : null;
+  const custom = typeof view === "function";
   return (
     <div className="relative">
-      {view}
-      {!editing && !readOnly && (
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={`Edit ${label}`}
+      {custom ? view(pen) : view}
+      {!custom && pen && <div className={`absolute z-10 ${penClass}`}>{pen}</div>}
+      {editing && (
+        <Modal
           title={`Edit ${label}`}
-          className="absolute top-3 right-3 z-10 inline-flex items-center justify-center transition-colors hover:bg-slate-100"
-          style={{ width: 32, height: 32, borderRadius: 999, background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
+          onClose={onCancel}
+          dismissable={false}
+          sheet
+          width={maxW}
+          footer={
+            <>
+              {/* Shown when a verification request (or a submission) is under
+                  review: saving withdraws it, so the first Save asks and the
+                  second confirms. */}
+              {confirming && (
+                <p role="alert" className="flex w-full items-start gap-2 text-[14px] leading-5 text-[color:var(--text)]">
+                  <span className="flex h-5 shrink-0 items-center text-warning"><Icon name="alert-triangle" size={16} /></span>
+                  <span>{confirmText}</span>
+                </p>
+              )}
+              <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
+              {confirming && (
+                <Button variant="ghost" onClick={onKeepEditing} disabled={saving}>Keep editing</Button>
+              )}
+              <Button variant="primary" onClick={onSave} disabled={saving || !dirty}>
+                {saving ? "Saving…" : confirming ? "Save anyway" : "Save"}
+              </Button>
+            </>
+          }
         >
-          <Icon name="pencil" size={14} strokeWidth={2} />
-        </button>
-      )}
-      {editing && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-6"
-          style={{ background: "rgba(0,49,47,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Edit ${label}`}
-        >
-          <div
-            className="w-full flex flex-col bg-[color:var(--paper-card)]"
-            style={{ maxWidth: maxW, maxHeight: "88vh", border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)" }}
-          >
-            <div className="shrink-0 flex items-center justify-end gap-2 px-5 sm:px-6 py-3" style={{ borderBottom: "1px solid var(--desk)" }}>
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={saving}
-                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors hover:bg-slate-100 disabled:opacity-60"
-                style={{ background: "var(--paper-card)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={saving || !dirty}
-                className="px-3.5 py-1.5 text-[12.5px] font-medium rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-                style={{ background: "var(--ink)", color: "#fff" }}
-              >
-                {saving ? "Saving…" : (<><Icon name="check" size={13} strokeWidth={2.4} /> {confirming ? "Save anyway" : "Save"}</>)}
-              </button>
-            </div>
-            {/* Shown when a verification request is pending: saving a change
-                withdraws it, so the first Save asks and the second confirms. */}
-            {confirming && (
-              <div
-                role="alert"
-                className="shrink-0 flex items-start gap-2.5 px-5 sm:px-6 py-3 text-[12.5px]"
-                style={{ background: "#FFFBEB", color: "#92400E", borderBottom: "1px solid #FDE68A" }}
-              >
-                <span className="shrink-0 mt-0.5"><Icon name="alert-triangle" size={14} /></span>
-                <span className="flex-1 leading-[1.5]">{confirmText}</span>
-                <button
-                  type="button"
-                  onClick={onKeepEditing}
-                  className="shrink-0 font-medium underline underline-offset-2"
-                >
-                  Keep editing
-                </button>
-              </div>
-            )}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5">
-              {edit}
-            </div>
-          </div>
-        </div>,
-        document.body
+          {edit}
+        </Modal>
       )}
     </div>
   );
 }
 
+// An empty section: one line in --text-2 (DESIGN.md "Empty state"); the pen
+// beside the heading is the action.
 function EmptyHint({ children }) {
-  return (
-    <div className="text-[13.5px] text-slate-500 py-4 px-4 text-center" style={{ background: "var(--bg-soft)", borderRadius: 10 }}>
-      {children}
-    </div>
-  );
-}
-
-function MiniCard({ title, children }) {
-  return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
-      <SidebarHeading>{title}</SidebarHeading>
-      <div className="mt-3">{children}</div>
-    </div>
-  );
+  return <p className="text-[14px] leading-5 text-[color:var(--text-2)]">{children}</p>;
 }

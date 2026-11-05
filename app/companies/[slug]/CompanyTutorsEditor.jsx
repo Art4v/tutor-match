@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { Avatar, Button } from "@/components/ui";
 import { saveCompanyTutor } from "@/lib/supabase/companies";
-import { CompanyLogo } from "./CompanyCards";
 import { CompanyTutorModal } from "./CompanyTutorModal";
 
 /**
@@ -182,67 +182,47 @@ export function CompanyTutorsEditor({
 
   return (
     <div>
-      <p className="text-[13px] text-slate-500 mb-4">
+      <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
         Tutors you list here appear on your page and in the main tutor search, each carrying your
         company&rsquo;s name. They don&rsquo;t get their own login, and students enquire through you.
       </p>
 
       {tutors.length === 0 ? (
-        <div
-          className="text-[13.5px] text-slate-500 py-4 px-4 text-center"
-          style={{ background: "var(--bg-soft)", borderRadius: 10 }}
-        >
-          No tutors yet. Add your first one below.
-        </div>
+        <p className="text-[14px] leading-5 text-[color:var(--text-2)]">No tutors yet.</p>
       ) : (
-        <ul className="space-y-2.5">
+        // Ruled rows, no boxes. Tutors are people, so their photos are circles
+        // (Avatar), never the square company logo.
+        <ul className="border-t border-rule">
           {tutors.map((t) => (
-            <li key={t.id} style={{ border: "1px solid var(--paper-line)", borderRadius: 12 }}>
-              <div className="flex items-center gap-3 px-3 py-2.5">
-                <CompanyLogo company={{ logoImg: t.avatarImg, avatarBg: t.avatarBg, initial: t.initial }} size={38} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-medium truncate" style={{ color: "var(--ink)" }}>
-                    {t.name}
-                  </div>
-                  <div className="text-[12.5px] text-slate-500 truncate">
-                    {t.subjects.length > 0
-                      ? t.subjects.map((s) => s.name ?? s).slice(0, 3).join(", ")
-                      : "No subjects yet"}
-                  </div>
+            <li key={t.id} className="flex items-center gap-3 border-b border-rule py-3">
+              <Avatar tutor={{ avatarImg: t.avatarImg, name: t.name }} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14px] leading-5 font-semibold text-[color:var(--text)]">{t.name}</div>
+                <div className="truncate text-[12px] leading-4 text-muted">
+                  {t.subjects.length > 0
+                    ? t.subjects.map((s) => s.name ?? s).slice(0, 3).join(", ")
+                    : "No subjects yet"}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setEditing(t)}
-                  className="shrink-0 text-[12.5px] font-medium px-3 py-1.5 transition-colors hover:bg-slate-100"
-                  style={{ border: "1px solid var(--paper-line)", borderRadius: 999, color: "var(--ink)" }}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(t)}
-                  disabled={busyId === t.id}
-                  aria-label={`Remove ${t.name}`}
-                  className="shrink-0 inline-flex items-center justify-center transition-colors hover:bg-slate-100 disabled:opacity-50"
-                  style={{ width: 32, height: 32, borderRadius: 999, color: "var(--ink-muted)", border: "1px solid var(--paper-line)" }}
-                >
-                  <Icon name="trash" size={13} />
-                </button>
               </div>
+              <Button variant="outline" size="sm" onClick={() => setEditing(t)}>Edit</Button>
+              <button
+                type="button"
+                onClick={() => remove(t)}
+                disabled={busyId === t.id}
+                aria-label={`Remove ${t.name}`}
+                title="Remove"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 hover:text-error disabled:opacity-50"
+                style={{ transition: "background-color 120ms ease-out, color 120ms ease-out" }}
+              >
+                <Icon name="trash" size={16} />
+              </button>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--desk)" }}>
-        <button
-          type="button"
-          onClick={() => setEditing("new")}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:bg-slate-100"
-          style={{ border: "1px solid var(--paper-line)", borderRadius: 999, padding: "9px 15px", color: "var(--ink)" }}
-        >
-          <Icon name="plus" size={14} /> Add tutor
-        </button>
+      <div className="mt-4">
+        <Button variant="outline" onClick={() => setEditing("new")}>Add tutor</Button>
       </div>
 
       {editing && (

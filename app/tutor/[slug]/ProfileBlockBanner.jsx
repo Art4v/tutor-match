@@ -2,9 +2,10 @@
 import { Icon } from "@/components/Icon";
 import { useTutorBlock } from "./TutorBlockProvider";
 
-// Red-tinted banner above the profile header card, shown when a block exists
-// between the signed-in student and this tutor:
-//   * student blocked the tutor  → "You've blocked X" + an "Unblock" hyperlink.
+// Inline alert above the profile header, shown when a block exists between the
+// signed-in student and this tutor (the one status-bordered box on the screen,
+// DESIGN.md §1):
+//   * student blocked the tutor  → "You've blocked X" + an "Unblock" link.
 //   * tutor blocked the student  → "You've been blocked" with NO unblock (it
 //                                   isn't the student's block to lift).
 // blockedByThem takes precedence (messaging is closed regardless).
@@ -15,28 +16,18 @@ export function ProfileBlockBanner({ tutorName }) {
   const firstName = (tutorName ?? "").trim().split(/\s+/)[0] || "this tutor";
 
   return (
-    <div
-      className="flex items-center gap-2.5 mb-4 px-4 py-2.5"
-      style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "var(--radius-card)" }}
-    >
-      <span className="inline-flex items-center justify-center shrink-0" style={{ color: "#DC2626" }}>
-        <Icon name="ban" size={16} />
-      </span>
+    <div className="mb-6 flex items-center gap-3 rounded border border-error px-4 py-3 text-[14px] leading-5 text-[color:var(--text)]">
+      <Icon name="ban" size={16} className="shrink-0 text-error" />
       {blockedByThem ? (
-        <span className="text-[13px] text-slate-700">
-          You&apos;ve been blocked by {firstName}. You can&apos;t message each other.
-        </span>
+        <span>You&apos;ve been blocked by {firstName}. You can&apos;t message each other.</span>
       ) : (
         <>
-          <span className="text-[13px] text-slate-700">
-            You&apos;ve blocked {firstName}. You can&apos;t message each other.
-          </span>
+          <span>You&apos;ve blocked {firstName}. You can&apos;t message each other.</span>
           <button
             type="button"
             onClick={requestUnblock}
             disabled={busy}
-            className="ml-auto shrink-0 text-[13px] font-medium underline underline-offset-2 disabled:opacity-50"
-            style={{ color: "#DC2626" }}
+            className="ml-auto min-h-6 shrink-0 font-semibold text-error underline underline-offset-2 disabled:opacity-50"
           >
             {busy ? "Unblocking…" : "Unblock"}
           </button>

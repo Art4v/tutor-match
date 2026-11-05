@@ -31,49 +31,46 @@ export default async function UserDetailPage({ params }) {
     <>
       <PageHeader icon="user" title={name} lead={ROLE_LABELS[user.role] || "No role chosen yet"} back={{ href: "/admin/users", label: "Users" }} />
 
-      <div className="space-y-5">
-        <Panel>
-          <div className="pt-5">
-            <Inset>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {user.is_admin && <Chip tone="good">Admin</Chip>}
-                {user.can_author_articles && <Chip>Author</Chip>}
-                <Chip tone={disabled ? "bad" : "good"}>{disabled ? "Disabled" : "Enabled"}</Chip>
-                {user.tutor && <Chip>Verification: {user.tutor.verification_status}</Chip>}
-                {user.tutor?.managed_at && <Chip tone="good">Managed</Chip>}
-              </div>
-              <dl className="grid grid-cols-[110px_1fr] gap-y-1 text-[13.5px]">
-                <dt className="text-slate-500">Email</dt>
-                <dd className="text-slate-800 break-all">{user.email || "Unknown"}</dd>
-                <dt className="text-slate-500">Joined</dt>
-                <dd className="text-slate-800">{formatDate(user.created_at)}</dd>
-                <dt className="text-slate-500">Last sign-in</dt>
-                <dd className="text-slate-800">{user.lastSignInAt ? formatDateTime(user.lastSignInAt) : "Never"}</dd>
-              </dl>
-              <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[13px]">
-                {user.tutor?.slug && (
-                  <a href={`/tutor/${user.tutor.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                    Tutor profile <Icon name="external" size={13} />
-                  </a>
-                )}
-                {user.tutor?.managed_at && (
-                  <a href={adminPaths.managedTutor(user.id)} className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                    Manage profile
-                  </a>
-                )}
-                {user.company?.slug && (
-                  <a href={`/companies/${user.company.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                    {user.company.name} <Icon name="external" size={13} />
-                  </a>
-                )}
-              </div>
-            </Inset>
+      <Panel>
+        <Inset>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {user.is_admin && <Chip>Admin</Chip>}
+            {user.can_author_articles && <Chip>Author</Chip>}
+            <Chip tone={disabled ? "bad" : "good"}>{disabled ? "Disabled" : "Enabled"}</Chip>
+            {user.tutor && <Chip>Verification: {user.tutor.verification_status}</Chip>}
+            {user.tutor?.managed_at && <Chip>Managed</Chip>}
           </div>
-        </Panel>
+          <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-4 gap-y-1">
+            <dt className="text-[color:var(--text-2)]">Email</dt>
+            <dd className="break-all">{user.email || "Unknown"}</dd>
+            <dt className="text-[color:var(--text-2)]">Joined</dt>
+            <dd>{formatDate(user.created_at)}</dd>
+            <dt className="text-[color:var(--text-2)]">Last sign-in</dt>
+            <dd>{user.lastSignInAt ? formatDateTime(user.lastSignInAt) : "Never"}</dd>
+          </dl>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3">
+            {user.tutor?.slug && (
+              <a href={`/tutor/${user.tutor.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 text-accent hover:text-accent-hover">
+                Tutor profile <Icon name="external" size={16} />
+              </a>
+            )}
+            {user.tutor?.managed_at && (
+              <a href={adminPaths.managedTutor(user.id)} className="inline-flex items-center gap-1 min-h-6 text-accent hover:text-accent-hover">
+                Manage profile
+              </a>
+            )}
+            {user.company?.slug && (
+              <a href={`/companies/${user.company.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 text-accent hover:text-accent-hover">
+                {user.company.name} <Icon name="external" size={16} />
+              </a>
+            )}
+          </div>
+        </Inset>
+      </Panel>
 
         {locked ? (
           <Panel>
-            <p className="pt-5 text-[13.5px] text-slate-500">
+            <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
               {user.id === me.id
                 ? "This is your own account, so it can't be changed here."
                 : "Admin accounts can only be changed in SQL, with supabase/utilities/grant_admin.sql."}
@@ -114,7 +111,6 @@ export default async function UserDetailPage({ params }) {
         <Panel title="History" padded={false}>
           <HistoryList rows={history.rows} empty="No admin actions on this account yet." />
         </Panel>
-      </div>
     </>
   );
 }

@@ -63,50 +63,44 @@ export default async function RevisionDetailPage({ params }) {
         back={{ href: "/admin/profile-changes", label: "Profile changes" }}
       />
       <Panel>
-        <div className="pt-5">
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] mb-5">
-            <a href={adminPaths.revisionPreview(revision.id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-              Preview the updated profile <Icon name="external" size={13} />
+        <div className="flex flex-wrap gap-x-6 gap-y-1 mb-6 text-[14px] leading-5">
+          <a href={adminPaths.revisionPreview(revision.id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 text-accent hover:text-accent-hover">
+            Preview the updated profile <Icon name="external" size={16} />
+          </a>
+          {profileHref && (
+            <a href={profileHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 text-accent hover:text-accent-hover">
+              Current public profile <Icon name="external" size={16} />
             </a>
-            {profileHref && (
-              <a href={profileHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                Current public profile <Icon name="external" size={13} />
-              </a>
-            )}
-          </div>
+          )}
+        </div>
 
-          <RevisionDiff diff={diff} signed={found.signed} />
+        <RevisionDiff diff={diff} signed={found.signed} />
 
-          <div className="mt-5">
-            {!pending ? (
-              <DecidedNote text={DECIDED[revision.status] || "Already decided."} last={last} />
-            ) : blocked ? (
-              <p className="text-[13px]" style={{ color: "#B45309" }}>
-                This tutor is no longer verified or managed, or their account is disabled, so these changes can&apos;t be applied.
+        <div className="mt-6">
+          {!pending ? (
+            <DecidedNote text={DECIDED[revision.status] || "Already decided."} last={last} />
+          ) : blocked ? (
+            <p className="text-[14px] leading-5 text-warning">
+              This tutor is no longer verified or managed, or their account is disabled, so these changes can&apos;t be applied.
+            </p>
+          ) : (
+            <>
+              {staleDraft && (
+                <div role="alert" className="flex items-start gap-2 p-4 mb-4 rounded border border-warning text-[14px] leading-5 text-[color:var(--text)]">
+                  <span className="shrink-0 mt-0.5 text-warning"><Icon name="alert-triangle" size={16} /></span>
+                  <span>
+                    An admin edited this tutor&apos;s live profile on {formatDate(found.live.adminEditedAt)}, after the tutor started
+                    these changes. Approving replaces the whole profile with this draft, which undoes those admin edits. Check
+                    the changes above, then approve anyway or reject with a note.
+                  </span>
+                </div>
+              )}
+              <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
+                Approving publishes every change above, including new photos and documents. Rejecting keeps the current profile; the tutor stays verified and gets your note. Either way they&apos;re emailed.
               </p>
-            ) : (
-              <>
-                {staleDraft && (
-                  <div
-                    role="alert"
-                    className="flex items-start gap-2.5 px-4 py-3 mb-4 text-[13px]"
-                    style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 10 }}
-                  >
-                    <span className="shrink-0 mt-0.5"><Icon name="alert-triangle" size={14} /></span>
-                    <span className="leading-[1.5]">
-                      An admin edited this tutor&apos;s live profile on {formatDate(found.live.adminEditedAt)}, after the tutor started
-                      these changes. Approving replaces the whole profile with this draft, which undoes those admin edits. Check
-                      the changes above, then approve anyway or reject with a note.
-                    </span>
-                  </div>
-                )}
-                <p className="text-[12.5px] text-slate-500 mb-4">
-                  Approving publishes every change above, including new photos and documents. Rejecting keeps the current profile; the tutor stays verified and gets your note. Either way they&apos;re emailed.
-                </p>
-                <RevisionDecision revisionId={revision.id} tutorName={tutorName} />
-              </>
-            )}
-          </div>
+              <RevisionDecision revisionId={revision.id} tutorName={tutorName} />
+            </>
+          )}
         </div>
       </Panel>
     </>

@@ -9,7 +9,7 @@
 // conversation server-side (student-only) and returns its id; the draft then
 // becomes a real thread and (via Realtime) appears for the tutor.
 //
-// Instagram-style per-message interactions (0045):
+// Per-message interactions (0045), shown on row hover or long-press:
 //   * hover controls    react (quick emoji bar + full picker) · reply · ⋯ menu
 //   * ⋯ menu            Copy (any) · Edit (own) · Unsend (own)
 //   * double-click      toggle 👍
@@ -23,7 +23,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Avatar, VerifiedTick, Button } from "@/components/ui";
+import { Avatar, VerifiedTick, Button, TOOLTIP_STYLE, shortName } from "@/components/ui";
+import { Modal } from "@/components/Modal";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getConversation, getConversations } from "@/lib/supabase/messaging";
@@ -624,144 +625,155 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
 
   const hasThread = !!openKey;
 
+  // Stable close handlers for the shared Modal shell (its effect re-runs when
+  // onClose changes identity, which would re-lock scroll and steal focus).
+  const cancelUnsend = useCallback(() => {
+    if (!unsending) setUnsendTarget(null);
+  }, [unsending]);
+  const closeInfo = useCallback(() => setShowInfo(false), []);
+
   return (
-    <div className="bg-[color:var(--paper-card)]">
+    <div className="bg-surface">
       <div
-        className="grid grid-cols-1 md:grid-cols-[360px_1fr] overflow-hidden"
-        style={{ borderTop: "1px solid var(--paper-line)", height: "calc(100vh - var(--nav-h))" }}
+        className="mx-auto max-w-[1128px] grid grid-cols-1 lg:grid-cols-[360px_1fr] overflow-hidden border-t border-rule lg:border-x"
+        style={{ height: "calc(100dvh - var(--nav-h))" }}
       >
         {/* Left: conversation list */}
-        <div
-          className={`${hasThread ? "hidden md:flex" : "flex"} flex-col min-h-0`}
-          style={{ borderRight: "1px solid var(--paper-line)" }}
-        >
-            {/* List header: title + new-message (redirects to browse) */}
-            <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--paper-line)", height: 64 }}>
-              <h1 className="text-[26px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-                Messages
-              </h1>
-              <div className="ml-auto relative group">
-                <button
-                  type="button"
-                  onClick={() => router.push("/browse")}
-                  className="inline-flex items-center justify-center rounded-full text-slate-500"
-                  style={{ width: 34, height: 34 }}
-                  aria-label="Browse tutors to message"
-                >
-                  <Icon name="magnifier" size={20} />
-                </button>
-                {/* Instant custom tooltip (native title is too slow to appear). */}
-                <span
-                  className="pointer-events-none absolute top-full right-0 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-30"
-                  style={{ background: "var(--ink)", color: "#fff", fontSize: 11.5, padding: "4px 8px", borderRadius: 7 }}
-                  role="tooltip"
-                >
-                  Browse tutors to message
-                </span>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
-              {rows.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center px-6">
-                  <span className="inline-flex items-center justify-center mb-3" style={{ width: 44, height: 44, borderRadius: 999, background: "var(--desk)", color: "var(--sage)" }}>
-                    <Icon name="message" size={20} />
-                  </span>
-                  <p className="text-[14px] font-medium text-slate-900">No messages yet</p>
-                  {viewerIsTutor ? (
-                    <p className="text-[12.5px] text-slate-500 mt-1">When a student messages you, the conversation will appear here.</p>
-                  ) : (
-                    <>
-                      <p className="text-[12.5px] text-slate-500 mt-1">Message a tutor from their profile to start a conversation.</p>
-                      <a href="/browse" className="text-[13px] font-medium mt-2.5" style={{ color: "var(--accent)" }}>
-                        Find tutors now →
-                      </a>
-                    </>
-                  )}
-                </div>
-              ) : (
-                rows.map((r) => {
-                  const active = r.key === openKey;
-                  return (
-                    <button
-                      key={r.key}
-                      type="button"
-                      onClick={() => setOpenKey(r.key)}
-                      className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors"
-                      style={{
-                        background: active ? "var(--accent-softer)" : "transparent",
-                        borderBottom: "1px solid var(--paper-line)",
-                      }}
-                    >
-                      <Avatar tutor={{ avatarImg: r.avatarImg, avatarBg: r.avatarBg, initial: r.initial }} size={40} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13.5px] font-medium text-slate-900 truncate">{r.name || "Unknown"}</span>
-                          {r.verified && <VerifiedTick size={15} />}
-                          {r.blocked && (
-                            <span className="inline-flex items-center gap-1 shrink-0 text-[10px] font-medium uppercase tracking-wide" style={{ color: "#DC2626" }}>
-                              <Icon name="ban" size={11} /> Blocked
-                            </span>
-                          )}
-                          {!r.isDraft && r.lastAt && (
-                            <span className="ml-auto text-[11px] text-slate-400 shrink-0">{relativeTime(r.lastAt)}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[12.5px] text-slate-500 truncate">
-                            {r.isDraft ? "New message" : r.lastBody || "No messages yet"}
-                          </span>
-                          {r.unread > 0 && (
-                            <span className="ml-auto inline-flex items-center justify-center text-[10.5px] font-medium text-white tabular-nums shrink-0" style={{ minWidth: 17, height: 17, padding: "0 5px", borderRadius: 999, background: "var(--accent)" }}>
-                              {r.unread > 9 ? "9+" : r.unread}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
+        <div className={`${hasThread ? "hidden lg:flex" : "flex"} flex-col min-h-0 lg:border-r border-rule`}>
+          {/* List header: title + browse (new message starts from a profile) */}
+          <div className="flex items-center gap-3 h-16 pl-4 pr-2 shrink-0 border-b border-rule">
+            <h1 className="text-[24px] leading-8 font-semibold text-[color:var(--text)]">Messages</h1>
+            <div className="ml-auto relative group">
+              <button
+                type="button"
+                onClick={() => router.push("/browse")}
+                className="inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
+                style={{ transition: "background-color 120ms ease-out" }}
+                aria-label="Browse tutors to message"
+              >
+                <Icon name="magnifier" size={20} />
+              </button>
+              {/* Instant tooltip (native title is too slow to appear). */}
+              <span
+                className="pointer-events-none absolute top-full right-0 mt-1 whitespace-nowrap invisible group-hover:visible z-30"
+                style={TOOLTIP_STYLE}
+                role="tooltip"
+              >
+                Browse tutors to message
+              </span>
             </div>
           </div>
-
-          {/* Right: thread */}
-          <div className={`${hasThread ? "flex" : "hidden md:flex"} flex-col min-h-0`}>
-            {!openKey ? (
-              <div className="flex-1 flex items-center justify-center text-center px-6">
-                <p className="text-[13.5px] text-slate-400">Select a conversation to start reading.</p>
-              </div>
-            ) : !thread ? (
-              <div className="flex-1 flex items-center justify-center text-center px-6">
-                <p className="text-[13.5px] text-slate-400">This conversation is unavailable.</p>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+            {rows.length === 0 ? (
+              <div className="px-4 py-6 text-[14px] leading-5 text-[color:var(--text-2)]">
+                {viewerIsTutor ? (
+                  <p>When a student messages you, the conversation will appear here.</p>
+                ) : (
+                  <p>
+                    Message a tutor from their profile to start a conversation.{" "}
+                    <a href="/browse" className="inline-flex min-h-6 items-center font-semibold text-accent hover:text-accent-hover">
+                      Find a tutor
+                    </a>
+                  </p>
+                )}
               </div>
             ) : (
-              <>
-                {/* Thread header */}
-                <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--paper-line)", height: 64 }}>
-                  <button type="button" onClick={() => setOpenKey(null)} className="md:hidden inline-flex items-center justify-center -ml-1 text-slate-500 hover:text-slate-900" aria-label="Back to conversations">
-                    <Icon name="chevron-left" size={20} />
-                  </button>
-                  <Avatar tutor={{ avatarImg: thread.avatarImg, avatarBg: thread.avatarBg, initial: thread.initial }} size={36} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[14px] font-medium text-slate-900 truncate">{thread.name || "Unknown"}</span>
-                      {thread.verified && <VerifiedTick size={15} />}
-                    </div>
-                    {thread.otherIsTutor && thread.slug && (
-                      <a href={`/tutor/${thread.slug}`} className="text-[12px] text-slate-400 hover:text-slate-600">View profile</a>
-                    )}
+              <ul>
+                {rows.map((r) => {
+                  const active = r.key === openKey;
+                  return (
+                    <li key={r.key} className="border-b border-rule">
+                      <button
+                        type="button"
+                        onClick={() => setOpenKey(r.key)}
+                        aria-current={active ? "true" : undefined}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-2 ${active ? "bg-surface-2" : ""}`}
+                        style={{ transition: "background-color 120ms ease-out" }}
+                      >
+                        <Avatar tutor={{ avatarImg: r.avatarImg, initial: r.initial, name: r.name }} size={48} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[14px] leading-5 font-semibold text-[color:var(--text)] truncate">
+                              {r.name ? shortName(r.name) : "Unknown"}
+                            </span>
+                            {r.verified && <VerifiedTick size={16} />}
+                            {r.blocked && <span className="shrink-0 text-[12px] leading-4 text-error">Blocked</span>}
+                            {!r.isDraft && r.lastAt && (
+                              <span className="ml-auto shrink-0 text-[12px] leading-4 text-muted">{relativeTime(r.lastAt)}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span
+                              className={`text-[14px] leading-5 truncate ${
+                                r.unread > 0 ? "font-semibold text-[color:var(--text)]" : "text-[color:var(--text-2)]"
+                              }`}
+                            >
+                              {r.isDraft ? "New message" : r.lastBody || "No messages yet"}
+                            </span>
+                            {r.unread > 0 && (
+                              <span
+                                className="ml-auto inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded bg-accent px-1 text-[12px] leading-4 font-semibold text-white tabular-nums"
+                                aria-label={`${r.unread} unread`}
+                              >
+                                {r.unread > 9 ? "9+" : r.unread}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Right: thread */}
+        <div className={`${hasThread ? "flex" : "hidden lg:flex"} flex-col min-h-0`}>
+          {!openKey ? (
+            <div className="flex-1 flex items-center justify-center text-center px-6">
+              <p className="text-[14px] leading-5 text-[color:var(--text-2)]">Select a conversation to start reading.</p>
+            </div>
+          ) : !thread ? (
+            <div className="flex-1 flex items-center justify-center text-center px-6">
+              <p className="text-[14px] leading-5 text-[color:var(--text-2)]">This conversation is unavailable.</p>
+            </div>
+          ) : (
+            <>
+              {/* Thread header */}
+              <div className="flex items-center gap-3 h-16 px-2 lg:px-4 shrink-0 border-b border-rule">
+                <button
+                  type="button"
+                  onClick={() => setOpenKey(null)}
+                  className="lg:hidden inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
+                  aria-label="Back to conversations"
+                >
+                  <Icon name="chevron-left" size={20} />
+                </button>
+                <Avatar tutor={{ avatarImg: thread.avatarImg, initial: thread.initial, name: thread.name }} size={40} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[16px] leading-6 font-semibold text-[color:var(--text)] truncate">{thread.name || "Unknown"}</span>
+                    {thread.verified && <VerifiedTick size={16} />}
                   </div>
-                  {/* Overflow menu — conversation info + block. Hidden on a draft
-                      (thread.id == null): there is no conversation to show info for,
-                      and "Report and block" would POST a null conversationId and 400.
-                      Blocking a not-yet-messaged tutor is done from their profile. */}
-                  {thread.id && (
+                  {thread.otherIsTutor && thread.slug && (
+                    <a href={`/tutor/${thread.slug}`} className="inline-flex min-h-6 items-center text-[12px] leading-4 text-accent hover:text-accent-hover">
+                      View profile
+                    </a>
+                  )}
+                </div>
+                {/* Overflow menu: conversation info + block. Hidden on a draft
+                    (thread.id == null): there is no conversation to show info for,
+                    and "Report and block" would POST a null conversationId and 400.
+                    Blocking a not-yet-messaged tutor is done from their profile. */}
+                {thread.id && (
                   <div className="ml-auto relative" ref={headerMenuRef}>
                     <button
                       type="button"
                       onClick={() => setHeaderMenu((v) => !v)}
-                      className="inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                      style={{ width: 34, height: 34 }}
+                      className={`inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 ${headerMenu ? "bg-surface-2" : ""}`}
+                      style={{ transition: "background-color 120ms ease-out" }}
                       aria-label="Conversation options"
                       title="Conversation options"
                       aria-haspopup="menu"
@@ -770,11 +782,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       <Icon name="more" size={20} />
                     </button>
                     {headerMenu && (
-                      <div
-                        role="menu"
-                        className="absolute right-0 top-full mt-1.5 z-30 py-1 min-w-[190px]"
-                        style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,30,30,0.18)" }}
-                      >
+                      <div role="menu" className={`absolute right-0 top-full mt-1 z-30 py-1 min-w-[200px] ${FLOAT_CLASS}`} style={FLOAT_STYLE}>
                         <MenuItem icon="info" label="Conversation info" onClick={() => { setHeaderMenu(false); setShowInfo(true); }} />
                         {thread.blocked ? (
                           <MenuItem icon="ban" label="Unblock" onClick={requestUnblock} />
@@ -787,32 +795,46 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       </div>
                     )}
                   </div>
-                  )}
-                </div>
+                )}
+              </div>
 
-                {/* Messages */}
-                <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-1" style={{ background: "var(--bg-soft)", WebkitOverflowScrolling: "touch" }}>
-                  {thread.messages == null ? (
-                    <div className="h-full flex items-center justify-center">
-                      <span
-                        role="status"
-                        aria-label="Loading messages"
-                        className="inline-block animate-spin rounded-full"
-                        style={{ width: 22, height: 22, border: "2.5px solid var(--paper-line)", borderTopColor: "var(--accent)" }}
-                      />
-                    </div>
-                  ) : thread.messages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-center">
-                      <p className="text-[13px] text-slate-400">
-                        {thread.otherIsTutor ? `Say hello to ${firstName(thread.name) || "your tutor"}. This is the start of your conversation.` : "No messages yet."}
-                      </p>
-                    </div>
-                  ) : (
-                    thread.messages.map((m) => (
+              {/* Messages: white, LinkedIn-style rows grouped by sender. The top
+                  padding leaves room for the first row's floating controls. */}
+              <div
+                ref={scrollRef}
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-surface pt-6 pb-4"
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
+                {thread.messages == null ? (
+                  <div className="h-full flex items-center justify-center">
+                    <span
+                      role="status"
+                      aria-label="Loading messages"
+                      className="inline-block animate-spin"
+                      style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid var(--rule)", borderTopColor: "var(--accent)" }}
+                    />
+                  </div>
+                ) : thread.messages.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-center px-6">
+                    <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
+                      {thread.otherIsTutor ? `Say hello to ${firstName(thread.name) || "your tutor"}. This is the start of your conversation.` : "No messages yet."}
+                    </p>
+                  </div>
+                ) : (
+                  thread.messages.map((m, i) => {
+                    const mine = m.sender_id === userId;
+                    const prev = thread.messages[i - 1];
+                    return (
                       <MessageRow
                         key={m.id}
                         m={m}
-                        mine={m.sender_id === userId}
+                        mine={mine}
+                        groupStart={startsGroup(prev, m)}
+                        sender={
+                          mine
+                            ? { name: "You" }
+                            : { avatarImg: thread.avatarImg, initial: thread.initial, name: thread.name ? shortName(thread.name) : "Unknown" }
+                        }
                         userId={userId}
                         otherName={thread.name}
                         frozen={thread.blocked || thread.blockedByOther}
@@ -825,71 +847,52 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                         onReact={toggleReaction}
                         onQuoteClick={jumpToMessage}
                       />
-                    ))
-                  )}
-                </div>
+                    );
+                  })
+                )}
+              </div>
 
-                {/* Composer — replaced by a blocked notice when either party has
-                    blocked the other (messaging disabled; DB also freezes it). */}
-                {thread.blockedByOther ? (
-                  // The caller has been blocked BY the other party — closed, no unblock.
-                  <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
-                    <div
-                      className="flex items-center gap-3 px-4 py-3"
-                      style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12 }}
-                    >
-                      <span className="inline-flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}>
-                        <Icon name="ban" size={16} />
-                      </span>
+              {/* Composer, replaced by a plain notice when either party has
+                  blocked the other (messaging disabled; DB also freezes it). */}
+              {thread.blockedByOther ? (
+                // The caller has been blocked BY the other party: closed, no unblock.
+                <div className="px-4 py-4 shrink-0 border-t border-rule text-[14px] leading-5 text-[color:var(--text-2)]">
+                  <span className="font-semibold text-[color:var(--text)]">You&apos;ve been blocked.</span>{" "}
+                  You can&apos;t send messages in this conversation.
+                </div>
+              ) : thread.blocked ? (
+                <div className="px-4 py-4 shrink-0 border-t border-rule flex flex-wrap items-center gap-x-2 text-[14px] leading-5 text-[color:var(--text-2)]">
+                  <span>
+                    <span className="font-semibold text-[color:var(--text)]">You blocked {firstName(thread.name) || "this person"}.</span>{" "}
+                    You can&apos;t message each other until you unblock them.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={requestUnblock}
+                    disabled={blockBusy}
+                    className="inline-flex min-h-6 items-center font-semibold text-accent hover:text-accent-hover disabled:opacity-50"
+                  >
+                    {blockBusy ? "Unblocking…" : "Unblock"}
+                  </button>
+                </div>
+              ) : (
+                <div className="px-4 pt-3 pb-3 shrink-0 border-t border-rule bg-surface">
+                  {error && <p className="text-[12px] leading-4 text-error mb-2">{error}</p>}
+
+                  {(replyTarget || editTarget) && (
+                    <div className="flex items-center gap-3 mb-2 pl-3 border-l-2 border-accent">
                       <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-medium text-slate-900">You&apos;ve been blocked</div>
-                        <div className="text-[12px] text-slate-500">You can&apos;t send messages in this conversation.</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : thread.blocked ? (
-                  <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
-                    <div
-                      className="flex items-center gap-3 px-4 py-3"
-                      style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12 }}
-                    >
-                      <span className="inline-flex items-center justify-center shrink-0" style={{ width: 32, height: 32, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}>
-                        <Icon name="ban" size={16} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-medium text-slate-900">You blocked {firstName(thread.name) || "this person"}</div>
-                        <div className="text-[12px] text-slate-500">You can&apos;t message each other until you unblock them.</div>
+                        <div className="text-[12px] leading-4 font-semibold text-[color:var(--text)]">
+                          {editTarget ? "Editing message" : `Replying to ${replyTarget.sender_id === userId ? "yourself" : firstName(thread.name) || "them"}`}
+                        </div>
+                        <div className="text-[12px] leading-4 text-[color:var(--text-2)] truncate">{(editTarget || replyTarget).body}</div>
                       </div>
                       <button
                         type="button"
-                        onClick={requestUnblock}
-                        disabled={blockBusy}
-                        className="shrink-0 inline-flex items-center gap-1.5 font-medium text-[13px] disabled:opacity-50"
-                        style={{ color: "var(--accent)" }}
+                        onClick={cancelCompose}
+                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
+                        aria-label={editTarget ? "Cancel editing" : "Cancel reply"}
                       >
-                        {blockBusy ? "…" : "Unblock"}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid var(--paper-line)" }}>
-                  {error && <div className="text-[12px] text-red-600 mb-1.5 px-1">{error}</div>}
-
-                  {(replyTarget || editTarget) && (
-                    <div
-                      className="flex items-center gap-2 mb-2 px-3 py-2"
-                      style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 10 }}
-                    >
-                      <span className="shrink-0" style={{ color: "var(--accent)" }}>
-                        <Icon name={editTarget ? "pencil" : "reply"} size={15} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>
-                          {editTarget ? "Editing message" : `Replying to ${replyTarget.sender_id === userId ? "yourself" : firstName(thread.name) || "them"}`}
-                        </div>
-                        <div className="text-[12px] text-slate-500 truncate">{(editTarget || replyTarget).body}</div>
-                      </div>
-                      <button type="button" onClick={cancelCompose} className="shrink-0 text-slate-400 hover:text-slate-700" aria-label="Cancel">
                         <Icon name="x" size={16} />
                       </button>
                     </div>
@@ -903,24 +906,26 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       onKeyDown={onKeyDown}
                       disabled={sending}
                       rows={1}
-                      placeholder={editTarget ? "Edit your message…" : "Write a message…"}
-                      className="flex-1 resize-none px-3.5 py-2.5 text-[13.5px] outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{ border: "1px solid var(--paper-line)", borderRadius: 12, background: "#fff", maxHeight: 140 }}
+                      aria-label={editTarget ? "Edit your message" : "Write a message"}
+                      placeholder={editTarget ? "Edit your message" : "Write a message"}
+                      className="flex-1 min-h-11 resize-none rounded border border-input bg-surface px-3 py-3 text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder focus:border-accent disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{ maxHeight: 140 }}
                     />
-                    {/* Emoji picker — inserts into the composer at the caret. */}
+                    {/* Emoji picker: inserts into the composer at the caret. */}
                     <div ref={emojiWrapRef} className="relative shrink-0">
                       <button
                         type="button"
                         onClick={() => setShowEmoji((v) => !v)}
-                        className="inline-flex items-center justify-center text-slate-400"
-                        style={{ width: 42, height: 42, borderRadius: 12, background: showEmoji ? "var(--accent-softer)" : "transparent" }}
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 ${showEmoji ? "bg-surface-2" : ""}`}
+                        style={{ transition: "background-color 120ms ease-out" }}
                         aria-label="Add emoji"
                         title="Add emoji"
+                        aria-expanded={showEmoji}
                       >
                         <Icon name="smile" size={20} />
                       </button>
                       {showEmoji && (
-                        <div className="absolute bottom-full right-0 mb-2 z-30" style={{ boxShadow: "0 12px 32px rgba(0,30,30,0.18)", borderRadius: 12 }}>
+                        <div className={`absolute bottom-full right-0 mb-2 z-30 overflow-hidden ${FLOAT_CLASS}`} style={FLOAT_STYLE}>
                           <EmojiPicker
                             onEmojiClick={(data) => insertEmoji(data.emoji)}
                             emojiStyle="native"
@@ -930,6 +935,7 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                             previewConfig={{ showPreview: false }}
                             skinTonesDisabled
                             searchPlaceHolder="Search emoji"
+                            style={PICKER_STYLE}
                           />
                         </div>
                       )}
@@ -938,29 +944,25 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
                       type="button"
                       onClick={submit}
                       disabled={sending || !text.trim()}
-                      className="inline-flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      style={{ width: 42, height: 42, borderRadius: 12, background: "var(--accent)", color: "#fff" }}
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded bg-accent text-white hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ transition: "background-color 120ms ease-out" }}
                       aria-label={editTarget ? "Save edit" : "Send message"}
                     >
-                      <Icon name={editTarget ? "check" : "send"} size={18} />
+                      <Icon name={editTarget ? "check" : "send"} size={20} />
                     </button>
                   </div>
-                  <p className="text-[11.5px] text-slate-400 mt-2 px-1 text-center">
+                  <p className="text-[12px] leading-4 text-muted mt-2">
                     Please keep messages respectful. Treat others with courtesy.
                   </p>
                 </div>
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
         </div>
+      </div>
 
       {unsendTarget && (
-        <UnsendConfirmModal
-          unsending={unsending}
-          onCancel={() => { if (!unsending) setUnsendTarget(null); }}
-          onConfirm={confirmUnsend}
-        />
+        <UnsendConfirmModal unsending={unsending} onCancel={cancelUnsend} onConfirm={confirmUnsend} />
       )}
 
       {blockConfirm && (
@@ -1002,155 +1004,116 @@ export function MessagesClient({ userId, viewerIsTutor, initialConversations, in
         />
       )}
 
-      {showInfo && <MessageInfoModal onClose={() => setShowInfo(false)} />}
+      {showInfo && <MessageInfoModal onClose={closeInfo} />}
 
       {showGate && <MessageDisclaimerGate onAcknowledge={acknowledgeDisclaimer} />}
     </div>
   );
 }
 
-// Styled "unsend?" gate — mirrors the account-deletion confirmation modal.
-// Backdrop click + Escape cancel (unless mid-unsend).
+// Floating surfaces (menus, popovers, the emoji picker): white, 1px rule, 4px
+// radius, the one floating shadow (DESIGN.md §4).
+const FLOAT_CLASS = "bg-surface border border-rule rounded";
+const FLOAT_STYLE = { boxShadow: "var(--shadow-float)" };
+// emoji-picker-react draws its own border and radius; the container owns them.
+const PICKER_STYLE = { border: "none", borderRadius: 0 };
+
+// Consecutive messages from the same sender share one photo + name + time
+// header, until a gap of more than GROUP_GAP_MS starts a new group.
+const GROUP_GAP_MS = 10 * 60 * 1000;
+function startsGroup(prev, m) {
+  if (!prev || prev.sender_id !== m.sender_id) return true;
+  const a = new Date(prev.created_at).getTime();
+  const b = new Date(m.created_at).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return b - a > GROUP_GAP_MS;
+}
+
+// Group header time: "3:42 pm" today, "5 Nov, 3:42 pm" otherwise. The thread is
+// only ever rendered after a client fetch, so there is no hydration concern.
+function messageTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay ? time : `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}, ${time}`;
+}
+
+// "Unsend?" confirmation on the shared Modal shell. Escape + scrim cancel
+// (unless mid-unsend).
 function UnsendConfirmModal({ unsending, onCancel, onConfirm }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" && !unsending) onCancel(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [unsending, onCancel]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,30,30,0.5)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="unsend-confirm-title"
-      onClick={onCancel}
-    >
-      <div
-        className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 420, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <span
-            className="inline-flex items-center justify-center shrink-0"
-            style={{ width: 36, height: 36, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}
-          >
-            <Icon name="alert-triangle" size={18} />
-          </span>
-          <div>
-            <h2 id="unsend-confirm-title" className="text-[17px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
-              Unsend this message?
-            </h2>
-            <p className="text-[13.5px] text-slate-600 mt-1.5">
-              It will be removed for everyone in this conversation. This cannot be undone.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-2.5 mt-6">
-          <Button variant="outline" size="md" onClick={onCancel} disabled={unsending}>
+    <Modal
+      title="Unsend this message?"
+      onClose={onCancel}
+      dismissable={!unsending}
+      width={420}
+      footer={
+        <>
+          <Button variant="outline" onClick={onCancel} disabled={unsending}>
             Cancel
           </Button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={unsending}
-            className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              background: "#DC2626",
-              color: "#fff",
-              border: "1px solid #DC2626",
-              padding: "9px 16px",
-              fontSize: 14,
-              height: 40,
-              borderRadius: 10,
-              cursor: unsending ? "not-allowed" : "pointer",
-              letterSpacing: "-0.005em",
-            }}
-          >
-            <Icon name="reply" size={14} />
+          <Button variant="danger" onClick={onConfirm} disabled={unsending}>
             {unsending ? "Unsending…" : "Unsend"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Shared disclaimer copy (icon + heading + clauses + Terms/Privacy links), used
-// by both the "i"-button popup and the first-open gate so the two never drift.
-// Placeholder copy for now.
-function DisclaimerContent({ titleId }) {
-  const linkStyle = { color: "var(--accent)", fontWeight: 500 };
-  return (
-    <div className="flex items-start gap-3">
-      <span
-        className="inline-flex items-center justify-center shrink-0"
-        style={{ width: 36, height: 36, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
-      >
-        <Icon name="info" size={18} />
-      </span>
-      <div>
-        <h2 id={titleId} className="text-[17px] font-light tracking-tight" style={{ color: "var(--ink)" }}>
-          About these messages
-        </h2>
-        <p className="text-[13.5px] text-slate-600 mt-1.5">
-          MatchTutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
-        </p>
-        <p className="text-[13.5px] text-slate-600 mt-2.5">
-          We are also not responsible for anything that happens off the platform, including if external contact methods are shared here and your communication continues elsewhere.
-        </p>
-        <p className="text-[13.5px] text-slate-600 mt-2.5">
-          Please be aware of our{" "}
-          <a href="/terms-of-service" style={linkStyle}>Terms of Service</a>
-          {" "}and{" "}
-          <a href="/privacy-policy" style={linkStyle}>Privacy Policy</a>.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Disclaimer popup opened from the thread-header "i" button. Same shell as
-// UnsendConfirmModal (backdrop click + Escape close). Non-blocking.
-function MessageInfoModal({ onClose }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,30,30,0.5)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="message-info-title"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <DisclaimerContent titleId="message-info-title" />
-
-        <div className="flex items-center justify-end gap-2.5 mt-6">
-          <Button variant="primary" size="md" onClick={onClose}>
-            Got it
           </Button>
-        </div>
-      </div>
+        </>
+      }
+    >
+      <p className="text-[color:var(--text-2)]">
+        It will be removed for everyone in this conversation. This cannot be undone.
+      </p>
+    </Modal>
+  );
+}
+
+// Shared disclaimer copy (clauses + Terms/Privacy links), used by both the
+// "Conversation info" popup and the first-open gate so the two never drift.
+// The heading is the Modal title.
+const DISCLAIMER_TITLE = "About these messages";
+function DisclaimerContent() {
+  const link = "text-accent underline hover:text-accent-hover";
+  return (
+    <div className="space-y-3 text-[color:var(--text-2)]">
+      <p>
+        MatchTutor is not responsible for the content of messages, any arrangements made, or interactions between users in these chats. Please use your own judgment.
+      </p>
+      <p>
+        We are also not responsible for anything that happens off the platform, including if external contact methods are shared here and your communication continues elsewhere.
+      </p>
+      <p>
+        Please be aware of our{" "}
+        <a href="/terms-of-service" className={link}>Terms of Service</a>
+        {" "}and{" "}
+        <a href="/privacy-policy" className={link}>Privacy Policy</a>.
+      </p>
     </div>
+  );
+}
+
+// Disclaimer popup opened from the thread-header menu. Non-blocking: Escape and
+// scrim click close it.
+function MessageInfoModal({ onClose }) {
+  return (
+    <Modal
+      title={DISCLAIMER_TITLE}
+      onClose={onClose}
+      width={440}
+      footer={
+        <Button variant="primary" onClick={onClose}>
+          Got it
+        </Button>
+      }
+    >
+      <DisclaimerContent />
+    </Modal>
   );
 }
 
 // First-open BLOCKING gate (mirrors PolicyConsentGate): an "I understand"
-// checkbox must be ticked before "Got it" enables; backdrop click and Escape do
-// NOT dismiss. "Got it" persists the acknowledgment server-side via onAcknowledge.
+// checkbox must be ticked before "Got it" enables; scrim click and Escape do
+// NOT dismiss, and there is no close button. "Got it" persists the
+// acknowledgment server-side via onAcknowledge.
 function MessageDisclaimerGate({ onAcknowledge }) {
   const [agreed, setAgreed] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1169,71 +1132,86 @@ function MessageDisclaimerGate({ onAcknowledge }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,30,30,0.5)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="message-gate-title"
+    <Modal
+      title={DISCLAIMER_TITLE}
+      dismissable={false}
+      width={440}
+      footer={
+        <Button variant="primary" onClick={onGotIt} disabled={!agreed || saving}>
+          {saving ? "Saving…" : "Got it"}
+        </Button>
+      }
     >
-      <div
-        className="bg-[color:var(--paper-card)] w-full"
-        style={{ maxWidth: 440, borderRadius: "var(--radius-card)", padding: 24, boxShadow: "0 24px 60px rgba(0,30,30,0.28)" }}
-      >
-        <DisclaimerContent titleId="message-gate-title" />
+      <DisclaimerContent />
 
-        <label className="flex items-start gap-2.5 cursor-pointer mt-5">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
-            style={{ accentColor: "var(--accent)" }}
-          />
-          <span className="text-[13px] text-slate-600 leading-[1.5]">
-            I understand and agree to keep my messages respectful.
-          </span>
-        </label>
+      <label className="flex min-h-11 items-center gap-3 cursor-pointer mt-4">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="h-4 w-4 shrink-0 cursor-pointer"
+          style={{ accentColor: "var(--accent)" }}
+        />
+        <span className="text-[color:var(--text)]">I understand and agree to keep my messages respectful.</span>
+      </label>
 
-        {error && (
-          <div
-            className="px-3 py-2 text-[13px] text-red-700 mt-4"
-            style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div className="flex items-center justify-end gap-2.5 mt-6">
-          <Button variant="primary" size="md" onClick={onGotIt} disabled={!agreed || saving}>
-            {saving ? "Saving…" : "Got it"}
-          </Button>
-        </div>
-      </div>
-    </div>
+      {error && <p className="text-[12px] leading-4 text-error mt-2">{error}</p>}
+    </Modal>
   );
 }
 
 // ----------------------------------------------------------------------------
-// A single message: bubble + reply quote + reaction pills + hover controls.
+// A single message, LinkedIn style: no bubble. A group's first message carries
+// the sender's photo, name and time; the rest indent under it. At rest there is
+// no fill; on hover (or long-press on touch) the row turns --surface-2 and its
+// controls float at its top right.
 // ----------------------------------------------------------------------------
-function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerRef, onReply, onEdit, onUnsend, onCopy, onReact, onQuoteClick }) {
-  const [pop, setPop] = useState(null); // "react" | "menu" | "picker" | null
-  const wrapRef = useRef(null);
+const LONG_PRESS_MS = 500;
 
-  // Close any open popover on outside click (same pattern as the editor toolbar).
+function MessageRow({ m, mine, groupStart, sender, userId, otherName, frozen, highlighted, registerRef, onReply, onEdit, onUnsend, onCopy, onReact, onQuoteClick }) {
+  const [pop, setPop] = useState(null); // "react" | "menu" | "picker" | null
+  // Touch: a long-press reveals the controls (the same thing hover does). It
+  // stays open until the next tap outside the row.
+  const [pressed, setPressed] = useState(false);
+  const wrapRef = useRef(null);
+  const rowRef = useRef(null);
+  const pressTimer = useRef(null);
+  const longPressed = useRef(false);
+
+  // Close any open popover (or long-press controls) on outside click/tap.
   useEffect(() => {
-    if (!pop) return;
+    if (!pop && !pressed) return;
     const onDown = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setPop(null);
+      const inside = pop ? wrapRef.current?.contains(e.target) : rowRef.current?.contains(e.target);
+      if (!inside) {
+        setPop(null);
+        setPressed(false);
+      }
     };
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [pop]);
+    document.addEventListener("touchstart", onDown);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
+  }, [pop, pressed]);
+
+  useEffect(() => () => clearTimeout(pressTimer.current), []);
+
+  const startPress = () => {
+    if (frozen) return;
+    longPressed.current = false;
+    clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      setPressed(true);
+    }, LONG_PRESS_MS);
+  };
+  const cancelPress = () => clearTimeout(pressTimer.current);
 
   const myEmoji = (m.reactions ?? []).find((r) => r.userId === userId)?.emoji ?? null;
 
-  // Group reactions by emoji → { emoji, count, mine } for the pills.
+  // Group reactions by emoji → { emoji, count, mine } for the reaction chips.
   const pills = useMemo(() => {
     const by = {};
     (m.reactions ?? []).forEach((r) => {
@@ -1244,29 +1222,37 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
     return Object.values(by);
   }, [m.reactions, userId]);
 
-  const react = (emoji) => { onReact(m.id, emoji, myEmoji); setPop(null); };
+  const react = (emoji) => { onReact(m.id, emoji, myEmoji); setPop(null); setPressed(false); };
+
+  const open = !!pop || pressed;
 
   // A blocked conversation (either direction) is frozen: hide the React / Reply /
-  // ⋯ hover controls entirely. The DB rejects these writes too (0054), so this just
+  // More controls entirely. The DB rejects these writes too (0054), so this just
   // keeps the UI honest instead of offering actions that would silently fail.
   const controls = frozen ? null : (
-    <div ref={wrapRef} className={`flex items-center gap-0.5 ${pop ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+    <div
+      ref={wrapRef}
+      className={`absolute right-4 top-0 -translate-y-1/2 z-20 flex items-center ${FLOAT_CLASS} ${
+        open
+          ? ""
+          : "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto"
+      }`}
+      style={FLOAT_STYLE}
+    >
       {/* React */}
       <div className="relative">
-        <ControlBtn label="React" icon="smile" onClick={() => setPop(pop === "react" || pop === "picker" ? null : "react")} />
+        <ControlBtn label="React" icon="smile" active={pop === "react" || pop === "picker"} onClick={() => setPop(pop === "react" || pop === "picker" ? null : "react")} />
         {pop === "react" && (
-          <div
-            className={`absolute bottom-full mb-1.5 z-30 flex items-center gap-0.5 px-1.5 py-1 ${mine ? "right-0" : "left-0"}`}
-            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 999, boxShadow: "0 8px 24px rgba(0,30,30,0.16)" }}
-          >
+          <div className={`absolute bottom-full right-0 mb-1 z-30 flex items-center p-1 ${FLOAT_CLASS}`} style={FLOAT_STYLE}>
             {QUICK_EMOJI.map((e) => (
               <button
                 key={e}
                 type="button"
                 onClick={() => react(e)}
-                className="inline-flex items-center justify-center text-[18px] leading-none rounded-full hover:scale-125 transition-transform"
-                style={{ width: 30, height: 30, background: myEmoji === e ? "var(--accent-softer)" : "transparent" }}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded text-[20px] leading-7 hover:bg-surface-2 ${myEmoji === e ? "bg-surface-2" : ""}`}
+                style={{ transition: "background-color 120ms ease-out" }}
                 aria-label={`React ${e}`}
+                aria-pressed={myEmoji === e}
               >
                 {e}
               </button>
@@ -1274,8 +1260,7 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
             <button
               type="button"
               onClick={() => setPop("picker")}
-              className="inline-flex items-center justify-center rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-              style={{ width: 30, height: 30 }}
+              className="inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2"
               aria-label="More emoji"
             >
               <Icon name="plus" size={16} />
@@ -1283,7 +1268,7 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
           </div>
         )}
         {pop === "picker" && (
-          <div className={`absolute bottom-full mb-1.5 z-30 ${mine ? "right-0" : "left-0"}`} style={{ boxShadow: "0 12px 32px rgba(0,30,30,0.18)", borderRadius: 12 }}>
+          <div className={`absolute bottom-full right-0 mb-1 z-30 overflow-hidden ${FLOAT_CLASS}`} style={FLOAT_STYLE}>
             <EmojiPicker
               onEmojiClick={(data) => react(data.emoji)}
               emojiStyle="native"
@@ -1293,25 +1278,23 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
               previewConfig={{ showPreview: false }}
               skinTonesDisabled
               searchPlaceHolder="Search emoji"
+              style={PICKER_STYLE}
             />
           </div>
         )}
       </div>
 
       {/* Reply */}
-      <ControlBtn label="Reply" icon="reply" onClick={() => onReply(m)} />
+      <ControlBtn label="Reply" icon="reply" onClick={() => { setPressed(false); onReply(m); }} />
 
-      {/* More (⋯) menu */}
+      {/* More menu */}
       <div className="relative">
-        <ControlBtn label="More" icon="more" onClick={() => setPop(pop === "menu" ? null : "menu")} />
+        <ControlBtn label="More" icon="more" active={pop === "menu"} onClick={() => setPop(pop === "menu" ? null : "menu")} />
         {pop === "menu" && (
-          <div
-            className={`absolute bottom-full mb-1.5 z-30 py-1 min-w-[168px] ${mine ? "right-0" : "left-0"}`}
-            style={{ background: "var(--paper-card)", border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,30,30,0.18)" }}
-          >
-            <MenuItem icon="copy" label="Copy" onClick={() => { onCopy(m); setPop(null); }} />
-            {mine && <MenuItem icon="pencil" label="Edit" onClick={() => { onEdit(m); setPop(null); }} />}
-            {mine && <MenuItem icon="reply" label="Unsend" danger onClick={() => { setPop(null); onUnsend(m); }} />}
+          <div role="menu" className={`absolute top-full right-0 mt-1 z-30 py-1 min-w-[168px] ${FLOAT_CLASS}`} style={FLOAT_STYLE}>
+            <MenuItem icon="copy" label="Copy" onClick={() => { onCopy(m); setPop(null); setPressed(false); }} />
+            {mine && <MenuItem icon="pencil" label="Edit" onClick={() => { onEdit(m); setPop(null); setPressed(false); }} />}
+            {mine && <MenuItem icon="reply" label="Unsend" danger onClick={() => { setPop(null); setPressed(false); onUnsend(m); }} />}
           </div>
         )}
       </div>
@@ -1319,91 +1302,85 @@ function MessageRow({ m, mine, userId, otherName, frozen, highlighted, registerR
   );
 
   return (
-    <div ref={registerRef} className={`group flex w-full ${mine ? "justify-end" : "justify-start"}`}>
-      <div className={`flex items-end gap-1 max-w-[86%] ${mine ? "flex-row-reverse" : "flex-row"}`}>
-        {/* Bubble + quote + reaction pills */}
-        <div className={`flex flex-col ${mine ? "items-end" : "items-start"} min-w-0`}>
-          <div
-            onDoubleClick={() => { if (!frozen) onReact(m.id, THUMB, myEmoji); }}
-            className="px-3.5 py-2 text-[13.5px] leading-[1.45] whitespace-pre-wrap break-words select-text"
-            style={{
-              background: mine ? "var(--accent)" : "var(--paper-card)",
-              color: mine ? "#fff" : "var(--ink)",
-              border: mine ? "1px solid var(--accent)" : "1px solid var(--paper-line)",
-              borderRadius: 14,
-              borderBottomRightRadius: mine ? 4 : 14,
-              borderBottomLeftRadius: mine ? 14 : 4,
-              outline: highlighted ? "2px solid var(--accent)" : "none",
-              outlineOffset: 2,
-              transition: "outline-color 200ms ease",
-            }}
-          >
-            {/* Reply quote */}
-            {m.replyTo && (
-              <button
-                type="button"
-                onClick={() => m.replyTo.snippet != null && onQuoteClick(m.replyTo.id)}
-                className="block w-full text-left mb-1.5 px-2 py-1 truncate"
-                style={{
-                  borderLeft: `2px solid ${mine ? "rgba(251,247,236,0.6)" : "var(--accent)"}`,
-                  background: mine ? "rgba(251,247,236,0.12)" : "var(--bg-soft)",
-                  borderRadius: 6,
-                  fontSize: 12,
-                  color: mine ? "rgba(251,247,236,0.85)" : "var(--ink-graphite)",
-                  cursor: m.replyTo.snippet != null ? "pointer" : "default",
-                }}
-              >
-                {m.replyTo.snippet != null ? m.replyTo.snippet : "Original message unavailable"}
-              </button>
-            )}
-            {m.body}
+    <div
+      ref={(el) => { rowRef.current = el; registerRef(el); }}
+      className={`group relative flex gap-3 px-4 hover:bg-surface-2 ${groupStart ? "pt-3 pb-1" : "py-1"} ${open || highlighted ? "bg-surface-2" : ""}`}
+      style={{ transition: "background-color 120ms ease-out" }}
+      onTouchStart={startPress}
+      onTouchEnd={cancelPress}
+      onTouchMove={cancelPress}
+      onTouchCancel={cancelPress}
+      onContextMenu={(e) => { if (longPressed.current) e.preventDefault(); }}
+    >
+      {/* Photo column: the sender's photo on a group's first row, a spacer after. */}
+      <div className="w-10 shrink-0">{groupStart && <Avatar tutor={sender} size={40} />}</div>
+
+      <div className="min-w-0 flex-1">
+        {groupStart && (
+          <div className="flex items-baseline gap-2">
+            <span className="text-[14px] leading-5 font-semibold text-[color:var(--text)] truncate">{sender?.name}</span>
+            <span className="shrink-0 text-[12px] leading-4 text-muted">{messageTime(m.created_at)}</span>
           </div>
+        )}
 
-          {/* Edited marker */}
-          {m.edited_at && <span className="text-[10.5px] text-slate-400 mt-0.5 px-1">Edited</span>}
+        {/* Reply quote */}
+        {m.replyTo && (
+          <button
+            type="button"
+            onClick={() => m.replyTo.snippet != null && onQuoteClick(m.replyTo.id)}
+            className={`block w-full max-w-[480px] text-left mt-1 pl-3 border-l-2 border-rule text-[12px] leading-4 text-[color:var(--text-2)] truncate ${
+              m.replyTo.snippet != null ? "cursor-pointer hover:text-[color:var(--text)]" : "cursor-default"
+            }`}
+          >
+            {m.replyTo.snippet != null ? m.replyTo.snippet : "Original message unavailable"}
+          </button>
+        )}
 
-          {/* Reaction pills */}
-          {pills.length > 0 && (
-            <div className={`flex flex-wrap gap-1 mt-1 ${mine ? "justify-end" : "justify-start"}`}>
-              {pills.map((p) => (
-                <button
-                  key={p.emoji}
-                  type="button"
-                  onClick={() => { if (!frozen) onReact(m.id, p.emoji, myEmoji); }}
-                  className="inline-flex items-center gap-1 leading-none"
-                  style={{
-                    padding: "2px 7px",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    background: p.mine ? "var(--accent-softer)" : "var(--paper-card)",
-                    border: `1px solid ${p.mine ? "var(--accent)" : "var(--paper-line)"}`,
-                  }}
-                  aria-label={`${p.count} ${p.emoji}`}
-                >
-                  <span style={{ fontSize: 13 }}>{p.emoji}</span>
-                  {p.count > 1 && <span className="text-slate-500 tabular-nums">{p.count}</span>}
-                </button>
-              ))}
-            </div>
-          )}
+        <div
+          onDoubleClick={() => { if (!frozen) onReact(m.id, THUMB, myEmoji); }}
+          className="text-[14px] leading-5 text-[color:var(--text)] whitespace-pre-wrap break-words select-text"
+        >
+          {m.body}
+          {m.edited_at && <span className="ml-2 text-[12px] leading-4 text-muted">Edited</span>}
         </div>
 
-        {/* Hover controls */}
-        {controls}
+        {/* Reactions */}
+        {pills.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {pills.map((p) => (
+              <button
+                key={p.emoji}
+                type="button"
+                onClick={() => { if (!frozen) onReact(m.id, p.emoji, myEmoji); }}
+                className={`inline-flex h-6 items-center gap-1 rounded border px-2 text-[12px] leading-4 bg-surface ${
+                  p.mine ? "border-accent" : "border-rule"
+                }`}
+                aria-label={`${p.count} ${p.emoji}${p.mine ? ", including yours" : ""}`}
+                aria-pressed={p.mine}
+              >
+                <span className="text-[14px] leading-5">{p.emoji}</span>
+                {p.count > 1 && <span className="text-[color:var(--text-2)] tabular-nums">{p.count}</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Hover / long-press controls */}
+      {controls}
     </div>
   );
 }
 
-function ControlBtn({ label, icon, onClick }) {
+function ControlBtn({ label, icon, onClick, active }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-      style={{ width: 28, height: 28 }}
+      className={`inline-flex h-11 w-11 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 hover:text-[color:var(--text)] ${active ? "bg-surface-2" : ""}`}
+      style={{ transition: "background-color 120ms ease-out" }}
     >
       <Icon name={icon} size={16} />
     </button>
@@ -1414,12 +1391,13 @@ function MenuItem({ icon, label, onClick, danger }) {
   return (
     <button
       type="button"
+      role="menuitem"
       onClick={onClick}
-      className="w-full flex items-center justify-between gap-4 px-3.5 py-2 text-[13.5px] transition-colors hover:bg-slate-50"
-      style={{ color: danger ? "#dc2626" : "var(--ink)" }}
+      className={`w-full flex h-11 items-center gap-3 px-4 text-[14px] leading-5 text-left hover:bg-surface-2 ${danger ? "text-error" : "text-[color:var(--text)]"}`}
+      style={{ transition: "background-color 120ms ease-out" }}
     >
-      <span className="font-medium">{label}</span>
       <Icon name={icon} size={16} />
+      <span>{label}</span>
     </button>
   );
 }

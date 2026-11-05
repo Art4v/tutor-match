@@ -16,6 +16,7 @@ import { usePathname } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { needsPolicyConsent } from "@/lib/policy";
 import { Button } from "@/components/ui";
+import { Modal } from "@/components/Modal";
 
 export default function PolicyConsentGate() {
   const pathname = usePathname();
@@ -92,76 +93,50 @@ export default function PolicyConsentGate() {
 
   if (!open || onPolicyPage) return null;
 
+  // Blocking: no close button, no Escape, no scrim click. A small centred
+  // dialog at every width (no sheet).
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,49,47, 0.45)", backdropFilter: "blur(2px)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="policy-consent-title"
+    <Modal
+      title="We’ve updated our policies"
+      dismissable={false}
+      width={440}
+      zIndex={100}
+      footer={
+        <Button variant="primary" onClick={onAccept} disabled={!agreed || saving}>
+          {saving ? "Saving…" : "Agree and continue"}
+        </Button>
+      }
     >
-      <div
-        className="w-full max-w-[440px] bg-[color:var(--paper-card)]"
-        style={{
-          border: "1px solid var(--paper-line)",
-          borderRadius: "var(--radius-card)",
-          padding: 32,
-          boxShadow: "0 30px 80px -40px rgba(0,30,30,0.35)",
-        }}
-      >
-        <h2
-          id="policy-consent-title"
-          className="text-[34px] leading-none"
-          style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
-        >
-          We&rsquo;ve updated our policies.
-        </h2>
-        <p className="text-[14px] text-slate-600 mt-3 leading-[1.55]">
-          We&rsquo;ve made changes to our{" "}
-          <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link accent-link--glow" style={{ color: "var(--accent)" }}>
-            Privacy Policy
-          </Link>
-          . Please review and agree to continue using MatchTutor.
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
+        We&rsquo;ve made changes to our{" "}
+        <Link href="/terms-of-service" target="_blank" rel="noopener" className="text-accent underline hover:text-[color:var(--accent-hover)]">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy-policy" target="_blank" rel="noopener" className="text-accent underline hover:text-[color:var(--accent-hover)]">
+          Privacy Policy
+        </Link>
+        . Please review and agree to continue using MatchTutor.
+      </p>
+
+      <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="h-4 w-4 shrink-0 cursor-pointer"
+          style={{ accentColor: "var(--accent)" }}
+        />
+        <span className="text-[14px] leading-5 text-[color:var(--text)]">
+          I agree to the updated Terms of Service and Privacy Policy.
+        </span>
+      </label>
+
+      {error && (
+        <p role="alert" className="mt-2 text-[14px] leading-5 text-error">
+          {error}
         </p>
-
-        <label className="flex items-start gap-2.5 cursor-pointer mt-5">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
-            style={{ accentColor: "var(--accent)" }}
-          />
-          <span className="text-[13px] text-slate-600 leading-[1.5]">
-            I agree to the updated Terms of Service and Privacy Policy.
-          </span>
-        </label>
-
-        {error && (
-          <div
-            className="px-3 py-2 text-[13px] text-red-700 mt-4"
-            style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div className="mt-6">
-          <Button
-            variant="primary"
-            size="lg"
-            full
-            onClick={onAccept}
-            disabled={!agreed || saving}
-          >
-            {saving ? "Saving…" : "Agree and continue"}
-          </Button>
-        </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }

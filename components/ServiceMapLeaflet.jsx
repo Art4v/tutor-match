@@ -46,7 +46,7 @@ function FallbackOnError({ onFallback }) {
   return null;
 }
 
-export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false }) {
+export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false, height = 200 }) {
   const [tiles, setTiles] = useState(OSM);
   const interaction = compact
     ? { scrollWheelZoom: false, dragging: false, doubleClickZoom: false, zoomControl: false, touchZoom: false, boxZoom: false, keyboard: false }
@@ -55,11 +55,15 @@ export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false 
   const r = Math.max(0.5, Number(radiusKm) || 1);
   const center = useMemo(() => [lat, lng], [lat, lng]);
 
+  // Leaflet writes path colours as SVG attributes, which cannot read CSS
+  // variables, so the circles use `currentColor` and the wrapper sets `color` to
+  // the --text token.
+  //
   // The wrapper's position+zIndex isolate Leaflet's internal high z-indexes
   // (panes 400, controls 1000) into their own stacking context, so the map can't
   // paint over the page's sticky nav / save bar / unsaved-changes banner.
   return (
-    <div style={{ position: "relative", zIndex: 0, height: 200, borderRadius: 12, overflow: "hidden", border: "1px solid var(--desk)" }}>
+    <div style={{ position: "relative", zIndex: 0, height, borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--rule)", color: "var(--text)" }}>
       <MapContainer
         center={center}
         zoom={11}
@@ -70,12 +74,12 @@ export default function ServiceMapLeaflet({ lat, lng, radiusKm, compact = false 
         <Circle
           center={center}
           radius={r * 1000}
-          pathOptions={{ color: "var(--ink)", weight: 1.25, dashArray: "4 4", fillColor: "var(--ink)", fillOpacity: 0.06 }}
+          pathOptions={{ color: "currentColor", weight: 1.25, dashArray: "4 4", fillColor: "currentColor", fillOpacity: 0.06 }}
         />
         <Circle
           center={center}
           radius={Math.max(40, r * 25)}
-          pathOptions={{ color: "var(--ink)", weight: 0, fillColor: "var(--ink)", fillOpacity: 1 }}
+          pathOptions={{ color: "currentColor", weight: 0, fillColor: "currentColor", fillOpacity: 1 }}
         />
         <FitToCircle lat={lat} lng={lng} radiusKm={r} />
         <FallbackOnError onFallback={() => { if (tiles !== CARTO) setTiles(CARTO); }} />

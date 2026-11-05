@@ -3,12 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { validatePassword } from "@/lib/password";
 import { PasswordChecklist } from "@/components/PasswordChecklist";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { EASE_OUT } from "@/lib/motion";
+import { AuthHeading, AuthFootnote, Field, FieldError, PasswordInput, StatusLine, LINK_CLASS } from "../_components/fields";
 
 // Auth states while we resolve whether the recovery link produced a session.
 const CHECKING = "checking";
@@ -79,100 +78,70 @@ function ResetPasswordInner() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: EASE_OUT }}
-      className="w-full max-w-[440px] bg-[color:var(--paper-card)]"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: "var(--radius-card)",
-        padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
-      }}
-    >
-      <div className="mb-6">
-        <h1 className="text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-          {authState === INVALID ? "Link expired." : "Choose a new password."}
-        </h1>
-        <p className="text-[14px] text-slate-500 mt-1.5">
-          {authState === INVALID
-            ? "This password reset link is invalid or has expired."
-            : "Pick a strong password you don't use anywhere else."}
-        </p>
-      </div>
+    <div>
+      <AuthHeading title={authState === INVALID ? "Link expired" : "Choose a new password"}>
+        {authState === INVALID
+          ? "This password reset link is invalid or has expired."
+          : "Pick a strong password you don't use anywhere else."}
+      </AuthHeading>
 
       {authState === CHECKING && (
-        <div className="text-[13.5px] text-slate-500">Verifying your link…</div>
+        <p role="status" className="text-[14px] leading-5 text-[color:var(--text-2)]">
+          Verifying your link…
+        </p>
       )}
 
       {authState === INVALID && (
-        <Button
-          variant="primary"
-          size="lg"
-          full
-          onClick={() => router.push("/forgot-password")}
-        >
+        <Button variant="primary" size="lg" full onClick={() => router.push("/forgot-password")}>
           Request a new link
         </Button>
       )}
 
       {authState === READY && (
-        <form onSubmit={onSubmit} className="space-y-5">
-          <Field label="New password">
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setPwTouched(true)}
-              placeholder="At least 8 characters"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              aria-invalid={pwTouched && !pw.valid}
-            />
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div>
+            <Field label="New password">
+              <PasswordInput
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setPwTouched(true)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                aria-invalid={pwTouched && !pw.valid}
+              />
+            </Field>
             <PasswordChecklist password={password} show={pwTouched || password.length > 0} />
-          </Field>
+          </div>
 
-          <Field label="Confirm new password">
-            <Input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="Re-enter your password"
-              required
-              autoComplete="new-password"
-              aria-invalid={confirmMismatch}
-            />
-            {confirmMismatch && (
-              <p className="mt-2 text-[12.5px]" style={{ color: "#DC2626" }}>
-                The two passwords don&rsquo;t match.
-              </p>
-            )}
-          </Field>
+          <div>
+            <Field label="Confirm new password">
+              <PasswordInput
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                autoComplete="new-password"
+                aria-invalid={confirmMismatch}
+              />
+            </Field>
+            {confirmMismatch && <FieldError>The two passwords don&rsquo;t match.</FieldError>}
+          </div>
 
-          {error && (
-            <div
-              className="px-3 py-2 text-[13px] text-red-700"
-              style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <StatusLine>{error}</StatusLine>}
 
           <Button type="submit" variant="primary" size="lg" full disabled={submitting}>
-            {submitting ? "Updating password…" : "Update password"}
+            {submitting ? "Updating password\u2026" : "Update password"}
           </Button>
         </form>
       )}
 
-      <div className="text-[13px] text-slate-500 mt-6 text-center">
+      <AuthFootnote>
         Back to{" "}
-        <Link href="/login" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
+        <Link href="/login" className={LINK_CLASS}>
           Log in
         </Link>
-      </div>
-    </motion.div>
+      </AuthFootnote>
+    </div>
   );
 }
 
@@ -181,31 +150,5 @@ export default function ResetPasswordPage() {
     <Suspense fallback={null}>
       <ResetPasswordInner />
     </Suspense>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
-        {label}
-      </div>
-      {children}
-    </label>
-  );
-}
-
-function Input(props) {
-  return (
-    <input
-      {...props}
-      className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: 8,
-        background: "var(--paper-card)",
-        transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
-      }}
-    />
   );
 }

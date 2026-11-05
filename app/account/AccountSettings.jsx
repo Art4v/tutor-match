@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Icon } from "@/components/Icon";
-import { Button } from "@/components/ui";
+import { Avatar, Button } from "@/components/ui";
+import { Toast, useToast } from "@/components/Toast";
 import { validatePassword } from "@/lib/password";
 import { PasswordChecklist } from "@/components/PasswordChecklist";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -20,12 +20,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
   const supabase = supabaseRef.current;
 
-  const [toast, setToast] = useState(null); // { kind: 'ok' | 'warn' | 'error', text }
-  const showToast = (kind, text, ms = 2400) => {
-    setToast({ kind, text });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), ms);
-  };
+  const [toast, showToast] = useToast();
 
   // --- Change password ------------------------------------------------------
   const [current, setCurrent] = useState("");
@@ -83,7 +78,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
     setPassword("");
     setConfirm("");
     setPwTouched(false);
-    showToast("ok", "Password updated", 2000);
+    showToast("success", "Password updated", 2000);
   };
 
   // --- Delete account -------------------------------------------------------
@@ -102,7 +97,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
     if (error) {
       setDeleting(false);
       setConfirmOpen(false);
-      showToast("error", error.message || "Couldn't delete your account — please try again.", 4000);
+      showToast("error", error.message || "Couldn't delete your account. Please try again.", 4000);
       return;
     }
     // The auth.users row (and everything cascading off it) is gone; clear the
@@ -119,21 +114,14 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
   };
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen pb-32 md:pb-12">
-      <div className="max-w-[760px] mx-auto px-6 pt-10">
-        <div className="mb-7">
-          <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-            {isStudent ? "Profile & account" : "Account"}
-          </h1>
-          <p className="text-[14px] text-slate-500 mt-1">
-            {isStudent
-              ? "Manage your profile, sign-in password and account."
-              : "Manage your sign-in password and account."}
-          </p>
-        </div>
+    <div className="bg-surface pb-16">
+      <div className="max-w-[680px] mx-auto px-4 lg:px-6 pt-8">
+        <h1 className="text-[24px] leading-8 font-semibold text-[color:var(--text)]">
+          {isStudent ? "Profile and account" : "Account"}
+        </h1>
 
-        <div className="space-y-5">
-          {/* Profile photo (students only) ---------------------------------- */}
+        <div className="mt-2 divide-y divide-rule">
+          {/* Profile (students only) ------------------------------------------ */}
           {isStudent && (
             <ProfilePhotoCard
               supabase={supabase}
@@ -144,20 +132,14 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
             />
           )}
 
-          {/* Change password ------------------------------------------------ */}
-          <Card>
-            <SectionHeader
-              icon="lock"
-              title="Change password"
-              subtitle="Update the password you use to log in."
-            />
-            <form onSubmit={onChangePassword} className="space-y-5">
+          {/* Password --------------------------------------------------------- */}
+          <Section title="Password" subtitle="Update the password you use to log in.">
+            <form onSubmit={onChangePassword} className="space-y-4">
               <Field label="Current password">
                 <Input
                   type="password"
                   value={current}
                   onChange={(e) => setCurrent(e.target.value)}
-                  placeholder="Your current password"
                   autoComplete="current-password"
                 />
               </Field>
@@ -168,12 +150,15 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => setPwTouched(true)}
-                  placeholder="At least 8 characters"
                   minLength={8}
                   autoComplete="new-password"
                   aria-invalid={pwTouched && !pw.valid}
                 />
-                <PasswordChecklist password={password} show={pwTouched || password.length > 0} />
+                <PasswordChecklist
+                  password={password}
+                  show={pwTouched || password.length > 0}
+                  className="mt-2 space-y-1"
+                />
               </Field>
 
               <Field label="Confirm new password">
@@ -181,55 +166,39 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="Re-enter your new password"
                   autoComplete="new-password"
                   aria-invalid={confirmMismatch}
                 />
                 {confirmMismatch && (
-                  <p className="mt-2 text-[12.5px]" style={{ color: "#DC2626" }}>
+                  <p className="mt-2 text-[12px] leading-4 text-error">
                     The two passwords don&rsquo;t match.
                   </p>
                 )}
               </Field>
 
               {pwError && (
-                <div
-                  className="px-3 py-2 text-[13px] text-red-700"
-                  style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
-                >
+                <p role="alert" className="text-[14px] leading-5 text-error">
                   {pwError}
-                </div>
+                </p>
               )}
 
-              <Button type="submit" variant="primary" size="lg" disabled={changing}>
-                {changing ? "Updating password…" : "Update password"}
-              </Button>
+              <div className="pt-2">
+                <Button type="submit" variant="primary" disabled={changing}>
+                  {changing ? "Updating password…" : "Update password"}
+                </Button>
+              </div>
             </form>
-          </Card>
+          </Section>
 
-          {/* Profile management (admin-managed tutors only, 0076) ---------- */}
+          {/* Profile management (admin-managed tutors only, 0076) ------------- */}
           {managed && <ManagedProfileCard showToast={showToast} />}
 
-          {/* Delete account ------------------------------------------------- */}
-          <section
-            className="bg-[color:var(--paper-card)]"
-            style={{ border: "1px solid #FECACA", borderRadius: "var(--radius-card)", padding: 24 }}
+          {/* Delete account (always last) ------------------------------------- */}
+          <Section
+            title="Delete account"
+            danger
+            subtitle="This permanently deletes your account, profile, and all associated data. This cannot be undone."
           >
-            <header className="flex items-start gap-2 mb-4">
-              <span className="mt-0.5" style={{ color: "#DC2626" }}>
-                <Icon name="alert-triangle" size={16} />
-              </span>
-              <div>
-                <h2 className="text-[18px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
-                  Delete account
-                </h2>
-                <p className="text-[13px] text-slate-500 mt-1">
-                  This permanently deletes your account, profile, and all associated data.
-                  This cannot be undone.
-                </p>
-              </div>
-            </header>
-
             <Field label={`Type ${DELETE_WORD} to confirm`}>
               <Input
                 type="text"
@@ -241,55 +210,29 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
               />
             </Field>
 
-            <div className="mt-5">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(true)}
-                disabled={!typedConfirm}
-                className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: "#DC2626",
-                  color: "#fff",
-                  border: "1px solid #DC2626",
-                  padding: "11px 20px",
-                  fontSize: 15,
-                  height: 44,
-                  borderRadius: 10,
-                  cursor: typedConfirm ? "pointer" : "not-allowed",
-                  letterSpacing: "-0.005em",
-                }}
-              >
-                <Icon name="trash" size={15} />
+            <div className="mt-4">
+              <Button variant="danger" onClick={() => setConfirmOpen(true)} disabled={!typedConfirm}>
                 Delete my account
-              </button>
+              </Button>
             </div>
-          </section>
+          </Section>
         </div>
       </div>
 
       {confirmOpen && (
-        <DeleteConfirmModal
-          deleting={deleting}
+        <ConfirmModal
+          title="Delete your account?"
+          body="This is permanent. Your account, profile, and all associated data will be erased immediately and cannot be recovered."
+          confirmLabel="Yes, delete my account"
+          confirmingLabel="Deleting…"
+          tone="danger"
+          busy={deleting}
           onCancel={() => { if (!deleting) setConfirmOpen(false); }}
           onConfirm={onDeleteAccount}
         />
       )}
 
-      {toast && (
-        <div
-          className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 text-[13.5px] inline-flex items-center gap-2"
-          style={{
-            background: toast.kind === "error" ? "#B91C1C" : toast.kind === "warn" ? "#92400E" : "var(--ink)",
-            color: "#fff",
-            borderRadius: 999,
-            boxShadow: "0 10px 30px rgba(0,30,30,0.2)",
-            maxWidth: "calc(100vw - 32px)",
-          }}
-        >
-          <Icon name={toast.kind === "ok" ? "check" : toast.kind === "warn" ? "shield" : "x"} size={14} strokeWidth={3} />
-          <span className="truncate">{toast.text}</span>
-        </div>
-      )}
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -314,7 +257,7 @@ function ManagedProfileCard({ showToast }) {
         return;
       }
       setOpen(false);
-      showToast("ok", "You now manage your own profile", 2600);
+      showToast("success", "You now manage your own profile", 2600);
       router.refresh();
     } catch {
       setBusy(false);
@@ -324,18 +267,13 @@ function ManagedProfileCard({ showToast }) {
   };
 
   return (
-    <Card>
-      <SectionHeader
-        icon="shield-check"
-        title="Profile management"
-        subtitle="MatchTutor admins are managing your tutor profile for you."
-      />
-      <p className="text-[13.5px] text-slate-600 leading-[1.6]">
+    <Section title="Profile management" subtitle="MatchTutor admins are managing your tutor profile for you.">
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
         While this is on, our team can edit your profile, choose when it is shown and set your verification.
         Changes you make yourself are sent to us for approval.
       </p>
-      <div className="mt-5">
-        <Button variant="outline" size="lg" onClick={() => setOpen(true)}>
+      <div className="mt-4">
+        <Button variant="outline" onClick={() => setOpen(true)}>
           Stop managing my profile
         </Button>
       </div>
@@ -350,38 +288,30 @@ function ManagedProfileCard({ showToast }) {
           onConfirm={onConfirm}
         />
       )}
-    </Card>
+    </Section>
   );
 }
 
-// --- Local design primitives (kept inline, matching settings/auth cards) ----
+// --- Local primitives --------------------------------------------------------
+// DESIGN.md "Section": a 20px/600 heading, content, a rule before the next (the
+// rule comes from the parent's divide-y). No cards, no heading icons.
 
-function Card({ children }) {
+function Section({ title, subtitle, danger = false, children }) {
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
-      {children}
-    </section>
-  );
-}
-
-function SectionHeader({ title, subtitle, icon }) {
-  return (
-    <header className="mb-5">
-      <h2 className="text-[18px] font-light text-slate-800 tracking-tight flex items-center gap-2">
-        {icon && <span className="text-slate-400"><Icon name={icon} size={16} /></span>}
+    <section className="py-8">
+      <h2 className={`text-[20px] leading-7 font-semibold ${danger ? "text-error" : "text-[color:var(--text)]"}`}>
         {title}
       </h2>
-      {subtitle && <p className="text-[13px] text-slate-500 mt-1">{subtitle}</p>}
-    </header>
+      {subtitle && <p className="mt-1 text-[14px] leading-5 text-[color:var(--text-2)]">{subtitle}</p>}
+      <div className="mt-6">{children}</div>
+    </section>
   );
 }
 
 function Field({ label, children }) {
   return (
     <label className="block">
-      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
-        {label}
-      </div>
+      <span className="block text-[14px] leading-5 font-semibold text-[color:var(--text)]">{label}</span>
       {children}
     </label>
   );
@@ -391,13 +321,8 @@ function Input(props) {
   return (
     <input
       {...props}
-      className="w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: 8,
-        background: "var(--paper-card)",
-        transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
-      }}
+      className="mt-2 block w-full h-11 rounded border border-input bg-surface px-3 text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder focus:border-accent"
+      style={{ transition: "border-color 120ms ease-out" }}
     />
   );
 }
@@ -439,7 +364,7 @@ function ProfilePhotoCard({ supabase, userId, fullName, initialUrl, showToast })
     if (error) { setNameErr(error.message || "Couldn't save your name."); return; }
     setSavedName(trimmedName);
     setName(trimmedName);
-    showToast("ok", "Name updated", 2000);
+    showToast("success", "Name updated", 2000);
     router.refresh();
   };
 
@@ -471,7 +396,7 @@ function ProfilePhotoCard({ supabase, userId, fullName, initialUrl, showToast })
     setBusy(false);
     if (error) { setErr(error.message || "Couldn't save your photo."); return; }
     setUrl(res.url);
-    showToast("ok", "Profile photo updated", 2000);
+    showToast("success", "Profile photo updated", 2000);
   };
 
   const onRemove = async () => {
@@ -481,32 +406,24 @@ function ProfilePhotoCard({ supabase, userId, fullName, initialUrl, showToast })
     setBusy(false);
     if (error) { setErr(error.message || "Couldn't remove your photo."); return; }
     setUrl(null);
-    showToast("ok", "Profile photo removed", 2000);
+    showToast("success", "Profile photo removed", 2000);
   };
 
   return (
-    <Card>
-      <SectionHeader
-        icon="user"
-        title="Profile"
-        subtitle="Your name and photo. This is how tutors recognise you."
-      />
-
+    <Section title="Profile" subtitle="Your name and photo. This is how tutors recognise you.">
       <Field label="Full name">
         <Input
           type="text"
           value={name}
           onChange={(e) => { setName(e.target.value); setNameErr(null); }}
-          placeholder="Your name"
           autoComplete="name"
           maxLength={80}
         />
-        {nameErr && <div className="text-[12px] text-rose-600 mt-2">{nameErr}</div>}
+        {nameErr && <p className="mt-2 text-[12px] leading-4 text-error">{nameErr}</p>}
       </Field>
-      <div className="mt-3 mb-6">
+      <div className="mt-4">
         <Button
           variant="outline"
-          size="sm"
           onClick={onSaveName}
           disabled={savingName || !nameDirty || !trimmedName}
         >
@@ -514,41 +431,23 @@ function ProfilePhotoCard({ supabase, userId, fullName, initialUrl, showToast })
         </Button>
       </div>
 
-      <div style={{ borderTop: "1px solid var(--paper-line)" }} className="pt-6">
-      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-3">
-        Profile photo
-      </div>
-      <div className="flex items-center gap-4">
-        <div
-          className="shrink-0 overflow-hidden flex items-center justify-center text-white font-medium"
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            border: "1px solid var(--paper-line)",
-            background: url ? "var(--bg-soft)" : "var(--ink)",
-          }}
-        >
-          {url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="Profile photo preview" className="w-full h-full object-cover" />
-          ) : (
-            <Icon name="grad-cap" size={30} />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
-            <Button variant="outline" size="sm" icon="upload" disabled={busy} onClick={() => inputRef.current?.click()}>
-              {busy ? "Saving…" : url ? "Replace" : "Upload"}
-            </Button>
-            {url && !busy && (
-              <Button variant="ghost" size="sm" onClick={onRemove}>Remove</Button>
-            )}
+      <div className="mt-8">
+        <span className="block text-[14px] leading-5 font-semibold text-[color:var(--text)]">Profile photo</span>
+        <div className="mt-2 flex items-center gap-4">
+          <Avatar tutor={{ avatarImg: url, name: savedName }} size={64} />
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={inputRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+              <Button variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
+                {busy ? "Saving…" : url ? "Replace" : "Upload"}
+              </Button>
+              {url && !busy && (
+                <Button variant="ghost" onClick={onRemove}>Remove</Button>
+              )}
+            </div>
+            {err && <p className="mt-2 text-[12px] leading-4 text-error">{err}</p>}
           </div>
-          {err && <div className="text-[12px] text-rose-600 mt-2">{err}</div>}
         </div>
-      </div>
       </div>
       <ImageCropModal
         open={!!pendingFile}
@@ -560,86 +459,6 @@ function ProfilePhotoCard({ supabase, userId, fullName, initialUrl, showToast })
         onCancel={() => setPendingFile(null)}
         onConfirm={onCropConfirm}
       />
-    </Card>
-  );
-}
-
-// Final "are you absolutely sure?" gate, shown after the user has typed DELETE
-// and clicked the red button. Backdrop click + Escape cancel (unless mid-delete).
-function DeleteConfirmModal({ deleting, onCancel, onConfirm }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" && !deleting) onCancel(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [deleting, onCancel]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,30,30,0.5)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-confirm-title"
-      onClick={onCancel}
-    >
-      <div
-        className="bg-[color:var(--paper-card)] w-full"
-        style={{
-          maxWidth: 420,
-          borderRadius: "var(--radius-card)",
-          padding: 24,
-          boxShadow: "0 24px 60px rgba(0,30,30,0.28)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <span
-            className="inline-flex items-center justify-center shrink-0"
-            style={{ width: 36, height: 36, borderRadius: 999, background: "#FEE2E2", color: "#DC2626" }}
-          >
-            <Icon name="alert-triangle" size={18} />
-          </span>
-          <div>
-            <h2
-              id="delete-confirm-title"
-              className="text-[17px] font-light tracking-tight"
-              style={{ color: "#B91C1C" }}
-            >
-              Delete your account?
-            </h2>
-            <p className="text-[13.5px] text-slate-600 mt-1.5">
-              This is permanent. Your account, profile, and all associated data will be
-              erased immediately and cannot be recovered.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-2.5 mt-6">
-          <Button variant="outline" size="md" onClick={onCancel} disabled={deleting}>
-            Cancel
-          </Button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={deleting}
-            className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              background: "#DC2626",
-              color: "#fff",
-              border: "1px solid #DC2626",
-              padding: "9px 16px",
-              fontSize: 14,
-              height: 40,
-              borderRadius: 10,
-              cursor: deleting ? "not-allowed" : "pointer",
-              letterSpacing: "-0.005em",
-            }}
-          >
-            <Icon name="trash" size={14} />
-            {deleting ? "Deleting…" : "Yes, delete my account"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Section>
   );
 }

@@ -86,15 +86,13 @@ export function SchoolCombobox({
 
   return (
     <div ref={wrapRef} className="relative">
-      {/* Matches the plain TextInput used for University rows. */}
+      {/* DESIGN.md input: 44px, white, 1px input border, 4px radius; the accent
+          border marks focus. */}
       <div
-        className="flex items-stretch"
-        style={{
-          background: "var(--bg-soft)",
-          borderRadius: 10,
-          border: `1px solid ${focus ? "var(--ink)" : "transparent"}`,
-          transition: "border-color 120ms ease",
-        }}
+        className={
+          "flex items-stretch h-11 bg-surface border rounded " + (focus ? "border-accent" : "border-input")
+        }
+        style={{ transition: "border-color 120ms ease-out" }}
       >
         <input
           value={query}
@@ -104,21 +102,17 @@ export function SchoolCombobox({
           onBlur={() => setFocus(false)}
           onMouseDown={() => setOpen(true)}
           placeholder={placeholder}
-          className="w-full min-w-0 bg-transparent outline-none text-[14.5px] text-slate-900 placeholder:text-slate-400"
-          style={{ padding: "10px 16px", lineHeight: 1.3, letterSpacing: "-0.003em", fontFamily: "inherit" }}
+          className="w-full min-w-0 bg-transparent outline-none px-3 text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder"
         />
         {!!schoolSlug && (
-          <span className="flex items-center pl-1 pr-3.5 shrink-0" title="Listed school">
-            <Icon name="check" size={14} className="text-emerald-600" />
+          <span className="flex items-center pr-3 shrink-0 text-success" title="Listed school">
+            <Icon name="check" size={16} />
           </span>
         )}
       </div>
 
       {open && (results.length > 0 || noMatchHint) && (
-        <div
-          className="absolute left-0 right-0 top-full mt-2 z-50 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto overscroll-contain"
-          style={{ border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(0,30,30,0.12)" }}
-        >
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-surface border border-rule rounded shadow-float max-h-[264px] overflow-y-auto overscroll-contain py-1">
           {results.map((s, i) => {
             const sel = s.slug === schoolSlug;
             return (
@@ -127,17 +121,19 @@ export function SchoolCombobox({
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); choose(s); }}
                 onMouseEnter={() => setActive(i)}
-                className="w-full flex items-center gap-2 text-left px-3 py-2 text-[13.5px] text-slate-900"
-                style={{ background: i === active ? "var(--desk)" : "transparent" }}
+                className={
+                  "w-full flex items-center gap-2 min-h-11 text-left px-3 text-[14px] leading-5 text-[color:var(--text)] " +
+                  (i === active ? "bg-surface-2" : "bg-surface") + (sel ? " font-semibold" : "")
+                }
               >
                 <span className="flex-1 truncate">{s.name}</span>
-                {sel && <Icon name="check" size={13} className="text-emerald-600 shrink-0" />}
+                {sel && <Icon name="check" size={16} className="text-success shrink-0" />}
               </button>
             );
           })}
           {noMatchHint && (
-            <div className="px-3 py-2.5 text-[12.5px] text-slate-500">
-              Not listed — we&rsquo;ll save &ldquo;{query.trim()}&rdquo; as your school.
+            <div className="px-3 py-3 text-[14px] leading-5 text-[color:var(--text-2)]">
+              Not listed. We&rsquo;ll save &ldquo;{query.trim()}&rdquo; as your school.
             </div>
           )}
         </div>

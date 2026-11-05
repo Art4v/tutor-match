@@ -284,16 +284,16 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
 
   return (
     <div
+      className="rounded"
       style={{
-        border: `1px solid ${focused ? "var(--accent)" : "var(--paper-line)"}`,
-        borderRadius: "var(--radius-card)",
-        transition: "border-color 150ms ease-out",
+        border: `1px solid ${focused ? "var(--accent)" : "var(--border-input)"}`,
+        transition: "border-color 120ms ease-out",
         overflow: "hidden",
       }}
     >
       <div
-        className="flex items-center gap-0.5 flex-wrap px-2 py-1.5"
-        style={{ borderBottom: "1px solid var(--paper-line)", background: "var(--desk)" }}
+        className="flex items-center flex-wrap px-1 bg-surface"
+        style={{ borderBottom: "1px solid var(--rule)" }}
       >
         <Btn label="Section heading" onClick={() => prefixLines(() => "## ")}>
           H2
@@ -368,23 +368,13 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
         onBlur={() => setFocused(false)}
         spellCheck
         placeholder={"## Your first section\n\nWrite the article here."}
-        className="w-full px-4 py-3 outline-none resize-y font-mono"
-        style={{
-          background: "var(--paper-card)",
-          color: "var(--ink)",
-          fontSize: 13.5,
-          lineHeight: 1.7,
-        }}
+        className="block w-full px-4 py-3 outline-none resize-y font-mono bg-surface text-[14px] leading-6 text-[color:var(--text)] placeholder:text-placeholder"
       />
 
       {blankAlts > 0 && (
         <div
-          className="px-4 py-2 text-[12.5px]"
-          style={{
-            borderTop: "1px solid var(--paper-line)",
-            background: "var(--desk)",
-            color: "var(--sage)",
-          }}
+          className="px-4 py-2 text-[12px] leading-4 text-muted bg-surface"
+          style={{ borderTop: "1px solid var(--rule)" }}
         >
           {blankAlts === 1 ? "1 image has no alt text." : `${blankAlts} images have no alt text.`}{" "}
           Describe each one for screen readers and search. You can publish without it.
@@ -403,8 +393,8 @@ export function MarkdownField({ value, onChange, rows = 24, onUploadImage }) {
 // Two positioning constraints, both from the field wrapper's overflow: hidden.
 // The label opens DOWNWARD, over the textarea, because above the toolbar it
 // would be clipped. And it anchors left rather than centring, because the first
-// button's label ("Section heading") is far wider than its 28px box and would
-// clip against the left edge if centred; the toolbar only has px-2 of padding.
+// button's label ("Section heading") is far wider than its 44px box and would
+// clip against the left edge if centred; the toolbar only has px-1 of padding.
 function Btn({ label, onClick, icon, children, disabled = false }) {
   return (
     <span className="relative group inline-flex">
@@ -417,23 +407,19 @@ function Btn({ label, onClick, icon, children, disabled = false }) {
         // the button, not the wrapper, so the wrapper cannot swallow it.
         onMouseDown={(e) => e.preventDefault()}
         onClick={onClick}
-        className="inline-flex items-center justify-center rounded"
+        // 44px square: the tap-target floor for icon buttons (DESIGN.md).
+        className="inline-flex items-center justify-center rounded min-w-[44px] h-11 px-2 text-[14px] leading-5 font-semibold text-[color:var(--text-2)] hover:bg-surface-2"
         style={{
-          minWidth: 28,
-          height: 28,
-          padding: "0 6px",
-          color: "var(--ink-muted)",
-          fontSize: 12,
-          fontWeight: 500,
+          transition: "background-color 120ms ease-out",
           opacity: disabled ? 0.5 : 1,
           cursor: disabled ? "default" : undefined,
         }}
       >
-        {icon ? <Icon name={icon} size={15} /> : children}
+        {icon ? <Icon name={icon} size={16} /> : children}
       </button>
       <span
         role="tooltip"
-        className="pointer-events-none absolute top-full left-0 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-20"
+        className="pointer-events-none absolute top-full left-0 mt-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20"
         style={TOOLTIP_STYLE}
       >
         {label}
@@ -443,5 +429,5 @@ function Btn({ label, onClick, icon, children, disabled = false }) {
 }
 
 function Divider() {
-  return <span className="mx-1" style={{ width: 1, height: 16, background: "var(--paper-line)" }} />;
+  return <span className="mx-1" style={{ width: 1, height: 16, background: "var(--rule)" }} />;
 }

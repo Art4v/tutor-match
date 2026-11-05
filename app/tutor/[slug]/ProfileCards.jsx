@@ -1,40 +1,53 @@
 import { Icon } from "@/components/Icon";
-import { Chip } from "@/components/ui";
 import { subjectLabel } from "@/lib/subjects";
 import ServiceAreaMap from "./ServiceAreaMap";
 
-// Shared profile card chrome — used by the public profile page (server) and the
-// owner inline-editing shell (OwnerProfile, client) so both render identically.
-// Cards are flat: a 1px hairline border does the separating, no shadow.
+// Shared profile section chrome, used by the public profile page (server) and
+// the owner inline-editing shell (OwnerProfile, client) so both render
+// identically. DESIGN.md §6 "Section": a 20px/600 heading, the content, then a
+// rule before the next section. No cards, no shadows, no icons beside headings.
+//
+// The export names below (`Section`, `SidebarCard`, `SidebarHeading`,
+// `SubjectsCard`, `DocumentationCard`, `ServiceAreaCard`, `cardStyle`, …) are
+// kept from the card era because OwnerProfile, OwnerCompany and several other
+// screens import them. The "Card" suffix is historical: they are flat sections.
 
-// Card shells. Main-column and sidebar cards differ only in padding and in the
-// size of their heading, so both live here and every card picks one.
+// The style for the few static containers that remain (the contact column, some
+// admin and blog panels that import it): a 1px rule and a 4px radius, never a
+// shadow (DESIGN.md §4).
 export const cardStyle = {
-  border: "1px solid var(--paper-line)",
-  borderRadius: "var(--radius-card)",
-  // Same resting shadow as TutorCard (components/TutorCard.js CARD_SHADOW).
-  boxShadow: "var(--card-shadow)",
+  border: "1px solid var(--rule)",
+  borderRadius: "var(--radius)",
 };
 
+// The profile's right-hand contact column (rate, packages, Message / Enquire).
+// From 1024px up it is the one bordered box on the page and sticks under the
+// nav; below that it sits inline under the header as a plain ruled block.
+export const contactColumnClass =
+  "border-b border-rule pb-6 lg:border lg:rounded lg:p-6";
+
+/** "In person and online" / "In person" / "Online", from the tutor's real modes. */
 export function formatDelivery(tutor) {
-  const parts = [];
-  if (tutor.deliversInPerson) parts.push("In-person");
-  if (tutor.deliversOnline) parts.push("online");
-  if (parts.length === 0) return null;
-  return parts.join(" + ");
+  const inPerson = !!tutor.deliversInPerson;
+  const online = !!tutor.deliversOnline;
+  if (inPerson && online) return "In person and online";
+  if (inPerson) return "In person";
+  if (online) return "Online";
+  return null;
 }
 
-// Build the credential tiles shown in the Credentials card from the stored
-// `credentials` array (ATAR is bridged in as icon="atar" upstream).
+// Build the credential rows shown in the Credentials section from the stored
+// `credentials` array (ATAR is bridged in as icon="atar" upstream). Captions are
+// sentence case (DESIGN.md: no uppercase labels).
 export function buildCredentialTiles(credentials) {
   const metaForIcon = (icon) => {
     switch (icon) {
       case "atar":        return { caption: "ATAR",       kind: "stat" };
-      case "graduation":  return { caption: "DEGREE",     kind: "credential" };
-      case "check-badge": return { caption: "STATE RANK", kind: "credential" };
-      case "star":        return { caption: "HIGHLIGHT",  kind: "credential" };
-      case "trophy":      return { caption: "AWARD",      kind: "credential" };
-      default:            return { caption: "CREDENTIAL", kind: "credential" };
+      case "graduation":  return { caption: "Degree",     kind: "credential" };
+      case "check-badge": return { caption: "State rank", kind: "credential" };
+      case "star":        return { caption: "Highlight",  kind: "credential" };
+      case "trophy":      return { caption: "Award",      kind: "credential" };
+      default:            return { caption: "Credential", kind: "credential" };
     }
   };
   const tiles = [];
@@ -48,98 +61,96 @@ export function buildCredentialTiles(credentials) {
   return tiles;
 }
 
-/** Main-column section card: 20px/24px padding, 22px heading. */
+/** A profile section: 20px/600 heading, optional one-line subtitle, content, rule. */
 export function Section({ title, subtitle, children, id }) {
   return (
-    <section
-      id={id}
-      className="bg-[color:var(--paper-card)]"
-      style={{ ...cardStyle, padding: "20px 24px" }}
-    >
+    <section id={id} className="border-b border-rule py-6">
       <div className="mb-4">
-        <h2 className="text-[22px] font-light text-slate-800 tracking-tight">{title}</h2>
-        {subtitle && <div className="text-[13px] text-slate-500 mt-0.5">{subtitle}</div>}
+        <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">{title}</h2>
+        {subtitle && <p className="text-[14px] leading-5 text-[color:var(--text-2)] mt-1">{subtitle}</p>}
       </div>
       {children}
     </section>
   );
 }
 
-/** Sidebar card: 18px/20px padding, 19px heading. */
+/**
+ * Kept for the callers that still import it (OwnerCompany, CompanyLocationCard).
+ * Same flat section as `Section`; the content follows the subtitle directly.
+ */
 export function SidebarCard({ title, subtitle, children }) {
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+    <section className="border-b border-rule py-6">
       <SidebarHeading>{title}</SidebarHeading>
-      {subtitle && <div className="text-[13.5px] mt-0.5" style={{ color: "var(--sage)" }}>{subtitle}</div>}
+      {subtitle && <p className="text-[14px] leading-5 text-[color:var(--text-2)] mt-1">{subtitle}</p>}
       {children}
-    </div>
+    </section>
   );
 }
 
 export function SidebarHeading({ children }) {
-  return <h2 className="text-[19px] font-light text-slate-800 tracking-tight">{children}</h2>;
+  return <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">{children}</h2>;
 }
 
+/** Subjects as a plain list in up to three columns (DESIGN.md: no chips). */
 export function SubjectsCard({ subjects }) {
   return (
-    <SidebarCard title="Subjects">
-      <div className="flex flex-wrap gap-1.5 mt-3">
+    <Section title="Subjects">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-[16px] leading-6 text-[color:var(--text)]">
         {subjects.map((s) => (
-          <Chip key={s.slug} tone="pill" size="sm" icon="graduation">{subjectLabel(s)}</Chip>
+          <li key={s.slug} className="break-words">{subjectLabel(s)}</li>
         ))}
-      </div>
-    </SidebarCard>
+      </ul>
+    </Section>
   );
 }
 
-// Public documents the tutor has shared — rows are [{ id, title, path, url }]
-// from listTutorDocs (`tutor_documents`, migration 0034). Each opens the
-// public file in a new tab; the tutor-chosen title is the label, never the
-// raw filename.
+// Public documents the tutor has shared: rows are [{ id, title, path, url }]
+// from listTutorDocs (`tutor_documents`, migration 0034). Each opens the public
+// file in a new tab; the tutor-chosen title is the label, never the raw
+// filename. A plain ruled list of links.
 export function DocumentationCard({ docs }) {
   return (
-    <SidebarCard title="Documentation" subtitle="Documents shared to back up this tutor's credentials.">
-      <ul className="space-y-1.5 mt-3">
+    <Section title="Documents" subtitle="Shared by the tutor to back up their credentials.">
+      <ul className="border-t border-rule">
         {docs.map((doc) => (
-          <li key={doc.id}>
+          <li key={doc.id} className="border-b border-rule">
             <a
               href={doc.url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 px-2.5 py-2 text-[13px] transition-colors hover:bg-slate-100"
-              style={{ background: "var(--bg-soft)", borderRadius: 8, color: "var(--ink)" }}
+              className="flex min-h-11 items-center gap-2 py-3 text-[14px] leading-5 text-accent hover:text-accent-hover"
+              style={{ transition: "color 120ms ease-out" }}
             >
-              <Icon name={doc.path.toLowerCase().endsWith(".pdf") ? "file-text" : "image"} size={13} className="shrink-0 text-slate-400" />
-              <span className="flex-1 min-w-0 truncate">{doc.title}</span>
-              <Icon name="external" size={12} className="shrink-0 text-slate-400" />
+              <span className="min-w-0 flex-1 break-words">{doc.title}</span>
+              <span className="shrink-0 text-[12px] leading-4 text-[color:var(--muted)]">
+                {(doc.path ?? "").toLowerCase().endsWith(".pdf") ? "PDF" : "Image"}
+              </span>
+              <Icon name="external" size={16} className="shrink-0" />
+              <span className="sr-only">(opens in a new tab)</span>
             </a>
           </li>
         ))}
       </ul>
-    </SidebarCard>
+    </Section>
   );
 }
 
-// RatingsCard (the "Coming soon" placeholder) was replaced by the real
-// ReviewsCard in 0057's slice — see ./ReviewsCard.jsx.
-
+// Where the tutor teaches in person, with the radius map when the suburb was
+// geocoded. A tutor who does not teach in person shows only where they are
+// based, with no radius claim and no circle.
 export function ServiceAreaCard({ tutor }) {
   const sa = tutor.serviceArea;
   const radiusKm = sa?.radiusKm ?? 10;
+  const place = sa?.suburb || tutor.suburb;
   const hasCoords = Number.isFinite(sa?.lat) && Number.isFinite(sa?.lng);
+  const inPerson = tutor.deliversInPerson !== false;
   return (
-    <SidebarCard
-      title="Service area"
-      subtitle={`In-person within ${radiusKm} km of ${sa?.suburb || tutor.suburb}`}
+    <Section
+      title="Location"
+      subtitle={inPerson ? `In person within ${radiusKm} km of ${place}` : `Based in ${place}`}
     >
-      {hasCoords && (
-        <div
-          className="mt-3 overflow-hidden"
-          style={{ borderRadius: 11, border: "1px solid var(--line)" }}
-        >
-          <ServiceAreaMap lat={sa.lat} lng={sa.lng} radiusKm={radiusKm} />
-        </div>
-      )}
-    </SidebarCard>
+      {inPerson && hasCoords && <ServiceAreaMap lat={sa.lat} lng={sa.lng} radiusKm={radiusKm} height={280} />}
+    </Section>
   );
 }

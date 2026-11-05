@@ -17,14 +17,6 @@ module.exports = {
         sans: ["Source Sans 3", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
         display: ["Source Sans 3", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
       },
-      // Transitional (Phase 3): DESIGN.md allows only 400 and 600. Existing
-      // screens still say `font-light` (headings) and `font-medium` (labels,
-      // buttons); mapping them here gives the right weights before each screen
-      // is rebuilt. Delete these two lines once neither class is used.
-      fontWeight: {
-        light: "400",
-        medium: "600",
-      },
       colors: {
         // DESIGN.md tokens. Every value is a CSS variable from app/globals.css,
         // so the hex lives in exactly one place. (No theme colour is used with an
@@ -32,9 +24,6 @@ module.exports = {
         accent: {
           DEFAULT: "var(--accent)",
           hover: "var(--accent-hover)",
-          soft: "var(--accent-soft)", // legacy name, now --surface-2
-          softer: "var(--accent-softer)", // legacy name, now --surface-2
-          line: "var(--accent-line)", // legacy name, now --rule
         },
         surface: {
           DEFAULT: "var(--surface)",
@@ -47,27 +36,6 @@ module.exports = {
         error: "var(--error)",
         warning: "var(--warning)",
         success: "var(--success)",
-        // Legacy names still used by un-rebuilt screens (see globals.css).
-        ink: {
-          DEFAULT: "var(--ink)",
-          muted: "var(--ink-muted)",
-        },
-        paper: {
-          DEFAULT: "var(--paper)",
-          card: "var(--paper-card)",
-        },
-        desk: "var(--desk)",
-        line: {
-          soft: "var(--line-soft)",
-        },
-        pill: {
-          DEFAULT: "var(--pill)",
-          ink: "var(--pill-ink)",
-        },
-        chip: {
-          line: "var(--chip-line)",
-        },
-        stamp: "var(--stamp)",
         // Override Tailwind's `slate` ramp with NEUTRAL greys (DESIGN.md: no hue in
         // neutrals), so every existing `text-slate-*` / `bg-slate-*` /
         // `border-slate-*` utility follows without touching each file. 400 and up

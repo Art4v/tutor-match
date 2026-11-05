@@ -1,221 +1,128 @@
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { TutorCard } from "./TutorCard";
-import { StatTile } from "./StatTile";
-import { CompanyLogo } from "@/app/companies/[slug]/CompanyCards";
+import { Avatar } from "./ui";
 import { stripMarkdown } from "@/lib/richText";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
+import { subjectLabel } from "@/lib/subjects";
 
-// A tutoring company in the /companies feed. Deliberately the SAME geometry as
-// components/TutorCard.js: the two feeds sit one click apart, and a company that
-// renders at a different scale reads as a different kind of object. The header
-// band (logo · text · stat rail) is TutorCard's composition with the slots
-// remapped; the difference is what sits under it.
+// A tutoring company in the /companies directory (DESIGN.md "Company row",
+// REDESIGN_DECISIONS.md item 6). Kept under the old `CompanyCard` name so the
+// import does not move. It is the tutor ROW (components/TutorCard.js) with a
+// square logo: no box, no shadow, no stat tiles. The LIST draws the 1px rules
+// between rows, so a row never carries its own.
 //
-// THE ROSTER BAND SPANS THE FULL CARD WIDTH, INCLUDING UNDER THE RAIL. That is
-// the one intentional departure. TutorCard's subject strip lives INSIDE its
-// left column, so it stops at the rail divider; this band is a sibling of the
-// whole header band, one level up, so its top border crosses the rail too and
-// the rail's border-l runs the header band's height only. That contrast is the
-// point: the stats describe the company, the band describes its people.
+// Layout: logo | details | view link. Below 640px the view link drops and the
+// logo shrinks to 56px; the whole row is one link to the company page either
+// way.
 //
-// The card is NOT a single <a>. Each tutor card below links to /tutor/[slug]
-// and anchors cannot nest, so the company link is the header band only (a <Link>
-// wrapping body + rail, exactly as TutorCard does) and the roster sits outside
-// it as a sibling. Do NOT "fix" that with an absolutely positioned overlay link
-// across the card: it would cover the tutor cards and swallow their clicks.
-//
-// The roster renders the REAL <TutorCard compact>, the same component and the
-// same mode app/companies/[slug]/CompanyCards.jsx uses under "Our tutors", so a
-// tutor reads identically in the feed and on the company's page. `compact` is
-// what keeps a nested card from carrying the same weight as the company card
-// enclosing it: it pins TutorCard to its phone composition at every width.
-//
-// Sizes, phone -> md. Literal classes at the point of use, never interpolated —
-// Tailwind's JIT scans source statically and can't see a class built from a
-// variable.
-//   header band   min-h-[140px]  md:min-h-[200px]
-//   rail width    w-[88px]       md:w-[210px]
-//   logo          80             132   (a size prop, see the two-logo note)
-//
-// Three things here are load-bearing rather than aesthetic:
-//
-// The roster is CAPPED (lib/supabase/companies.js PREVIEW_TUTOR_LIMIT) with a
-// "View all N" link for the rest. A compact card is about 190px tall, so an
-// uncapped roster would let one large company fill the feed on its own, and the
-// company's own page already lists every tutor.
-//
-// overflow:hidden on the outer element is what clips the roster band to the
-// card's 14px bottom corners.
-//
-// A company with no public tutors drops the band entirely and the card ends at
-// the header band, the same way TutorCard drops its subject strip for a tutor
-// with no subjects. listCompanies already sorts tutor-having companies first, so
-// those land at the end of the feed.
-//
-// This is a SERVER component rendering client leaves (<StatTile>, <TutorCard>),
-// which is exactly what CompanyCards.jsx does on the company page. The cost is
-// that the preview tutors cross into the RSC payload; the cap is what bounds
-// it.
+// Subjects come from the company's tutors, never from a stored list (see
+// CLAUDE.md "Companies"). listCompanies only carries its preview tutors, so the
+// subjects shown are the ones those tutors teach.
+
+const MAX_SUBJECTS = 4;
+const MAX_PACKAGES = 2;
+
+function companySubjects(tutors) {
+  const seen = new Set();
+  const out = [];
+  for (const t of tutors) {
+    for (const s of t.subjects ?? []) {
+      const key = s?.slug || s?.name;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+function packagesSummary(packages) {
+  const list = (packages ?? []).filter((p) => p?.label);
+  if (list.length === 0) return "";
+  const shown = list
+    .slice(0, MAX_PACKAGES)
+    .map((p) => (p.price != null && p.price !== "" ? `${p.label} $${p.price}` : p.label));
+  const more = list.length - shown.length;
+  return shown.join(" · ") + (more > 0 ? `, +${more} more` : "");
+}
+
+function ReviewsLine({ company }) {
+  const n = Number(company.reviewCount) || 0;
+  if (n > 0 && company.rating != null) {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <Icon name="star" size={12} />
+        {Number(company.rating).toFixed(1)} ({n} {n === 1 ? "review" : "reviews"})
+      </span>
+    );
+  }
+  return <span>No reviews yet</span>;
+}
+
 export function CompanyCard({ company }) {
-  const tagline = stripMarkdown(company.bio).trim();
-  const longBio = stripMarkdown(company.bioLong).trim();
-  const location = [company.suburb, company.city].filter(Boolean).join(" · ");
-  const tutors = company.previewTutors ?? [];
-  const extra = Math.max(0, (company.tutorCount ?? 0) - tutors.length);
+  const tagline = stripMarkdown(company.bio || "").trim();
+  const location = [company.suburb, company.city].filter(Boolean).join(", ");
+  const tutorCount = company.tutorCount ?? 0;
+  const tutorsText = `${tutorCount} ${tutorCount === 1 ? "tutor" : "tutors"}`;
 
-  // Top tile: the company's rating, or its roster size until it has reviews.
-  // Most companies launch with none, and an empty RATING tile would be the first
-  // thing a visitor read. `muted` on the empty branch mirrors TutorCard, which
-  // mutes the tile for a tutor with no credentials.
-  const rated = company.rating != null;
-  const topValue = rated ? company.rating.toFixed(1) : String(company.tutorCount ?? 0);
-  const topLabel = rated ? "Rating" : "Tutors";
-  const topTone = rated || (company.tutorCount ?? 0) > 0 ? "accent" : "muted";
+  const subjects = companySubjects(company.previewTutors ?? []);
+  const shown = subjects.slice(0, MAX_SUBJECTS).map(subjectLabel);
+  const moreSubjects = subjects.length - shown.length;
+
+  const packages = packagesSummary(company.packages);
+  // Avatar reads `avatarImg` / `name`, so the logo maps onto those.
+  const logo = { avatarImg: company.logoImg ?? null, name: company.name };
 
   return (
-    <article
-      style={{
-        ...cardStyle,
-        position: "relative",
-        backgroundColor: "var(--paper-card)",
-        overflow: "hidden",
-      }}
+    <Link
+      href={`/companies/${company.slug}`}
+      className="group grid grid-cols-[56px_minmax(0,1fr)] sm:grid-cols-[72px_minmax(0,1fr)_auto] gap-x-4 py-4"
     >
-      {/* HEADER BAND — the company link. Everything inside it is inert, so
-          there's no nested anchor. */}
-      <Link href={`/companies/${company.slug}`} className="flex overflow-hidden">
-        <div className="flex-1 min-w-0 flex items-stretch gap-3 md:gap-5 p-3 md:p-5 min-h-[140px] md:min-h-[200px]">
-          {/* Logo rendered TWICE at two sizes. CompanyLogo writes its width,
-              height and font size inline from a numeric prop and takes no
-              className, exactly like Avatar, so Tailwind can't resize it. The
-              hidden copy costs one DOM node and no request: the logo is a CSS
-              background, and a display:none element doesn't fetch one. */}
-          <div className="shrink-0 flex items-center md:hidden">
-            <CompanyLogo company={company} size={80} />
-          </div>
-          <div className="shrink-0 hidden md:flex items-center">
-            <CompanyLogo company={company} size={132} />
-          </div>
+      <span className="sm:hidden">
+        <Avatar tutor={logo} size={56} shape="square" />
+      </span>
+      <span className="hidden sm:block">
+        <Avatar tutor={logo} size={72} shape="square" />
+      </span>
 
-          <div className="flex-1 min-w-0 flex flex-col justify-center">
-            {/* No bookmark on a company card, so none of these rows carry
-                TutorCard's pr-12 clearance. */}
-            <span
-              className="truncate leading-tight text-[15px] md:text-[20px]"
-              style={{ fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite)" }}
-            >
-              {company.name}
-            </span>
+      <span className="min-w-0 flex flex-col gap-1">
+        <span className="text-[16px] leading-6 font-semibold text-[color:var(--text)] group-hover:text-accent [overflow-wrap:anywhere]">
+          {company.name}
+        </span>
 
-            {/* Each block renders only when it has content and none reserves
-                height, so a company missing a bio doesn't leave a gap. */}
-            {tagline && (
-              <div
-                className="max-w-full leading-[1.3] mt-0.5 md:mt-1 text-[11.5px] md:text-[14px]"
-                style={{
-                  fontWeight: 500,
-                  color: "var(--accent)",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {tagline}
-              </div>
-            )}
-
-            {/* overflowWrap: anywhere is what makes the clamp hold against an
-                unbroken run of characters, which would otherwise widen the card
-                and its grid track rather than wrapping. Same guard, and the
-                same reasoning, as TutorCard's long bio. */}
-            {longBio && (
-              <div
-                className="leading-[1.5] mt-1 md:mt-1.5 text-[10.5px] md:text-[12.5px]"
-                style={{
-                  color: "var(--ink-muted)",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {longBio}
-              </div>
-            )}
-
-            {location && (
-              <div
-                className="max-w-full truncate mt-1 md:mt-1.5 text-[10px] md:text-[12px]"
-                style={{ color: "var(--sage)" }}
-              >
-                {location}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RAIL — a direct child of the Link, so its divider runs the full
-            height of the header band. */}
-        <div className="shrink-0 flex flex-col justify-center border-l border-[color:var(--line)] gap-1.5 md:gap-2.5 p-2 md:p-5 w-[88px] md:w-[210px]">
-          <div className="grid grid-cols-1 gap-1.5 md:gap-2.5">
-            {/* No price tile: a company prices by package only (0069), and one
-                headline figure would claim a unit nobody set. */}
-            <StatTile value={topValue} label={topLabel} tone={topTone} />
-          </div>
-
-          {/* Visual only: the band is already the link, and a nested <a> would
-              be invalid. Desktop only, like TutorCard's, because the 88px phone
-              rail can't carry the label without wrapping. */}
-          <span
-            className="w-full hidden md:inline-flex items-center justify-center gap-1.5 font-medium text-white text-[13px] px-[14px] py-[10px]"
-            style={{ background: "var(--ink-graphite)", borderRadius: 11 }}
-          >
-            View company
-            <Icon name="arrow-right" size={14} className="shrink-0" />
+        {tagline && (
+          <span className="text-[14px] leading-5 text-[color:var(--text)] line-clamp-1 [overflow-wrap:anywhere]">
+            {tagline}
           </span>
-        </div>
-      </Link>
+        )}
 
-      {/* ROSTER — a sibling of the link, spanning the full card width. Dropped
-          entirely when the company lists nobody, rather than leaving an empty
-          tinted band. */}
-      {tutors.length > 0 && (
-        <div
-          className="px-3 md:px-5 pt-2.5 pb-3 md:pb-4"
-          style={{ borderTop: "1px solid var(--line)", background: "var(--desk)" }}
-        >
-          <div
-            className="font-medium uppercase text-[9px] md:text-[10px]"
-            style={{ letterSpacing: "0.06em", color: "var(--sage)" }}
-          >
-            Tutors
-          </div>
-          {/* The real card, in the same `compact` mode CompanyTutorsCard uses on
-              the company's own page, so a tutor reads identically in both places.
-              Each one is its own <a>, which is why this whole band sits OUTSIDE
-              the company link above. */}
-          <div className="mt-2 flex flex-col gap-3">
-            {tutors.map((t) => (
-              <TutorCard key={t.id} tutor={t} compact showSave={false} />
-            ))}
-          </div>
+        <span className="text-[14px] leading-5 text-[color:var(--text-2)]">
+          {[location, tutorsText].filter(Boolean).join(" · ")}
+        </span>
 
-          {extra > 0 && (
-            <Link
-              href={`/companies/${company.slug}`}
-              className="inline-flex items-center gap-1.5 mt-3 text-[13px] font-medium"
-              style={{ color: "var(--accent)" }}
-            >
-              View all {company.tutorCount} tutors
-              <Icon name="arrow-right" size={14} className="shrink-0" />
-            </Link>
-          )}
-        </div>
-      )}
-    </article>
+        {shown.length > 0 && (
+          <span className="text-[14px] leading-5 text-[color:var(--text-2)]">
+            {shown.join(", ")}
+            {moreSubjects > 0 && <span className="text-muted">{`, +${moreSubjects} more`}</span>}
+          </span>
+        )}
+
+        {packages && (
+          <span className="text-[14px] leading-5 text-[color:var(--text-2)] [overflow-wrap:anywhere]">
+            {packages}
+          </span>
+        )}
+
+        <span className="text-[12px] leading-4 text-muted">
+          <ReviewsLine company={company} />
+        </span>
+      </span>
+
+      <span className="hidden sm:flex items-start pl-4 pt-1">
+        <span className="inline-flex items-center gap-1 min-h-6 text-[14px] leading-5 font-semibold text-accent group-hover:text-accent-hover whitespace-nowrap">
+          View company
+          <Icon name="chevron-right" size={16} />
+        </span>
+      </span>
+    </Link>
   );
 }

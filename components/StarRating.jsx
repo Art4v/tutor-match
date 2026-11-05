@@ -19,7 +19,7 @@ import { Icon } from "./Icon";
 // focus behaviour are the browser's rather than something re-implemented here.
 
 const FILLED = "var(--accent)";
-const EMPTY = "var(--accent-line)";
+const EMPTY = "var(--rule)";
 
 function StarRow({ count = 5, size, gap, color }) {
   return (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui";
+import { Modal } from "@/components/Modal";
 
 export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", title = "Crop image", maxOutputPx = 2400, onCancel, onConfirm }) {
   const [imageSrc, setImageSrc] = useState(null);
@@ -39,59 +40,60 @@ export function ImageCropModal({ open, file, aspect = 1, cropShape = "rect", tit
 
   if (!open || !imageSrc) return null;
 
+  // A full-screen sheet below 640px. Not dismissable by Escape or the scrim: it
+  // usually opens on top of another modal (editor sections, CompanyTutorModal)
+  // whose own Escape listener would otherwise close both layers at once, and it
+  // never had an Escape handler before. Cancel is in the footer. zIndex sits
+  // above those parents (up to z-95).
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,30,30,0.55)" }}
-      onClick={onCancel}
-    >
-      <div
-        className="bg-[color:var(--paper-card)] w-full max-w-[560px] flex flex-col"
-        style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,30,30,0.3)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-4 pb-3" style={{ borderBottom: "1px solid var(--desk)" }}>
-          <h3 className="text-[15px] font-light text-slate-800">{title}</h3>
-          <p className="text-[12.5px] text-slate-500 mt-0.5">Drag to reposition, scroll or use the slider to zoom.</p>
-        </div>
-
-        <div className="relative bg-slate-900" style={{ height: 360 }}>
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={aspect}
-            cropShape={cropShape}
-            showGrid={cropShape === "rect"}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropComplete}
-            restrictPosition
-          />
-        </div>
-
-        <div className="px-5 py-4 flex items-center gap-3">
-          <span className="text-[12px] text-slate-500 shrink-0">Zoom</span>
-          <input
-            type="range"
-            min={1}
-            max={4}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1"
-            style={{ accentColor: "var(--ink)" }}
-          />
-        </div>
-
-        <div className="px-5 pb-5 flex items-center justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={onSave} disabled={busy || !croppedAreaPixels}>
+    <Modal
+      title={title}
+      dismissable={false}
+      sheet
+      width={560}
+      zIndex={100}
+      footer={
+        <>
+          <Button variant="outline" onClick={onCancel} disabled={busy}>Cancel</Button>
+          <Button variant="primary" onClick={onSave} disabled={busy || !croppedAreaPixels}>
             {busy ? "Processing…" : "Use this crop"}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
+        Drag to reposition. Scroll or use the slider to zoom.
+      </p>
+
+      <div className="relative mt-4 h-[360px] overflow-hidden rounded bg-surface-2">
+        <Cropper
+          image={imageSrc}
+          crop={crop}
+          zoom={zoom}
+          aspect={aspect}
+          cropShape={cropShape}
+          showGrid={cropShape === "rect"}
+          onCropChange={setCrop}
+          onZoomChange={setZoom}
+          onCropComplete={onCropComplete}
+          restrictPosition
+        />
       </div>
-    </div>
+
+      <label className="mt-4 flex min-h-11 items-center gap-3">
+        <span className="shrink-0 text-[14px] leading-5 font-semibold text-[color:var(--text)]">Zoom</span>
+        <input
+          type="range"
+          min={1}
+          max={4}
+          step={0.01}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          className="flex-1"
+          style={{ accentColor: "var(--accent)" }}
+        />
+      </label>
+    </Modal>
   );
 }
 
@@ -118,7 +120,7 @@ async function getCroppedBlob(imageSrc, areaPixels, maxOutputPx) {
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingQuality = "high";
   // JPEG has no alpha channel — backfill white so transparent PNGs don't go black.
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(
     image,

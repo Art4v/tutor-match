@@ -12,9 +12,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "motion/react";
 import { Button } from "@/components/ui";
-import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { PasswordChecklist } from "@/components/PasswordChecklist";
 import { Wordmark } from "@/components/Logo";
@@ -22,7 +20,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validatePassword } from "@/lib/password";
 import { validateEmailFormat } from "@/lib/email";
 import { isInviteKey, JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
-import { EASE_OUT } from "@/lib/motion";
+import { AuthHeading, AuthFootnote, Check, Field, FieldError, Input, Notice, PasswordInput, StatusLine, LINK_CLASS } from "../_components/fields";
 
 export default function JoinFlow() {
   const key = useSearchParams().get("k") ?? "";
@@ -65,14 +63,18 @@ export default function JoinFlow() {
       </Notice>
     );
   } else if (!account) {
-    body = <LoadingPlaceholder />;
+    body = (
+      <p role="status" className="text-[14px] leading-5 text-[color:var(--text-2)]">
+        Loading…
+      </p>
+    );
   } else if (!account.signedIn) {
     body = <SignupForm inviteKey={key} />;
   } else if (account.managed) {
     body = (
       <Notice>
         MatchTutor already manages your profile.{" "}
-        <Link href={account.submitted ? "/profile" : JOIN_DETAILS_PATH} className="font-medium underline">
+        <Link href={account.submitted ? "/profile" : JOIN_DETAILS_PATH} className={LINK_CLASS}>
           {account.submitted ? "Go to your profile" : "Send us your documents"}
         </Link>
         .
@@ -90,29 +92,13 @@ export default function JoinFlow() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: EASE_OUT }}
-      className="w-full max-w-[460px] bg-[color:var(--paper-card)]"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: "var(--radius-card)",
-        padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
-      }}
-    >
-      <div className="mb-6">
-        <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-          Join as a tutor.
-        </h1>
-        <p className="text-[14px] text-slate-500 mt-2 leading-[1.55]">
-          Create your account and the <Wordmark matchColor="var(--ink-muted)" weight={500} /> team will set up your
-          tutor profile for you.
-        </p>
-      </div>
+    <div>
+      <AuthHeading title="Join as a tutor">
+        Create your account and the <Wordmark matchColor="var(--text-2)" /> team will set up your tutor profile
+        for you.
+      </AuthHeading>
       {body}
-    </motion.div>
+    </div>
   );
 }
 
@@ -209,7 +195,7 @@ function SignupForm({ inviteKey }) {
     return (
       <Notice>
         Almost there. We&rsquo;ve sent a confirmation link to{" "}
-        <span className="font-medium text-slate-900">{email}</span>. Open it to finish creating your account,
+        <span className="font-semibold">{email}</span>. Open it to finish creating your account,
         then you can send us any documents for your profile. Can&rsquo;t find it? Check your spam folder.
       </Notice>
     );
@@ -217,100 +203,91 @@ function SignupForm({ inviteKey }) {
 
   return (
     <>
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onSubmit} className="space-y-6">
         <Field label="Full name">
-          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Alex Nguyen" required autoComplete="name" />
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required autoComplete="name" />
         </Field>
 
-        <Field label="Email">
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => setEmailTouched(true)}
-            placeholder="you@example.com"
-            required
-            autoComplete="email"
-            aria-invalid={emailTouched && !emailValid}
-          />
-          {emailTouched && email.length > 0 && !emailValid && (
-            <p className="mt-2 text-[12.5px]" style={{ color: "#DC2626" }}>
-              Enter a valid email address, e.g. you@example.com
-            </p>
-          )}
-        </Field>
-
-        <Field label="Password">
-          <div className="relative">
+        <div>
+          <Field label="Email">
             <Input
-              type={showPassword ? "text" : "password"}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailTouched(true)}
+              placeholder="you@example.com"
+              required
+              autoComplete="email"
+              aria-invalid={emailTouched && email.length > 0 && !emailValid}
+            />
+          </Field>
+          {emailTouched && email.length > 0 && !emailValid && (
+            <FieldError>Enter a valid email address, e.g. you@example.com</FieldError>
+          )}
+        </div>
+
+        <div>
+          <Field label="Password">
+            <PasswordInput
+              shown={showPassword}
+              onToggle={() => setShowPassword((v) => !v)}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onBlur={() => setPwTouched(true)}
-              placeholder="At least 8 characters"
               required
               autoComplete="new-password"
-              className="!pr-10"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              aria-pressed={showPassword}
-              className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <Icon name={showPassword ? "eye-off" : "eye"} size={16} strokeWidth={1.75} />
-            </button>
-          </div>
+          </Field>
           <PasswordChecklist password={password} show={pwTouched || password.length > 0} />
-        </Field>
+        </div>
 
         <Field label="Confirm password">
           <Input
             type={showPassword ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Re-enter your password"
             required
             autoComplete="new-password"
           />
         </Field>
 
-        <ConsentBox checked={consent} onChange={setConsent} />
-        <Check checked={agreed} onChange={setAgreed}>
-          I agree to the{" "}
-          <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy-policy" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
-            Privacy Policy
-          </Link>
-          .
-        </Check>
-        <Check checked={isOver16} onChange={setIsOver16}>
-          I confirm that I am 16 years of age or older.
-        </Check>
+        <div>
+          <ConsentBox checked={consent} onChange={setConsent} />
+          <Check checked={agreed} onChange={setAgreed}>
+            I agree to the{" "}
+            <Link href="/terms-of-service" target="_blank" rel="noopener" className={LINK_CLASS}>
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" target="_blank" rel="noopener" className={LINK_CLASS}>
+              Privacy Policy
+            </Link>
+            .
+          </Check>
+          <Check checked={isOver16} onChange={setIsOver16}>
+            I confirm that I am 16 years of age or older.
+          </Check>
+        </div>
 
-        {error && <ErrorBox>{error}</ErrorBox>}
+        {error && <StatusLine>{error}</StatusLine>}
 
         <Button type="submit" variant="primary" size="lg" full disabled={submitting}>
-          {submitting ? "Creating account…" : "Create account"}
+          {submitting ? "Creating account\u2026" : "Create account"}
         </Button>
       </form>
-      <div className="mt-5">
+      <div className="mt-6">
         <OAuthButtons divider="top" next={JOIN_DETAILS_PATH} beforeSignIn={beforeGoogle} disabled={!boxesTicked} />
         {!boxesTicked && (
-          <p className="text-[12px] text-slate-500 mt-3 text-center leading-[1.5]">Tick the boxes above to continue with Google.</p>
+          <p className="text-[12px] leading-4 text-muted mt-3 text-center">Tick the boxes above to continue with Google.</p>
         )}
       </div>
-      <div className="text-[13px] text-slate-500 mt-6 text-center">
+      <AuthFootnote>
         Already have a tutor account?{" "}
-        <Link href="/login" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
+        <Link href="/login" className={LINK_CLASS}>
           Log in
         </Link>
         , then open this link again.
-      </div>
+      </AuthFootnote>
     </>
   );
 }
@@ -347,14 +324,14 @@ function OptInPanel({ inviteKey, existing }) {
   };
 
   return (
-    <div className="space-y-5">
-      <p className="text-[14px] text-slate-600 leading-[1.6]">
+    <div className="space-y-6">
+      <p className="text-[14px] leading-5 text-[color:var(--text)]">
         {existing
           ? "You're signed in to your tutor account. Your profile, verification and visibility stay as they are; our team simply gains access to manage it for you."
           : "You're signed in. Continue to create your tutor profile, which our team will set up for you."}
       </p>
       <ConsentBox checked={consent} onChange={setConsent} />
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && <StatusLine>{error}</StatusLine>}
       <Button type="button" variant="primary" size="lg" full disabled={busy} onClick={onContinue}>
         {busy ? "Saving…" : "Continue"}
       </Button>
@@ -363,84 +340,13 @@ function OptInPanel({ inviteKey, existing }) {
 }
 
 // ── bits ──────────────────────────────────────────────────────────────────────
-// Grey bars shaped like the form, shown while the session is read so the card
-// reads as loading rather than empty.
-function LoadingPlaceholder() {
-  const bar = { background: "var(--bg-soft)", border: "1px solid var(--paper-line)" };
-  return (
-    <div className="space-y-5 motion-safe:animate-pulse" role="status" aria-label="Loading">
-      {[0, 1, 2].map((i) => (
-        <div key={i}>
-          <div className="h-3 w-24 mb-2.5" style={{ ...bar, borderRadius: 4 }} />
-          <div className="h-9 w-full" style={{ ...bar, borderRadius: 8 }} />
-        </div>
-      ))}
-      <div className="h-11 w-full" style={{ ...bar, borderRadius: 10 }} />
-    </div>
-  );
-}
-
+// The management consent. No box (DESIGN.md: prefer none); the email note
+// rides under the label as a hint.
 function ConsentBox({ checked, onChange }) {
   return (
-    <div className="p-3.5" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 10 }}>
-      <Check checked={checked} onChange={onChange}>
-        I authorise MatchTutor admins to set up and publish my tutor profile for me. I can edit, hide or
-        delete it anytime.
-      </Check>
-      <p className="text-[12px] text-slate-500 leading-[1.5] mt-1.5 pl-[26px]">You’ll be emailed when your profile is live.</p>
-    </div>
-  );
-}
-
-function Check({ checked, onChange, children }) {
-  return (
-    <label className="flex items-start gap-2.5 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
-        style={{ accentColor: "var(--accent)" }}
-      />
-      <span className="text-[13px] text-slate-600 leading-[1.5]">{children}</span>
-    </label>
-  );
-}
-
-function Notice({ children }) {
-  return (
-    <div
-      className="p-4 text-[13.5px] text-slate-700 leading-[1.55]"
-      style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 10 }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function ErrorBox({ children }) {
-  return (
-    <div className="px-3 py-2 text-[13px] text-red-700" style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}>
-      {children}
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">{label}</div>
-      {children}
-    </label>
-  );
-}
-
-function Input({ className = "", ...props }) {
-  return (
-    <input
-      {...props}
-      className={`w-full h-9 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-400 ${className}`}
-      style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
-    />
+    <Check checked={checked} onChange={onChange} hint="You’ll be emailed when your profile is live.">
+      I authorise MatchTutor admins to set up and publish my tutor profile for me. I can edit, hide or delete it
+      anytime.
+    </Check>
   );
 }

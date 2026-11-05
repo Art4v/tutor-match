@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { Field, TextInput, Select } from "@/components/profile-edit/sections";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { AU_STATES } from "@/lib/states";
 import { DecisionPanel } from "../_components/DecisionPanel";
+import { PageHeader, Panel, Chip } from "../_components/ui";
 
 // Same clipboard + textarea fallback as app/tutor/[slug]/OwnerCard.jsx.
 async function copyText(text) {
@@ -36,13 +36,10 @@ const STATE_OPTIONS = [
 
 function ErrorNote({ children }) {
   return (
-    <div
-      className="flex items-start gap-2 text-[13px] mt-3"
-      style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 12, padding: "11px 13px" }}
-    >
-      <Icon name="alert-triangle" size={15} />
+    <p role="alert" className="flex items-start gap-2 mt-3 text-[14px] leading-5 text-error">
+      <span className="shrink-0 mt-0.5"><Icon name="alert-triangle" size={16} /></span>
       <span>{children}</span>
-    </div>
+    </p>
   );
 }
 
@@ -106,88 +103,83 @@ export function InviteCompanies({ initialCompanies, loadFailed }) {
   const working = state === "working";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-[30px] font-light text-slate-800 tracking-tight">Companies</h1>
-        <p className="text-[14px] text-slate-500 mt-1 max-w-[620px]">
-          Create a page for a tutoring company and send them the link. Their page stays hidden until
-          they claim it and choose to make it live.
-        </p>
-      </div>
+    <>
+      <PageHeader
+        title="Companies"
+        lead="Create a page for a tutoring company and send them the link. Their page stays hidden until they claim it and choose to make it live."
+      />
 
       {created ? (
         <CreatedCard created={created} onAnother={() => setCreated(null)} />
       ) : (
-        <form
-          className="bg-[color:var(--paper-card)] p-5 sm:p-6"
-          style={cardStyle}
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit(false);
-          }}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Field label="Company name">
-                <TextInput value={form.name} onChange={set("name")} placeholder="Acme Tutoring" maxLength={120} />
+        <Panel title="Create a company">
+          <form
+            className="max-w-[680px]"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submit(false);
+            }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <Field label="Company name">
+                  <TextInput value={form.name} onChange={set("name")} maxLength={120} />
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <Field label="Website" optional>
+                  <TextInput value={form.website} onChange={set("website")} type="url" inputMode="url" />
+                </Field>
+              </div>
+              <Field label="Suburb" optional>
+                <TextInput value={form.suburb} onChange={set("suburb")} />
+              </Field>
+              <Field label="State" optional as="div">
+                <Select value={form.state} onChange={set("state")} options={STATE_OPTIONS} />
               </Field>
             </div>
-            <div className="sm:col-span-2">
-              <Field label="Website" optional>
-                <TextInput value={form.website} onChange={set("website")} placeholder="https://acme.com.au" type="url" inputMode="url" />
-              </Field>
-            </div>
-            <Field label="Suburb" optional>
-              <TextInput value={form.suburb} onChange={set("suburb")} placeholder="Chatswood" />
-            </Field>
-            <Field label="State" optional as="div">
-              <Select value={form.state} onChange={set("state")} options={STATE_OPTIONS} />
-            </Field>
-          </div>
 
-          {state === "duplicate" && (
-            <div
-              className="mt-5 text-[13.5px]"
-              style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", borderRadius: 12, padding: "12px 14px" }}
-            >
-              <div className="flex items-start gap-2">
-                <Icon name="alert-triangle" size={15} />
-                <div className="min-w-0">
-                  <div className="font-medium">A company with this name already exists.</div>
-                  <ul className="mt-1.5 space-y-0.5">
-                    {matches.map((m) => (
-                      <li key={m.slug}>
-                        {m.name}: {m.claimed ? "claimed" : "not claimed yet"}
-                        {m.invited_by ? `, invited by ${m.invited_by}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-2">
-                    If this is a different branch, you can still create it. Otherwise, copy the existing
-                    link from the list below.
-                  </div>
-                  <div className="mt-3">
-                    <Button size="sm" variant="outline" onClick={() => submit(true)} disabled={working}>
-                      Create anyway
-                    </Button>
+            {state === "duplicate" && (
+              <div role="alert" className="mt-6 p-4 rounded border border-warning text-[14px] leading-5 text-[color:var(--text)]">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5 text-warning"><Icon name="alert-triangle" size={16} /></span>
+                  <div className="min-w-0">
+                    <div className="font-semibold">A company with this name already exists.</div>
+                    <ul className="mt-2 space-y-1">
+                      {matches.map((m) => (
+                        <li key={m.slug}>
+                          {m.name}: {m.claimed ? "claimed" : "not claimed yet"}
+                          {m.invited_by ? `, invited by ${m.invited_by}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-2 text-[color:var(--text-2)]">
+                      If this is a different branch, you can still create it. Otherwise, copy the existing
+                      link from the list below.
+                    </div>
+                    <div className="mt-3">
+                      <Button variant="outline" onClick={() => submit(true)} disabled={working}>
+                        Create anyway
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
+
+            {state === "error" && <ErrorNote>{message}</ErrorNote>}
+
+            <div className="mt-6">
+              <Button type="submit" disabled={working || state === "duplicate"}>
+                {working ? "Creating…" : "Create and get link"}
+              </Button>
             </div>
-          )}
-
-          {state === "error" && <ErrorNote>{message}</ErrorNote>}
-
-          <div className="mt-5">
-            <Button type="submit" icon="plus" disabled={working || state === "duplicate"}>
-              {working ? "Creating…" : "Create and get link"}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </Panel>
       )}
 
       <CompanyList companies={initialCompanies} loadFailed={loadFailed} />
-    </div>
+    </>
   );
 }
 
@@ -250,15 +242,12 @@ function CopyButton({ text, getText, label = "Copy link", size = "sm", variant =
 
   return (
     <span className="inline-flex flex-col items-end max-w-full">
-      <Button size={size} variant={variant} icon={status === "copied" ? "check" : "copy"} onClick={onClick} disabled={status === "working"}>
+      <Button size={size} variant={variant} onClick={onClick} disabled={status === "working"}>
         {status === "copied" ? "Copied" : status === "working" ? "Copying…" : label}
       </Button>
-      {status === "error" && <span className="text-[12px] text-rose-600 mt-1 text-right">{error}</span>}
+      {status === "error" && <span role="alert" className="mt-1 text-[14px] leading-5 text-error text-right">{error}</span>}
       {shown && (
-        <span
-          className="text-[12px] text-slate-700 break-all mt-1 select-all"
-          style={{ background: "var(--bg-soft)", borderRadius: 8, padding: "6px 10px" }}
-        >
+        <span className="mt-1 px-2 py-1 rounded bg-surface-2 text-[14px] leading-5 text-[color:var(--text)] break-all select-all">
           {shown}
         </span>
       )}
@@ -268,46 +257,21 @@ function CopyButton({ text, getText, label = "Copy link", size = "sm", variant =
 
 function CreatedCard({ created, onAnother }) {
   return (
-    <div className="bg-[color:var(--paper-card)] p-5 sm:p-6" style={cardStyle}>
-      <div className="flex items-center gap-2">
-        <span className="inline-flex" style={{ color: "var(--accent)" }}>
-          <Icon name="check-circle" size={18} />
-        </span>
-        <h2 className="text-[20px] font-light text-slate-800 tracking-tight">{created.name} is ready to invite</h2>
-      </div>
-      <p className="text-[14px] text-slate-500 mt-1.5">
+    <Panel title={`${created.name} is ready to invite`}>
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">
         Copy this link and send it to the company yourself, by email or message. The link works once and
         lasts 90 days. Their page stays hidden until they claim it and make it live.
       </p>
-      <div
-        className="mt-4 text-[13px] text-slate-700 break-all"
-        style={{ background: "var(--bg-soft)", borderRadius: 10, padding: "10px 14px" }}
-      >
+      <div className="mt-4 p-3 rounded bg-surface-2 text-[14px] leading-5 text-[color:var(--text)] break-all select-all">
         {created.link}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <CopyButton text={created.link} size="md" variant="primary" />
-        <Button size="md" variant="outline" icon="plus" onClick={onAnother}>
+        <Button size="md" variant="outline" onClick={onAnother}>
           Invite another
         </Button>
       </div>
-    </div>
-  );
-}
-
-function StatusChip({ children, tone }) {
-  const tones = {
-    good: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
-    muted: { bg: "var(--bg-soft)", color: "var(--ink-graphite, #475569)", border: "var(--paper-line)" },
-  };
-  const t = tones[tone] ?? tones.muted;
-  return (
-    <span
-      className="inline-flex items-center text-[11.5px] font-medium"
-      style={{ background: t.bg, color: t.color, border: `1px solid ${t.border}`, borderRadius: 999, padding: "2px 9px" }}
-    >
-      {children}
-    </span>
+    </Panel>
   );
 }
 
@@ -325,49 +289,42 @@ function CompanyList({ companies, loadFailed }) {
   };
 
   return (
-    <div className="bg-[color:var(--paper-card)]" style={cardStyle}>
-      <div className="px-5 sm:px-6 pt-5 pb-3">
-        <h2 className="text-[20px] font-light text-slate-800 tracking-tight">All companies</h2>
-        <p className="text-[13px] text-slate-500 mt-0.5">
-          Every company on MatchTutor. Copying a link for an unclaimed company makes a fresh one that lasts 90 days.
-          Manage hides, shows or deletes a company.
-        </p>
-      </div>
-
+    <Panel
+      title="All companies"
+      lead="Every company on MatchTutor. Copying a link for an unclaimed company makes a fresh one that lasts 90 days. Manage hides, shows or deletes a company."
+      padded={false}
+    >
       {loadFailed ? (
-        <div className="px-5 sm:px-6 pb-5">
-          <ErrorNote>Could not load the company list. Refresh the page to try again.</ErrorNote>
-        </div>
+        <ErrorNote>Could not load the company list. Refresh the page to try again.</ErrorNote>
       ) : companies.length === 0 ? (
-        <p className="px-5 sm:px-6 pb-6 text-[14px] text-slate-500">No companies yet. Create the first one above.</p>
+        <p className="py-4 text-[14px] leading-5 text-[color:var(--text-2)]">No companies yet. Create the first one above.</p>
       ) : (
-        <ul>
+        <ul className="border-t border-rule">
           {companies.map((c) => (
-            <li key={c.id} style={{ borderTop: "1px solid var(--paper-line)" }}>
-              <div className="px-5 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <li key={c.id} className="border-b border-rule">
+              <div className="px-3 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="text-[14.5px] font-medium text-slate-800 truncate">
+                  <div className="text-[14px] leading-5 font-semibold text-[color:var(--text)] truncate">
                     {c.hidden ? (
                       c.name
                     ) : (
-                      <Link href={`/companies/${c.slug}`} className="hover:underline">
+                      <Link href={`/companies/${c.slug}`} className="text-accent hover:text-accent-hover">
                         {c.name}
                       </Link>
                     )}
                   </div>
-                  <div className="text-[12.5px] text-slate-500 mt-0.5">
+                  <div className="text-[12px] leading-4 text-muted">
                     {c.invitedBy ? `Invited by ${c.invitedBy}` : "Added by script"}
                     {c.createdLabel ? ` · ${c.createdLabel}` : ""}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <StatusChip tone={c.claimed ? "good" : "muted"}>{c.claimed ? "Claimed" : "Not claimed"}</StatusChip>
-                  <StatusChip tone={c.hidden ? "muted" : "good"}>{c.hidden ? "Hidden" : "Live"}</StatusChip>
+                  <Chip tone={c.claimed ? "good" : "muted"}>{c.claimed ? "Claimed" : "Not claimed"}</Chip>
+                  <Chip tone={c.hidden ? "muted" : "good"}>{c.hidden ? "Hidden" : "Live"}</Chip>
                   {!c.claimed && <CopyButton getText={fetchLink(c.id)} />}
                   <Button
                     size="sm"
-                    variant={managing === c.id ? "soft" : "ghost"}
-                    icon="more"
+                    variant={managing === c.id ? "outline" : "ghost"}
                     onClick={() => setManaging(managing === c.id ? null : c.id)}
                   >
                     Manage
@@ -379,7 +336,7 @@ function CompanyList({ companies, loadFailed }) {
           ))}
         </ul>
       )}
-    </div>
+    </Panel>
   );
 }
 
@@ -387,9 +344,9 @@ function CompanyList({ companies, loadFailed }) {
 // since it removes the company's tutors, packages and reviews for good.
 function ManageCompany({ company }) {
   return (
-    <div className="px-5 sm:px-6 pb-5">
-      <div style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
-        <p className="text-[12.5px] text-slate-500 mb-3">
+    <div className="px-3 pb-4">
+      <div className="bg-surface-2 rounded p-4">
+        <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
           {company.hidden
             ? "Making it live shows the page and its tutors in search."
             : "Hiding takes the page and its tutors out of search. The owner can still edit it."}{" "}

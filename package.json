@@ -8,7 +8,8 @@
     "start": "next start",
     "sync:audience": "node scripts/sync-tutors-audience.mjs",
     "seed:blog": "node scripts/seed-blog-articles.mjs",
-    "create:company": "node scripts/create-company.mjs"
+    "create:company": "node scripts/create-company.mjs",
+    "check:design": "node scripts/check-design.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.5.2",

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { Button } from "@/components/ui";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { tutorInviteUrl } from "@/lib/tutorInvite";
 
@@ -62,25 +63,20 @@ export function InviteLinkCard({ initialKey }) {
           onClick={copy}
           disabled={!link}
           title="Click to copy"
-          className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2.5 text-left"
-          style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 10 }}
+          className="flex-1 min-w-0 flex items-center gap-2 min-h-11 px-3 py-2 rounded bg-surface-2 text-left hover:bg-[color:var(--rule)]"
+          style={{ transition: "background-color 120ms ease-out" }}
         >
-          <Icon name={copied ? "check" : "copy"} size={14} className={copied ? "text-emerald-500 shrink-0" : "text-slate-400 shrink-0"} />
-          <code className="text-[12.5px] text-slate-700 truncate flex-1 min-w-0">{link || "Loading…"}</code>
-          <span className={"text-[11.5px] font-medium shrink-0 " + (copied ? "text-emerald-600" : "text-slate-400")}>
+          <code className="flex-1 min-w-0 truncate text-[14px] leading-5 text-[color:var(--text)]">{link || "Loading…"}</code>
+          <span className={`shrink-0 inline-flex items-center gap-1 text-[14px] leading-5 font-semibold ${copied ? "text-success" : "text-accent"}`}>
+            <Icon name={copied ? "check" : "copy"} size={16} />
             {copied ? "Copied" : "Copy"}
           </span>
         </button>
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[13px] font-medium"
-          style={{ background: "var(--paper-card)", color: "#DC2626", border: "1px solid #FECACA", borderRadius: 10 }}
-        >
+        <Button variant="danger" onClick={() => setConfirming(true)}>
           Rotate link
-        </button>
+        </Button>
       </div>
-      {error && <p className="text-[12.5px] text-red-600 mt-2">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-[14px] leading-5 text-error">{error}</p>}
       {confirming && (
         <ConfirmModal
           title="Rotate the invite link?"

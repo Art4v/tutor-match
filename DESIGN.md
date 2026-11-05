@@ -3,8 +3,8 @@
 Every UI change must conform to this file. Where it is silent, follow the nearest rule here, not an older pattern in the
 code. The reasoning behind each rule is in `REDESIGN_DECISIONS.md`.
 
-**Status: approved (2026-11-05), including every value marked ◆** (◆ marks values chosen while writing this document
-rather than in the walkthrough). Not yet implemented: the code still reflects the previous design until Phase 3.
+**Status: approved and implemented (2026-11-05), including every value marked ◆** (◆ marks values chosen while writing
+this document rather than in the walkthrough). `npm run check:design` enforces §10.
 
 **Direction:** an established marketplace, not a startup landing page. Light neutral page, one restrained brand colour,
 small radii, borders instead of decoration, real information doing the work. References: Wyzant (search, rows,
@@ -66,7 +66,8 @@ Rules:
   (`<strong>` / `<b>` render at 600).
 - **No uppercase letter-spaced labels**, no eyebrows above headings, no numbered "01 / 02" labels.
 - Headings are sentence case and never end with a full stop.
-- **Line length:** reading text sits in the reading width (about 680px), which keeps lines under about 80 characters.
+- **Line length:** long-form text (bios, About, blog bodies, legal text) is capped at `max-w-[65ch]`. Source Sans 3 is
+  narrow, so the 680px reading width alone gives about 100 characters a line; 65ch keeps it near 75.
 
 ## 3. Spacing and layout
 
@@ -214,7 +215,7 @@ decoration · placeholder people · em dashes.
 
 ## 10. Enforcement (Phase 3)
 
-A check script (to be added in Phase 3) fails the build or CI on:
+`npm run check:design` (`scripts/check-design.mjs`) exits 1 on:
 - `text-[Npx]` or inline `fontSize` values outside 12/14/16/20/24/32;
 - hex, `rgb()` or `rgba()` values in `app/` or `components/` outside `app/globals.css`;
 - `rounded-*` other than `rounded` (4px) and `rounded-full` on avatars, and inline `borderRadius` other than 4 or `50%`;
@@ -223,7 +224,6 @@ A check script (to be added in Phase 3) fails the build or CI on:
 - `linear-gradient`, `radial-gradient`, `backdrop-filter`, `blur(`;
 - the em dash character in JSX text.
 
-**Open conflict with CLAUDE.md:** its Styling section says inline `style={{ … }}` objects keep design tokens local and
-should not be moved into a global stylesheet. This document puts every token in `app/globals.css` and Tailwind. The
-check above can read both forms, so inline styles may stay, but every inline value must reference a token. CLAUDE.md
-needs to say so when this document is approved.
+Inline `style={{ … }}` objects may stay (CLAUDE.md's Styling convention), but every value must reference a token; the
+check reads both Tailwind classes and inline styles. A line may opt out with a `design-allow: <reason>` comment (used for
+Google's brand colours on the sign-in button and a stored default avatar colour).

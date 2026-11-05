@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import { Button } from "./ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   MAX_TUTOR_DOCS,
@@ -21,9 +22,9 @@ function titleFromFileName(fileName) {
 // Documentation editor — the form behind the profile's "Documentation" card.
 // Draft-based like the other section editors: everything (new files, removals,
 // renames) is staged locally and applied only when the modal's Save runs
-// `commit()` (exposed via ref); Cancel just unmounts the draft. One dashed
-// zone is both the button (click -> hidden file input) and the drag-and-drop
-// target. Picking files first STAGES them behind the public-visibility
+// `commit()` (exposed via ref); Cancel just unmounts the draft. One plain
+// "Add files" button opens the hidden file input; files can also be dropped
+// onto the editor. Picking files first STAGES them behind the public-visibility
 // warning panel — they join the draft only once the tutor confirms, and
 // upload (to the PUBLIC `tutor-docs` bucket + a `tutor_documents` row,
 // migration 0034) only on Save. `onDirtyChange` drives the Save button's
@@ -42,7 +43,7 @@ function titleFromFileName(fileName) {
 //   remove(item) -> { ok, error }, rename(item, title) -> { ok, error },
 //   upload(file, title) -> { ok, id, title, path, url } | { ok: false, error }
 export const DocumentationUploader = forwardRef(function DocumentationUploader(
-  { userId, docs, onDirtyChange, mode = "live", ops },
+  { userId, docs, onDirtyChange, mode = "live", ops, hideTitle = false },
   ref
 ) {
   const [supabase] = useState(() => createSupabaseBrowserClient());
@@ -183,14 +184,14 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
     setAdded((list) => list.map((a) => (a.key === key ? { ...a, title: next } : a)));
   };
 
-  // One row shape for existing + staged-new entries; draft-only actions.
+  const iconBtn =
+    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-[color:var(--text-2)] hover:bg-surface-2 hover:text-[color:var(--text)] disabled:opacity-50";
+  const iconBtnStyle = { transition: "background-color 120ms ease-out, color 120ms ease-out" };
+
+  // One row shape for existing + staged-new entries; draft-only actions. A
+  // plain ruled row (DESIGN.md: lists are rows divided by rules).
   const row = ({ key, title, isPdf, isNew, onRemove }) => (
-    <li
-      key={key}
-      className="flex items-center gap-2 px-2.5 py-1.5 text-[12.5px]"
-      style={{ background: "var(--bg-soft)", borderRadius: 8 }}
-    >
-      <Icon name={isPdf ? "file-text" : "image"} size={13} className="shrink-0 text-slate-400" />
+    <li key={key} className="flex min-h-11 items-center gap-2 border-b border-rule py-2 text-[14px] leading-5">
       {editingKey === key ? (
         <input
           type="text"
@@ -203,82 +204,75 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
             if (e.key === "Enter") e.currentTarget.blur(); // commit via onBlur
             if (e.key === "Escape") { setEditValue(""); setEditingKey(null); }
           }}
-          className="flex-1 min-w-0 px-1.5 py-0.5 text-[12.5px] text-slate-700 bg-white"
-          style={{ border: "1px solid var(--paper-line)", borderRadius: 6, outline: "none" }}
+          className="h-11 min-w-0 flex-1 rounded border border-input bg-surface px-3 text-[14px] leading-5 text-[color:var(--text)] focus:border-accent"
         />
       ) : (
-        <span className="flex-1 min-w-0 truncate text-slate-700">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-[color:var(--text)]">{title}</span>
       )}
-      {isNew && editingKey !== key && (
-        <span
-          className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-          style={{ background: "var(--accent-softer)", border: "1px solid var(--accent-line)", borderRadius: 999, color: "var(--accent)" }}
-        >
-          New
+      {editingKey !== key && (
+        <span className="shrink-0 text-[12px] leading-4 text-muted">
+          {isPdf ? "PDF" : "Image"}{isNew ? ", new" : ""}
         </span>
       )}
       <button
         type="button"
         onClick={() => startRetitle(key, title)}
         disabled={editingKey === key}
+        aria-label={`Rename ${title}`}
         title="Rename"
-        className="shrink-0 inline-flex items-center justify-center text-slate-400 hover:text-slate-700 disabled:opacity-50 transition-colors"
-        style={{ width: 20, height: 20 }}
+        className={iconBtn}
+        style={iconBtnStyle}
       >
-        <Icon name="pencil" size={12} />
+        <Icon name="pencil" size={16} />
       </button>
       <button
         type="button"
         onClick={onRemove}
+        aria-label={`Remove ${title}`}
         title="Remove"
-        className="shrink-0 inline-flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors"
-        style={{ width: 20, height: 20 }}
+        className={iconBtn + " hover:text-error"}
+        style={iconBtnStyle}
       >
-        <Icon name="trash" size={12.5} />
+        <Icon name="trash" size={16} />
       </button>
     </li>
   );
 
   return (
-    <div>
-      <div className="flex items-center gap-2">
-        <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Documentation</h2>
-        <span className="ml-auto text-[11px] text-slate-400 tabular-nums">{count}/{MAX_TUTOR_DOCS}</span>
-      </div>
-      <p className="text-[13px] text-slate-500 mt-1 mb-5">
+    <div
+      onDragOver={(e) => { e.preventDefault(); if (!full) setDragging(true); }}
+      onDragLeave={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget)) return; // ignore moves onto children
+        setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        if (!full) stage(e.dataTransfer.files);
+      }}
+    >
+      {!hideTitle && <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">Documents</h2>}
+      <p className={(hideTitle ? "" : "mt-1 ") + "text-[14px] leading-5 text-[color:var(--text-2)]"}>
         Documents that back up your credentials, like your WWCC, transcripts and certificates. They show publicly on your profile.
       </p>
 
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={full}
-        onDragOver={(e) => { e.preventDefault(); if (!full) setDragging(true); }}
-        onDragLeave={(e) => {
-          if (e.currentTarget.contains(e.relatedTarget)) return; // ignore moves onto children
-          setDragging(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          if (!full) stage(e.dataTransfer.files);
-        }}
-        className="w-full flex flex-col items-center justify-center gap-1 px-3 py-4 transition-colors disabled:cursor-not-allowed"
-        style={{
-          border: `1.5px dashed ${dragging ? "var(--accent)" : "var(--paper-line)"}`,
-          borderRadius: 10,
-          background: dragging ? "var(--accent-softer)" : "var(--bg-soft)",
-          color: "var(--ink)",
-          cursor: full ? "not-allowed" : "pointer",
-          opacity: full ? 0.6 : 1,
-        }}
-      >
-        <Icon name="upload" size={16} className={dragging ? "" : "text-slate-400"} />
-        <span className="text-[12.5px] font-medium text-slate-700">
-          {full ? "Document limit reached" : "Click to upload or drag files here"}
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={full}
+          className={
+            "inline-flex h-11 items-center rounded border px-4 text-[14px] leading-5 font-semibold disabled:cursor-not-allowed disabled:opacity-50 " +
+            (dragging ? "border-accent bg-surface-2 text-[color:var(--text)]" : "border-input bg-surface text-[color:var(--text)] hover:bg-surface-2")
+          }
+          style={{ transition: "background-color 120ms ease-out, border-color 120ms ease-out" }}
+        >
+          {full ? "Document limit reached" : "Add files"}
+        </button>
+        <span className="text-[12px] leading-4 text-muted">
+          PDF or image, 10 MB max. {count} of {MAX_TUTOR_DOCS} used.
         </span>
-        {!full && <span className="text-[11px] text-slate-400">WWCC, transcript or certificate. PDF or image, 10 MB max</span>}
-      </button>
+      </div>
       <input
         ref={inputRef}
         type="file"
@@ -286,7 +280,7 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
         accept="application/pdf,image/*"
         className="hidden"
         onChange={(e) => {
-          // Snapshot first: e.target.files is a LIVE FileList — clearing the
+          // Snapshot first: e.target.files is a LIVE FileList, and clearing the
           // input's value empties it, so copying must happen before the reset.
           const files = Array.from(e.target.files || []);
           e.target.value = ""; // let the same file be re-picked after a remove
@@ -295,63 +289,54 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
       />
 
       {pending.length > 0 && (
-        <div className="mt-3 px-3.5 py-3" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10 }}>
-          <p className="text-[12.5px] leading-[1.55] flex items-start gap-2" style={{ color: "#92400E" }}>
-            <span className="shrink-0 mt-0.5"><Icon name="alert-triangle" size={14} /></span>
+        // The one inline alert on this screen (DESIGN.md §1): a 1px warning
+        // border, no tint.
+        <div className="mt-4 rounded border border-warning px-4 py-3">
+          <p className="flex items-start gap-2 text-[14px] leading-5 text-[color:var(--text)]">
+            <span className="flex h-5 shrink-0 items-center text-warning"><Icon name="alert-triangle" size={16} /></span>
             <span>
               <strong>These documents will be public.</strong> Anyone who views your profile can open and
               download them. Don&apos;t upload anything you need to keep private, like photo ID.
             </span>
           </p>
-          <ul className="mt-2.5 space-y-1.5">
+          <ul className="mt-3 space-y-2">
             {pending.map((item, i) => (
-              <li key={`${item.file.name}-${i}`} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={item.title}
-                  placeholder="Title shown on your profile"
-                  aria-label={`Title for ${item.file.name}`}
-                  onChange={(e) => setPending((p) => p.map((x, xi) => (xi === i ? { ...x, title: e.target.value } : x)))}
-                  className="flex-1 min-w-0 px-2.5 py-1.5 text-[12.5px] text-slate-700 bg-white"
-                  style={{ border: "1px solid #FDE68A", borderRadius: 8, outline: "none" }}
-                />
-                <span className="shrink-0 max-w-[120px] truncate text-[11px] text-slate-400">{item.file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setPending((p) => p.filter((_, xi) => xi !== i))}
-                  title="Don't add this file"
-                  className="shrink-0 inline-flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors"
-                  style={{ width: 20, height: 20 }}
-                >
-                  <Icon name="x" size={12} />
-                </button>
+              <li key={`${item.file.name}-${i}`}>
+                <label className="block">
+                  <span className="mb-2 block truncate text-[12px] leading-4 text-muted">Title for {item.file.name}</span>
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={item.title}
+                      onChange={(e) => setPending((p) => p.map((x, xi) => (xi === i ? { ...x, title: e.target.value } : x)))}
+                      className="h-11 min-w-0 flex-1 rounded border border-input bg-surface px-3 text-[14px] leading-5 text-[color:var(--text)] focus:border-accent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPending((p) => p.filter((_, xi) => xi !== i))}
+                      aria-label={`Don't add ${item.file.name}`}
+                      title="Don't add this file"
+                      className={iconBtn + " hover:text-error"}
+                      style={iconBtnStyle}
+                    >
+                      <Icon name="x" size={16} />
+                    </button>
+                  </span>
+                </label>
               </li>
             ))}
           </ul>
-          <div className="flex items-center justify-end gap-2 mt-3">
-            <button
-              type="button"
-              onClick={() => setPending([])}
-              className="px-3 py-1.5 text-[12.5px] font-medium rounded-full transition-colors hover:bg-white/60"
-              style={{ color: "#92400E", border: "1px solid #FDE68A", background: "transparent" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmAdd}
-              className="px-3 py-1.5 text-[12.5px] font-medium rounded-full transition-colors inline-flex items-center gap-1.5"
-              style={{ background: "var(--ink)", color: "#fff" }}
-            >
-              <Icon name="check" size={12.5} strokeWidth={2.4} />
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setPending([])}>Cancel</Button>
+            <Button variant="primary" onClick={confirmAdd}>
               Add {pending.length === 1 ? "1 file" : `${pending.length} files`}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {(visibleItems.length > 0 || added.length > 0) && (
-        <ul className="mt-2 space-y-1">
+        <ul className="mt-4 border-t border-rule">
           {visibleItems.map((it) =>
             row({
               key: it.key,
@@ -374,15 +359,15 @@ export const DocumentationUploader = forwardRef(function DocumentationUploader(
       )}
 
       {errors.map((err, i) => (
-        <p key={i} className="mt-1.5 text-[12px]" style={{ color: "#DC2626" }}>
-          <span className="font-medium">{err.name}:</span> {err.message}
+        <p key={i} className="mt-2 text-[14px] leading-5 text-error">
+          <span className="font-semibold">{err.name}:</span> {err.message}
         </p>
       ))}
 
-      <p className="mt-2 text-[11.5px] text-slate-400 leading-[1.5]">
+      <p className="mt-4 text-[12px] leading-4 text-muted">
         {mode === "draft"
           ? "Nothing changes until you save. Saved changes go into your draft and show on your profile once approved."
-          : "Nothing changes until you save. Save uploads new files and applies removals and renames."}
+          : "Nothing changes until you save. Saving uploads new files and applies removals and renames."}
       </p>
     </div>
   );

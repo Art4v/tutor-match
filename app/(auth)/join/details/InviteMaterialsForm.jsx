@@ -13,6 +13,7 @@ import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { uploadInviteMaterial, inviteDocFileError, INVITE_DOC_TYPES } from "@/lib/supabase/storage";
+import { AuthHeading, StatusLine, INPUT_CLASS, LINK_CLASS } from "../../_components/fields";
 import { MAX_INVITE_DOCS, MAX_INVITE_LINKS, MAX_LINK_LENGTH } from "@/lib/tutorInvite";
 
 const titleFromName = (name) => String(name || "").replace(/\.[^.]+$/, "").slice(0, 200) || "Document";
@@ -100,58 +101,46 @@ export default function InviteMaterialsForm() {
   };
 
   return (
-    <div
-      className="w-full max-w-[520px] bg-[color:var(--paper-card)]"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: "var(--radius-card)",
-        padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
-      }}
-    >
-      <h1 className="text-[36px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-        Help us build your profile.
-      </h1>
-      <p className="text-[14px] text-slate-500 mt-2 leading-[1.55]">
+    <div>
+      <AuthHeading title="Help us build your profile">
         Attach anything that helps us set up your profile, like a resume or certificates, and links such as
-        LinkedIn or a portfolio. Only the MatchTutor team can see these. Everything here is optional, and you
-        can only send it once.
-      </p>
+        LinkedIn or a portfolio. Only the MatchTutor team can see these. Everything here is optional,
+        and you can only send it once.
+      </AuthHeading>
 
-      <section className="mt-6">
-        <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
+      <section>
+        <h2 className="text-[14px] leading-5 font-semibold text-[color:var(--text)] mb-2">
           Documents ({files.length}/{MAX_INVITE_DOCS})
-        </div>
-        <ul className="space-y-2">
-          {files.map((f, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <Icon name="file-text" size={16} />
-              <input
-                value={f.title}
-                onChange={(e) => setFiles(files.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
-                maxLength={200}
-                aria-label={`Title for ${f.file.name}`}
-                className="flex-1 h-9 px-3 text-[14px] text-slate-900 outline-none"
-                style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
-              />
-              <button
-                type="button"
-                onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                aria-label={`Remove ${f.file.name}`}
-                className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600"
-              >
-                <Icon name="x" size={16} />
-              </button>
-            </li>
-          ))}
-        </ul>
+        </h2>
+        {files.length > 0 && (
+          <ul className="space-y-2 mb-2">
+            {files.map((f, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <input
+                  value={f.title}
+                  onChange={(e) => setFiles(files.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+                  maxLength={200}
+                  aria-label={`Title for ${f.file.name}`}
+                  className={`flex-1 min-w-0 ${INPUT_CLASS}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                  aria-label={`Remove ${f.file.name}`}
+                  className="h-11 w-11 shrink-0 flex items-center justify-center rounded text-muted hover:bg-surface-2 hover:text-[color:var(--text)]"
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {files.length < MAX_INVITE_DOCS && (
           <label
-            className="mt-2 flex items-center justify-center gap-2 h-11 cursor-pointer text-[13.5px] font-medium"
-            style={{ border: "1px dashed var(--paper-line)", borderRadius: 10, color: "var(--accent)" }}
+            className="inline-flex items-center justify-center h-11 px-4 border border-input rounded bg-surface hover:bg-surface-2 cursor-pointer text-[14px] leading-5 font-semibold text-[color:var(--text)] focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
+            style={{ transition: "background-color 120ms ease-out" }}
           >
-            <Icon name="upload" size={16} />
-            Add PDF or image (10 MB max)
+            Add a PDF or image
             <input
               type="file"
               accept={INVITE_DOC_TYPES.join(",")}
@@ -164,10 +153,11 @@ export default function InviteMaterialsForm() {
             />
           </label>
         )}
+        <p className="text-[12px] leading-4 text-muted mt-2">10 MB max per file.</p>
       </section>
 
       <section className="mt-6">
-        <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">Links</div>
+        <h2 className="text-[14px] leading-5 font-semibold text-[color:var(--text)] mb-2">Links</h2>
         <div className="space-y-2">
           {links.map((link, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -175,17 +165,17 @@ export default function InviteMaterialsForm() {
                 type="url"
                 value={link}
                 onChange={(e) => setLinks(links.map((x, j) => (j === i ? e.target.value : x)))}
-                placeholder="https://www.linkedin.com/in/you"
+                placeholder="https://"
                 maxLength={MAX_LINK_LENGTH}
-                className="flex-1 h-9 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
-                style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
+                aria-label={`Link ${i + 1}`}
+                className={`flex-1 min-w-0 ${INPUT_CLASS}`}
               />
               {links.length > 1 && (
                 <button
                   type="button"
                   onClick={() => setLinks(links.filter((_, j) => j !== i))}
                   aria-label="Remove link"
-                  className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600"
+                  className="h-11 w-11 shrink-0 flex items-center justify-center rounded text-muted hover:bg-surface-2 hover:text-[color:var(--text)]"
                 >
                   <Icon name="x" size={16} />
                 </button>
@@ -197,29 +187,24 @@ export default function InviteMaterialsForm() {
           <button
             type="button"
             onClick={() => setLinks([...links, ""])}
-            className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium"
-            style={{ color: "var(--accent)" }}
+            className={`mt-2 inline-flex items-center min-h-6 text-[14px] leading-5 ${LINK_CLASS}`}
           >
-            <Icon name="plus" size={14} /> Add another link
+            Add another link
           </button>
         )}
       </section>
 
-      {error && (
-        <div className="mt-5 px-3 py-2 text-[13px] text-red-700" style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}>
-          {error}
-        </div>
-      )}
+      {error && <StatusLine className="mt-6">{error}</StatusLine>}
 
-      <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
+      <div className="mt-8 flex flex-col-reverse sm:flex-row gap-2">
         <Button type="button" variant="outline" size="lg" full disabled={busy} onClick={() => send(true)}>
           Skip
         </Button>
         <Button type="button" variant="primary" size="lg" full disabled={busy} onClick={() => send(false)}>
-          {busy ? "Sending…" : "Send to MatchTutor"}
+          {busy ? "Sending\u2026" : "Send to MatchTutor"}
         </Button>
       </div>
-      <p className="text-[12px] text-slate-500 mt-3 text-center">
+      <p className="text-[12px] leading-4 text-muted mt-3 text-center">
         Skipping is final too, so send anything you have now.
       </p>
     </div>

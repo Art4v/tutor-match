@@ -33,47 +33,43 @@ export default async function ReviewDetailPage({ params }) {
     <>
       <PageHeader icon="star" title={`${studentName} on ${subjectName}`} lead="Student review" back={{ href: "/admin/reviews", label: "Reviews" }} />
       <Panel>
-        <div className="pt-5">
-          <Inset>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <StarRating value={review.rating} size={16} />
-              <span className="font-medium text-slate-900">{review.rating}/5</span>
-              <span className="text-slate-400 text-[13px]">{formatDate(review.created_at)}</span>
-            </div>
-            {review.body ? (
-              <p className="text-[14px] leading-[1.6] mt-3 whitespace-pre-wrap" style={{ color: "var(--ink)" }}>
-                {review.body}
-              </p>
-            ) : (
-              <p className="text-[13px] mt-3" style={{ color: "var(--sage)" }}>No written review, a rating only.</p>
-            )}
-            {subjectHref && (
-              <a href={subjectHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] mt-3" style={{ color: "var(--accent)" }}>
-                View the {whose} public page <Icon name="external" size={13} />
-              </a>
-            )}
-          </Inset>
-
-          <div className="mt-5">
-            {pending ? (
-              <>
-                <p className="text-[12.5px] text-slate-500 mb-4">
-                  Publishing shows it on the {whose} page and updates their average rating. Rejecting keeps it hidden, and the student can edit it to send it back. Either way the student is emailed, with your note on a rejection.
-                </p>
-                <DecisionPanel
-                  endpoint="/api/admin/reviews"
-                  body={{ reviewId: review.id }}
-                  reasonHint="Sent to the student if you reject."
-                  actions={[
-                    { key: "approve", label: "Publish", busyLabel: "Publishing…", tone: "primary", icon: "check", body: { decision: "approve" }, doneText: "The review is live." },
-                    { key: "reject", label: "Reject", busyLabel: "Rejecting…", tone: "danger-outline", icon: "x", body: { decision: "reject" }, doneText: "The review was rejected." },
-                  ]}
-                />
-              </>
-            ) : (
-              <DecidedNote text={DECIDED[review.status] || "Already decided."} last={last} />
-            )}
+        <Inset>
+          <div className="flex items-center gap-2 flex-wrap">
+            <StarRating value={review.rating} size={16} />
+            <span className="font-semibold">{review.rating}/5</span>
+            <span className="text-[12px] leading-4 text-muted">{formatDate(review.created_at)}</span>
           </div>
+          {review.body ? (
+            <p className="mt-3 text-[16px] leading-6 whitespace-pre-wrap">{review.body}</p>
+          ) : (
+            <p className="mt-3 text-[color:var(--text-2)]">No written review, a rating only.</p>
+          )}
+          {subjectHref && (
+            <a href={subjectHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 mt-3 text-accent hover:text-accent-hover">
+              View the {whose} public page <Icon name="external" size={16} />
+            </a>
+          )}
+        </Inset>
+
+        <div className="mt-6">
+          {pending ? (
+            <>
+              <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
+                Publishing shows it on the {whose} page and updates their average rating. Rejecting keeps it hidden, and the student can edit it to send it back. Either way the student is emailed, with your note on a rejection.
+              </p>
+              <DecisionPanel
+                endpoint="/api/admin/reviews"
+                body={{ reviewId: review.id }}
+                reasonHint="Sent to the student if you reject."
+                actions={[
+                  { key: "approve", label: "Publish", busyLabel: "Publishing…", tone: "primary", icon: "check", body: { decision: "approve" }, doneText: "The review is live." },
+                  { key: "reject", label: "Reject", busyLabel: "Rejecting…", tone: "danger-outline", icon: "x", body: { decision: "reject" }, doneText: "The review was rejected." },
+                ]}
+              />
+            </>
+          ) : (
+            <DecidedNote text={DECIDED[review.status] || "Already decided."} last={last} />
+          )}
         </div>
       </Panel>
     </>

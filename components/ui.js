@@ -1,157 +1,127 @@
 "use client";
-import { useState } from "react";
 import { Icon } from "./Icon";
 
-// Optional overrides, all defaulted so existing callers (TopNav chip, profile
-// header, similar-tutor minis) render exactly as before:
-//   radius     — the frame shape; the tutor card uses a rounded square
-//   ringColor / ringWidth — the surround; the card uses a solid white border
-// No image → a graduation cap on the tutor's avatarBg colour.
+// Design primitives (DESIGN.md §6). Every value here is a token; prefer
+// extending these over new inline styles.
+
+/** Initials from a display name: first letter of the first and last words. */
+export function initialsFrom(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** "Kanishka Bhasin" → "Kanishka B." (DESIGN.md copy rule: names in rows and cards). */
+export function shortName(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+}
+
+// People are circles, companies are squares (DESIGN.md §4). `radius` stays as
+// an override for the few callers that pass one; `shape="square"` is the
+// company form. No photo: initials on --surface-2 (no icon, no tutor-picked
+// colour). `ring` draws a white surround where the photo overlaps a banner.
 export function Avatar({
   tutor,
   size = 64,
   ring = false,
-  radius = "50%",
-  ringColor = "var(--paper-card)",
+  shape = "circle",
+  radius,
+  ringColor = "var(--surface)",
   ringWidth = 4,
 }) {
-  const img = tutor.avatarImg;
+  const img = tutor?.avatarImg || null;
+  const initials = tutor?.initial || tutor?.initials || initialsFrom(tutor?.name);
+  const r = radius ?? (shape === "square" ? "var(--radius)" : "50%");
   return (
     <div
-      className="relative flex items-center justify-center select-none overflow-hidden"
+      className="relative flex shrink-0 items-center justify-center select-none overflow-hidden"
       style={{
         width: size,
         height: size,
         // Longhand (not the `background` shorthand): assigning the shorthand on a
         // re-render resets background-size back to `auto`, which React then doesn't
-        // re-apply — so a switched avatar rendered hyperzoomed until remount.
-        backgroundColor: tutor.avatarBg,
-        color: "var(--ink-graphite)",
-        borderRadius: radius,
+        // re-apply, so a switched avatar rendered hyperzoomed until remount.
+        backgroundColor: "var(--surface-2)",
+        color: "var(--text-2)",
+        borderRadius: r,
         boxShadow: ring ? `0 0 0 ${ringWidth}px ${ringColor}` : "none",
         backgroundImage: img ? `url(${img})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
+        fontWeight: 600,
+        fontSize: Math.max(12, Math.round(size * 0.36)),
+        lineHeight: 1,
       }}
+      aria-hidden={img ? undefined : "true"}
     >
-      {!img && <Icon name="grad-cap" size={Math.round(size * 0.5)} />}
+      {!img && initials}
     </div>
   );
 }
 
-// Scalloped "verified badge" rosette (the familiar social-media seal shape) in
-// deep teal, with the check knocked out in white. The hover tooltip is
-// state-driven (not a native `title`) so it shows reliably even while the
-// surrounding card runs its own hover animation — a moving element resets the
-// native tooltip timer, so it would otherwise never appear on the card.
-// Shared visual treatment for the small dark hover tooltips (the verified-tick
-// explainer, the bookmark's "Save tutor"). Box metrics only — POSITIONING is up
-// to the caller, since one sits absolutely above its trigger and the other is
-// portalled to `position: fixed` to escape the card's overflow. Kept in one
-// place because the two drifted apart once already (3px/7px/r6 vs 5px/9px/r7),
-// which reads as a mistake when both can be on screen at the same time.
+// Small dark tooltip box (the verified explainer, the bookmark's "Save tutor").
+// Box metrics only; positioning is up to the caller. It floats, so it carries
+// the one floating shadow.
 export const TOOLTIP_STYLE = {
-  background: "var(--ink)",
-  color: "var(--paper-card)",
-  fontSize: 11.5,
-  lineHeight: 1.25,
-  padding: "5px 9px",
-  borderRadius: 7,
-  letterSpacing: "0.01em",
-  boxShadow: "0 6px 16px -6px rgba(0,49,47,0.5)",
+  background: "var(--text)",
+  color: "var(--surface)",
+  fontSize: 12,
+  lineHeight: "16px",
+  padding: "4px 8px",
+  borderRadius: "var(--radius)",
+  boxShadow: "var(--shadow-float)",
 };
 
-// `label` renders the handwritten "verified by hand" script inline beside the
-// tick (dark green, sized off the surrounding name text). Off by default so the
-// compact call sites (message list, similar-tutor mini, the "Verified" pill)
-// stay tick-only. `labelClassName` lets a call site hide the script responsively
-// (a `display:none` label isn't a flex item, so the gap collapses with it).
+// The verified mark: an --accent check (DESIGN.md §6), with the word "Verified"
+// where space allows. `label` turns the word on; `labelClassName` lets a call
+// site hide it responsively.
 export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) {
   return (
-    <span className="inline-flex items-center align-middle" style={{ gap: label ? "0.28em" : 0 }}>
-      <span
-        className="inline-flex"
-        // Nudged down a touch: without it the tick centres on the name's LINE
-        // box (ascender/descender padding sits above the glyphs) and reads high.
-        // The offset is in `em`, so it stays proportional at every call site.
-        style={{ lineHeight: 0, position: "relative", top: "0.06em" }}
-      >
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-          role="img"
-          aria-label="Verified by hand"
-        >
-          <path
-            fill="var(--ink-graphite)"
-            d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"
-          />
-          <path
-            fill="#fff"
-            transform="translate(12 12) scale(0.78) translate(-12 -12)"
-            d="M9.8 17.3l-4.2-4.1L7 11.8l2.8 2.7L17 7.4l1.4 1.4-8.6 8.5z"
-          />
-        </svg>
-      </span>
+    <span className="inline-flex items-center align-middle" style={{ gap: label ? 4 : 0, color: "var(--accent)" }}>
+      <svg width={size} height={size} viewBox="0 0 16 16" role="img" aria-label="Verified" className="shrink-0">
+        <path
+          fill="currentColor"
+          d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm3.6 5.7-4.2 4.8a.75.75 0 0 1-1.1 0L4.4 8.6a.75.75 0 1 1 1.1-1l1.4 1.4 3.6-4.2a.75.75 0 1 1 1.1 1Z"
+        />
+      </svg>
       {label && (
-        // Caveat script (the design's .font-hand accent), dark green, sized
-        // relative to the name it sits beside. aria-hidden: the tick's svg
-        // already announces "Verified by hand" to screen readers.
-        <span
-          className={`font-hand whitespace-nowrap ${labelClassName}`}
-          style={{ color: "var(--ink-graphite)", fontSize: "1em", lineHeight: 1 }}
-          aria-hidden="true"
-        >
-          verified by hand
+        <span className={`text-[12px] font-semibold leading-4 whitespace-nowrap ${labelClassName}`} aria-hidden="true">
+          Verified
         </span>
       )}
     </span>
   );
 }
 
-export function Chip({ children, tone = "grey", size = "md", icon, onClick, active, onRemove, disabled, radius = 999 }) {
+// Chips are for removable filter values and status labels only (DESIGN.md: no
+// pills). 4px radius, neutral, 12px text. `radius` is accepted and ignored.
+export function Chip({ children, tone = "grey", size = "md", icon, onClick, active, onRemove, disabled }) {
   const tones = {
-    grey: { bg: active ? "var(--accent)" : "var(--desk)", color: active ? "#fff" : "var(--ink)", border: active ? "var(--accent)" : "transparent" },
-    line: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--paper-line)" },
-    cream: { bg: "var(--bg-soft)", color: "var(--ink-muted)", border: "var(--paper-line)" },
-    accent: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
-    pill: { bg: "var(--pill)", color: "var(--pill-ink)", border: "var(--chip-line)" },
+    grey: active
+      ? "bg-accent text-white border-accent"
+      : "bg-surface-2 text-[color:var(--text)] border-transparent",
+    line: "bg-surface text-[color:var(--text)] border-rule",
+    cream: "bg-surface-2 text-[color:var(--text-2)] border-rule",
+    accent: "bg-surface text-accent border-rule",
+    pill: "bg-surface-2 text-[color:var(--text-2)] border-transparent",
   };
-  const sizes = {
-    md: "gap-1.5 px-2.5 py-1 text-[12.5px]",
-    sm: "gap-[5px] px-[9px] py-1 text-[12px]",
-  };
-  const t = tones[tone];
   const clickable = !!onClick && !disabled;
   const Tag = clickable ? "button" : "span";
-  const [hover, setHover] = useState(false);
-
-  // Subtle accent hover on neutral line/cream chips that are clickable
-  const accentHover = clickable && (tone === "line" || tone === "cream");
-  const bg = accentHover && hover ? "var(--accent-softer)" : t.bg;
-  const color = accentHover && hover ? "var(--accent)" : t.color;
-  const border = accentHover && hover ? "var(--accent-line)" : t.border;
-
   return (
     <Tag
-      // A bare <button> inside a <form> defaults to type="submit" — chips are
+      // A bare <button> inside a <form> defaults to type="submit"; chips are
       // never submit controls.
       type={clickable ? "button" : undefined}
       onClick={clickable ? onClick : undefined}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className={`inline-flex items-center font-medium ${sizes[size] || sizes.md}`}
-      style={{
-        background: bg,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: radius,
-        lineHeight: 1.2,
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "not-allowed" : clickable ? "pointer" : undefined,
-        transition: "background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out",
-      }}
+      className={`inline-flex items-center gap-1 border rounded text-[12px] leading-4 font-semibold ${
+        size === "sm" ? "px-2 py-1" : "px-2 py-1"
+      } ${tones[tone] || tones.grey} ${clickable ? "cursor-pointer hover:border-input" : ""} ${
+        disabled ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+      style={{ transition: "border-color 120ms ease-out, background-color 120ms ease-out" }}
     >
       {icon && <Icon name={icon} size={12} />}
       {children}
@@ -161,14 +131,7 @@ export function Chip({ children, tone = "grey", size = "md", icon, onClick, acti
           aria-label="Remove"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           onMouseDown={(e) => e.preventDefault()}
-          className="inline-flex items-center justify-center -mr-1 ml-0.5 hover:text-slate-900"
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 999,
-            cursor: "pointer",
-            color: tone === "accent" || (accentHover && hover) ? "var(--accent)" : "var(--ink-muted)",
-          }}
+          className="inline-flex items-center justify-center -my-1 -mr-2 ml-0 w-6 h-6 cursor-pointer text-[color:var(--text-2)] hover:text-[color:var(--text)]"
         >
           <Icon name="x" size={10} strokeWidth={2.5} />
         </span>
@@ -177,62 +140,36 @@ export function Chip({ children, tone = "grey", size = "md", icon, onClick, acti
   );
 }
 
-// Buttons are deliberately static on hover: no colour/border/ring shift and no
-// iconRight nudge. The only pointer feedback is the press-scale below, which is
-// click feedback rather than a hover animation.
-export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, radius, ariaLabel }) {
+// Buttons (DESIGN.md §6): 44px tall, 4px radius, 14px at 600, sentence case.
+// Hover/press change colour only. Variants: primary (accent fill), outline
+// (secondary: white + input border), ghost (text button in accent), danger.
+// The old `soft` and `dark` variants map onto secondary and primary so existing
+// call sites keep working. `size` only changes horizontal padding; `radius` is
+// accepted and ignored.
+export function Button({ children, variant = "primary", size = "md", icon, iconRight, onClick, full, type, disabled, ariaLabel }) {
   const variants = {
-    primary: { bg: "var(--accent)", color: "#fff", border: "var(--accent)" },
-    outline: { bg: "var(--paper-card)", color: "var(--ink)", border: "var(--line-strong)" },
-    ghost:   { bg: "transparent", color: "var(--ink)", border: "transparent" },
-    soft:    { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
-    dark:    { bg: "var(--ink)", color: "#fff", border: "var(--ink)" },
+    primary: "bg-accent text-white border-accent hover:bg-accent-hover hover:border-accent-hover",
+    dark: "bg-accent text-white border-accent hover:bg-accent-hover hover:border-accent-hover",
+    outline: "bg-surface text-[color:var(--text)] border-input hover:bg-surface-2",
+    soft: "bg-surface text-[color:var(--text)] border-input hover:bg-surface-2",
+    ghost: "bg-transparent text-accent border-transparent hover:bg-surface-2",
+    danger: "bg-surface text-error border-input hover:bg-surface-2",
   };
-  const sizes = {
-    sm: { pad: "6px 12px", fs: 13, h: 32, r: 8 },
-    md: { pad: "8px 16px", fs: 14, h: 38, r: 9 },
-    lg: { pad: "11px 20px", fs: 15, h: 44, r: 10 },
-    // Profile-page primary CTA (the sidebar "Message" button).
-    xl: { pad: "13px 20px", fs: 15, h: 48, r: 11 },
-  };
-  const v = variants[variant] || variants.primary;
-  const s = sizes[size];
-  const [pressed, setPressed] = useState(false);
-
+  const pad = { sm: "px-3", md: "px-4", lg: "px-5", xl: "px-6" };
   return (
     <button
       type={type || "button"}
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      onMouseLeave={() => setPressed(false)}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{
-        background: v.bg,
-        color: v.color,
-        border: `1px solid ${v.border}`,
-        padding: s.pad,
-        fontSize: s.fs,
-        height: s.h,
-        borderRadius: radius ?? s.r,
-        width: full ? "100%" : "auto",
-        cursor: disabled ? "not-allowed" : "pointer",
-        letterSpacing: "-0.005em",
-        transform: pressed && !disabled ? "scale(0.98)" : "scale(1)",
-        transition: "transform 120ms ease-out",
-      }}
+      className={`inline-flex items-center justify-center gap-2 h-11 border rounded text-[14px] leading-5 font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
+        variants[variant] || variants.primary
+      } ${pad[size] || pad.md} ${full ? "w-full" : ""}`}
+      style={{ transition: "background-color 120ms ease-out, border-color 120ms ease-out" }}
     >
-      {icon && <Icon name={icon} size={s.fs + 2} />}
-      <span className="inline-flex items-center gap-1.5">
-        {children}
-      </span>
-      {iconRight && (
-        <span style={{ display: "inline-flex" }}>
-          <Icon name={iconRight} size={s.fs + 2} />
-        </span>
-      )}
+      {icon && <Icon name={icon} size={16} />}
+      {children != null && children !== false && <span className="inline-flex items-center gap-1">{children}</span>}
+      {iconRight && <Icon name={iconRight} size={16} />}
     </button>
   );
 }

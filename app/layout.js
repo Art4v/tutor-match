@@ -3,7 +3,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { TopNav } from "@/components/TopNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import PolicyConsentGate from "@/components/PolicyConsentGate";
-import VerificationPrompt from "@/components/VerificationPrompt";
 import { SavedTutorsProvider } from "@/components/SavedTutorsProvider";
 import { RouteLoadingProvider } from "@/components/RouteLoadingProvider";
 import { SITE_URL, SITE_DESCRIPTION } from "@/lib/site";
@@ -53,7 +52,6 @@ export default function RootLayout({ children }) {
             <div style={{ paddingTop: "var(--nav-h)" }}>{children}</div>
             <SiteFooter />
             <PolicyConsentGate />
-            <VerificationPrompt />
           </RouteLoadingProvider>
         </SavedTutorsProvider>
         <Analytics />

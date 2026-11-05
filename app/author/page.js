@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { getMyArticles, formatArticleDate } from "@/lib/blog";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { requireAuthor } from "./guard";
 
 export const metadata = { title: "Your articles" };
@@ -16,11 +15,13 @@ const STATUS_LABEL = {
   removed: "Removed",
 };
 
+// Status is plain text in a status colour (DESIGN.md: no pills, no tinted
+// badges); the label itself carries the meaning, the colour only reinforces it.
 const STATUS_TONE = {
-  draft: { bg: "var(--desk)", color: "var(--ink-muted)" },
-  pending: { bg: "var(--accent-softer)", color: "var(--accent)" },
-  published: { bg: "var(--accent-softer)", color: "var(--accent)" },
-  removed: { bg: "#FBEAEA", color: "#9B2C2C" },
+  draft: "text-muted",
+  pending: "text-[color:var(--text-2)]",
+  published: "text-success",
+  removed: "text-error",
 };
 
 export default async function AuthorPage() {
@@ -28,99 +29,65 @@ export default async function AuthorPage() {
   const articles = await getMyArticles(supabase, user.id);
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen">
-      <div className="max-w-[880px] mx-auto px-6 pt-16 pb-20">
+    <div className="bg-surface min-h-screen">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 pt-8 sm:pt-12 pb-16">
         <div className="flex items-end justify-between gap-6 flex-wrap">
           <div>
-            <h1
-              className="text-[32px] sm:text-[38px] leading-[1.15]"
-              style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
-            >
+            <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">
               Your articles
             </h1>
-            <p className="mt-3 text-[15px] leading-[1.6]" style={{ color: "var(--ink-muted)" }}>
+            <p className="mt-2 text-[14px] leading-5 text-[color:var(--text-2)]">
               Write in Markdown. Each <code>##</code> heading becomes a section and a contents
               entry.
             </p>
           </div>
-          <Link href="/author/new">
-            <span
-              className="inline-flex items-center gap-2 font-medium"
-              style={{
-                background: "var(--accent)",
-                color: "#fff",
-                border: "1px solid var(--accent)",
-                padding: "8px 16px",
-                fontSize: 14,
-                height: 38,
-                borderRadius: 9,
-              }}
-            >
-              <Icon name="plus" size={16} />
-              New article
-            </span>
+          {/* Styled as the primary Button (components/ui.js), which renders a
+              <button> and so cannot be a link itself. */}
+          <Link
+            href="/author/new"
+            className="inline-flex items-center justify-center h-11 px-4 rounded border border-accent bg-accent text-white text-[14px] leading-5 font-semibold whitespace-nowrap hover:bg-accent-hover hover:border-accent-hover"
+            style={{ transition: "background-color 120ms ease-out, border-color 120ms ease-out" }}
+          >
+            New article
           </Link>
         </div>
 
         {articles.length === 0 ? (
-          <p className="mt-14 text-[15px]" style={{ color: "var(--ink-muted)" }}>
-            You have not written anything yet. Start with your first article.
+          <p className="mt-8 text-[14px] leading-5 text-[color:var(--text-2)]">
+            You have not written anything yet.{" "}
+            <Link href="/author/new" className="accent-link">
+              Write your first article
+            </Link>
           </p>
         ) : (
-          <ul className="mt-10 space-y-3">
-            {articles.map((a) => {
-              const tone = STATUS_TONE[a.status] || STATUS_TONE.draft;
-              return (
-                <li key={a.id}>
-                  <Link
-                    href={`/author/${a.id}`}
-                    className="group block px-5 py-4"
-                    style={cardStyle}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className="shrink-0 uppercase"
-                            style={{
-                              background: tone.bg,
-                              color: tone.color,
-                              fontSize: 10.5,
-                              fontWeight: 500,
-                              letterSpacing: "0.08em",
-                              padding: "3px 8px",
-                              borderRadius: 999,
-                            }}
-                          >
-                            {STATUS_LABEL[a.status] || a.status}
-                          </span>
-                          {a.category && (
-                            <span className="text-[12px]" style={{ color: "var(--sage)" }}>
-                              {a.category}
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className="mt-2 text-[16px] truncate group-hover:text-[color:var(--accent)]"
-                          style={{ color: "var(--ink-graphite)", transition: "color 180ms ease-out" }}
-                        >
-                          {a.title}
-                        </div>
-                        <div className="mt-1 text-[12.5px]" style={{ color: "var(--sage)" }}>
-                          /blog/{a.slug}
-                          {a.publishedAt ? ` · ${formatArticleDate(a.publishedAt)}` : ""}
-                        </div>
-                      </div>
-                      <Icon
-                        name="chevron-right"
-                        size={16}
-                        className="shrink-0 transition-transform group-hover:translate-x-0.5"
-                      />
+          <ul className="mt-8 border-t border-rule">
+            {articles.map((a) => (
+              <li key={a.id} className="border-b border-rule">
+                <Link
+                  href={`/author/${a.id}`}
+                  className="group flex items-center justify-between gap-4 py-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-[12px] leading-4">
+                      <span className={`shrink-0 font-semibold ${STATUS_TONE[a.status] || STATUS_TONE.draft}`}>
+                        {STATUS_LABEL[a.status] || a.status}
+                      </span>
+                      {a.category && <span className="text-muted">{a.category}</span>}
                     </div>
-                  </Link>
-                </li>
-              );
-            })}
+                    <div className="mt-1 text-[16px] leading-6 font-semibold truncate text-[color:var(--text)] group-hover:text-[color:var(--accent)]"
+                      style={{ transition: "color 120ms ease-out" }}
+                    >
+                      {a.title}
+                    </div>
+                    <div className="mt-1 text-[12px] leading-4 text-muted">
+                      /blog/{a.slug}
+                      {a.publishedAt ? ` \u00b7 ${formatArticleDate(a.publishedAt)}` : ""}
+                    </div>
+                  </div>
+                  <Icon name="chevron-right" size={16} className="shrink-0 text-muted" />
+                </Link>
+              </li>
+            ))}
           </ul>
         )}
       </div>

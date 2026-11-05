@@ -9,8 +9,6 @@ import {
 import { getSavedTutorIds } from "@/lib/supabase/saved";
 import { isStateCode } from "@/lib/states";
 import { Icon } from "@/components/Icon";
-import { Button } from "@/components/ui";
-import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
 import { BrowseResultsGrid } from "./BrowseResultsGrid";
 
@@ -112,66 +110,53 @@ export default async function BrowsePage({ searchParams }) {
   };
 
   return (
-    <div className="desk-surface bleed-under-nav relative">
-      {/* Same cream desk + floating stationery as the featured section.
-          Negative z keeps it behind the content without needing overflow-hidden
-          (which would break the sticky filter sidebar). */}
-      <DeskBackdrop className="-z-10" />
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
-          <BrowseFilters
+    <div className="max-w-[1128px] mx-auto px-4 lg:px-6 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[256px_minmax(0,1fr)] gap-6 lg:gap-8">
+        <BrowseFilters
+          filters={filterState}
+          catalog={subjectCatalog}
+          schoolCatalog={schoolCatalog}
+          totalCount={total}
+          searchQuery={q}
+        />
+
+        <div className="min-w-0">
+          <BrowseSortAndChips
             filters={filterState}
             catalog={subjectCatalog}
             schoolCatalog={schoolCatalog}
-            totalCount={total}
-            searchQuery={q}
           />
 
-          <div className="min-w-0">
-            <BrowseSortAndChips
-              filters={filterState}
-              catalog={subjectCatalog}
-              schoolCatalog={schoolCatalog}
+          {tutors.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <BrowseResultsGrid tutors={tutors} savedOnly={savedOnly} />
+          )}
+
+          {tutors.length > 0 && totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              searchParams={searchParams}
             />
-
-            {tutors.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <BrowseResultsGrid tutors={tutors} savedOnly={savedOnly} />
-            )}
-
-            {tutors.length > 0 && totalPages > 1 && (
-              <Pagination
-                page={page}
-                totalPages={totalPages}
-                searchParams={searchParams}
-              />
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
+// DESIGN.md empty state: one line of text + one action link.
 function EmptyState() {
   return (
-    <div
-      className="text-center py-16 px-6"
-      style={{ border: "1px dashed var(--paper-line)", borderRadius: "var(--radius-card)" }}
-    >
-      <div
-        className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center text-slate-400"
-        style={{ background: "var(--desk)" }}
+    <div className="border-t border-rule py-8">
+      <p className="text-[14px] leading-5 text-[color:var(--text-2)]">No tutors match those filters.</p>
+      <Link
+        href="/browse"
+        className="inline-flex items-center min-h-6 mt-2 text-[14px] leading-5 font-semibold text-accent hover:text-accent-hover"
       >
-        <Icon name="search" size={20} />
-      </div>
-      <div className="text-[15px] font-medium text-slate-900 mt-4">
-        No tutors match those filters
-      </div>
-      <div className="text-[13.5px] text-slate-500 mt-1">
-        Try widening your ATAR range or removing a subject.
-      </div>
+        Clear all filters
+      </Link>
     </div>
   );
 }
@@ -189,6 +174,7 @@ function pageHref(searchParams, page) {
   return qs ? `/browse?${qs}` : "/browse";
 }
 
+// Plain links with 44px targets; the current page is marked with the accent.
 function Pagination({ page, totalPages, searchParams }) {
   // Render up to 5 numbered pages, centered on current.
   const windowSize = 5;
@@ -198,40 +184,56 @@ function Pagination({ page, totalPages, searchParams }) {
   const pages = [];
   for (let p = start; p <= end; p++) pages.push(p);
 
+  const step = "inline-flex items-center justify-center gap-1 h-11 px-3 rounded text-[14px] leading-5 font-semibold";
+  const num = "inline-flex items-center justify-center h-11 min-w-11 px-2 rounded text-[14px] leading-5 tabular-nums";
+
   return (
-    <div className="flex items-center justify-center gap-2 mt-12">
+    <nav aria-label="Pagination" className="flex flex-wrap items-center justify-center gap-1 mt-8">
       {page > 1 ? (
-        <Link href={pageHref(searchParams, page - 1)}>
-          <Button variant="outline" size="sm" icon="chevron-left">Prev</Button>
+        <Link href={pageHref(searchParams, page - 1)} className={`${step} text-accent hover:bg-surface-2`}>
+          <Icon name="chevron-left" size={16} />
+          Previous
         </Link>
       ) : (
-        <Button variant="outline" size="sm" icon="chevron-left" disabled>Prev</Button>
+        <span className={`${step} text-muted`} aria-disabled="true">
+          <Icon name="chevron-left" size={16} />
+          Previous
+        </span>
       )}
 
-      {pages.map((p) => (
-        <Link
-          key={p}
-          href={pageHref(searchParams, p)}
-          className="w-9 h-9 text-[13px] font-medium rounded-md inline-flex items-center justify-center transition-colors"
-          style={{
-            background: p === page ? "var(--accent)" : "transparent",
-            color: p === page ? "#fff" : "var(--ink-muted)",
-            border: p === page ? "1px solid var(--accent)" : "1px solid var(--paper-line)",
-          }}
-        >
-          {p}
-        </Link>
-      ))}
+      {pages.map((p) =>
+        p === page ? (
+          <span
+            key={p}
+            aria-current="page"
+            className={`${num} font-semibold text-accent border border-accent`}
+          >
+            {p}
+          </span>
+        ) : (
+          <Link
+            key={p}
+            href={pageHref(searchParams, p)}
+            className={`${num} text-[color:var(--text)] hover:bg-surface-2`}
+          >
+            {p}
+          </Link>
+        )
+      )}
 
-      {end < totalPages && <span className="text-slate-400 px-1">…</span>}
+      {end < totalPages && <span className="px-1 text-muted" aria-hidden="true">…</span>}
 
       {page < totalPages ? (
-        <Link href={pageHref(searchParams, page + 1)}>
-          <Button variant="outline" size="sm" iconRight="chevron-right">Next</Button>
+        <Link href={pageHref(searchParams, page + 1)} className={`${step} text-accent hover:bg-surface-2`}>
+          Next
+          <Icon name="chevron-right" size={16} />
         </Link>
       ) : (
-        <Button variant="outline" size="sm" iconRight="chevron-right" disabled>Next</Button>
+        <span className={`${step} text-muted`} aria-disabled="true">
+          Next
+          <Icon name="chevron-right" size={16} />
+        </span>
       )}
-    </div>
+    </nav>
   );
 }

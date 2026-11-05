@@ -29,37 +29,6 @@
   --logo-leaf: #6B8A88;
   --nav-h: 64px;
 
-  /* ── Legacy token names (transitional). Components written for the July 2026
-     teal skin still read these; pointing them at the DESIGN.md tokens retints
-     every existing screen without editing it. Each name is removed as the
-     screens that use it are rebuilt in Phase 3. ── */
-  --accent-soft: var(--surface-2);
-  --accent-softer: var(--surface-2);
-  --accent-line: var(--rule);
-  --accent-ring: rgba(1, 103, 100, 0.15);
-  --ink-graphite: var(--text);
-  --ink-graphite-deep: var(--text);
-  --ink-graphite-line: var(--rule);
-  --ink: var(--text);
-  --ink-muted: var(--text-2);
-  --sage: var(--muted);
-  --line: var(--rule);
-  --line-soft: var(--rule);
-  --line-strong: var(--border-input);
-  --bg: var(--surface);
-  --bg-soft: var(--surface-2);
-  --paper: var(--surface);
-  --paper-card: var(--surface);
-  --paper-line: var(--rule);
-  --pill: var(--surface-2);
-  --pill-ink: var(--text-2);
-  --chip-line: var(--rule);
-  --desk: var(--surface-2);
-  --desk-deep: var(--surface-2);
-  --stamp: var(--accent);
-  --footer-bg: #001E1E;         /* dark footer band until the footer is rebuilt (item 2) */
-  --card-shadow: none;          /* static elements never carry a shadow */
-  --radius-card: var(--radius);
 }
 
 html, body {
@@ -69,9 +38,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-.font-display {
-  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
 
 /* DESIGN.md: two weights only, 400 and 600. Emphasis renders at 600 (this also
    covers tutor-authored bios, since RichText emits <strong>). */
@@ -81,34 +47,9 @@ strong, b {
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* Snap-scroll utilities used by the landing page.
-   Each section is *at least* the visible viewport height (between the sticky
-   nav and the bottom edge). It's a min-height (not a fixed height) so content
-   that's taller — e.g. the featured-tutor grid on a short laptop — can grow
-   the section instead of overflowing into the next snap target. */
-.snap-scroll {
-  scroll-snap-type: y mandatory;
-}
-.snap-section {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  min-height: calc(100vh - var(--nav-h));
-  min-height: calc(100svh - var(--nav-h));
-}
-@media (max-width: 768px), (pointer: coarse) {
-  .snap-scroll { scroll-snap-type: none; }
-  .snap-section { scroll-snap-stop: normal; }
-}
-
-/* Bleed a content page up under the fixed transparent nav (cancelling the
-   layout's nav-height spacer) and pad the top back, so a full-page backdrop
-   shows through the nav while content still clears it. Used by the desk-surface
-   pages (/browse, /tutor/[slug]); HomeHero bleeds marginTop-only because it
-   centers within a full-viewport hero and intentionally has no top padding. */
-.bleed-under-nav {
-  margin-top: calc(-1 * var(--nav-h));
-  padding-top: var(--nav-h);
-}
+/* Avoid a lone word on a paragraph's last line (impeccable "straggler"). Unsupported
+   browsers ignore it. */
+p, li { text-wrap: pretty; }
 
 /* Focus (DESIGN.md): a 2px accent outline offset 2px on every focusable element. */
 *:focus { outline: none; }
@@ -126,20 +67,6 @@ a.accent-link {
   text-decoration: none;
 }
 
-/* Footer links — muted teal on the near-black footer, brightening on hover. It
-   can't reuse `.accent-link`: that paints in var(--accent), which is invisible
-   against the near-black footer, so the colours are the footer's own. The colour
-   shift is the only hover feedback (these links carried the same underline wipe
-   as `.accent-link` and lost it at the same time). */
-.footer-link {
-  color: #5E8280;
-  text-decoration: none;
-  transition: color 160ms ease-out;
-}
-.footer-link:hover {
-  color: #7FC4C0;
-}
-
 /* Always-underlined accent link (policy links). The underline here is permanent
    rather than a hover effect, which is why it survives. */
 a.accent-link--glow {
@@ -149,45 +76,9 @@ a.accent-link--glow {
   transition: color 160ms ease-out;
 }
 
-/* Floating nav: transparent at the top, frosted-translucent once scrolled,
-   slides up / fades out on scroll-down. Eased so it glides rather than snaps. */
-.nav-floating {
-  transition:
-    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
-    background 320ms ease,
-    backdrop-filter 320ms ease,
-    border-color 320ms ease;
-}
+/* Reduced motion: DESIGN.md allows only functional transitions; under
+   prefers-reduced-motion even those are removed. */
 @media (prefers-reduced-motion: reduce) {
-  .nav-floating { transition: none; }
-}
-
-/* Hero search bar: soft depth shadow so the bar floats above the page. */
-.hero-search-glow {
-  box-shadow: 0 1px 2px rgba(0, 30, 30, 0.04), 0 16px 48px -24px rgba(0, 49, 47, 0.18);
-}
-
-/* Caret used by the typewriter component */
-.typewriter-caret {
-  display: inline-block;
-  width: 0.5ch;
-  margin-left: 0.06em;
-  background: var(--accent);
-  animation: caret-blink 900ms steps(2, start) infinite;
-  vertical-align: -0.08em;
-  height: 0.95em;
-  border-radius: 1px;
-}
-@keyframes caret-blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-
-/* Reduced motion: kill all custom animations */
-@media (prefers-reduced-motion: reduce) {
-  .typewriter-caret { animation: none; opacity: 0; }
-  .snap-scroll { scroll-snap-type: none; }
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
@@ -195,28 +86,28 @@ a.accent-link--glow {
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 2px solid var(--paper); }
-::-webkit-scrollbar-thumb:hover { background: var(--sage); }
+::-webkit-scrollbar-thumb { background: var(--border-input); border-radius: var(--radius); border: 2px solid var(--surface); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 ::-webkit-scrollbar-track { background: transparent; }
 
 input[type="range"] {
   -webkit-appearance: none;
   height: 4px;
-  background: var(--line);
-  border-radius: 999px;
+  background: var(--rule);
+  border-radius: var(--radius);
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px; height: 16px;
-  background: var(--ink);
+  background: var(--accent);
   border-radius: 50%;
   cursor: pointer;
 }
 input[type="range"]::-moz-range-thumb {
   width: 16px; height: 16px;
-  background: var(--ink);
+  background: var(--accent);
   border-radius: 50%;
   cursor: pointer;
   border: 0;
@@ -250,26 +141,22 @@ input[type="range"].dual-range::-webkit-slider-runnable-track {
 }
 input[type="range"].dual-range::-moz-range-track { background: transparent; border: none; }
 input[type="range"].dual-range::-moz-range-progress { background: transparent; }
-/* White-ringed accent handles — legible on both the grey rail and the navy
-   fill. Higher specificity than the generic range-thumb rule above so the
-   colour + ring win. */
+/* Accent handles with a white ring and a 1px input-colour outline, so they read
+   on both the grey rail and the accent fill (DESIGN.md: an outline, not a soft
+   shadow). Higher specificity than the generic range-thumb rule above. */
 input[type="range"].dual-range::-webkit-slider-thumb {
   pointer-events: auto;
   width: 16px; height: 16px;
   background: var(--accent);
-  border: 3px solid var(--paper-card);
-  box-shadow: 0 1px 4px rgba(0, 49, 47, 0.28);
-  transition: box-shadow 140ms ease;
-}
-input[type="range"].dual-range::-webkit-slider-thumb:hover {
-  box-shadow: 0 2px 8px rgba(1, 103, 100, 0.3), 0 0 0 4px var(--accent-ring);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--border-input);
 }
 input[type="range"].dual-range::-moz-range-thumb {
   pointer-events: auto;
   width: 16px; height: 16px;
   background: var(--accent);
-  border: 3px solid var(--paper-card);
-  box-shadow: 0 1px 4px rgba(0, 49, 47, 0.28);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--border-input);
 }
 
 /* Hide the up/down spin buttons on number inputs. Typing stays numeric-only;
@@ -283,47 +170,6 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
-}
-
-/* ───────────────────────── Type accents ───────────────────────── */
-
-/* Caveat script. Reserved for small accents only — the hero's cycling subject
-   word, section eyebrows and the "How it works" step numbers. Headings are
-   General Sans 300 (see --ink-graphite), never Caveat. */
-/* Transitional: Caveat is no longer loaded (DESIGN.md). Until step 2 removes the
-   eight remaining `.font-hand` uses, they render in the body face instead of
-   falling back to the system "cursive" font. */
-.font-hand {
-  font-family: inherit;
-  letter-spacing: 0;
-}
-
-/* Blinking caret for the hero's TypewriterWord. */
-.type-caret {
-  animation: caret-blink 1.1s steps(1) infinite;
-}
-@keyframes caret-blink {
-  50% { opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .type-caret { animation: none; }
-}
-
-/* ───────────────────────── Botanical accents ───────────────────────── */
-
-/* Slow botanical sway — a sprig motif rocks a few degrees on a long, eased
-   loop, like a leaf in still air. Pivot from the stem (bottom). */
-@keyframes leaf-sway {
-  0%, 100% { transform: rotate(-3.5deg); }
-  50%      { transform: rotate(3.5deg); }
-}
-.leaf-sway {
-  transform-origin: 50% 90%;
-  animation: leaf-sway 6s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .leaf-sway { animation: none; }
 }
 
 /* ───────────────────────── Route-loading spinner ───────────────────────── */
@@ -346,80 +192,4 @@ input[type="number"] {
   .route-loading-spinner {
     animation: route-loading-pulse 1.2s ease-in-out infinite;
   }
-}
-
-/* ───────────────────────── Marquee rows ───────────────────────── */
-
-/* Featured-tutors marquee (components/FeaturedTutors.jsx). A CSS animation
-   rather than a motion/react transform on purpose: the track carries ~12
-   TutorCards, each running two ResizeObservers for its chip rows, and a
-   composited keyframe never touches the main thread the way a JS-driven
-   transform would.
-
-   The track holds EXACTLY two copies of the row, so translating one full 50%
-   lands precisely one copy along and the seam is invisible. Both directions
-   traverse the same distance; only the start/end swap. */
-@keyframes marquee-left {
-  from { transform: translate3d(0, 0, 0); }
-  to   { transform: translate3d(-50%, 0, 0); }
-}
-@keyframes marquee-right {
-  from { transform: translate3d(-50%, 0, 0); }
-  to   { transform: translate3d(0, 0, 0); }
-}
-
-.marquee-track {
-  animation-duration: var(--marquee-duration, 60s);
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  /* linear + infinite means a paused frame is as good as any other, so the
-     pause below can be instant with no easing artefact. */
-  /* Deliberately NO `will-change: transform`: the track is ~12000px wide, and
-     promoting it by hand costs a texture that size for no gain — a running
-     transform animation is composited automatically. */
-}
-
-/* Pause on the ROW, not the track: hovering a gap between two cards is still
-   hovering the row, so the motion doesn't stutter as the pointer crosses one.
-   focus-within does the same job for keyboard users tabbing into a card. */
-.marquee-row:hover .marquee-track,
-.marquee-row:focus-within .marquee-track {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track { animation: none; }
-}
-
-/* ───────────────────────── Desk + paper theme ───────────────────────── */
-
-/* Softly-lit "desk" surface — a faint teal radial that reads as a desktop
-   distinct from the flat white page. Used behind /browse + the tutor page
-   (pair with the faint floating stationery of DeskBackdrop). */
-.desk-surface {
-  background:
-    radial-gradient(70% 60% at 50% 22%,
-      var(--paper) 0%,
-      var(--desk) 62%,
-      var(--desk-deep) 100%);
-}
-
-/* A sheet of paper — the card theme. Lifts the card off the page with a soft
-   shadow while keeping the card's own background colour. Compose with existing
-   bg/border/radius (does not set them), so card padding + content stay as-is. */
-.paper-page {
-  box-shadow: 0 1px 2px rgba(0,30,30,0.03), 0 14px 30px -18px rgba(0,49,47,0.20);
-}
-
-/* Washi-tape strip — a translucent piece of tape pinning a note to the desk.
-   Decorative overlay, pointer-events-none. */
-.washi-tape {
-  position: absolute;
-  pointer-events: none;
-  width: 76px;
-  height: 22px;
-  background: rgba(1,103,100,0.10);
-  border-left: 1px solid rgba(1,103,100,0.14);
-  border-right: 1px solid rgba(1,103,100,0.14);
-  box-shadow: 0 1px 2px rgba(0,49,47,0.08);
 }

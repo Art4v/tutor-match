@@ -35,24 +35,21 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
   const [coords, setCoords] = useState(null);
   const wrapRef = useRef(null);
 
-  const size = variant === "banner" ? 40 : 38;
+  const size = 44; // DESIGN.md: icon buttons are at least 44px
   const iconSize = variant === "banner" ? 18 : 16;
   const offset = variant === "banner" ? 16 : 14;
 
   const saved = isStudent && isSaved(tutorId);
 
-  // Shared circular translucent pill — reads on both banner images and solid
-  // banner colours.
+  // DESIGN.md icon button: white, 1px rule border, 4px radius, no shadow or blur.
   const pill = {
     width: size,
     height: size,
-    borderRadius: 999,
-    background: "rgba(255,255,255,0.92)",
-    backdropFilter: "blur(6px)",
-    WebkitBackdropFilter: "blur(6px)",
-    boxShadow: "0 2px 8px rgba(0,30,30,0.10)",
-    color: saved ? "var(--accent)" : "var(--ink-graphite)",
-    transition: "color 160ms ease-out, background 160ms ease-out",
+    borderRadius: "var(--radius)",
+    background: "var(--surface)",
+    border: "1px solid var(--rule)",
+    color: saved ? "var(--accent)" : "var(--text)",
+    transition: "color 120ms ease-out, background-color 120ms ease-out",
   };
 
   const tooltipText = isStudent
@@ -61,7 +58,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
       : saved
         ? "Saved"
         : "Save tutor"
-    : "Sign up now to save this tutor!";
+    : "Sign up to save this tutor";
 
   // Measure the button relative to the viewport so the fixed-position tooltip
   // can anchor to it from outside the clipping card.
@@ -82,7 +79,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
           // instantly on hover, with no fade or slide in.
           <span
             role="tooltip"
-            className="pointer-events-none font-medium"
+            className="pointer-events-none font-semibold"
             style={{
               ...TOOLTIP_STYLE,
               position: "fixed",
@@ -112,7 +109,7 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
   if (!ready) {
     return (
       <span style={wrapStyle} className={wrapClass}>
-        <span className="inline-flex items-center justify-center" style={{ ...pill, boxShadow: "none", background: "rgba(255,255,255,0.7)" }}>
+        <span className="inline-flex items-center justify-center" style={pill}>
           <Icon name="bookmark" size={iconSize} />
         </span>
       </span>

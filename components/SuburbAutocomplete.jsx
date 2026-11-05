@@ -8,8 +8,8 @@ import { Icon } from "@/components/Icon";
 // a second round-trip.
 //
 // Two visual modes:
-//   variant="bar"  — a segment of the home-page search bar (icon + small label
-//                    above the value, borderless; matches HomeHero's SearchField)
+//   variant="bar"  — a segment of the home-page search bar (small label above
+//                    the value, borderless)
 //   variant="box"  — a standalone bordered input (browse sidebar, settings)
 //
 // Props:
@@ -89,45 +89,49 @@ export function SuburbAutocomplete({
 
   const dropdown = open && results.length > 0 && (
     <div
-      className="absolute left-0 right-0 top-full mt-2 z-50 bg-[color:var(--paper-card)] max-h-[260px] overflow-y-auto"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: 12, boxShadow: "0 10px 24px -8px rgba(0,30,30,0.12)" }}
+      className="absolute left-0 right-0 top-full mt-1 z-50 bg-surface border border-rule rounded shadow-float max-h-[264px] overflow-y-auto py-1"
+      role="listbox"
     >
       {results.map((p, i) => (
         <button
           key={`${p.label}-${i}`}
           type="button"
+          role="option"
+          aria-selected={i === active}
           onMouseDown={(e) => { e.preventDefault(); choose(p); }}
           onMouseEnter={() => setActive(i)}
-          className="w-full text-left px-3 py-2 text-[13.5px] text-slate-700 hover:bg-slate-100"
-          style={{ background: i === active ? "var(--desk)" : "transparent" }}
+          className={"w-full flex items-center min-h-11 text-left px-3 text-[14px] leading-5 " + (i === active ? "bg-surface-2" : "bg-surface")}
         >
-          <span className="text-slate-900">{p.suburb}</span>
+          <span className="text-[color:var(--text)]">{p.suburb}</span>
           {(p.state || p.postcode) && (
-            <span className="text-slate-400">{`, ${[p.state, p.postcode].filter(Boolean).join(" ")}`}</span>
+            <span className="text-[color:var(--text-2)]">{`, ${[p.state, p.postcode].filter(Boolean).join(" ")}`}</span>
           )}
         </button>
       ))}
     </div>
   );
 
+  // The `icon` prop is still accepted for call-site compatibility, but the
+  // field no longer draws it: DESIGN.md allows icons only beside text that says
+  // the same thing, and the label above the field already does.
+  void icon;
+
   if (variant === "bar") {
     return (
-      <div ref={wrapRef} className="relative border-r last:border-r-0" style={{ borderColor: "var(--paper-line)" }}>
-        <div className="w-full flex items-center gap-3 px-4 py-3">
-          {icon && <Icon name={icon} size={16} className="text-slate-400 shrink-0" />}
-          <div className="flex-1 min-w-0">
-            {label && (
-              <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{label}</div>
-            )}
-            <input
-              value={query}
-              onChange={onInput}
-              onKeyDown={onKeyDown}
-              onFocus={() => results.length > 0 && setOpen(true)}
-              placeholder={placeholder}
-              className="w-full bg-transparent outline-none text-[14px] mt-0.5 text-slate-900 placeholder:text-slate-400"
-            />
-          </div>
+      <div ref={wrapRef} className="relative border-r border-rule last:border-r-0">
+        <div className="w-full flex flex-col justify-center min-h-12 px-4">
+          {label && (
+            <div className="text-[12px] leading-4 font-semibold text-[color:var(--text-2)]">{label}</div>
+          )}
+          <input
+            value={query}
+            onChange={onInput}
+            onKeyDown={onKeyDown}
+            onFocus={() => results.length > 0 && setOpen(true)}
+            placeholder={placeholder}
+            aria-label={label || placeholder}
+            className="w-full bg-transparent outline-none text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder"
+          />
         </div>
         {dropdown}
       </div>
@@ -137,25 +141,27 @@ export function SuburbAutocomplete({
   // variant === "box"
   return (
     <div ref={wrapRef} className="relative">
-      <div className="flex items-center gap-2 h-9 px-3" style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}>
-        {icon && <Icon name={icon} size={14} className="text-slate-400 shrink-0" />}
+      <div className="flex items-center gap-2 h-11 pl-3 bg-surface border border-input rounded focus-within:border-accent">
         <input
           value={query}
           onChange={onInput}
           onKeyDown={onKeyDown}
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder={placeholder}
-          className="w-full bg-transparent outline-none text-[13.5px] text-slate-900 placeholder:text-slate-400"
+          aria-label={label || placeholder}
+          className="w-full min-w-0 bg-transparent outline-none text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder"
         />
-        {query && (
+        {query ? (
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); setQuery(""); setResults([]); setOpen(false); onClear && onClear(); }}
-            className="text-slate-400 hover:text-slate-700 shrink-0"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-[color:var(--text-2)] hover:text-[color:var(--text)]"
             aria-label="Clear"
           >
-            <Icon name="x" size={13} />
+            <Icon name="x" size={16} />
           </button>
+        ) : (
+          <span className="w-1 shrink-0" aria-hidden="true" />
         )}
       </div>
       {dropdown}

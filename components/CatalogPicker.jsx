@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Chip } from "@/components/ui";
+import { CheckBox } from "@/components/SubjectPicker";
 
 /**
  * Searchable slug-keyed selector, matching the `?school=` / `?state=` URL
@@ -21,7 +22,7 @@ import { Chip } from "@/components/ui";
  *   mode        'multi' (default) | 'single'
  *   variant     'box' (default) | 'bar'
  *   placeholder trigger placeholder text
- *   label       'bar' variant only — the uppercase field label (e.g. "State")
+ *   label       'bar' variant only: the small field label (e.g. "State")
  */
 const KINDS = {
   school: {
@@ -100,52 +101,50 @@ export function CatalogPicker({
   const singleLabel = mode === "single" && value ? nameOf(value) : "";
 
   // ---- triggers ----
+  // Same field styles as SubjectPicker (DESIGN.md inputs), so the two pickers
+  // read as one control family.
   const trigger =
     variant === "bar" ? (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[46px] sm:h-[48px] text-left rounded-[10px]"
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 px-4 h-12 text-left rounded hover:bg-surface-2"
       >
-        <Icon name={k.icon} size={16} className="text-[color:var(--accent)] shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] sm:text-[11px] font-medium text-[color:var(--ink-muted)] uppercase tracking-wider leading-none">{label}</div>
-          <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (singleLabel ? "text-[color:var(--ink)]" : "text-[color:var(--sage)]")}>
+          <div className="text-[12px] leading-4 font-semibold text-[color:var(--text-2)]">{label}</div>
+          <div className={"text-[14px] leading-5 truncate " + (singleLabel ? "text-[color:var(--text)]" : "text-placeholder")}>
             {singleLabel || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className="text-[color:var(--sage)] shrink-0 hidden sm:block" />
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="text-[color:var(--text-2)] shrink-0 hidden sm:block" />
       </button>
     ) : (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 h-9 px-3 text-left"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
+        aria-expanded={open}
+        className={"w-full flex items-center gap-2 h-11 px-3 text-left bg-surface border rounded " + (open ? "border-accent" : "border-input")}
       >
-        {/* A magnifier only makes sense when the panel actually searches;
-            otherwise fall back to the kind's own glyph. */}
-        <Icon name={k.searchable ? "search" : k.icon} size={14} className="text-slate-400 shrink-0" />
-        <span className={"flex-1 text-[13.5px] truncate " + (selected.length ? "text-slate-900" : "text-slate-400")}>
+        <span className={"flex-1 min-w-0 text-[14px] leading-5 truncate " + (selected.length ? "text-[color:var(--text)]" : "text-placeholder")}>
           {selected.length ? `${selected.length} selected` : placeholder}
         </span>
-        <Icon name="chevron-down" size={14} className="text-slate-400 shrink-0" />
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="text-[color:var(--text-2)] shrink-0" />
       </button>
     );
 
-  const panelWidth = variant === "bar" ? { width: 320, maxWidth: "calc(100vw - 24px)" } : { left: 0, right: 0 };
+  const panelWidth = variant === "bar" ? { width: 320, maxWidth: "calc(100vw - 32px)" } : { left: 0, right: 0 };
 
   return (
     <div
       ref={wrapRef}
-      className={variant === "bar" ? "relative border-r last:border-r-0" : "relative"}
-      style={variant === "bar" ? { borderColor: "var(--line-soft)" } : undefined}
+      className={variant === "bar" ? "relative border-r border-rule last:border-r-0" : "relative"}
     >
       {trigger}
 
       {/* Selected chips (multi/box only). */}
       {mode === "multi" && variant === "box" && selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2">
+        <div className="flex flex-wrap gap-2 mt-2">
           {selected.map((slug) => (
             <Chip key={slug} tone="grey" onRemove={() => remove(slug)}>
               {nameOf(slug)}
@@ -156,33 +155,26 @@ export function CatalogPicker({
 
       {open && (
         <div
-          className="absolute top-full mt-2 z-50 bg-[color:var(--paper-card)] overflow-hidden"
-          style={{
-            ...panelWidth,
-            border: "1px solid var(--paper-line)",
-            borderRadius: 12,
-            boxShadow: "0 10px 24px -8px rgba(0,30,30,0.18)",
-          }}
+          className="absolute top-full mt-1 z-50 bg-surface border border-rule rounded shadow-float overflow-hidden"
+          style={panelWidth}
         >
           {/* Search */}
           {k.searchable && (
-            <div className="p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
-              <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "var(--bg-soft)", borderRadius: 8 }}>
-                <Icon name="search" size={13} className="text-slate-400 shrink-0" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={k.search}
-                  className="w-full bg-transparent outline-none text-[13px] text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
+            <div className="p-2 border-b border-rule">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={k.search}
+                aria-label={k.search}
+                className="w-full h-11 px-3 bg-surface border border-input rounded outline-none focus:border-accent text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder"
+              />
             </div>
           )}
 
           {/* Options */}
-          <div className="max-h-[240px] overflow-y-auto overscroll-contain py-1">
+          <div className="max-h-[264px] overflow-y-auto overscroll-contain py-1">
             {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-[13px] text-slate-400">{k.empty}</div>
+              <div className="px-3 py-4 text-[14px] leading-5 text-[color:var(--text-2)]">{k.empty}</div>
             ) : (
               filtered.map((s) => {
                 const sel = isSelected(s.slug);
@@ -191,21 +183,13 @@ export function CatalogPicker({
                     key={s.slug}
                     type="button"
                     onClick={() => toggle(s.slug)}
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[13.5px] text-slate-700 hover:bg-slate-100"
-                    style={{ background: sel && mode === "single" ? "var(--desk)" : "transparent" }}
+                    aria-pressed={mode === "multi" ? sel : undefined}
+                    className={
+                      "w-full flex items-center gap-3 min-h-11 px-3 text-left text-[14px] leading-5 text-[color:var(--text)] hover:bg-surface-2 " +
+                      (sel && mode === "single" ? "bg-surface-2 font-semibold" : "")
+                    }
                   >
-                    {mode === "multi" && (
-                      <span
-                        className="inline-flex items-center justify-center shrink-0"
-                        style={{
-                          width: 16, height: 16, borderRadius: 4,
-                          background: sel ? "var(--ink)" : "#fff",
-                          border: "1px solid " + (sel ? "var(--ink)" : "var(--line-strong)"),
-                        }}
-                      >
-                        {sel && <Icon name="check" size={11} strokeWidth={3} className="text-white" />}
-                      </span>
-                    )}
+                    {mode === "multi" && <CheckBox checked={sel} />}
                     <span className="truncate">{s.name}</span>
                   </button>
                 );

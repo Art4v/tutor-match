@@ -12,6 +12,9 @@ import { formatDateTime, REPORT_CATEGORY_LABELS } from "../../_components/format
 
 export const metadata = { title: "Review report" };
 
+const ROLE_LABELS = { tutor: "Tutor", student: "Student", partner: "Company owner" };
+const STATUS_LABELS = { pending: "Pending", rejected: "Rejected", removed: "Removed" };
+
 const RESOLUTION_LABELS = {
   disabled_reported: "Resolved: the reported account was disabled.",
   disabled_reporter: "Resolved: the reporter's account was disabled.",
@@ -87,78 +90,78 @@ export default async function ReportDetailPage({ params }) {
         back={{ href: "/admin/reports", label: "Reports" }}
       />
       <Panel>
-        <div className="pt-5 space-y-5">
-          <Inset>
-            <div className="flex flex-wrap gap-x-8 gap-y-3">
-              <Party label="Reporter" person={reporter} />
-              <Party label="Reported" person={reported} />
-            </div>
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--paper-line)" }}>
-              <div className="text-slate-900">
-                <span className="font-medium">Reason:</span> {REPORT_CATEGORY_LABELS[report.category] || "Other"}
-              </div>
-              {report.details && <div className="text-slate-600 text-[13.5px] mt-1.5 whitespace-pre-wrap">{report.details}</div>}
-            </div>
-          </Inset>
-
-          {aboutAReview ? (
+        <Inset>
+          <div className="flex flex-wrap gap-x-8 gap-y-3">
+            <Party label="Reporter" person={reporter} />
+            <Party label="Reported" person={reported} />
+          </div>
+          <div className="mt-4 pt-4 border-t border-rule">
             <div>
-              <h2 className="text-[13px] font-light text-slate-500 uppercase tracking-wide mb-2">The review</h2>
-              <Inset>
-                {!reviewed ? (
-                  <p className="text-[13.5px] text-slate-500">
-                    The author deleted this review, so there is nothing left to remove. You can still disable the account or dismiss.
-                  </p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <StarRating value={reviewed.review.rating} size={16} />
-                      <span className="font-medium text-slate-900">{reviewed.review.rating}/5</span>
-                      {reviewed.review.status !== "approved" && <Chip>{reviewed.review.status}</Chip>}
-                    </div>
-                    <div className="text-slate-500 text-[13px] mt-1.5">
-                      {reviewed.studentName} on {reviewed.subjectName}
-                    </div>
-                    {reviewed.review.body ? (
-                      <p className="text-[14px] leading-[1.6] mt-3 whitespace-pre-wrap" style={{ color: "var(--ink)" }}>{reviewed.review.body}</p>
-                    ) : (
-                      <p className="text-[13px] mt-3" style={{ color: "var(--sage)" }}>No written review, a rating only.</p>
-                    )}
-                    {reviewed.subjectHref && (
-                      <a href={reviewed.subjectHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] mt-3" style={{ color: "var(--accent)" }}>
-                        View {reviewed.subjectName}&apos;s page <Icon name="external" size={13} />
-                      </a>
-                    )}
-                  </>
-                )}
-              </Inset>
+              <span className="font-semibold">Reason:</span> {REPORT_CATEGORY_LABELS[report.category] || "Other"}
             </div>
-          ) : (
-            <div>
-              <h2 className="text-[13px] font-light text-slate-500 uppercase tracking-wide mb-2">Conversation</h2>
-              <div className="space-y-2" style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16, maxHeight: 420, overflowY: "auto" }}>
-                {messages.length === 0 ? (
-                  <p className="text-[13.5px] text-slate-500">No messages were exchanged.</p>
-                ) : (
-                  messages.map((m) => {
-                    const fromReporter = m.sender_id === report.reporter_id;
-                    return (
-                      <div key={m.id} className="text-[13.5px]">
-                        <span className="font-medium" style={{ color: fromReporter ? "var(--accent)" : "#DC2626" }}>
-                          {fromReporter ? reporter.name : reported.name}:
-                        </span>{" "}
-                        <span className="text-slate-700 whitespace-pre-wrap">{m.body}</span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
+            {report.details && <div className="mt-1 whitespace-pre-wrap text-[color:var(--text-2)]">{report.details}</div>}
+          </div>
+        </Inset>
 
+        {aboutAReview ? (
+          <div className="mt-6">
+            <h2 className="mb-2 text-[16px] leading-6 font-semibold text-[color:var(--text)]">The review</h2>
+            <Inset>
+              {!reviewed ? (
+                <p className="text-[color:var(--text-2)]">
+                  The author deleted this review, so there is nothing left to remove. You can still disable the account or dismiss.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <StarRating value={reviewed.review.rating} size={16} />
+                    <span className="font-semibold">{reviewed.review.rating}/5</span>
+                    {reviewed.review.status !== "approved" && <Chip>{STATUS_LABELS[reviewed.review.status] || reviewed.review.status}</Chip>}
+                  </div>
+                  <div className="mt-1 text-[color:var(--text-2)]">
+                    {reviewed.studentName} on {reviewed.subjectName}
+                  </div>
+                  {reviewed.review.body ? (
+                    <p className="mt-3 text-[16px] leading-6 whitespace-pre-wrap">{reviewed.review.body}</p>
+                  ) : (
+                    <p className="mt-3 text-[color:var(--text-2)]">No written review, a rating only.</p>
+                  )}
+                  {reviewed.subjectHref && (
+                    <a href={reviewed.subjectHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 min-h-6 mt-3 text-accent hover:text-accent-hover">
+                      View {reviewed.subjectName}&apos;s page <Icon name="external" size={16} />
+                    </a>
+                  )}
+                </>
+              )}
+            </Inset>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <h2 className="mb-2 text-[16px] leading-6 font-semibold text-[color:var(--text)]">Conversation</h2>
+            <div className="bg-surface-2 rounded p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 420 }}>
+              {messages.length === 0 ? (
+                <p className="text-[14px] leading-5 text-[color:var(--text-2)]">No messages were exchanged.</p>
+              ) : (
+                messages.map((m) => {
+                  const fromReporter = m.sender_id === report.reporter_id;
+                  return (
+                    <div key={m.id} className="text-[14px] leading-5">
+                      <span className="font-semibold text-[color:var(--text)]">
+                        {fromReporter ? `${reporter.name} (reporter)` : `${reported.name} (reported)`}:
+                      </span>{" "}
+                      <span className="whitespace-pre-wrap text-[color:var(--text)]">{m.body}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6">
           {pending ? (
             <div>
-              <p className="text-[12.5px] text-slate-500 mb-4">
+              <p className="mb-4 text-[14px] leading-5 text-[color:var(--text-2)]">
                 {aboutAReview && "Removing the review hides it everywhere and updates the rating; it can't be edited back. "}
                 Disabling an account parks that user on the disabled screen and hides them from search, along with every review they&apos;ve written. You can re-enable it from Users. Nobody is emailed about the outcome.
               </p>
@@ -174,16 +177,19 @@ export default async function ReportDetailPage({ params }) {
 }
 
 function Party({ label, person }) {
+  const meta = [
+    person.role ? ROLE_LABELS[person.role] || person.role : null,
+    person.status === "disabled" ? "Disabled" : null,
+    person.isAdmin ? "Admin" : null,
+  ].filter(Boolean).join(" · ");
   return (
     <div>
-      <div className="text-[11.5px] font-medium text-slate-400 uppercase tracking-wide">{label}</div>
-      <Link href={adminPaths.user(person.id)} className="font-medium text-slate-900 hover:underline">
+      <div className="text-[12px] leading-4 text-muted">{label}</div>
+      <Link href={adminPaths.user(person.id)} className="inline-flex min-h-6 items-center font-semibold text-accent hover:text-accent-hover">
         {person.name}
       </Link>
-      <div className="text-slate-500 text-[12.5px] capitalize">
-        {[person.role, person.status === "disabled" ? "disabled" : null, person.isAdmin ? "admin" : null].filter(Boolean).join(" · ")}
-      </div>
-      {person.email && <div className="text-slate-500 text-[12.5px]">{person.email}</div>}
+      {meta && <div className="text-[color:var(--text-2)]">{meta}</div>}
+      {person.email && <div className="text-[color:var(--text-2)] break-all">{person.email}</div>}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { getPendingCounts } from "@/lib/supabase/adminDashboard";
 import { requireAdmin } from "./guard";
 import { AdminNav } from "./_components/AdminNav";
@@ -17,10 +16,9 @@ export default async function AdminLayout({ children }) {
   const counts = await getPendingCounts(supabase);
 
   return (
-    <div className="desk-surface bleed-under-nav relative min-h-screen">
-      <DeskBackdrop className="-z-10" />
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 lg:gap-8">
+    <div className="bg-surface min-h-screen">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)] gap-6 lg:gap-12">
           <AdminNav counts={counts} />
           <main className="min-w-0">{children}</main>
         </div>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Icon } from "@/components/Icon";
+import { AuthHeading } from "@/app/(auth)/_components/fields";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { verifyCompanyInviteToken } from "@/lib/companyToken";
@@ -22,8 +22,6 @@ export default async function ClaimCompanyPage({ searchParams }) {
     return (
       <Shell>
         <StateCard
-          tone="error"
-          icon="alert-triangle"
           title="Link invalid or expired"
           body="This invite link can't be used. Get in touch and we'll send you a fresh one."
         />
@@ -36,8 +34,6 @@ export default async function ClaimCompanyPage({ searchParams }) {
     return (
       <Shell>
         <StateCard
-          tone="error"
-          icon="alert-triangle"
           title="Server not configured"
           body="Claiming needs SUPABASE_SERVICE_ROLE_KEY set on the server."
         />
@@ -52,8 +48,6 @@ export default async function ClaimCompanyPage({ searchParams }) {
     return (
       <Shell>
         <StateCard
-          tone="error"
-          icon="alert-triangle"
           title="Company not found"
           body="This listing may have been removed. Get in touch if you think that's a mistake."
         />
@@ -79,8 +73,6 @@ export default async function ClaimCompanyPage({ searchParams }) {
     return (
       <Shell>
         <StateCard
-          tone="error"
-          icon="alert-triangle"
           title={`${company.name} has already been claimed`}
           body="Someone at your company has already set this page up. Ask them to add you, or get in touch if you think this is wrong."
         />
@@ -96,23 +88,15 @@ export default async function ClaimCompanyPage({ searchParams }) {
     return (
       <Shell>
         <Card companyName={company.name}>
-          <p className="text-[13.5px] text-slate-500 mt-4 mb-5 leading-[1.55]">
-            Create an account (or sign in) and this page becomes yours to edit. It's already
+          <p className="text-[14px] leading-5 text-[color:var(--text)] mb-6">
+            Create an account (or log in) and this page becomes yours to edit. It&rsquo;s already
             live, so nothing goes dark while you set up.
           </p>
-          <div className="flex flex-wrap gap-2.5">
-            <a
-              href={`/signup?next=${encodeURIComponent(next)}`}
-              className="inline-flex items-center justify-center text-[14px] font-medium"
-              style={{ background: "var(--accent)", color: "#fff", borderRadius: 999, padding: "11px 22px" }}
-            >
+          <div className="flex flex-col sm:flex-row gap-2">
+            <a href={`/signup?next=${encodeURIComponent(next)}`} className={`${BTN} ${BTN_PRIMARY}`}>
               Create an account
             </a>
-            <a
-              href={`/login?next=${encodeURIComponent(next)}`}
-              className="inline-flex items-center justify-center text-[14px] font-medium"
-              style={{ border: "1px solid var(--paper-line)", color: "var(--ink-graphite)", borderRadius: 999, padding: "11px 22px" }}
-            >
+            <a href={`/login?next=${encodeURIComponent(next)}`} className={`${BTN} ${BTN_OUTLINE}`}>
               I already have one
             </a>
           </div>
@@ -136,8 +120,6 @@ export default async function ClaimCompanyPage({ searchParams }) {
     return (
       <Shell>
         <StateCard
-          tone="error"
-          icon="alert-triangle"
           title="You're signed in as a different kind of account"
           // The guard above leaves only 'tutor' and 'student' here, so name the
           // role explicitly rather than interpolating the enum. The DB value for
@@ -152,8 +134,8 @@ export default async function ClaimCompanyPage({ searchParams }) {
   return (
     <Shell>
       <Card companyName={company.name}>
-        <p className="text-[13.5px] text-slate-500 mt-4 mb-5 leading-[1.55]">
-          Claiming links {company.name} to this account. You'll be able to edit the page,
+        <p className="text-[14px] leading-5 text-[color:var(--text)] mb-6">
+          Claiming links {company.name} to this account. You&rsquo;ll be able to edit the page,
           set your rates and add your tutors straight away.
         </p>
         <ClaimPanel token={token} companyName={company.name} />
@@ -162,25 +144,12 @@ export default async function ClaimCompanyPage({ searchParams }) {
   );
 }
 
+// Same plain 400px column as the auth screens (REDESIGN_DECISIONS.md item 8):
+// no card, no icon tile.
 function Card({ companyName, children }) {
   return (
-    <section
-      className="bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}
-    >
-      <span
-        className="inline-flex items-center justify-center mb-4"
-        style={{ width: 44, height: 44, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
-      >
-        <Icon name="building" size={22} />
-      </span>
-      <h1
-        className="text-[30px] leading-none"
-        style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
-      >
-        Claim {companyName}
-      </h1>
-      <p className="text-[14px] text-slate-500 mt-1.5">Your page on MatchTutor is ready.</p>
+    <section>
+      <AuthHeading title={`Claim ${companyName}`}>Your page on MatchTutor is ready.</AuthHeading>
       {children}
     </section>
   );
@@ -188,34 +157,22 @@ function Card({ companyName, children }) {
 
 function Shell({ children }) {
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen">
-      <div className="max-w-[520px] mx-auto px-6 pt-16 pb-24">{children}</div>
+    <div className="bg-surface px-4 pt-12 pb-16">
+      <div className="w-full max-w-[400px] mx-auto">{children}</div>
     </div>
   );
 }
 
-function StateCard({ tone, icon, title, body }) {
-  const colors =
-    { ok: { bg: "var(--accent-softer)", fg: "var(--accent)" }, error: { bg: "#FEF2F2", fg: "#DC2626" } }[tone] ||
-    { bg: "var(--desk)", fg: "var(--ink-muted)" };
+function StateCard({ title, body }) {
   return (
-    <section
-      className="bg-[color:var(--paper-card)]"
-      style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 28 }}
-    >
-      <span
-        className="inline-flex items-center justify-center mb-4"
-        style={{ width: 44, height: 44, borderRadius: 999, background: colors.bg, color: colors.fg }}
-      >
-        <Icon name={icon} size={22} />
-      </span>
-      <h1
-        className="text-[30px] leading-none"
-        style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
-      >
-        {title}
-      </h1>
-      <p className="text-[14px] text-slate-500 mt-1.5 leading-[1.55]">{body}</p>
+    <section>
+      <AuthHeading title={title}>{body}</AuthHeading>
     </section>
   );
 }
+
+// Link styled as the shared Button (components/ui.js), which renders a <button>.
+const BTN =
+  "inline-flex items-center justify-center h-11 px-5 border rounded text-[14px] leading-5 font-semibold whitespace-nowrap";
+const BTN_PRIMARY = "bg-accent text-white border-accent hover:bg-accent-hover hover:border-accent-hover";
+const BTN_OUTLINE = "bg-surface text-[color:var(--text)] border-input hover:bg-surface-2";

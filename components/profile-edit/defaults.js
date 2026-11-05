@@ -13,7 +13,7 @@ export function defaultTutor(userId, userEmail, fullName) {
     suburb: "",
     city: "",
     initial: (fullName || userEmail || "?").charAt(0).toUpperCase(),
-    avatarBg: "oklch(0.9 0.05 220)",
+    avatarBg: "oklch(0.9 0.05 220)", // design-allow: stored default column value, no longer rendered (Avatar ignores avatarBg)
     bannerBg: null,
     avatarImg: null,
     bannerImg: null,

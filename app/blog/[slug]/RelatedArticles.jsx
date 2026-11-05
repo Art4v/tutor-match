@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { formatArticleDate } from "@/lib/blog";
 
 // "Keep reading" block at the foot of an article. Selection (same category
@@ -8,43 +7,29 @@ import { formatArticleDate } from "@/lib/blog";
 export function RelatedArticles({ articles }) {
   if (!articles || articles.length === 0) return null;
 
+  // Rows divided by rules, not a grid of cards (DESIGN.md: lists are rows).
   return (
-    <section>
-      <h2
-        className="text-[24px] leading-tight"
-        style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.02em" }}
-      >
-        Keep reading
-      </h2>
+    <section className="border-t border-rule pt-8">
+      <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">Keep reading</h2>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <ul className="mt-4 border-t border-rule">
         {articles.map((a) => (
-          <Link
-            key={a.slug}
-            href={`/blog/${a.slug}`}
-            className="group block bg-[color:var(--paper-card)]"
-            style={{ ...cardStyle, padding: "16px 18px" }}
-          >
-            {a.category && (
-              <div
-                className="uppercase"
-                style={{ color: "var(--accent)", fontWeight: 500, letterSpacing: "0.08em", fontSize: 10.5 }}
+          <li key={a.slug} className="border-b border-rule">
+            <Link href={`/blog/${a.slug}`} className="group block py-3">
+              <span
+                className="block text-[16px] leading-6 font-semibold text-[color:var(--text)] group-hover:text-[color:var(--accent)]"
+                style={{ transition: "color 120ms ease-out" }}
               >
-                {a.category}
-              </div>
-            )}
-            <h3
-              className="mt-2 text-[15px] leading-[1.35] text-[color:var(--ink-graphite)] group-hover:text-[color:var(--accent)]"
-              style={{ fontWeight: 400, transition: "color 180ms ease-out" }}
-            >
-              {a.title}
-            </h3>
-            <div className="mt-2.5 text-[12px]" style={{ color: "var(--sage)" }}>
-              {formatArticleDate(a.publishedAt)}
-            </div>
-          </Link>
+                {a.title}
+              </span>
+              <span className="mt-1 block text-[12px] leading-4 text-muted">
+                {a.category ? `${a.category} \u00b7 ` : ""}
+                {formatArticleDate(a.publishedAt)}
+              </span>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

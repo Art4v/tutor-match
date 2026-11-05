@@ -30,7 +30,7 @@ import { blogImageUrl } from "@/lib/supabase/storage";
 //                          caption?: string }
 //
 //   Inline = string              // plain text
-//          | { b: string }       // the font-medium run
+//          | { b: string }       // the font-semibold run
 //          | { i: string }       // emphasis
 //          | { href, text }      // link; href is scheme-checked at parse time
 //   Cell   = string | Inline[]
@@ -66,7 +66,7 @@ function renderInline(nodes, keyPrefix = "") {
 
     if (typeof node.b === "string") {
       return (
-        <span key={`${keyPrefix}b${i}`} className="font-medium">
+        <span key={`${keyPrefix}b${i}`} className="font-semibold">
           {node.b}
         </span>
       );
@@ -83,7 +83,7 @@ function renderInline(nodes, keyPrefix = "") {
         <a
           key={`${keyPrefix}a${i}`}
           href={node.href}
-          className="accent-link"
+          className="accent-link accent-link--glow"
           rel="noopener noreferrer"
         >
           {node.text}
@@ -112,8 +112,11 @@ function renderBlock(block, i, first) {
       return (
         <h3
           key={i}
-          className={first ? "text-[18px] font-medium" : "mt-8 text-[18px] font-medium"}
-          style={{ color: "var(--ink-graphite-deep)" }}
+          className={
+            first
+              ? "text-[20px] leading-7 font-semibold text-[color:var(--text)]"
+              : "mt-8 text-[20px] leading-7 font-semibold text-[color:var(--text)]"
+          }
         >
           {block.text}
         </h3>
@@ -125,8 +128,8 @@ function renderBlock(block, i, first) {
           key={i}
           className={
             first
-              ? "list-disc pl-6 space-y-1.5"
-              : "mt-3 list-disc pl-6 space-y-1.5"
+              ? "list-disc pl-6 space-y-2"
+              : "mt-3 list-disc pl-6 space-y-2"
           }
         >
           {(block.items || []).map((item, j) => (
@@ -141,8 +144,8 @@ function renderBlock(block, i, first) {
           key={i}
           className={
             first
-              ? "list-decimal pl-6 space-y-1.5"
-              : "mt-3 list-decimal pl-6 space-y-1.5"
+              ? "list-decimal pl-6 space-y-2"
+              : "mt-3 list-decimal pl-6 space-y-2"
           }
         >
           {(block.items || []).map((item, j) => (

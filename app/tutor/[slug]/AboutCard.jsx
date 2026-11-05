@@ -1,22 +1,18 @@
 import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
-import { cardStyle } from "./ProfileCards";
+import { Section } from "./ProfileCards";
 
+// The tutor's long bio as a flat section, in the reading width (DESIGN.md §3).
 export function AboutCard({ text }) {
   const blocks = parseRichTextBlocks(text);
   return (
-    <section
-      id="about"
-      className="bg-[color:var(--paper-card)]"
-      style={{ ...cardStyle, padding: "20px 24px" }}
-    >
-      <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-4">About</h2>
-      <div className="text-[15.5px] leading-[1.72] max-w-[70ch]" style={{ color: "var(--ink)" }}>
+    <Section id="about" title="About">
+      <div className="max-w-[65ch] text-[16px] leading-6 text-[color:var(--text)]">
         {blocks.map((b, idx) => (
-          <div key={idx} className="mb-3 last:mb-0">
+          <div key={idx} className="mb-4 last:mb-0">
             <RichTextBlock block={b} idx={idx} />
           </div>
         ))}
       </div>
-    </section>
+    </Section>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Icon } from "@/components/Icon";
+import { usePathname, useRouter } from "next/navigation";
 
+// `icon` is kept on each entry for any caller that reads it; the nav itself is
+// plain text (DESIGN.md: no decorative icons).
 export const ADMIN_SECTIONS = [
   { href: "/admin", label: "Overview", icon: "sliders", exact: true },
   { href: "/admin/verification", label: "Verification", icon: "shield-check", count: "verifications" },
@@ -16,41 +17,64 @@ export const ADMIN_SECTIONS = [
   { href: "/admin/history", label: "History", icon: "clock" },
 ];
 
-// Sidebar on wide screens, a scrolling chip row on phones. The counts come
-// from the layout (admin_pending_counts), so they refresh with every
-// navigation and every router.refresh() after a decision.
+const badgeText = (n) => (n > 9 ? "9+" : String(n));
+
+// A plain left nav at 1024px and up; below that, one "Section" select that
+// navigates on change. The counts come from the layout (admin_pending_counts),
+// so they refresh with every navigation and every router.refresh() after a
+// decision.
 export function AdminNav({ counts }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = (s) => (s.exact ? pathname === s.href : pathname === s.href || pathname.startsWith(`${s.href}/`));
+  const countFor = (s) => (s.count ? counts?.[s.count] ?? 0 : 0);
+  const current = ADMIN_SECTIONS.find(isActive)?.href ?? "/admin";
 
   return (
     <nav aria-label="Admin sections" className="lg:sticky lg:top-24 lg:self-start">
-      <ul className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
+      <div className="lg:hidden">
+        <label htmlFor="admin-section" className="block mb-1 text-[14px] leading-5 font-semibold text-[color:var(--text)]">
+          Section
+        </label>
+        <select
+          id="admin-section"
+          value={current}
+          onChange={(e) => router.push(e.target.value)}
+          className="block w-full h-11 px-3 rounded border border-input bg-surface text-[14px] leading-5 text-[color:var(--text)]"
+        >
+          {ADMIN_SECTIONS.map((s) => {
+            const n = countFor(s);
+            return (
+              <option key={s.href} value={s.href}>
+                {n > 0 ? `${s.label} (${n})` : s.label}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      <ul className="hidden lg:block">
         {ADMIN_SECTIONS.map((s) => {
           const active = isActive(s);
-          const n = s.count ? counts?.[s.count] ?? 0 : 0;
+          const n = countFor(s);
           return (
-            <li key={s.href} className="shrink-0">
+            <li key={s.href}>
               <Link
                 href={s.href}
                 aria-current={active ? "page" : undefined}
-                className="flex items-center gap-2.5 text-[14px] font-medium whitespace-nowrap"
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 10,
-                  background: active ? "var(--accent-softer)" : "transparent",
-                  color: active ? "var(--accent)" : "var(--ink-muted)",
-                  border: `1px solid ${active ? "var(--accent-line)" : "transparent"}`,
-                }}
+                className={`flex items-center gap-2 h-11 px-3 rounded text-[14px] leading-5 ${
+                  active
+                    ? "bg-surface-2 text-accent font-semibold"
+                    : "text-[color:var(--text)] hover:bg-surface-2"
+                }`}
+                style={{ transition: "background-color 120ms ease-out" }}
               >
-                <Icon name={s.icon} size={16} />
-                <span className="flex-1">{s.label}</span>
+                <span className="flex-1 truncate">{s.label}</span>
                 {n > 0 && (
                   <span
-                    className="inline-flex items-center justify-center text-[11.5px] tabular-nums text-white"
-                    style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999, background: "var(--accent)" }}
+                    className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded bg-accent text-white text-[12px] leading-4 font-semibold tabular-nums"
                   >
-                    {n}
+                    {badgeText(n)}
                   </span>
                 )}
               </Link>

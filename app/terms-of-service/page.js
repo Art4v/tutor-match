@@ -2,15 +2,15 @@ export const metadata = { title: "Terms of Service" };
 
 export default function TermsOfServicePage() {
   return (
-    <div className="bg-[color:var(--paper-card)]">
-      <div className="max-w-[720px] mx-auto px-6 py-24">
-        <h1 className="text-[44px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
+    <div className="bg-surface">
+      <div className="max-w-[calc(65ch+48px)] mx-auto px-4 lg:px-6 pt-8 sm:pt-12 pb-16">
+        <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">
           Terms of Service
         </h1>
 
-        <div className="mt-8 space-y-8 text-[15px] text-slate-700 leading-[1.7]">
+        <div className="mt-8 space-y-8 text-[16px] leading-6 text-[color:var(--text)]">
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               1. Introduction
             </h2>
             <p>
@@ -27,7 +27,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               2. Nature of the Platform
             </h2>
             <p>
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               3. User Accounts
             </h2>
             <p>3.1 You agree to provide accurate information when creating an account.</p>
@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               4. Tutor Listings
             </h2>
             <p>
@@ -87,7 +87,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               5. Ratings &amp; Reviews
             </h2>
             <p>5.1 Reviews must be honest and based on genuine experience.</p>
@@ -98,7 +98,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               6. Prohibited Conduct
             </h2>
             <p>6.1 You must not use the Platform to:</p>
@@ -111,7 +111,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               7. Limitation of Liability
             </h2>
             <p>
@@ -132,7 +132,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               8. Indemnity
             </h2>
             <p>
@@ -142,12 +142,12 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               9. Privacy
             </h2>
             <p>
               Your privacy is important to us. Please see our{" "}
-              <a href="/privacy-policy" className="underline" style={{ color: "var(--ink-graphite)" }}>
+              <a href="/privacy-policy" className="accent-link accent-link--glow">
                 Privacy Policy
               </a>
               , which forms part of these Terms and is governed by the Privacy Act 1988 (Cth) and the Australian
@@ -156,7 +156,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               10. Intellectual Property
             </h2>
             <p>
@@ -166,7 +166,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               11. Changes to Terms
             </h2>
             <p>
@@ -180,7 +180,7 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               12. Governing Law
             </h2>
             <p>
@@ -190,12 +190,12 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-[20px] font-light mb-3" style={{ color: "var(--ink-graphite-deep)" }}>
+            <h2 className="text-[20px] leading-7 font-semibold mb-3 text-[color:var(--text)]">
               13. Contact
             </h2>
             <p>
               For any questions regarding these Terms, please contact us at:{" "}
-              <a href="mailto:matchtutoraus@gmail.com" className="underline" style={{ color: "var(--ink-graphite)" }}>
+              <a href="mailto:matchtutoraus@gmail.com" className="accent-link accent-link--glow">
                 matchtutoraus@gmail.com
               </a>
             </p>

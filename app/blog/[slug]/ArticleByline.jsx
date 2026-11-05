@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { InlineMarkdown } from "@/components/RichText";
+import { Avatar } from "@/components/ui";
 
 // The byline renders the joined tutor behind articles.author_id (0061), so the
 // name, photo and tagline follow the profile instead of being frozen into the
@@ -7,36 +8,18 @@ import { InlineMarkdown } from "@/components/RichText";
 // account, a disabled one or a profile set to private downgrades the byline to
 // plain text (or to nothing) instead of breaking the page.
 //
-// The initials chip is local rather than components/ui.js `Avatar`, whose
-// no-image fallback is a graduation cap; a byline wants the person's initials.
+// The photo is the shared components/ui.js `Avatar` (circle, initials from the
+// display name as the fallback), the same as every other person on the site.
 export function ArticleByline({ author, linkHref = null }) {
   if (!author?.name) return null;
 
   const inner = (
     <>
-      <span
-        className="shrink-0 inline-flex items-center justify-center overflow-hidden"
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          backgroundColor: author.avatarBg || "var(--accent-softer)",
-          backgroundImage: author.avatar ? `url(${author.avatar})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          color: "var(--ink-graphite)",
-          fontSize: 14,
-          fontWeight: 500,
-          letterSpacing: "0.01em",
-        }}
-        aria-hidden="true"
-      >
-        {!author.avatar && author.initials}
-      </span>
+      <Avatar tutor={{ avatarImg: author.avatar || null, name: author.name }} size={40} />
       <span className="min-w-0">
         <span
-          className="block text-[14px] font-medium text-[color:var(--ink)] group-hover:text-[color:var(--accent)]"
-          style={{ transition: "color 180ms ease-out" }}
+          className="block text-[14px] leading-5 font-semibold text-[color:var(--text)] group-hover:text-[color:var(--accent)]"
+          style={{ transition: "color 120ms ease-out" }}
         >
           {author.name}
         </span>
@@ -48,13 +31,12 @@ export function ArticleByline({ author, linkHref = null }) {
             gives that field (see ProfileHeaderText), so it goes through
             InlineMarkdown rather than being printed raw, which showed the
             asterisks. InlineMarkdown's <strong> hardcodes text-slate-900, which
-            at 12.5px under the name would out-weigh the name itself; the
+            under the name would out-weigh the name itself; the
             descendant selector below outranks that single class and keeps
             emphasis one step darker than the line, not black. */}
         {author.roleLine && (
           <span
-            className="text-[12.5px] mt-0.5 line-clamp-2 [&_strong]:text-[color:var(--ink-muted)]"
-            style={{ color: "var(--sage)" }}
+            className="text-[14px] leading-5 line-clamp-2 text-[color:var(--text-2)] [&_strong]:text-[color:var(--text)]"
           >
             <InlineMarkdown text={author.roleLine} />
           </span>

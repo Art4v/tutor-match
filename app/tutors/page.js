@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { getIndexableTutors } from "./data";
 import { indexableCombos, tutorsPath } from "@/lib/seo/landing";
 import { stateName } from "@/lib/states";
 import { JsonLd } from "@/components/JsonLd";
 import { absUrl } from "@/lib/site";
+import { LinkList } from "./LandingView";
 
 // /tutors: the entry point to the landing pages, one link per state and city
 // that has tutors. Indexable pages are linked; thin ones are left out so every
@@ -24,7 +24,7 @@ export default async function TutorsIndexPage() {
   const liveCities = cities.filter((c) => c.indexable);
 
   return (
-    <div className="bg-[color:var(--paper-card)]">
+    <div className="bg-surface">
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -36,15 +36,12 @@ export default async function TutorsIndexPage() {
           ].map((x, i) => ({ "@type": "ListItem", position: i + 1, name: x.name, url: absUrl(x.path) })),
         }}
       />
-      <div className="max-w-[1128px] mx-auto px-6 pt-24 pb-20">
+      <div className="max-w-[1128px] mx-auto px-4 lg:px-6 pt-8 sm:pt-12 pb-16">
         <header>
-          <h1
-            className="text-[36px] sm:text-[44px] leading-[1.12]"
-            style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
-          >
+          <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)]">
             Private tutors across Australia
           </h1>
-          <p className="mt-5 text-[16px] leading-[1.65] max-w-[720px]" style={{ color: "var(--ink-muted)" }}>
+          <p className="mt-3 text-[16px] leading-6 max-w-[680px] text-[color:var(--text-2)]">
             {tutors.length} tutors are listed on MatchTutor. Every one is verified by MatchTutor or belongs to a
             listed tutoring company. Choose a state or city to see who is based there.
           </p>
@@ -68,23 +65,9 @@ export default async function TutorsIndexPage() {
 function Group({ title, items }) {
   if (items.length === 0) return null;
   return (
-    <section className="mt-14">
-      <h2 className="text-[24px]" style={{ color: "var(--ink-graphite)", fontWeight: 300 }}>
-        {title}
-      </h2>
-      <ul className="mt-5 flex flex-wrap gap-2.5">
-        {items.map((it) => (
-          <li key={it.path}>
-            <Link
-              href={it.path}
-              className="inline-block px-3.5 py-1.5 text-[14px] rounded-full"
-              style={{ border: "1px solid var(--line)", color: "var(--ink-graphite)", fontWeight: 500 }}
-            >
-              {it.label} <span style={{ color: "var(--ink-muted)", fontWeight: 400 }}>({it.count})</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <section className="mt-12 pt-8 border-t border-rule">
+      <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">{title}</h2>
+      <LinkList items={items} />
     </section>
   );
 }

@@ -3,14 +3,12 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "motion/react";
 import { Button } from "@/components/ui";
-import { Icon } from "@/components/Icon";
 import OAuthButtons from "@/components/OAuthButtons";
 import { Wordmark } from "@/components/Logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { postAuthDest, safeNext } from "@/lib/roles";
-import { EASE_OUT } from "@/lib/motion";
+import { AuthHeading, AuthFootnote, Field, Input, PasswordInput, StatusLine, LINK_CLASS } from "../_components/fields";
 
 function LoginInner() {
   const router = useRouter();
@@ -21,7 +19,6 @@ function LoginInner() {
   const linkError = errorParam === "link_invalid";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   // When the sign-in failure is specifically an unconfirmed email, we surface a
@@ -72,50 +69,26 @@ function LoginInner() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: EASE_OUT }}
-      className="w-full max-w-[440px] bg-[color:var(--paper-card)]"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: "var(--radius-card)",
-        padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
-      }}
-    >
-      <div className="mb-6">
-        <h1 className="text-[42px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-          Welcome back.
-        </h1>
-        <p className="text-[14px] text-slate-500 mt-1.5">
-          Sign in to your{" "}
-          <Wordmark matchColor="var(--ink-muted)" weight={500} />{" "}
-          account.
-        </p>
-      </div>
+    <div>
+      <AuthHeading title="Log in">
+        To your <Wordmark matchColor="var(--text-2)" /> account.
+      </AuthHeading>
 
       {justReset && (
-        <div
-          className="px-3 py-2 mb-5 text-[13px]"
-          style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, color: "#15803D" }}
-        >
-          Password updated — sign in with your new password.
-        </div>
+        <StatusLine tone="success" className="mb-6">
+          Password updated. Log in with your new password.
+        </StatusLine>
       )}
 
       {(oauthError || linkError) && (
-        <div
-          className="px-3 py-2 mb-5 text-[13px] text-red-700"
-          style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
-        >
+        <StatusLine className="mb-6">
           {linkError
-            ? "That confirmation link is invalid or has expired — please sign in, or sign up again."
-            : "Couldn’t sign in — please try again."}
-        </div>
+            ? "That confirmation link is invalid or has expired. Please log in, or sign up again."
+            : "Couldn’t log in. Please try again."}
+        </StatusLine>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onSubmit} className="space-y-6">
         <Field label="Email">
           <Input
             type="email"
@@ -127,47 +100,28 @@ function LoginInner() {
           />
         </Field>
 
-        <Field label="Password">
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
+        <div>
+          <Field label="Password">
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
               required
               autoComplete="current-password"
-              className="pr-10"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              aria-pressed={showPassword}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <Icon name={showPassword ? "eye-off" : "eye"} size={17} />
-            </button>
-          </div>
-          <div className="mt-2 text-right">
-            <Link
-              href="/forgot-password"
-              className="text-[12.5px] font-medium accent-link"
-              style={{ color: "var(--accent)" }}
-            >
+          </Field>
+          <div className="mt-2 flex justify-end">
+            <Link href="/forgot-password" className={`inline-flex items-center min-h-6 text-[14px] leading-5 ${LINK_CLASS}`}>
               Forgot password?
             </Link>
           </div>
-        </Field>
+        </div>
 
         {error && (
-          <div
-            className="px-3 py-2 text-[13px] text-red-700"
-            style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}
-          >
+          <StatusLine>
             {error}
             {needsConfirm && (
               resent === "ok" ? (
-                <span className="ml-1.5 text-red-700">Sent — check your inbox.</span>
+                <> Sent. Check your inbox.</>
               ) : (
                 <>
                   {" "}
@@ -175,15 +129,15 @@ function LoginInner() {
                     type="button"
                     onClick={onResendConfirmation}
                     disabled={resent === "sending"}
-                    className="font-medium underline text-red-700 disabled:opacity-60"
+                    className="font-semibold underline disabled:opacity-50"
                   >
-                    {resent === "sending" ? "Sending…" : "Resend?"}
+                    {resent === "sending" ? "Sending…" : "Resend confirmation email"}
                   </button>
-                  {resent === "error" && <span className="ml-1.5 text-red-700">Couldn&rsquo;t resend.</span>}
+                  {resent === "error" && <> Couldn&rsquo;t resend.</>}
                 </>
               )
             )}
-          </div>
+          </StatusLine>
         )}
 
         <Button type="submit" variant="primary" size="lg" full disabled={submitting}>
@@ -191,17 +145,17 @@ function LoginInner() {
         </Button>
       </form>
 
-      <div className="mt-5">
+      <div className="mt-6">
         <OAuthButtons divider="top" />
       </div>
 
-      <div className="text-[13px] text-slate-500 mt-6 text-center">
+      <AuthFootnote>
         Don&rsquo;t have an account?{" "}
-        <Link href="/signup" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
+        <Link href="/signup" className={LINK_CLASS}>
           Sign up
         </Link>
-      </div>
-    </motion.div>
+      </AuthFootnote>
+    </div>
   );
 }
 
@@ -210,32 +164,5 @@ export default function LoginPage() {
     <Suspense fallback={null}>
       <LoginInner />
     </Suspense>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <div className="text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
-        {label}
-      </div>
-      {children}
-    </label>
-  );
-}
-
-function Input({ className = "", style, ...props }) {
-  return (
-    <input
-      {...props}
-      className={`w-full h-10 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none ${className}`}
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: 8,
-        background: "var(--paper-card)",
-        transition: "border-color 180ms ease-out, box-shadow 180ms ease-out",
-        ...style,
-      }}
-    />
   );
 }

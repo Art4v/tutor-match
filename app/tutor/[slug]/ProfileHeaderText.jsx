@@ -1,114 +1,89 @@
 "use client";
+import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { VerifiedTick } from "@/components/ui";
 import { InlineMarkdown } from "@/components/RichText";
 import { yearRangeLabel } from "@/lib/yearLevels";
 
 /**
- * Header identity block. Name/tagline/meta sit on the left and the at-a-glance
- * stats stack vertically on the right of the same row, so the header reads as
- * one band rather than a stack split by a divider.
+ * The profile header's name block (REDESIGN_DECISIONS.md item 5): full name,
+ * verified mark or company, tagline, then plain-text facts. Shared by the
+ * public view and the owner editor, which pass the same display shape.
+ *
+ * Every fact comes from the tutor's own fields and is omitted when empty: no
+ * hard-coded delivery modes, no "0 years". The response time is self-reported
+ * (a select in the editor, data flag 2), so it is labelled as the tutor's own
+ * estimate and carries no status dot.
  */
 export function ProfileHeaderText({ tutor, deliveryLabel }) {
-  const stats = [];
-  if (tutor.yearsTutoring != null) {
-    stats.push({
-      key: "years",
-      icon: "clock",
-      body: (<><Strong>{tutor.yearsTutoring} yrs</Strong> <span>tutoring</span></>),
-    });
-  }
-  if (tutor.yearMin != null && tutor.yearMax != null) {
-    stats.push({
-      key: "levels",
-      icon: "users",
-      body: <Strong>{yearRangeLabel(tutor.yearMin, tutor.yearMax)}</Strong>,
-    });
-  }
-  if (tutor.languages.length > 0) {
-    stats.push({
-      key: "languages",
-      icon: "language",
-      body: <Strong>{tutor.languages.join(", ")}</Strong>,
-    });
-  }
+  const location = [tutor.suburb, tutor.city].filter(Boolean).join(", ");
+  const years = Number(tutor.yearsTutoring);
+  const facts = [
+    location,
+    deliveryLabel,
+    Number.isFinite(years) && years > 0 ? `${years} ${years === 1 ? "year" : "years"} tutoring` : null,
+    tutor.yearMin != null && tutor.yearMax != null ? yearRangeLabel(tutor.yearMin, tutor.yearMax) : null,
+    tutor.languages?.length > 0 ? `Speaks ${tutor.languages.join(", ")}` : null,
+  ].filter(Boolean);
 
   return (
-    <div className="flex items-start justify-between gap-6 flex-wrap mt-5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <h1
-            className="text-[34px] leading-[1.1]"
-            style={{ fontWeight: 300, letterSpacing: "-0.02em", color: "var(--ink-graphite-deep)" }}
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h1 className="text-[24px] leading-8 sm:text-[32px] sm:leading-10 font-semibold text-[color:var(--text)] break-words">
+          {tutor.name}
+        </h1>
+        {/* A company tutor shows the company's name INSTEAD of the verified
+            mark, never as well. The mark is earned by an individual tutor; it
+            must not be handed out by association with a company we invited. */}
+        {tutor.company ? (
+          <Link
+            href={`/companies/${tutor.company.slug}`}
+            className="inline-flex min-h-6 items-center gap-1 text-[14px] leading-5 font-semibold text-accent hover:text-accent-hover"
+            style={{ transition: "color 120ms ease-out" }}
           >
-            {tutor.name}
-          </h1>
-          {/* A company tutor shows the company's chip INSTEAD of the verified
-              tick, never as well. The tick means something specific and earned
-              by an individual tutor; it must not be handed out by association
-              with a company we invited. (Browse still treats them as verified
-              for filtering — that is a ranking fact, not a visual claim.) */}
-          {tutor.company ? (
-            <a
-              href={`/companies/${tutor.company.slug}`}
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:bg-slate-100"
-              style={{
-                background: "var(--accent-softer)",
-                color: "var(--accent)",
-                border: "1px solid var(--accent-line)",
-                borderRadius: 999,
-                padding: "4px 11px",
-              }}
-            >
-              <Icon name="building" size={13} />
-              {tutor.company.name}
-            </a>
-          ) : (
-            tutor.verified && <VerifiedTick size={22} label />
-          )}
-        </div>
-
-        {tutor.bio && (
-          <div className="text-[17px] mt-[5px] break-words" style={{ color: "var(--ink-muted)" }}>
-            <InlineMarkdown text={tutor.bio} />
-          </div>
+            <Icon name="building" size={16} />
+            {tutor.company.name}
+          </Link>
+        ) : (
+          tutor.verified && <VerifiedTick size={20} label />
         )}
-
-        <div className="flex items-center gap-[22px] text-[14px] mt-2.5 flex-wrap" style={{ color: "var(--ink-muted)" }}>
-          {(tutor.suburb || tutor.city) && (
-            <span className="flex items-center gap-1.5">
-              <Icon name="map-pin" size={14} />
-              {[tutor.suburb, tutor.city].filter(Boolean).join(", ")}
-            </span>
-          )}
-          {deliveryLabel && (
-            <span className="flex items-center gap-1.5">
-              <Icon name="globe" size={14} /> {deliveryLabel}
-            </span>
-          )}
-          {tutor.responsive && (
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block rounded-full" style={{ width: 7, height: 7, background: "#E8A13A" }} />
-              {tutor.responsive}
-            </span>
-          )}
-        </div>
       </div>
 
-      {stats.length > 0 && (
-        <div className="flex-none flex flex-col gap-[11px] text-[14px] pr-3.5" style={{ color: "var(--ink-muted)" }}>
-          {stats.map((s) => (
-            <span key={s.key} className="flex items-center gap-2">
-              <Icon name={s.icon} size={14} />
-              {s.body}
-            </span>
-          ))}
-        </div>
+      {tutor.bio && (
+        <p className="mt-1 text-[16px] leading-6 text-[color:var(--text-2)] break-words">
+          <InlineMarkdown text={tutor.bio} />
+        </p>
       )}
+
+      {facts.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[14px] leading-5 text-[color:var(--text-2)]">
+          {facts.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[14px] leading-5 text-[color:var(--text-2)]">
+        {/* Reviews of a company tutor belong to the company (0067), so the
+            tutor's own (always empty) count would mislead. */}
+        {!tutor.company && <RatingLine rating={tutor.rating} count={tutor.reviews} />}
+        {tutor.responsive && <span>{tutor.responsive} (tutor&apos;s estimate)</span>}
+      </div>
     </div>
   );
 }
 
-function Strong({ children }) {
-  return <span className="font-medium" style={{ color: "var(--ink-graphite)" }}>{children}</span>;
+function RatingLine({ rating, count }) {
+  const n = Number(count) || 0;
+  const avg = rating == null ? null : Number(rating);
+  if (n > 0 && Number.isFinite(avg)) {
+    return (
+      <a href="#reviews" className="inline-flex min-h-6 items-center gap-1 text-[color:var(--text)] hover:text-accent">
+        <Icon name="star" size={16} />
+        <span className="font-semibold">{avg.toFixed(1)}</span>
+        <span className="text-[color:var(--text-2)]">({n} {n === 1 ? "review" : "reviews"})</span>
+      </a>
+    );
+  }
+  return <span>No reviews yet</span>;
 }

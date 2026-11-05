@@ -46,28 +46,21 @@ function formatReviewDate(iso) {
 
 export function ReviewItem({ review, clamp = false, actions = null }) {
   const name = review.authorName?.trim() || "A student";
-  // Avatar reads { avatarImg, avatarBg } off a tutor object; a reviewer isn't
-  // one, so hand it the same shape. Students have no avatar_bg column of their
-  // own, so every reviewer gets the same soft teal behind the fallback cap.
-  const author = { avatarImg: review.authorAvatarUrl || null, avatarBg: "var(--accent-softer)" };
+  // Avatar reads { avatarImg, name } off a tutor object; a reviewer isn't one,
+  // so hand it the same shape. No photo: initials on the neutral tint.
+  const author = { avatarImg: review.authorAvatarUrl || null, name };
 
   return (
-    <article className="flex items-start gap-2.5">
-      <div className="shrink-0 mt-0.5">
-        <Avatar tutor={author} size={32} />
-      </div>
+    <article className="flex items-start gap-3">
+      <Avatar tutor={author} size={40} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-[13.5px] font-medium truncate" style={{ color: "var(--ink)" }}>
-              {name}
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="truncate text-[14px] leading-5 font-semibold text-[color:var(--text)]">{name}</div>
+            <div className="mt-1 flex items-center gap-2">
               <StarRating value={review.rating} size={12} />
-              <span className="text-[11.5px]" style={{ color: "var(--sage)" }}>
-                {formatReviewDate(review.createdAt)}
-              </span>
+              <span className="text-[12px] leading-4 text-[color:var(--muted)]">{formatReviewDate(review.createdAt)}</span>
             </div>
           </div>
           {actions}
@@ -75,8 +68,7 @@ export function ReviewItem({ review, clamp = false, actions = null }) {
 
         {review.body && (
           <p
-            className={`text-[13px] leading-[1.6] mt-1.5 whitespace-pre-wrap ${clamp ? "line-clamp-4" : ""}`}
-            style={{ color: "var(--ink-muted)" }}
+            className={`mt-2 max-w-[680px] whitespace-pre-wrap break-words text-[14px] leading-5 text-[color:var(--text)] ${clamp ? "line-clamp-4" : ""}`}
           >
             {review.body}
           </p>

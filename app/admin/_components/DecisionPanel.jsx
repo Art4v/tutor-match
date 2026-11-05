@@ -7,10 +7,10 @@ import { Icon } from "@/components/Icon";
 const MAX_REASON = 500; // must match the admin_actions CHECK (0074)
 
 const TONES = {
-  primary: { background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)" },
-  danger: { background: "#DC2626", color: "#fff", border: "1px solid #DC2626" },
-  "danger-outline": { background: "var(--paper-card)", color: "#DC2626", border: "1px solid #FECACA" },
-  neutral: { background: "var(--paper-card)", color: "var(--ink-graphite)", border: "1px solid var(--paper-line)" },
+  primary: "bg-accent text-white border-accent hover:bg-accent-hover hover:border-accent-hover",
+  danger: "bg-error text-white border-error",
+  "danger-outline": "bg-surface text-error border-input hover:bg-surface-2",
+  neutral: "bg-surface text-[color:var(--text)] border-input hover:bg-surface-2",
 };
 
 /**
@@ -74,14 +74,12 @@ export function DecisionPanel({ endpoint, body = {}, actions, reasonLabel = "Not
   };
 
   if (result) {
-    const style = {
-      ok: { background: "var(--accent-softer)", color: "var(--accent)", border: "1px solid var(--accent-line)" },
-      bad: { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" },
-      neutral: { background: "var(--desk)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)" },
-    }[result.tone];
+    const color = { ok: "text-success", bad: "text-error", neutral: "text-[color:var(--text-2)]" }[result.tone];
     return (
-      <div className="flex items-center gap-2.5 text-[14px] font-medium" style={{ ...style, borderRadius: 12, padding: "14px 16px" }}>
-        <Icon name={result.tone === "ok" ? "check-circle" : "info"} size={18} />
+      <div role="status" className={`flex items-start gap-2 bg-surface-2 rounded p-4 text-[14px] leading-5 font-semibold ${color}`}>
+        <span className="shrink-0 mt-0.5">
+          <Icon name={result.tone === "ok" ? "check-circle" : "info"} size={16} />
+        </span>
         <span>{result.text}</span>
       </div>
     );
@@ -92,7 +90,7 @@ export function DecisionPanel({ endpoint, body = {}, actions, reasonLabel = "Not
 
   return (
     <div>
-      <label className="block text-[13px] font-medium text-slate-700 mb-1.5" htmlFor="admin-reason">
+      <label className="block mb-1 text-[14px] leading-5 font-semibold text-[color:var(--text)]" htmlFor="admin-reason">
         {reasonLabel}
       </label>
       <textarea
@@ -100,37 +98,35 @@ export function DecisionPanel({ endpoint, body = {}, actions, reasonLabel = "Not
         value={reason}
         onChange={(e) => setReason(e.target.value.slice(0, MAX_REASON))}
         rows={2}
-        placeholder="Recorded in History with your decision."
-        className="w-full px-3 py-2 text-[13.5px] text-slate-700"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: 10, outline: "none", resize: "vertical" }}
+        aria-describedby="admin-reason-hint"
+        className="block w-full px-3 py-2 rounded border border-input bg-surface text-[14px] leading-5 text-[color:var(--text)]"
+        style={{ resize: "vertical", minHeight: 44 }}
       />
-      <div className="flex justify-between gap-3 text-[11.5px] text-slate-400">
-        <span>{reasonHint}</span>
+      <div id="admin-reason-hint" className="flex justify-between gap-3 mt-1 text-[12px] leading-4 text-muted">
+        <span>{reasonHint || "Recorded in History with your decision."}</span>
         <span className="tabular-nums">
           {reason.length}/{MAX_REASON}
         </span>
       </div>
 
       {armedAction ? (
-        <div className="mt-3" style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: 14 }}>
-          <label className="block text-[13px] text-slate-700 mb-2" htmlFor="admin-confirm">
-            Type <span className="font-medium">{armedAction.confirmWord}</span> to confirm. This can&apos;t be undone.
+        <div className="mt-4 bg-surface-2 rounded p-4">
+          <label className="block mb-2 text-[14px] leading-5 text-[color:var(--text)]" htmlFor="admin-confirm">
+            Type <span className="font-semibold">{armedAction.confirmWord}</span> to confirm. This can&apos;t be undone.
           </label>
           <input
             id="admin-confirm"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
-            className="w-full px-3 text-[14px]"
-            style={{ height: 40, border: "1px solid #FECACA", borderRadius: 10, outline: "none", background: "var(--paper-card)" }}
+            className="block w-full h-11 px-3 rounded border border-input bg-surface text-[14px] leading-5 text-[color:var(--text)]"
           />
-          <div className="flex gap-2.5 mt-3">
+          <div className="flex flex-col sm:flex-row gap-2 mt-4">
             <ActionButton tone="neutral" onClick={() => setArmed(null)} disabled={busy}>
               Cancel
             </ActionButton>
             <ActionButton
               tone="danger"
-              icon={armedAction.icon}
               onClick={() => run(armedAction)}
               disabled={busy || typed.trim() !== armedAction.confirmWord}
             >
@@ -139,30 +135,33 @@ export function DecisionPanel({ endpoint, body = {}, actions, reasonLabel = "Not
           </div>
         </div>
       ) : (
-        <div className={`mt-3 flex gap-2.5 ${layout === "column" ? "flex-col" : "flex-col sm:flex-row"}`}>
+        <div className={`mt-4 flex gap-2 ${layout === "column" ? "flex-col sm:items-start" : "flex-col sm:flex-row"}`}>
           {actions.map((action) => (
-            <ActionButton key={action.key} tone={action.tone} icon={action.icon} onClick={() => run(action)} disabled={busy}>
+            <ActionButton key={action.key} tone={action.tone} onClick={() => run(action)} disabled={busy}>
               {running === action.key ? action.busyLabel || "Working…" : action.label}
             </ActionButton>
           ))}
         </div>
       )}
 
-      {error && <p className="mt-2.5 text-[13px]" style={{ color: "#DC2626" }}>{error}</p>}
+      {error && <p role="alert" className="mt-2 text-[14px] leading-5 text-error">{error}</p>}
     </div>
   );
 }
 
-function ActionButton({ tone = "neutral", icon, onClick, disabled, children }) {
+// DESIGN.md: buttons carry no icons unless icon-only, so an action's `icon`
+// is accepted and not drawn.
+function ActionButton({ tone = "neutral", onClick, disabled, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full"
-      style={{ ...TONES[tone], height: 44, padding: "0 18px", borderRadius: 10, fontSize: 15, cursor: disabled ? "not-allowed" : "pointer" }}
+      className={`inline-flex items-center justify-center w-full sm:w-auto h-11 px-4 rounded border text-[14px] leading-5 font-semibold whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
+        TONES[tone] || TONES.neutral
+      }`}
+      style={{ transition: "background-color 120ms ease-out, border-color 120ms ease-out" }}
     >
-      {icon && <Icon name={icon} size={16} />}
       {children}
     </button>
   );

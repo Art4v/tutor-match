@@ -1,74 +1,71 @@
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { ACTION_LABELS, formatDateTime } from "./format";
 import { historyTargetHref } from "@/lib/admin/urls";
 
 // Presentational building blocks shared by every /admin page. Server-safe (no
 // hooks); the interactive pieces live in DecisionPanel.jsx.
+//
+// DESIGN.md: no cards. A page is a title, then sections (20px heading, content,
+// a rule before the next). Lists are rows divided by rules. The one tint is
+// --surface-2, used for the item under review (Inset) and decided notes.
 
+const TEXT_2 = "text-[color:var(--text-2)]";
+
+// `icon` is accepted for compatibility with existing call sites and ignored:
+// headings carry no icons.
+// eslint-disable-next-line no-unused-vars
 export function PageHeader({ icon, title, lead, back }) {
   return (
-    <div className="mb-5">
+    <div className="mb-8">
       {back && (
-        <Link href={back.href} className="inline-flex items-center gap-1 text-[13px] mb-3" style={{ color: "var(--accent)" }}>
-          <Icon name="chevron-left" size={14} /> {back.label}
+        <Link href={back.href} className="inline-flex items-center gap-1 min-h-6 mb-2 text-[14px] leading-5 text-accent hover:text-accent-hover">
+          <Icon name="chevron-left" size={16} /> {back.label}
         </Link>
       )}
-      <div className="flex items-start gap-3">
-        {icon && (
-          <span
-            className="inline-flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
-          >
-            <Icon name={icon} size={20} />
-          </span>
-        )}
-        <div className="min-w-0">
-          <h1 className="text-[30px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-            {title}
-          </h1>
-          {lead && <p className="text-[13.5px] text-slate-500 mt-1">{lead}</p>}
-        </div>
-      </div>
+      <h1 className="text-[24px] leading-8 font-semibold text-[color:var(--text)]">{title}</h1>
+      {lead && <p className={`text-[14px] leading-5 mt-1 ${TEXT_2}`}>{lead}</p>}
     </div>
   );
 }
 
+/**
+ * A section: heading, content, then a rule before the next section. With
+ * `padded={false}` the content is a ruled list that closes itself, so the
+ * section adds no rule of its own.
+ */
 export function Panel({ title, lead, children, className = "", padded = true }) {
   return (
-    <section className={`bg-[color:var(--paper-card)] ${className}`} style={cardStyle}>
+    <section
+      className={`mb-8 last:mb-0 ${padded ? "pb-8 border-b border-rule last:pb-0 last:border-b-0" : ""} ${className}`}
+    >
       {(title || lead) && (
-        <div className="px-5 sm:px-6 pt-5 pb-3">
-          {title && <h2 className="text-[18px] font-light text-slate-800 tracking-tight">{title}</h2>}
-          {lead && <p className="text-[13px] text-slate-500 mt-0.5">{lead}</p>}
+        <div className="mb-4">
+          {title && <h2 className="text-[20px] leading-7 font-semibold text-[color:var(--text)]">{title}</h2>}
+          {lead && <p className={`text-[14px] leading-5 mt-1 ${TEXT_2}`}>{lead}</p>}
         </div>
       )}
-      <div className={padded ? "px-5 sm:px-6 pb-5" : ""}>{children}</div>
+      {children}
     </section>
   );
 }
 
-/** A soft inset box for the item under review (a profile, a review body). */
+/** The item under review (a profile, a review body): a light grey area, no border. */
 export function Inset({ children, className = "" }) {
-  return (
-    <div className={`text-[14px] ${className}`} style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
-      {children}
-    </div>
-  );
+  return <div className={`bg-surface-2 rounded p-4 text-[14px] leading-5 text-[color:var(--text)] ${className}`}>{children}</div>;
 }
 
 export function EmptyState({ children }) {
-  return <p className="px-5 sm:px-6 py-6 text-[14px] text-slate-500">{children}</p>;
+  return <p className={`py-4 text-[14px] leading-5 ${TEXT_2}`}>{children}</p>;
 }
 
 /** A queue: a list of linked rows. */
 export function QueueList({ items, empty, renderRow }) {
   if (!items.length) return <EmptyState>{empty}</EmptyState>;
   return (
-    <ul>
+    <ul className="border-t border-rule">
       {items.map((item) => (
-        <li key={item.id} style={{ borderTop: "1px solid var(--paper-line)" }}>
+        <li key={item.id} className="border-b border-rule">
           {renderRow(item)}
         </li>
       ))}
@@ -78,32 +75,38 @@ export function QueueList({ items, empty, renderRow }) {
 
 export function QueueRow({ href, title, meta, aside }) {
   return (
-    <Link href={href} className="flex items-center gap-4 px-5 sm:px-6 py-3.5 hover:bg-[color:var(--bg-soft)]">
+    <Link
+      href={href}
+      className="flex items-center gap-4 min-h-11 px-3 py-3 hover:bg-surface-2"
+      style={{ transition: "background-color 120ms ease-out" }}
+    >
       <div className="min-w-0 flex-1">
-        <div className="text-[14.5px] font-medium text-slate-800 truncate">{title}</div>
-        {meta && <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{meta}</div>}
+        <div className="text-[14px] leading-5 font-semibold text-[color:var(--text)] truncate">{title}</div>
+        {meta && <div className={`text-[14px] leading-5 truncate ${TEXT_2}`}>{meta}</div>}
       </div>
-      {aside && <div className="shrink-0 text-[12.5px] text-slate-500">{aside}</div>}
-      <span className="shrink-0 text-slate-400">
+      {aside && <div className="shrink-0 text-[12px] leading-4 text-muted">{aside}</div>}
+      <span className="shrink-0 text-muted">
         <Icon name="chevron-right" size={16} />
       </span>
     </Link>
   );
 }
 
+/**
+ * A label. Status tones (good / bad / warn) are a small 4px-radius label in the
+ * status colour; everything else is plain secondary text.
+ */
 export function Chip({ children, tone = "muted" }) {
-  const tones = {
-    good: { bg: "var(--accent-softer)", color: "var(--accent)", border: "var(--accent-line)" },
-    bad: { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
-    warn: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
-    muted: { bg: "var(--bg-soft)", color: "var(--ink-muted)", border: "var(--paper-line)" },
-  };
-  const t = tones[tone] ?? tones.muted;
+  const status = {
+    good: "text-success border-success",
+    bad: "text-error border-error",
+    warn: "text-warning border-warning",
+  }[tone];
+  if (!status) {
+    return <span className={`text-[12px] leading-4 whitespace-nowrap ${TEXT_2}`}>{children}</span>;
+  }
   return (
-    <span
-      className="inline-flex items-center text-[11.5px] font-medium whitespace-nowrap"
-      style={{ background: t.bg, color: t.color, border: `1px solid ${t.border}`, borderRadius: 999, padding: "2px 9px" }}
-    >
+    <span className={`inline-flex items-center px-1 rounded border text-[12px] leading-4 font-semibold whitespace-nowrap ${status}`}>
       {children}
     </span>
   );
@@ -116,22 +119,14 @@ export function Chip({ children, tone = "muted" }) {
  */
 export function DecidedNote({ text, last }) {
   return (
-    <div
-      className="flex items-start gap-2.5 text-[14px]"
-      style={{ background: "var(--desk)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: "14px 16px" }}
-    >
-      <span className="mt-0.5">
-        <Icon name="info" size={17} />
-      </span>
-      <div>
-        <div className="font-medium">{text}</div>
-        {last && (
-          <div className="text-[13px] mt-0.5">
-            {ACTION_LABELS[last.action] || last.action} by {last.admin_name || "an admin"} on {formatDateTime(last.created_at)}
-            {last.reason ? `. Note: "${last.reason}"` : ""}
-          </div>
-        )}
-      </div>
+    <div className="bg-surface-2 rounded p-4 text-[14px] leading-5">
+      <div className="font-semibold text-[color:var(--text)]">{text}</div>
+      {last && (
+        <div className={`mt-1 ${TEXT_2}`}>
+          {ACTION_LABELS[last.action] || last.action} by {last.admin_name || "an admin"} on {formatDateTime(last.created_at)}
+          {last.reason ? `. Note: "${last.reason}"` : ""}
+        </div>
+      )}
     </div>
   );
 }
@@ -140,20 +135,20 @@ export function DecidedNote({ text, last }) {
 export function HistoryList({ rows, empty = "Nothing yet." }) {
   if (!rows.length) return <EmptyState>{empty}</EmptyState>;
   return (
-    <ul>
+    <ul className="border-t border-rule">
       {rows.map((row) => {
         const href = historyTargetHref(row);
         return (
-          <li key={row.id} className="px-5 sm:px-6 py-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-3">
-              <div className="min-w-0 flex-1 text-[14px] text-slate-800">
-                <span className="font-medium">{row.admin_name || "Former admin"}</span>{" "}
-                <span className="text-slate-600">{(ACTION_LABELS[row.action] || row.action).toLowerCase()}</span>
+          <li key={row.id} className="border-b border-rule min-h-11 px-3 py-3">
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+              <div className="min-w-0 flex-1 text-[14px] leading-5 text-[color:var(--text)]">
+                <span className="font-semibold">{row.admin_name || "Former admin"}</span>{" "}
+                <span className={TEXT_2}>{(ACTION_LABELS[row.action] || row.action).toLowerCase()}</span>
                 {row.target_label && (
                   <>
                     {": "}
                     {href ? (
-                      <Link href={href} className="hover:underline" style={{ color: "var(--accent)" }}>
+                      <Link href={href} className="text-accent hover:text-accent-hover">
                         {row.target_label}
                       </Link>
                     ) : (
@@ -162,9 +157,9 @@ export function HistoryList({ rows, empty = "Nothing yet." }) {
                   </>
                 )}
               </div>
-              <div className="shrink-0 text-[12.5px] text-slate-400">{formatDateTime(row.created_at)}</div>
+              <div className="shrink-0 text-[12px] leading-4 text-muted">{formatDateTime(row.created_at)}</div>
             </div>
-            {row.reason && <div className="text-[13px] text-slate-500 mt-1 whitespace-pre-wrap">Note: {row.reason}</div>}
+            {row.reason && <div className={`text-[14px] leading-5 mt-1 whitespace-pre-wrap ${TEXT_2}`}>Note: {row.reason}</div>}
           </li>
         );
       })}

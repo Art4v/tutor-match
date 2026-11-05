@@ -18,7 +18,7 @@ import { groupByExam, sortSubjectsByCategory, subjectLabel } from "@/lib/subject
  *   mode        'multi' (default) | 'single'
  *   variant     'box' (default — bordered field) | 'bar' (hero search segment)
  *   placeholder trigger placeholder text
- *   label       'bar' variant only — the uppercase field label (e.g. "Subject")
+ *   label       'bar' variant only: the small field label (e.g. "Subject")
  */
 export function SubjectPicker({
   catalog = [],
@@ -133,54 +133,55 @@ export function SubjectPicker({
   const singleLabel = mode === "single" && value ? subjectLabel(bySlug.get(value) ?? { name: value }) : "";
 
   // ---- triggers ----
+  // DESIGN.md inputs: 44px, white, 1px input border, 4px radius, 14px text.
+  // The 'bar' variant is a segment of the home search bar, so it is borderless
+  // and its label is a plain 12px line (no uppercase tracking).
   const trigger =
     variant === "bar" ? (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-[46px] sm:h-[48px] text-left rounded-[10px]"
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 px-4 h-12 text-left rounded hover:bg-surface-2"
       >
-        <Icon name="search" size={16} className="text-[color:var(--accent)] shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 uppercase tracking-wider leading-none">{label}</div>
-          <div className={"text-[13px] sm:text-[14px] mt-1.5 truncate leading-none " + (singleLabel ? "text-slate-900" : "text-slate-400")}>
+          <div className="text-[12px] leading-4 font-semibold text-[color:var(--text-2)]">{label}</div>
+          <div className={"text-[14px] leading-5 truncate " + (singleLabel ? "text-[color:var(--text)]" : "text-placeholder")}>
             {singleLabel || placeholder}
           </div>
         </div>
-        <Icon name="chevron-down" size={14} className={"text-slate-400 shrink-0 hidden sm:block " + (open ? "rotate-180" : "")} />
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="text-[color:var(--text-2)] shrink-0 hidden sm:block" />
       </button>
     ) : (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 h-9 px-3 text-left"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)" }}
+        aria-expanded={open}
+        className={"w-full flex items-center gap-2 h-11 px-3 text-left bg-surface border rounded " + (open ? "border-accent" : "border-input")}
       >
-        <Icon name="search" size={14} className="text-slate-400 shrink-0" />
-        <span className={"flex-1 text-[13.5px] truncate " + (selected.length ? "text-slate-900" : "text-slate-400")}>
+        <span className={"flex-1 min-w-0 text-[14px] leading-5 truncate " + (selected.length ? "text-[color:var(--text)]" : "text-placeholder")}>
           {mode === "single"
             ? (singleLabel || placeholder)
             : (selected.length ? `${selected.length} selected` : placeholder)}
         </span>
-        <Icon name="chevron-down" size={14} className={"text-slate-400 shrink-0 " + (open ? "rotate-180" : "")} />
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="text-[color:var(--text-2)] shrink-0" />
       </button>
     );
 
-  const panelWidth = variant === "bar" ? { width: 320, maxWidth: "calc(100vw - 24px)" } : { left: 0, right: 0 };
+  const panelWidth = variant === "bar" ? { width: 320, maxWidth: "calc(100vw - 32px)" } : { left: 0, right: 0 };
 
   return (
     <div
       ref={wrapRef}
-      className={variant === "bar" ? "relative border-r last:border-r-0" : "relative"}
-      style={variant === "bar" ? { borderColor: "var(--paper-line)" } : undefined}
+      className={variant === "bar" ? "relative border-r border-rule last:border-r-0" : "relative"}
     >
       {trigger}
 
-      {/* Selected chips (multi only) live under the field. Drag to reorder —
-          the order is what shows on the browse card + public profile. */}
+      {/* Selected chips (multi only) live under the field. Drag to reorder:
+          the order is what shows on the browse row + public profile. */}
       {mode === "multi" && variant === "box" && selected.length > 0 && (
         <>
-          <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2">
             {selected.map((slug, i) => (
               <div
                 key={slug}
@@ -200,7 +201,7 @@ export function SubjectPicker({
             ))}
           </div>
           {selected.length > 1 && (
-            <p className="text-[11.5px] text-slate-400 mt-1.5">Drag to reorder — this is how subjects appear on your card and profile.</p>
+            <p className="text-[12px] leading-4 text-muted mt-1">Drag to reorder. This is the order subjects appear on your card and profile.</p>
           )}
         </>
       )}
@@ -208,43 +209,40 @@ export function SubjectPicker({
       {open && groups.length > 0 && (
         <div
           ref={panelRef}
-          className="absolute top-full mt-2 z-50 bg-[color:var(--paper-card)] overflow-hidden"
-          style={{
-            ...panelWidth,
-            border: "1px solid var(--paper-line)",
-            borderRadius: 12,
-            boxShadow: "0 10px 24px -8px rgba(0,30,30,0.18)",
-          }}
+          className="absolute top-full mt-1 z-50 bg-surface border border-rule rounded shadow-float overflow-hidden"
+          style={panelWidth}
         >
           {/* Search */}
-          <div className="p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
-            <div className="flex items-center gap-2 h-8 px-2.5" style={{ background: "var(--bg-soft)", borderRadius: 8 }}>
-              <Icon name="search" size={13} className="text-slate-400 shrink-0" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search all subjects"
-                className="w-full bg-transparent outline-none text-[13px] text-slate-900 placeholder:text-slate-400"
-              />
-            </div>
+          <div className="p-2 border-b border-rule">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search all subjects"
+              aria-label="Search all subjects"
+              className="w-full h-11 px-3 bg-surface border border-input rounded outline-none focus:border-accent text-[14px] leading-5 text-[color:var(--text)] placeholder:text-placeholder"
+            />
           </div>
 
-          {/* Exam selector */}
-          <div className="flex flex-wrap gap-1.5 p-2.5" style={{ borderBottom: "1px solid var(--desk)" }}>
+          {/* Exam selector: one row of text tabs, scrolling sideways when it
+              runs out of room. The active exam is underlined in the accent. */}
+          <div className="flex overflow-x-auto border-b border-rule px-1" role="tablist" aria-label="Exam">
             {groups.map((g) => {
-              const active = g.code === activeExam;
+              const active = !searching && g.code === activeExam;
               return (
                 <button
                   key={g.code}
                   type="button"
+                  role="tab"
+                  aria-selected={active}
                   title={g.name}
                   onClick={() => { setActiveExam(g.code); setSearch(""); }}
-                  className="px-2.5 py-1 text-[12px] font-medium rounded-full transition-colors"
-                  style={{
-                    background: active ? "var(--ink)" : "var(--desk)",
-                    color: active ? "#fff" : "var(--ink-muted)",
-                    border: "1px solid " + (active ? "var(--ink)" : "transparent"),
-                  }}
+                  className={
+                    "shrink-0 h-11 px-2 border-b-2 text-[14px] leading-5 font-semibold whitespace-nowrap " +
+                    (active
+                      ? "border-accent text-accent"
+                      : "border-transparent text-[color:var(--text-2)] hover:text-[color:var(--text)]")
+                  }
+                  style={{ transition: "color 120ms ease-out, border-color 120ms ease-out" }}
                 >
                   {examLabel(g)}
                 </button>
@@ -253,9 +251,9 @@ export function SubjectPicker({
           </div>
 
           {/* Subject list */}
-          <div className="max-h-[240px] overflow-y-auto overscroll-contain py-1">
+          <div className="max-h-[264px] overflow-y-auto overscroll-contain py-1">
             {filtered.length === 0 ? (
-              <div className="px-3 py-4 text-[13px] text-slate-400">No matching subjects</div>
+              <div className="px-3 py-4 text-[14px] leading-5 text-[color:var(--text-2)]">No matching subjects</div>
             ) : (
               filtered.map((s) => {
                 const sel = isSelected(s.slug);
@@ -264,21 +262,13 @@ export function SubjectPicker({
                     key={s.slug}
                     type="button"
                     onClick={() => toggle(s.slug)}
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[13.5px] text-slate-700 hover:bg-slate-100"
-                    style={{ background: sel && mode === "single" ? "var(--desk)" : "transparent" }}
+                    aria-pressed={mode === "multi" ? sel : undefined}
+                    className={
+                      "w-full flex items-center gap-3 min-h-11 px-3 text-left text-[14px] leading-5 text-[color:var(--text)] hover:bg-surface-2 " +
+                      (sel && mode === "single" ? "bg-surface-2 font-semibold" : "")
+                    }
                   >
-                    {mode === "multi" && (
-                      <span
-                        className="inline-flex items-center justify-center shrink-0"
-                        style={{
-                          width: 16, height: 16, borderRadius: 4,
-                          background: sel ? "var(--ink)" : "#fff",
-                          border: "1px solid " + (sel ? "var(--ink)" : "var(--line-strong)"),
-                        }}
-                      >
-                        {sel && <Icon name="check" size={11} strokeWidth={3} className="text-white" />}
-                      </span>
-                    )}
+                    {mode === "multi" && <CheckBox checked={sel} />}
                     <span className="truncate">{searching ? subjectLabel(s) : s.name}</span>
                   </button>
                 );
@@ -288,5 +278,21 @@ export function SubjectPicker({
         </div>
       )}
     </div>
+  );
+}
+
+// The visual checkbox inside an option row (the row itself is the button).
+// DESIGN.md: 1px input border, 4px radius; checked uses the accent.
+export function CheckBox({ checked }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={
+        "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border " +
+        (checked ? "bg-accent border-accent text-white" : "bg-surface border-input")
+      }
+    >
+      {checked && <Icon name="check" size={12} strokeWidth={3} />}
+    </span>
   );
 }

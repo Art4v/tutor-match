@@ -19,12 +19,9 @@ export default async function NotificationsPage() {
     .limit(100);
 
   return (
-    <div className="bg-[color:var(--paper-card)] min-h-screen pb-24">
-      <div className="max-w-[640px] mx-auto px-6 pt-10">
-        <div className="mb-7">
-          <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>Notifications</h1>
-          <p className="text-[14px] text-slate-500 mt-1">Updates about your account and verification.</p>
-        </div>
+    <div className="bg-surface pb-16">
+      <div className="max-w-[680px] mx-auto px-4 lg:px-6 pt-8">
+        <h1 className="mb-6 text-[24px] leading-8 font-semibold text-[color:var(--text)]">Notifications</h1>
         <NotificationsList initial={notifications ?? []} />
       </div>
     </div>
