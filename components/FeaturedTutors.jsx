@@ -18,7 +18,7 @@ import { EASE_OUT, DURATION_MED } from "@/lib/motion";
 const PER_ROW = 6;
 
 // Tutors in the phone stack. Below md there is no marquee at all.
-const STACK_COUNT = 6;
+const STACK_COUNT = 5;
 
 // Different durations so the two lanes never settle into a visible lockstep.
 const DURATION_TOP = "62s";
@@ -28,7 +28,7 @@ const DURATION_BOTTOM = "74s";
 // source and can't see a class built from a variable), so the numbers that
 // depend on each other are recorded here.
 //
-// The marquee runs from md up only; phones get a plain stack of six instead.
+// The marquee runs from md up only; phones get a plain stack of five instead.
 // The lane height is FIXED, close to the card band's (two 240px rows + 24px
 // above the link): 228 lane + 32 gap + 228 lane + 48 above the link = 536.
 //
@@ -139,7 +139,7 @@ export function FeaturedTutors({ tutors = [], tutorCount }) {
         </motion.p>
       </div>
 
-      {/* Phones: no marquee. The first six tutors stacked, a 1px rule between
+      {/* Phones: no marquee. The first five tutors stacked, a 1px rule between
           each (the list draws the rules, never the row). */}
       <ul className="md:hidden max-w-xl mx-auto px-5 divide-y divide-[color:var(--paper-line)]">
         {tutors.slice(0, STACK_COUNT).map((t) => (
@@ -150,7 +150,7 @@ export function FeaturedTutors({ tutors = [], tutorCount }) {
       </ul>
 
       {/* md and up: the two marquee lanes. `hidden` below md also keeps the
-          phone's tab order to the six stacked tutors. */}
+          phone's tab order to the five stacked tutors. */}
       <div className="hidden md:flex flex-col gap-8">
         <MarqueeLane tutors={top} direction="right" duration={DURATION_TOP} />
         <MarqueeLane tutors={bottom} direction="left" duration={DURATION_BOTTOM} />
