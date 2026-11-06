@@ -2,6 +2,13 @@
 import { useState } from "react";
 import { Icon } from "./Icon";
 
+/** "Kanishka Bhasin" -> "Kanishka B.". Rows and cards use it; the profile page shows the full name. */
+export function shortName(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+}
+
 // Optional overrides, all defaulted so existing callers (TopNav chip, profile
 // header, similar-tutor minis) render exactly as before:
 //   radius     — the frame shape; the tutor card uses a rounded square

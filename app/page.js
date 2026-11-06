@@ -14,7 +14,7 @@ import { SITE_DESCRIPTION } from "@/lib/site";
 // inherited by every page that doesn't override it, pointing them all at "/".
 export const metadata = { alternates: { canonical: "/" } };
 
-// 12 cards, split across the marquee's two rows.
+// 12 tutors, split across the marquee's two lanes.
 const FEATURED_SLOTS = 12;
 // Cap on the verified pool the 12 are drawn from. Deliberately well above the
 // current verified count so the draw covers the WHOLE verified population
