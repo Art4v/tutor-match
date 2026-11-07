@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/Icon";
-import { Avatar, VerifiedTick, Chip, Button } from "@/components/ui";
+import { Chip, Button } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { SchoolCombobox } from "@/components/SchoolCombobox";
@@ -12,7 +11,7 @@ import { RequestVerification } from "@/components/RequestVerification";
 import { subjectLabel } from "@/lib/subjects";
 import { completionScore } from "@/lib/ranking";
 import { YEAR_MIN, YEAR_MAX, YEAR_LEVELS, yearLabel, yearRangeLabel } from "@/lib/yearLevels";
-import { AVAILABILITY_DAYS, AVAILABILITY_HOURS, buildEmptyGrid, gridToBlocks, blocksToGrid, hourLabel } from "@/lib/availability";
+import { AVAILABILITY_DAYS, buildEmptyGrid, gridToBlocks, blocksToGrid, hourLabel } from "@/lib/availability";
 import { uploadProfileImage } from "@/lib/supabase/storage";
 import { ImageCropModal } from "@/components/ImageCropModal";
 
@@ -52,7 +51,6 @@ export const RESPONSE_OPTIONS = [
 // Canonical labels shared with the public profile (lib/availability.js) so the
 // settings grid and the public AvailabilityGrid never drift apart.
 export const DAYS = AVAILABILITY_DAYS;
-export const HOUR_LABELS = AVAILABILITY_HOURS;
 
 export function buildInitialAvailability() {
   return buildEmptyGrid();
@@ -1456,55 +1454,5 @@ export function Sidebar({ tutor, set, publicHref, publicUrl }) {
         </ul>
       </Card>
     </aside>
-  );
-}
-
-/* ============================================================
-   Save bars
-   ============================================================ */
-
-export function SaveBar({ tutor, dirty, saving, onSave, onDiscard, profileHref, nameValid = true, top = "var(--nav-h)" }) {
-  const router = useRouter();
-  const canView = !dirty && !saving && !!profileHref;
-  return (
-    <div className="sticky z-30 bg-[rgba(251,247,236,0.85)] backdrop-blur" style={{ top, borderBottom: "1px solid var(--paper-line)" }}>
-      <div className="max-w-[1200px] mx-auto px-6 h-[68px] flex items-center gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <Avatar tutor={tutor} size={36} />
-          <div className="min-w-0">
-            <div className="text-[14.5px] font-medium text-slate-900 truncate" style={{ letterSpacing: "-0.01em" }}>{tutor.name || "Your profile"}</div>
-            <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
-              <span className="inline-block" style={{ width: 7, height: 7, borderRadius: "50%", background: dirty ? "#F59E0B" : "#10B981", boxShadow: dirty ? "0 0 0 3px rgba(245,158,11,0.18)" : "0 0 0 3px rgba(16,185,129,0.18)" }} />
-              {dirty ? "Unsaved changes" : "All changes saved"}
-            </div>
-          </div>
-        </div>
-        <div className="flex-1" />
-        <div className="hidden md:flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
-          {canView ? (
-            <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
-          ) : (
-            <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving || !nameValid}>{saving ? "Saving…" : "Save changes"}</Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function MobileSaveBar({ dirty, saving, onSave, onDiscard, profileHref, nameValid = true }) {
-  const router = useRouter();
-  const canView = !dirty && !saving && !!profileHref;
-  return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[color:var(--paper-card)] px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
-      <div className="flex-1 text-[13px] text-slate-600">{dirty ? "You have unsaved changes" : "All saved"}</div>
-      <Button variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>Discard</Button>
-      {canView ? (
-        <Button variant="primary" size="sm" onClick={() => router.push(profileHref)}>View profile</Button>
-      ) : (
-        <Button variant="primary" size="sm" onClick={onSave} disabled={!dirty || saving || !nameValid}>{saving ? "Saving…" : "Save"}</Button>
-      )}
-    </div>
   );
 }

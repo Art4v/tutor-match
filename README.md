@@ -13,12 +13,15 @@ Built with Next.js 14 (App Router), Tailwind CSS, and Supabase. For contributor-
 | Framework | Next.js 14.2 (App Router), React 18.3 |
 | Language | JavaScript (no TypeScript) |
 | Styling | Tailwind CSS 3.4 + inline `style={{ }}` for design tokens |
-| Animation | `motion` 11 (Framer Motion) + `lenis` smooth scroll |
+| Animation | `motion` 11 (Framer Motion); native scrolling |
 | Backend | Supabase (Postgres + Auth + RLS) via `@supabase/ssr` 0.5 + `@supabase/supabase-js` 2.45 |
 | Maps | `leaflet` 1.9 + `react-leaflet` 4.2 — OpenStreetMap tiles (CARTO fallback), no key |
 | Geocoding | Nominatim primary, Photon (Komoot) fallback — no keys |
 | Image crop | `react-easy-crop` for avatar/banner uploads |
 | Icons | Self-contained Lucide-style SVG set in `components/Icon.js` |
+| Blog bodies | `markdown-it` parsed into a whitelisted node tree (never raw HTML) |
+| Email | Resend (Supabase auth SMTP, plus the app's own HTTP API sends) |
+| AI copy | Groq (`/api/ai/generate-bio`) |
 
 ---
 
@@ -35,7 +38,9 @@ graph LR
         Home["/"]
         Browse["/browse"]
         Profile["/tutor/[slug]"]
-        Settings["/settings"]
+        Settings["/tutor/[slug] (owner editor)"]
+        Companies["/companies · /blog · /tutors"]
+        Admin["/admin"]
     end
 
     subgraph Helpers["lib/supabase/tutors.js"]
@@ -92,15 +97,15 @@ graph TD
     subgraph Email["Email + password"]
         S1["/signup form"] -->|POST| S2["/api/auth/signup<br/>password + email-domain (MX) check"]
         S2 -->|auth.signUp| S3[("auth.users")]
-        S3 -->|handle_new_user trigger| S4["profiles + tutor_profiles + slug"]
+        S3 -->|handle_new_user trigger| S4["profiles row (role NULL)"]
         S3 -->|confirm email link| S5["/auth/callback<br/>verifyOtp (signup) + welcome"]
-        S5 --> S6["/settings"]
+        S5 --> S6["/choose-role → home"]
     end
 
     subgraph OAuth["Google OAuth (PKCE)"]
         O1["Continue with Google"] -->|signInWithOAuth| O2["Google consent"]
         O2 -->|?code=| O3["/auth/callback<br/>exchangeCodeForSession + welcome"]
-        O3 --> O4["/settings"]
+        O3 --> O4["/choose-role → home"]
     end
 
     subgraph Reset["Password reset"]
@@ -112,11 +117,11 @@ graph TD
 
 ### Tutor verification pipeline
 
-A tutor requests verification; the admin approves via a signed email link (no admin login). Every notification is **both** an in-app row and an email, funnelled through `lib/notifications.js → notifyUser()` using the service-role client (the `notifications` table has no INSERT RLS policy).
+A tutor requests verification; an admin decides it on the `/admin` dashboard (0074), behind an admin login. Every notification is **both** an in-app row and an email, funnelled through `lib/notifications.js → notifyUser()` using the service-role client (the `notifications` table has no INSERT RLS policy).
 
 ```mermaid
 sequenceDiagram
-    participant T as Tutor (/settings)
+    participant T as Tutor (profile editor)
     participant RQ as /api/verification/request
     participant DB as Supabase
     participant N as notifyUser() (service-role)
@@ -163,65 +168,57 @@ graph TD
     root --> comp["components/"]
     root --> lib["lib/"]
     root --> sb["supabase/"]
-    root --> scripts["scripts/ — sync-tutors-audience.mjs"]
+    root --> scripts["scripts/ — sync-tutors-audience · seed-blog-articles ·<br/>create-company · gen-og-image"]
     root --> emails["email-updates/ — NNNN_*.html broadcasts + README"]
     root --> mw["middleware.js<br/>jsconfig.json · *.config.*"]
 
-    app --> auth["(auth)/ — login · signup ·<br/>forgot-password · reset-password"]
-    app --> apidir["api/ — auth/* · places · geocode ·<br/>ai/generate-bio · verification/{request,approve}"]
-    app --> callback["auth/callback/ — OAuth + recovery landing"]
-    app --> browse["browse/ — page + BrowseFilters + ResultsGrid"]
-    app --> tutor["tutor/[slug]/ — page + Rate/About/Availability/<br/>Service-area/Education/Experience cards"]
-    app --> settings["settings/ — page · SettingsEditor · sections"]
-    app --> onboard["onboarding/ — first-login wizard"]
-    app --> account["account/ — change password · delete account"]
-    app --> notif["notifications/ — list + mark-read"]
+    app --> auth["(auth)/ — login · signup · join ·<br/>forgot-password · reset-password"]
+    app --> apidir["api/ — auth · join · places · geocode · ai · verification ·<br/>reviews · reports · profile-revisions · companies · admin · account"]
+    app --> browse["browse/ · tutors/ — search + crawler landing pages"]
+    app --> tutor["tutor/[slug]/ — public profile + owner editor (OwnerProfile)"]
+    app --> companies["companies/ · company/ — directory, company pages, claim"]
+    app --> blog["blog/ · author/ — articles + the Markdown editor"]
     app --> admin["admin/ — admin dashboard (is_admin only)"]
-    app --> pages["page.js (home) · layout.js · messages/"]
+    app --> rest["onboarding · account · notifications · messages · profile"]
 
-    comp --> ui["ui.js · Icon.js · TopNav · Footer · TutorCard"]
-    comp --> home["HomeHero · HomeFeaturedTutors · HomeHowItWorks · HomeCta"]
-    comp --> pick["SubjectPicker · SuburbAutocomplete · OAuthButtons · PasswordChecklist"]
-    comp --> media["ServiceMapLeaflet · ImageCropModal · RichText · anim/*"]
-    comp --> vnotif["RequestVerification · NotificationsList"]
+    comp --> rows["TutorRow · CompanyCard — ruled-list rows"]
+    comp --> home["HomeHero · SchoolsStrip · FeaturedTutors · HomeHowItWorks · HomeCta"]
+    comp --> ui["ui.js · Icon.js · TopNav · SiteFooter · StarRating"]
+    comp --> pick["SubjectPicker · CatalogPicker · SuburbAutocomplete · SchoolCombobox"]
+    comp --> edit["profile-edit/sections · DocumentationUploader · ImageCropModal"]
 
-    lib --> data["supabase/ — client · server · admin · storage · tutors"]
-    lib --> dom["password · email · mailDomain · subjects · yearLevels · availability · ranking"]
-    lib --> loc["places · geocode · richText · motion · groq"]
-    lib --> mail["email/send · notifications · verifyToken"]
+    lib --> data["supabase/ — the only data-access layer (tutors, companies, reviews, …)"]
+    lib --> dom["ranking · subjects · yearLevels · availability · cities · states · markdown"]
+    lib --> mail["email/send · notifications · admin/alerts"]
+    lib --> seo["seo/ — landing pages · llms.txt · JSON-LD"]
 
-    sb --> migr["migrations/ — 0001 … 0024"]
+    sb --> migr["migrations/ — 0001 … 0076"]
     sb --> tmpl["email-templates/ — confirm-signup · reset-password"]
-    sb --> util["utilities/ — SCHEMA · verify_user · delete_user (dev only)"]
+    sb --> util["utilities/ — SCHEMA.md · grant_admin · grant_author · dev helpers"]
 ```
 
-`_design/` holds the original HTML/CSS/JS prototype (gitignored) — treat it as the read-only source of truth for visual decisions.
+`_design/` holds the original HTML/CSS/JS prototype (gitignored), a read-only reference for visual decisions.
 
 ---
 
 ## Routes
 
+The main pages. [`CLAUDE.md`](./CLAUDE.md) has the full route table, including every API route.
+
 | Path | File | Notes |
 | --- | --- | --- |
-| `/` | `app/page.js` | Server. Hero search, featured tutors, how-it-works, CTA. |
-| `/browse` | `app/browse/page.js` | Server. Filter state parsed from `searchParams`; `getTutorsForBrowse()`. Geospatial location via `tutors_within_service_radius` RPC. Sidebar rewrites the URL on every change. |
-| `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile via `getTutorBySlug()`; `notFound()` unless `visibility = 'public'`. Leaflet service-area map when coords exist. |
-| `/settings` | `app/settings/page.js` | Tutor profile editor. Redirects to `/login` if unauthenticated, or `/onboarding` if not yet onboarded. Avatar + banner uploads, drag-to-order subjects, live card preview, AI bio copy, request-verification card, high-school/university education picker. |
-| `/onboarding` | `app/onboarding/page.js` | First-login one-question-per-step wizard that reuses the real `/settings` section components. Redirects to `/settings` once `onboarded`. Saves once on finish, then `markOnboarded()`. |
-| `/account` | `app/account/page.js` | Change password (re-verifies current) + delete account (`delete_own_account` RPC). |
-| `/notifications` | `app/notifications/page.js` | The user's notifications (verification request sent / approved). Marks unread rows read on view. |
-| `/admin` | `app/admin/…` | Admin dashboard, for accounts with `profiles.is_admin` (404 for everyone else): verification, reviews, reports, profile changes, companies (invites), users and History. Reached from the avatar menu. |
-| `/signup`, `/login` | `app/(auth)/…` | Email + password forms + Google OAuth. Tutor-only (Student "coming soon"). |
-| `/forgot-password`, `/reset-password` | `app/(auth)/…` | Password recovery (no email enumeration). |
-| `/auth/callback` | `app/auth/callback/route.js` | Landing for OAuth (`?code=` → `exchangeCodeForSession`), signup confirmation (`token_hash`/`type=signup` → `verifyOtp`, lands at `/settings`), and recovery (`token_hash`/`type=recovery` → `verifyOtp`). Sends the one-time welcome notification + email on OAuth + signup confirmation (idempotent; not on recovery). |
-| `/api/auth/signup` | route | `POST { fullName, email, password, role }` — re-validates password + email domain (MX/A lookup) then `auth.signUp`. Returns `session \| confirm \| exists`. |
-| `/api/auth/forgot-password` | route | `POST { email }` → `resetPasswordForEmail`. Always neutral response. |
-| `/api/places` | route | `GET ?q` → up to 6 AU suburb matches `{ label, suburb, state, postcode, lat, lng }` (Photon → Nominatim). Primary location path. |
-| `/api/geocode` | route | `GET ?q` → `{ lat, lng }` single result (Nominatim → Photon). Fallback path. |
-| `/api/ai/generate-bio` | route | `POST { kind, profile }` → AI tagline/long-bio copy via Groq. Auth-gated, 10/day per user (`consume_ai_credit` RPC). |
-| `/api/verification/request` | route | `POST` — auth-gated. Flips the tutor to `pending` (`request_tutor_verification` RPC), emails the admin an approve link + notifies the tutor. Idempotent. |
-| `/api/verification/approve` | route | `POST { token }` — no session; the signed token is the gate. Sets `verified`, notifies the tutor. |
-| `/messages` | `app/messages/page.js` | Stub ("coming soon"); not linked from nav. |
+| `/` | `app/page.js` | Server. Hero search, schools strip, featured tutors (marquee of rows from `md`, five stacked rows on phones), how it works, CTA. |
+| `/browse` | `app/browse/page.js` | Server. Filter state lives in `searchParams`; `getTutorsForBrowse()`. Results are a ruled list of `TutorRow`s. |
+| `/tutor/[slug]` | `app/tutor/[slug]/page.js` | Public profile (`PublicProfileView`), or the owner's editor (`OwnerProfile`) when the owner is signed in. |
+| `/profile` | `app/profile/page.js` | Redirects a tutor to their own `/tutor/<slug>` editor (or `/login`, `/onboarding`). |
+| `/onboarding` | `app/onboarding/page.js` | First-login wizard reusing the editor's section components. |
+| `/tutors/...` | `app/tutors/...` | Cached landing pages per state, city and subject, for search engines and AI agents. |
+| `/companies`, `/companies/[slug]` | `app/companies/...` | Tutoring company directory and pages (invite only). |
+| `/blog`, `/blog/[slug]`, `/author` | `app/blog/...`, `app/author/...` | Articles from the `articles` table; designated tutors write them at `/author`. |
+| `/messages` | `app/messages/page.js` | Student/tutor messaging: conversation list plus a row-style thread. |
+| `/account`, `/notifications` | `app/account/...`, `app/notifications/...` | Password, delete account, management opt-out; the notification list. |
+| `/admin` | `app/admin/...` | Admin dashboard, for accounts with `profiles.is_admin` (404 for everyone else). |
+| `/signup`, `/login`, `/join` | `app/(auth)/...` | Email + password or Google. Role is chosen afterwards at `/choose-role`; `/join` is the admin tutor-invite link. |
 
 ---
 
@@ -239,7 +236,7 @@ npm install
 2. Copy `.env.example` → `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL` — Project Settings → API → Project URL.
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the `anon public` key. **Not** the `service_role` key (it bypasses RLS).
-3. Run every file in `supabase/migrations/` (`0001`–`0024`) **in numeric order** in the SQL Editor — they build the schema below incrementally.
+3. Run every file in `supabase/migrations/` (`0001`–`0076`) **in numeric order** in the SQL Editor. They build the schema incrementally. On an **existing** deployment three pairs are split around an app deploy: 0070 → app → 0071, 0072 → app → 0073, 0074 → app → 0075 (the second of each only removes access the old app needed).
 
 Without Supabase configured, public pages render empty states and signup/login fail.
 
@@ -249,7 +246,7 @@ Confirmation/recovery emails are sent **by Supabase over Resend custom SMTP** �
 
 1. Create a [Resend](https://resend.com) API key (`re_…`).
 2. Supabase → **Project Settings → Authentication → SMTP Settings** → enable Custom SMTP: host `smtp.resend.com`, port `465`/`587`, username `resend`, password = the key. Sender `onboarding@resend.dev` until a domain is verified.
-3. **Authentication → Emails** → paste `supabase/email-templates/confirm-signup.html` (Confirm signup) and `reset-password.html` (Reset Password). Re-paste after any edit — Supabase renders the live copy. The confirm-signup link routes through `<origin>/auth/callback?next=/settings&token_hash=…&type=signup` (mirroring recovery), so confirmation logs the user in at `/settings` and triggers the one-time welcome email + notification.
+3. **Authentication → Emails** → paste `supabase/email-templates/confirm-signup.html` (Confirm signup) and `reset-password.html` (Reset Password). Re-paste after any edit — Supabase renders the live copy. The confirm-signup link routes through `<origin>/auth/callback?next=…&token_hash=…&type=signup` (mirroring recovery), so confirmation logs the user in; a new account then picks its role at `/choose-role`.
 4. **Authentication → Rate Limits** → raise emails/hour above 2.
 5. **Authentication → URL Configuration** → set **Site URL** to the live domain, and add **wildcard** Redirect URLs for every origin: `https://matchtutor.com.au/auth/callback**` and `http://localhost:3000/auth/callback**`. The `**` is required — the `?next=…` query string won't match a bare entry, and a failed match silently falls back to the Site URL.
 
@@ -263,11 +260,11 @@ The OAuth client secret lives in the Supabase dashboard, not `.env.local` — th
 2. **Supabase → Authentication → Providers → Google** → enable and paste them.
 3. Ensure the wildcard Redirect URLs from step 3 cover `<origin>/auth/callback**`.
 
-A first-time Google user carries no `role` metadata, so the `handle_new_user()` trigger (`0016`) defaults them to a confirmed tutor and takes their name from Google's `name` claim.
+A first-time Google user carries no `role` metadata, so (since `0041`) every new account, email or Google, is created with a NULL role and `middleware.js` sends it to `/choose-role` before anything else.
 
 ### 5. Configure AI profile copy (Groq) — optional
 
-`/settings → About` can AI-generate a tutor's **tagline** and **long bio** from their own profile data. It runs **server-side only** through [Groq Cloud](https://console.groq.com).
+The profile editor's About section can AI-generate a tutor's **tagline** and **long bio** from their own profile data. It runs **server-side only** through [Groq Cloud](https://console.groq.com).
 
 1. Create a Groq API key at **console.groq.com → API Keys**.
 2. Set `GROQ_API_KEY` in `.env.local` (a server secret — **no** `NEXT_PUBLIC_` prefix, never shipped to the browser). Optionally override `GROQ_MODEL` (defaults to `llama-3.3-70b-versatile`).
@@ -277,7 +274,7 @@ Leaving `GROQ_API_KEY` unset simply disables the feature — the button surfaces
 
 ### 6. Configure tutor verification — optional
 
-Tutors can request a **verified badge** from `/settings` (sidebar) or the final `/onboarding` step. The request alerts the admins by email with a link into the `/admin` dashboard; approving there flips the badge on and ranks that tutor above unverified ones. Both "request sent" and "approved" appear on `/notifications` and are emailed to the tutor.
+Tutors can request a **verified badge** from the owner card on their own profile or the final `/onboarding` step. The request alerts the admins by email with a link into the `/admin` dashboard; approving there flips the badge on and ranks that tutor above unverified ones. Both "request sent" and "approved" appear on `/notifications` and are emailed to the tutor.
 
 This is the one place the **app itself** sends mail (separate from the Supabase auth SMTP above). Set these **server-only** vars in `.env.local`:
 
@@ -289,7 +286,7 @@ This is the one place the **app itself** sends mail (separate from the Supabase 
 
 **Admins** are granted (and revoked) only in SQL: run `supabase/utilities/grant_admin.sql` once per admin per environment after applying `0074_admin_dashboard.sql`.
 
-Apply migration `0021_verification_and_notifications.sql`. Dev shortcut: `supabase/utilities/verify_user.sql` flips one tutor verified by id without the email round-trip.
+Dev shortcut: `supabase/utilities/verify_user.sql` flips one tutor verified by id without the email round-trip.
 
 ### 7. Email all tutors (Resend Broadcasts) — optional
 
@@ -316,6 +313,8 @@ No tests are configured.
 
 ## Database schema
 
+A simplified view; `supabase/utilities/SCHEMA.md` is the full, maintained snapshot (companies, reviews, messaging, articles, admin History and more).
+
 **Option B layout:** a shared `profiles` row (1:1 with `auth.users`) plus a role-specific extension table keyed by the same uuid. A `handle_new_user()` trigger creates the matching rows on signup. Public reads are gated on `visibility = 'public'` **and** a non-null `email_confirmed_at`. RLS is self-write everywhere, public-read on tutor + catalog data.
 
 ```mermaid
@@ -340,7 +339,7 @@ erDiagram
     }
     profiles {
         uuid id PK,FK "→ auth.users"
-        user_role role "tutor | student"
+        user_role role "tutor | student | partner, NULL until chosen"
         text full_name "CHECK not blank"
     }
     tutor_profiles {
@@ -350,7 +349,6 @@ erDiagram
         timestamptz email_confirmed_at "mirror of auth.users"
         text bio "tagline + bio_long"
         numeric atar
-        text rank "+ rank_subject"
         int rate
         int year_min "0–12"
         int year_max "0–12"
@@ -365,8 +363,8 @@ erDiagram
         text avatar_url "+ banner_url"
         text avatar_bg "+ banner_bg"
         numeric rating "+ review_count"
-        bool verified "set on approval only"
         text verification_status "none|pending|verified|rejected"
+        uuid partner_id "company tutor, NULL otherwise"
         bool onboarded
     }
     student_profiles {
@@ -428,9 +426,9 @@ erDiagram
     }
 ```
 
-**Key DB functions** (all `SECURITY DEFINER` RPCs scoped to `auth.uid()` unless noted): `handle_new_user()` (signup trigger — OAuth-safe, defaults role to tutor), `tutors_within_service_radius(lat, lng, include_online)` (haversine RPC for location search), `assign_tutor_slug(name)` (race-safe slug regen on rename), `delete_own_account()`, `request_tutor_verification()` (flips `none`/`rejected` → `pending`), `consume_ai_credit()` / `refund_ai_credit()` (atomic 10/day AI cap). Approval has no RPC — it runs through the service-role client because the admin has no session when clicking the email link. Plus a public `profile-images` Storage bucket (owner-scoped RLS) for avatar/banner uploads.
+**Writes go through RPCs.** Since 0070/0071 no client role can write `tutor_profiles` or its child tables directly; every tutor write is a `SECURITY DEFINER` function that checks the caller (`save_tutor_profile`, `set_tutor_visibility`, the document RPCs, the draft/revision RPCs for verified tutors). Other key functions: `handle_new_user()` (signup trigger), `choose_role()`, `tutors_within_service_radius()` (haversine location search), `delete_own_account()`, `request_tutor_verification()`, `consume_ai_credit()` / `refund_ai_credit()`, and the `admin_*` RPCs behind the dashboard, which re-check `is_admin()` and log to `admin_actions`.
 
-The schema is built incrementally by the ordered files in `supabase/migrations/` (`0001`–`0024`) — apply them all in numeric order; each new migration takes the next sequential number (no reuse), like `email-updates/`. `supabase/utilities/` has dev shortcuts (e.g. `verify_user.sql`) and `supabase/reset/` holds dev-only destructive scripts.
+The schema is built incrementally by the ordered files in `supabase/migrations/` (`0001`–`0076`) — apply them all in numeric order; each new migration takes the next sequential number (no reuse), like `email-updates/`. `supabase/utilities/` holds the admin grants (`grant_admin.sql`, `grant_author.sql`) and dev shortcuts (e.g. `verify_user.sql`).
 
 ---
 
@@ -438,18 +436,18 @@ The schema is built incrementally by the ordered files in `supabase/migrations/`
 
 ### Styling
 
-A deliberate mix of **Tailwind utilities** for layout and **inline `style={{ }}`** for the specific colors/radii/borders from the design — keeping design tokens local to where they're used. Card hover-lift is driven by `motion/react` variants (Tailwind `hover:` can't override an inline `style.border`). Don't refactor inline styles into a global stylesheet without a reason.
+A deliberate mix of **Tailwind utilities** for layout and **inline `style={{ }}`** for the specific colors/radii/borders from the design — keeping design tokens local to where they're used. Lists of tutors and companies are borderless rows divided by 1px rules (the list draws the rules, never the row), and profile pages are flat sections rather than cards. Don't refactor inline styles into a global stylesheet without a reason.
 
 ### Supabase clients
 
 - `lib/supabase/client.js` — `createBrowserClient` for client components.
 - `lib/supabase/server.js` — `createServerClient` wired to `cookies()` for server components / route handlers.
-- `lib/supabase/admin.js` — **server-only** `service_role` client (bypasses RLS). Used only where no user session exists: writing `notifications`, reading user emails (`auth.admin.getUserById`), approving verification, and the broadcast sync. Returns `null` when the key is unset so callers degrade gracefully.
+- `lib/supabase/admin.js` — **server-only** `service_role` client (bypasses RLS). Used only where a user session can't do the job: writing `notifications`, reading user emails (`auth.admin.getUserById`), reading the admin dashboard queues after the admin check, and the broadcast sync. Returns `null` when the key is unset so callers degrade gracefully.
 - `middleware.js` — calls `getUser()` on every request to refresh the session cookie (official `@supabase/ssr` pattern; matcher excludes static assets).
 
 ### Verification, notifications & email
 
-`lib/notifications.js → notifyUser()` is the single path for user notifications — it inserts the in-app row **and** emails the user, so "every notification is emailed" always holds. `lib/email/send.js` sends via the Resend **HTTP API** (`RESEND_API_KEY`/`EMAIL_FROM`; unset = no-op + console log) and holds the inline-styled templates. `lib/verifyToken.js` signs/verifies the HMAC approve-link token. `saveTutorProfile` deliberately never writes `verified`/`verification_status` — those are server-controlled so a tutor can't self-verify. The verified flag adds a ranking boost in `lib/ranking.js`. Bulk update emails are out-of-app via Resend Broadcasts (`scripts/sync-tutors-audience.mjs` + `email-updates/`).
+`lib/notifications.js → notifyUser()` is the single path for user notifications — it inserts the in-app row **and** emails the user, so "every notification is emailed" always holds. `lib/email/send.js` sends via the Resend **HTTP API** (`RESEND_API_KEY`/`EMAIL_FROM`; unset = no-op + console log) and holds the inline-styled templates. Admin decisions happen on `/admin` (0074); the old `lib/*Token.js` files only verify links sent before that, so they can redirect into the dashboard. `saveTutorProfile` deliberately never writes `verified`/`verification_status` — those are server-controlled so a tutor can't self-verify. The verified flag adds a ranking boost in `lib/ranking.js`. Bulk update emails are out-of-app via Resend Broadcasts (`scripts/sync-tutors-audience.mjs` + `email-updates/`).
 
 ### Signup gate
 

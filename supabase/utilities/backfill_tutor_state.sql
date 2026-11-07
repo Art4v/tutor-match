@@ -42,7 +42,7 @@
 --
 -- USER-VISIBLE SIDE EFFECT:
 --   city is public. A backfilled tutor's card, which currently shows no
---   location, starts showing the bare state (components/TutorCard.js joins
+--   location, starts showing the bare state (the tutor row joins
 --   [suburb, city], so a blank suburb renders "NSW" on its own). That is the
 --   point — it makes them findable — but it is a change to a profile the tutor
 --   did not edit. Their own suburb pick overwrites it at any time.

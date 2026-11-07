@@ -50,11 +50,6 @@ html, body {
   letter-spacing: -0.006em;
 }
 
-.font-display {
-  font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: -0.025em;
-}
-
 /* The brand has no bold weight: headings are light 300 and labels/buttons 500.
    The UA renders <strong>/<b> at 700, which would reintroduce bold in legal
    prose and in tutor-authored bios (RichText emits <strong>), so emphasis is
@@ -64,25 +59,6 @@ strong, b {
 }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
-
-/* Snap-scroll utilities used by the landing page.
-   Each section is *at least* the visible viewport height (between the sticky
-   nav and the bottom edge). It's a min-height (not a fixed height) so content
-   that's taller — e.g. the featured-tutor grid on a short laptop — can grow
-   the section instead of overflowing into the next snap target. */
-.snap-scroll {
-  scroll-snap-type: y mandatory;
-}
-.snap-section {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  min-height: calc(100vh - var(--nav-h));
-  min-height: calc(100svh - var(--nav-h));
-}
-@media (max-width: 768px), (pointer: coarse) {
-  .snap-scroll { scroll-snap-type: none; }
-  .snap-section { scroll-snap-stop: normal; }
-}
 
 /* Bleed a content page up under the fixed transparent nav (cancelling the
    layout's nav-height spacer) and pad the top back, so a full-page backdrop
@@ -154,26 +130,8 @@ a.accent-link--glow {
   box-shadow: 0 1px 2px rgba(0, 30, 30, 0.04), 0 16px 48px -24px rgba(0, 49, 47, 0.18);
 }
 
-/* Caret used by the typewriter component */
-.typewriter-caret {
-  display: inline-block;
-  width: 0.5ch;
-  margin-left: 0.06em;
-  background: var(--accent);
-  animation: caret-blink 900ms steps(2, start) infinite;
-  vertical-align: -0.08em;
-  height: 0.95em;
-  border-radius: 1px;
-}
-@keyframes caret-blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-
 /* Reduced motion: kill all custom animations */
 @media (prefers-reduced-motion: reduce) {
-  .typewriter-caret { animation: none; opacity: 0; }
-  .snap-scroll { scroll-snap-type: none; }
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
@@ -383,24 +341,4 @@ input[type="number"] {
       var(--paper) 0%,
       var(--desk) 62%,
       var(--desk-deep) 100%);
-}
-
-/* A sheet of paper — the card theme. Lifts the card off the page with a soft
-   shadow while keeping the card's own background colour. Compose with existing
-   bg/border/radius (does not set them), so card padding + content stay as-is. */
-.paper-page {
-  box-shadow: 0 1px 2px rgba(0,30,30,0.03), 0 14px 30px -18px rgba(0,49,47,0.20);
-}
-
-/* Washi-tape strip — a translucent piece of tape pinning a note to the desk.
-   Decorative overlay, pointer-events-none. */
-.washi-tape {
-  position: absolute;
-  pointer-events: none;
-  width: 76px;
-  height: 22px;
-  background: rgba(1,103,100,0.10);
-  border-left: 1px solid rgba(1,103,100,0.14);
-  border-right: 1px solid rgba(1,103,100,0.14);
-  box-shadow: 0 1px 2px rgba(0,49,47,0.08);
 }

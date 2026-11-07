@@ -6,7 +6,7 @@ import { SaveTutorButton } from "./SaveTutorButton";
 import { subjectLabel } from "@/lib/subjects";
 import { stripMarkdown } from "@/lib/richText";
 
-// The tutor ROW (see "# Handoff: rows instead of cards.md"). It has no box of
+// The tutor ROW, which replaced the old card grid. It has no box of
 // its own: no border, background, radius or shadow. The LIST draws the 1px
 // rules between rows, so a row can be dropped into any list:
 //

@@ -15,7 +15,6 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ["General Sans", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        display: ["General Sans", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
         hand: ["Caveat", "General Sans", "cursive"],
       },
       colors: {
