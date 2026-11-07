@@ -110,7 +110,7 @@ export function TutorRow({
   const bio = stripMarkdown(tutor.bioLong || "").trim();
 
   const subjectsLine = shown.length > 0 && (
-    <span className="text-[14px] leading-5 text-[color:var(--ink-muted)] line-clamp-1 [overflow-wrap:anywhere]">
+    <span className="text-[14px] leading-5 text-[color:var(--accent)] line-clamp-1 [overflow-wrap:anywhere]">
       {shown.join(", ")}
       {more > 0 && <span className="text-[color:var(--sage)]">{`, +${more} more`}</span>}
     </span>
@@ -214,7 +214,7 @@ export function TutorRow({
               {/* "+N more" is its own line so the clamp on long subject names
                   can never cut it off. */}
               {sideShown.length > 0 && (
-                <span className="text-[13px] leading-[18px] text-[color:var(--ink-muted)] line-clamp-2 [overflow-wrap:anywhere]">
+                <span className="text-[13px] leading-[18px] text-[color:var(--accent)] line-clamp-2 [overflow-wrap:anywhere]">
                   {sideShown.join(", ")}
                 </span>
               )}
