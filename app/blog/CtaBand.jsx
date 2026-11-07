@@ -66,22 +66,38 @@ export function CtaBand({ eyebrow, title, body, primary, secondary }) {
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-5 w-full max-w-[480px] justify-center">
+            {/* Phones: side by side at the smaller `md` size; from sm, `lg`. Mirrors
+                components/HomeCta.jsx (see the note there). */}
+            <div className="flex flex-row gap-3 sm:gap-5 w-full max-w-[480px] justify-center">
               <div className="flex-1">
                 {/* block, so the `full` button fills the flex cell rather than
                     the link's inline width. */}
                 <Link href={primary.href} className="block">
-                  <Button variant="primary" size="lg" full>
-                    {primary.label}
-                  </Button>
+                  <span className="block sm:hidden">
+                    <Button variant="primary" size="md" full>
+                      {primary.label}
+                    </Button>
+                  </span>
+                  <span className="hidden sm:block">
+                    <Button variant="primary" size="lg" full>
+                      {primary.label}
+                    </Button>
+                  </span>
                 </Link>
               </div>
               {secondary && (
                 <div className="flex-1">
                   <Link href={secondary.href} className="block">
-                    <Button variant="outline" size="lg" full>
-                      {secondary.label}
-                    </Button>
+                    <span className="block sm:hidden">
+                      <Button variant="outline" size="md" full>
+                        {secondary.label}
+                      </Button>
+                    </span>
+                    <span className="hidden sm:block">
+                      <Button variant="outline" size="lg" full>
+                        {secondary.label}
+                      </Button>
+                    </span>
                   </Link>
                 </div>
               )}

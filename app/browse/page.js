@@ -8,7 +8,6 @@ import {
 } from "@/lib/supabase/tutors";
 import { getSavedTutorIds } from "@/lib/supabase/saved";
 import { isStateCode } from "@/lib/states";
-import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { BrowseFilters, BrowseSortAndChips } from "./BrowseFilters";
@@ -154,24 +153,17 @@ export default async function BrowsePage({ searchParams }) {
   );
 }
 
+// Empty list: one line of text and one action link. No icon tile, no dashed
+// box.
 function EmptyState() {
   return (
-    <div
-      className="text-center py-16 px-6"
-      style={{ border: "1px dashed var(--paper-line)", borderRadius: "var(--radius-card)" }}
-    >
-      <div
-        className="w-12 h-12 mx-auto rounded-full inline-flex items-center justify-center text-slate-400"
-        style={{ background: "var(--desk)" }}
-      >
-        <Icon name="search" size={20} />
-      </div>
-      <div className="text-[15px] font-medium text-slate-900 mt-4">
-        No tutors match those filters
-      </div>
-      <div className="text-[13.5px] text-slate-500 mt-1">
-        Try widening your ATAR range or removing a subject.
-      </div>
+    <div className="border-t border-[color:var(--paper-line)] pt-6">
+      <p className="text-[14px] text-[color:var(--ink-muted)]">
+        No tutors match those filters. Try widening your ATAR range or removing a subject.
+      </p>
+      <Link href="/browse" className="inline-block text-[14px] font-medium mt-2" style={{ color: "var(--accent)" }}>
+        Clear all filters
+      </Link>
     </div>
   );
 }

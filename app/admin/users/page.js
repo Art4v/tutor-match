@@ -17,7 +17,7 @@ export default async function UsersPage({ searchParams }) {
     <>
       <PageHeader icon="users" title="Users" lead="Find an account to disable or re-enable it, or change blog authoring." />
       <Panel padded={false}>
-        <form className="px-5 sm:px-6 py-4 flex gap-2" action="/admin/users">
+        <form className="py-4 flex gap-2" action="/admin/users">
           <input
             name="q"
             defaultValue={q}

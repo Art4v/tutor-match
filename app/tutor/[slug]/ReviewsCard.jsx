@@ -10,7 +10,7 @@ import { ReportModal } from "@/components/ReportModal";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getMyReviewForTutor, getMyReviewForCompany } from "@/lib/supabase/reviews";
-import { SidebarHeading, cardStyle } from "./ProfileCards";
+import { SidebarHeading, sectionClass } from "./ProfileCards";
 import { ReviewItem } from "./ReviewItem";
 import { ReviewMenu } from "./ReviewMenu";
 import { ReviewsModal } from "./ReviewsModal";
@@ -371,7 +371,7 @@ export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount
 
   if (count === 0) {
     return (
-      <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+      <div className={sectionClass}>
         <SidebarHeading>Ratings &amp; reviews</SidebarHeading>
         <div className="flex flex-col items-center text-center py-5">
           <StarRating value={0} size={20} gap={6} label="No rating yet" />
@@ -387,7 +387,7 @@ export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount
   }
 
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+    <div className={sectionClass}>
       <SidebarHeading>Ratings &amp; reviews</SidebarHeading>
 
       {/* Summary */}

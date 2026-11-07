@@ -2,6 +2,21 @@
 import { useState } from "react";
 import { Icon } from "./Icon";
 
+/** Initials from a display name: first letter of the first and last words. */
+export function initialsFrom(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** "Kanishka Bhasin" -> "Kanishka B.". Rows and cards use it; the profile page shows the full name. */
+export function shortName(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+}
+
 // Optional overrides, all defaulted so existing callers (TopNav chip, profile
 // header, similar-tutor minis) render exactly as before:
 //   radius     — the frame shape; the tutor card uses a rounded square

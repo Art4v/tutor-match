@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TutorCard } from "@/components/TutorCard";
+import { TutorRow } from "@/components/TutorRow";
 import { JsonLd } from "@/components/JsonLd";
 import { absUrl } from "@/lib/site";
 
@@ -99,11 +99,13 @@ export function LandingView({ landing, local, online }) {
           <>
             {local.length > 0 && (
               <section className="mt-12">
-                <div className="flex flex-col gap-4">
+                <ul className="border-t border-[color:var(--paper-line)]">
                   {local.map((t) => (
-                    <TutorCard key={t.id} tutor={t} />
+                    <li key={t.id} className="border-b border-[color:var(--paper-line)]">
+                      <TutorRow tutor={t} />
+                    </li>
                   ))}
-                </div>
+                </ul>
                 {stats.count > local.length && (
                   <p className="mt-4 text-[14px]" style={{ color: "var(--ink-muted)" }}>
                     Showing {local.length} of {stats.count}.
@@ -121,11 +123,13 @@ export function LandingView({ landing, local, online }) {
                   {onlineCount} {onlineCount === 1 ? "tutor teaches" : "tutors teach"} online and can work with
                   students in {landing.place}.
                 </p>
-                <div className="flex flex-col gap-4">
+                <ul className="border-t border-[color:var(--paper-line)]">
                   {online.map((t) => (
-                    <TutorCard key={t.id} tutor={t} />
+                    <li key={t.id} className="border-b border-[color:var(--paper-line)]">
+                      <TutorRow tutor={t} />
+                    </li>
                   ))}
-                </div>
+                </ul>
               </section>
             )}
           </>

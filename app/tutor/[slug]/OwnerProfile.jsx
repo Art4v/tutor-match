@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/Icon";
-import { Avatar } from "@/components/ui";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSubjects, getSchools, saveTutorProfile, setTutorVisibility, getMyVerificationStatus } from "@/lib/supabase/tutors";
@@ -28,14 +27,14 @@ import {
   ServiceAreaSection,
   AvailabilitySection,
 } from "@/components/profile-edit/sections";
-import { ProfileHeaderText } from "./ProfileHeaderText";
 import { AboutCard } from "./AboutCard";
 import { RateCard } from "./RateCard";
 import { CredentialsList } from "./CredentialsList";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { AvailabilityGrid } from "./AvailabilityGrid";
-import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, sectionClass, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { ProfileHeader } from "./ProfileHeader";
 import { ReviewsCard } from "./ReviewsCard";
 import { getTutorReviews } from "@/lib/supabase/reviews";
 import { OwnerCard } from "./OwnerCard";
@@ -506,25 +505,8 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     onSave: () => saveSection(k),
   });
 
-  // Header view — flat, like every other card on the page.
-  const headerView = (
-    <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
-      <div
-        style={{
-          height: 150,
-          background: display.bannerImg
-            ? `url(${display.bannerImg}) center / cover no-repeat`
-            : `linear-gradient(135deg, ${display.bannerBg ?? display.avatarBg}, oklch(0.96 0.01 250))`,
-        }}
-      />
-      <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-          <Avatar tutor={display} size={108} ring />
-        </div>
-        <ProfileHeaderText tutor={display} deliveryLabel={formatDelivery(display)} />
-      </div>
-    </div>
-  );
+  // Header view: the SAME ProfileHeader the public page renders.
+  const headerView = <ProfileHeader tutor={display} deliveryLabel={formatDelivery(display)} />;
 
   return (
     <div className="bg-[color:var(--paper-card)] bleed-under-nav relative overflow-hidden pb-24">
@@ -576,10 +558,10 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
         {/* Mobile only: "Your profile" card sits directly under the header,
             above the profile content. On desktop it lives at the top of the
             right sidebar (below), so it's hidden here. */}
-        <div className="lg:hidden mt-[10px]">{ownerCard}</div>
+        <div className="lg:hidden mt-6">{ownerCard}</div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          <RevealStack className="space-y-[10px] min-w-0" delayChildren={0.12}>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-x-12 items-start">
+          <RevealStack className="min-w-0" delayChildren={0.12}>
             <EditRegion
               {...regionProps("about", "about")}
               view={display.bioLong
@@ -629,8 +611,8 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
             />
           </RevealStack>
 
-          <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
-            <div className="hidden lg:block">{ownerCard}</div>
+          <RevealStack as="aside" className="pt-6" delayChildren={0.12}>
+            <div className="hidden lg:block mb-6">{ownerCard}</div>
 
             <EditRegion
               {...regionProps("rate", "rate", 480)}
@@ -800,7 +782,7 @@ function EmptyHint({ children }) {
 
 function MiniCard({ title, children }) {
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+    <div className={sectionClass}>
       <SidebarHeading>{title}</SidebarHeading>
       <div className="mt-3">{children}</div>
     </div>

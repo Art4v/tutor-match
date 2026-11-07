@@ -9,7 +9,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { saveCompanyProfile } from "@/lib/supabase/companies";
 import { getSubjects } from "@/lib/supabase/tutors";
 import { ReviewsCard } from "@/app/tutor/[slug]/ReviewsCard";
-import { cardStyle, SidebarCard } from "@/app/tutor/[slug]/ProfileCards";
+import { SidebarCard, sectionClass } from "@/app/tutor/[slug]/ProfileCards";
 import {
   CompanyImagesSection,
   CompanyIdentitySection,
@@ -175,12 +175,12 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
           }
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-x-12 items-start">
           {/* min-w-0: a 1fr track is minmax(auto, 1fr), so without it the
               column's min-content width — a single long unbroken word in a bio
               is enough — widens the whole grid past the viewport. Same guard as
               /browse and /tutor/[slug]. */}
-          <div className="min-w-0 space-y-[10px]">
+          <div className="min-w-0">
             <EditRegion
               {...regionProps("tutors", "our tutors", 820)}
               closeOnly
@@ -235,7 +235,7 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
             />
           </div>
 
-          <aside className="space-y-[10px]">
+          <aside className="pt-6">
             <VisibilityCard company={company} onChange={onVisibilityChange} />
 
             <EditRegion
@@ -329,7 +329,7 @@ function VisibilityCard({ company, onChange }) {
 
 function PlaceholderCard({ title, body }) {
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
+    <section className={sectionClass}>
       <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-3">{title}</h2>
       <div className="text-[13.5px] text-slate-500 py-4 px-4 text-center" style={{ background: "var(--bg-soft)", borderRadius: 10 }}>
         {body}

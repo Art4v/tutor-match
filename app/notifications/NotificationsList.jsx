@@ -4,23 +4,24 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-// Icon + accent per notification type.
+// Icon per notification type. Always grey: the row, not the icon, says
+// whether it is unread.
 const TYPES = {
-  welcome: { icon: "sparkle", color: "var(--accent)", bg: "var(--accent-softer)" },
-  verification_requested: { icon: "shield", color: "var(--accent)", bg: "var(--accent-softer)" },
-  verification_approved: { icon: "shield-check", color: "var(--stamp)", bg: "#ECFDF5" },
-  verification_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
-  review_submitted: { icon: "star", color: "var(--accent)", bg: "var(--accent-softer)" },
-  review_approved: { icon: "check-circle", color: "var(--stamp)", bg: "#ECFDF5" },
-  review_published: { icon: "star", color: "var(--stamp)", bg: "#ECFDF5" },
-  review_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
-  profile_revision_submitted: { icon: "clock", color: "var(--accent)", bg: "var(--accent-softer)" },
-  profile_revision_approved: { icon: "check-circle", color: "var(--stamp)", bg: "#ECFDF5" },
-  profile_revision_rejected: { icon: "alert-triangle", color: "#B45309", bg: "#FEF3C7" },
-  managed_profile_updated: { icon: "pencil", color: "var(--accent)", bg: "var(--accent-softer)" },
-  managed_verification_set: { icon: "shield-check", color: "var(--accent)", bg: "var(--accent-softer)" },
+  welcome: "sparkle",
+  verification_requested: "shield",
+  verification_approved: "shield-check",
+  verification_rejected: "alert-triangle",
+  review_submitted: "star",
+  review_approved: "check-circle",
+  review_published: "star",
+  review_rejected: "alert-triangle",
+  profile_revision_submitted: "clock",
+  profile_revision_approved: "check-circle",
+  profile_revision_rejected: "alert-triangle",
+  managed_profile_updated: "pencil",
+  managed_verification_set: "shield-check",
 };
-const FALLBACK = { icon: "bell", color: "var(--ink-muted)", bg: "var(--desk)" };
+const FALLBACK = "bell";
 
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -57,46 +58,40 @@ export function NotificationsList({ initial }) {
   }, [wasUnread]);
 
   if (items.length === 0) {
+    // Empty list: one line of text. No icon tile, no box.
     return (
-      <div
-        className="flex flex-col items-center justify-center text-center"
-        style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: "48px 24px" }}
-      >
-        <span className="inline-flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 999, background: "var(--desk)", color: "var(--sage)" }}>
-          <Icon name="bell" size={22} />
-        </span>
-        <p className="text-[15px] font-medium text-slate-900">No notifications yet</p>
-        <p className="text-[13px] text-slate-500 mt-1">We'll let you know about verification and account updates here.</p>
-      </div>
+      <p className="border-t border-[color:var(--paper-line)] pt-6 text-[14px] text-[color:var(--ink-muted)]">
+        No notifications yet. We&apos;ll let you know about verification and account updates here.
+      </p>
     );
   }
 
+  // A ruled list. Unread rows sit on the light surface; no dots, no photos.
   return (
-    <ul className="space-y-3">
+    <ul className="border-t border-[color:var(--paper-line)]">
       {items.map((n) => {
-        const t = TYPES[n.type] || FALLBACK;
+        const icon = TYPES[n.type] || FALLBACK;
         const unread = wasUnread.has(n.id);
         return (
           <li
             key={n.id}
-            className="flex items-start gap-3.5"
-            style={{
-              border: "1px solid var(--paper-line)",
-              borderRadius: "var(--radius-card)",
-              padding: 16,
-              background: unread ? "var(--accent-softer)" : "#fff",
-            }}
+            className="flex items-start gap-3 px-3 py-4 border-b border-[color:var(--paper-line)]"
+            style={{ background: unread ? "var(--desk)" : undefined }}
           >
-            <span className="inline-flex items-center justify-center shrink-0" style={{ width: 36, height: 36, borderRadius: 999, background: t.bg, color: t.color }}>
-              <Icon name={t.icon} size={17} />
+            <span className="shrink-0 mt-0.5" style={{ color: "var(--sage)" }}>
+              <Icon name={icon} size={16} />
             </span>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] font-medium text-slate-900">{n.title}</span>
-                {unread && <span className="inline-block shrink-0" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)" }} />}
+              <div className="flex items-baseline gap-3">
+                <span
+                  className="flex-1 min-w-0 text-[14px] font-medium"
+                  style={{ color: unread ? "var(--ink-graphite)" : "var(--ink-muted)" }}
+                >
+                  {n.title}
+                </span>
+                <span className="shrink-0 text-[12px] text-slate-400">{relativeTime(n.created_at)}</span>
               </div>
-              {n.body && <p className="text-[13px] text-slate-500 mt-0.5 leading-[1.5]">{n.body}</p>}
-              <p className="text-[12px] text-slate-400 mt-1.5">{relativeTime(n.created_at)}</p>
+              {n.body && <p className="text-[14px] text-slate-500 mt-1 leading-[1.5]">{n.body}</p>}
             </div>
           </li>
         );

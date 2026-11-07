@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { ACTION_LABELS, formatDateTime } from "./format";
 import { historyTargetHref } from "@/lib/admin/urls";
 
 // Presentational building blocks shared by every /admin page. Server-safe (no
 // hooks); the interactive pieces live in DecisionPanel.jsx.
+//
+// Rows, not cards: a Panel is a SECTION (heading, content, bottom rule) with no
+// box, and queues are ruled rows flush with the heading. The only boxes left
+// are Inset (the item under review) and DecidedNote, with 4px corners.
 
+// `icon` is accepted for call-site compatibility and ignored: no icons beside
+// headings.
+// eslint-disable-next-line no-unused-vars
 export function PageHeader({ icon, title, lead, back }) {
   return (
     <div className="mb-5">
@@ -16,14 +22,6 @@ export function PageHeader({ icon, title, lead, back }) {
         </Link>
       )}
       <div className="flex items-start gap-3">
-        {icon && (
-          <span
-            className="inline-flex items-center justify-center shrink-0"
-            style={{ width: 40, height: 40, borderRadius: 999, background: "var(--accent-softer)", color: "var(--accent)" }}
-          >
-            <Icon name={icon} size={20} />
-          </span>
-        )}
         <div className="min-w-0">
           <h1 className="text-[30px] leading-tight" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
             {title}
@@ -37,14 +35,15 @@ export function PageHeader({ icon, title, lead, back }) {
 
 export function Panel({ title, lead, children, className = "", padded = true }) {
   return (
-    <section className={`bg-[color:var(--paper-card)] ${className}`} style={cardStyle}>
+    <section className={`border-b border-[color:var(--paper-line)] py-6 ${className}`}>
       {(title || lead) && (
-        <div className="px-5 sm:px-6 pt-5 pb-3">
-          {title && <h2 className="text-[18px] font-light text-slate-800 tracking-tight">{title}</h2>}
-          {lead && <p className="text-[13px] text-slate-500 mt-0.5">{lead}</p>}
+        <div className="pb-3">
+          {title && <h2 className="text-[20px] font-light text-slate-800 tracking-tight">{title}</h2>}
+          {lead && <p className="text-[14px] text-slate-500 mt-1">{lead}</p>}
         </div>
       )}
-      <div className={padded ? "px-5 sm:px-6 pb-5" : ""}>{children}</div>
+      {/* `padded` is kept for call sites; a section has no inner padding. */}
+      <div className={padded ? "" : ""}>{children}</div>
     </section>
   );
 }
@@ -52,14 +51,14 @@ export function Panel({ title, lead, children, className = "", padded = true }) 
 /** A soft inset box for the item under review (a profile, a review body). */
 export function Inset({ children, className = "" }) {
   return (
-    <div className={`text-[14px] ${className}`} style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
+    <div className={`text-[14px] ${className}`} style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 4, padding: 16 }}>
       {children}
     </div>
   );
 }
 
 export function EmptyState({ children }) {
-  return <p className="px-5 sm:px-6 py-6 text-[14px] text-slate-500">{children}</p>;
+  return <p className="py-4 text-[14px] text-slate-500">{children}</p>;
 }
 
 /** A queue: a list of linked rows. */
@@ -78,7 +77,7 @@ export function QueueList({ items, empty, renderRow }) {
 
 export function QueueRow({ href, title, meta, aside }) {
   return (
-    <Link href={href} className="flex items-center gap-4 px-5 sm:px-6 py-3.5 hover:bg-[color:var(--bg-soft)]">
+    <Link href={href} className="flex items-center gap-4 -mx-2 px-2 py-3.5 hover:bg-[color:var(--bg-soft)]">
       <div className="min-w-0 flex-1">
         <div className="text-[14.5px] font-medium text-slate-800 truncate">{title}</div>
         {meta && <div className="text-[12.5px] text-slate-500 mt-0.5 truncate">{meta}</div>}
@@ -118,7 +117,7 @@ export function DecidedNote({ text, last }) {
   return (
     <div
       className="flex items-start gap-2.5 text-[14px]"
-      style={{ background: "var(--desk)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: "14px 16px" }}
+      style={{ background: "var(--desk)", color: "var(--ink-muted)", border: "1px solid var(--paper-line)", borderRadius: 4, padding: "14px 16px" }}
     >
       <span className="mt-0.5">
         <Icon name="info" size={17} />
@@ -144,7 +143,7 @@ export function HistoryList({ rows, empty = "Nothing yet." }) {
       {rows.map((row) => {
         const href = historyTargetHref(row);
         return (
-          <li key={row.id} className="px-5 sm:px-6 py-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
+          <li key={row.id} className="py-3" style={{ borderTop: "1px solid var(--paper-line)" }}>
             <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-3">
               <div className="min-w-0 flex-1 text-[14px] text-slate-800">
                 <span className="font-medium">{row.admin_name || "Former admin"}</span>{" "}

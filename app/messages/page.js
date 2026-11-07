@@ -32,10 +32,22 @@ export default async function MessagesPage({ searchParams }) {
 
   const { data: prof } = await supabase
     .from("profiles")
-    .select("role, messages_disclaimer_ack_at")
+    .select("role, full_name, messages_disclaimer_ack_at")
     .eq("id", user.id)
     .maybeSingle();
   const viewerIsTutor = prof?.role === "tutor";
+
+  // The viewer's own photo, for their side of the thread. Tutors and students
+  // keep it on their own extension table (0006 / 0043).
+  const { data: own } = await supabase
+    .from(viewerIsTutor ? "tutor_profiles" : "student_profiles")
+    .select("avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+  const viewer = {
+    avatarImg: own?.avatar_url ?? null,
+    name: prof?.full_name || user.email || "",
+  };
   const needsDisclaimer = needsMessagesDisclaimer(prof?.messages_disclaimer_ack_at);
 
   const cParam = typeof searchParams?.c === "string" ? searchParams.c : null;
@@ -73,6 +85,7 @@ export default async function MessagesPage({ searchParams }) {
     <MessagesClient
       userId={user.id}
       viewerIsTutor={viewerIsTutor}
+      viewer={viewer}
       initialConversations={conversations}
       initialSelectedId={initialSelectedId}
       draftTutor={draftTutor}

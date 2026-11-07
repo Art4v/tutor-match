@@ -48,7 +48,7 @@ export default async function HistoryPage({ searchParams }) {
     <>
       <PageHeader icon="clock" title="History" lead="Every decision and change made from this dashboard." />
       <Panel padded={false}>
-        <form action="/admin/history" className="px-5 sm:px-6 py-4 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2 items-end">
+        <form action="/admin/history" className="py-4 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto_auto] gap-2 items-end">
           <label className="text-[12px] text-slate-500">
             Admin
             <select name="admin" defaultValue={filters.adminId} className="block w-full mt-1" style={field}>
@@ -82,7 +82,7 @@ export default async function HistoryPage({ searchParams }) {
 
         <HistoryList rows={rows} empty="No actions match these filters." />
 
-        <div className="px-5 sm:px-6 py-3 flex items-center justify-between text-[13px] text-slate-500" style={{ borderTop: "1px solid var(--paper-line)" }}>
+        <div className="py-3 flex items-center justify-between text-[13px] text-slate-500" style={{ borderTop: "1px solid var(--paper-line)" }}>
           <span>
             {total} {total === 1 ? "action" : "actions"}
           </span>

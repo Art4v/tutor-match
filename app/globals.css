@@ -334,12 +334,10 @@ input[type="number"] {
 /* ───────────────────────── Marquee rows ───────────────────────── */
 
 /* Featured-tutors marquee (components/FeaturedTutors.jsx). A CSS animation
-   rather than a motion/react transform on purpose: the track carries ~12
-   TutorCards, each running two ResizeObservers for its chip rows, and a
-   composited keyframe never touches the main thread the way a JS-driven
-   transform would.
+   rather than a motion/react transform on purpose: a composited keyframe never
+   touches the main thread the way a JS-driven transform would.
 
-   The track holds EXACTLY two copies of the row, so translating one full 50%
+   The track holds EXACTLY two copies of the lane, so translating one full 50%
    lands precisely one copy along and the seam is invisible. Both directions
    traverse the same distance; only the start/end swap. */
 @keyframes marquee-left {

@@ -1,7 +1,7 @@
 import { Icon } from "@/components/Icon";
 import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
-import { cardStyle, SidebarCard, SidebarHeading } from "@/app/tutor/[slug]/ProfileCards";
-import { TutorCard } from "@/components/TutorCard";
+import { SidebarCard, SidebarHeading, sectionClass, contactColumnClass } from "@/app/tutor/[slug]/ProfileCards";
+import { TutorRow } from "@/components/TutorRow";
 
 // Shared company card chrome, used by BOTH the public page (server) and the
 // owner inline-editing shell (OwnerCompany, client) so the two cannot drift.
@@ -37,20 +37,22 @@ export function EnquireButton({ company, full = true }) {
   );
 }
 
+// The company header, without a card (same rules as the tutor ProfileHeader):
+// a banner only if one was uploaded, a square logo overlapping it, and a rule
+// to end the header. With no banner the logo and name simply start the page.
 export function CompanyHeaderCard({ company }) {
   const location = [company.suburb, company.city].filter(Boolean).join(", ");
+  const banner = company.bannerImg;
   return (
-    <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
-      <div
-        style={{
-          height: 150,
-          background: company.bannerImg
-            ? `url(${company.bannerImg}) center / cover no-repeat`
-            : `linear-gradient(135deg, ${company.bannerBg ?? company.avatarBg ?? "var(--accent-softer)"}, oklch(0.96 0.01 250))`,
-        }}
-      />
-      <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
-        <CompanyLogo company={company} size={108} ring />
+    <header className="relative border-b border-[color:var(--paper-line)] pb-6">
+      {banner && (
+        <div
+          className="h-[120px] sm:h-[160px] rounded"
+          style={{ background: `url(${banner}) center / cover no-repeat` }}
+        />
+      )}
+      <div className={banner ? "-mt-14 pl-4 sm:pl-6" : ""}>
+        <CompanyLogo company={company} size={112} ring={!!banner} radius={4} />
         <h1
           className="text-[34px] leading-none mt-4 break-words"
           style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
@@ -73,7 +75,7 @@ export function CompanyHeaderCard({ company }) {
           )}
         </div>
       </div>
-    </div>
+    </header>
   );
 }
 
@@ -81,14 +83,16 @@ export function CompanyHeaderCard({ company }) {
  * Logo with the same fallback ladder as components/ui.js Avatar (image →
  * colour + initial), but standalone: Avatar reads tutor-shaped keys.
  */
-export function CompanyLogo({ company, size = 108, ring = false }) {
+// `radius` defaults to a circle for the company page header; the /companies
+// row passes 4 (people are circles, companies are squares, in rows).
+export function CompanyLogo({ company, size = 108, ring = false, radius = 999 }) {
   return (
     <span
       className="inline-flex items-center justify-center overflow-hidden shrink-0"
       style={{
         width: size,
         height: size,
-        borderRadius: 999,
+        borderRadius: radius,
         background: company.logoImg
           ? `url(${company.logoImg}) center / cover no-repeat`
           : company.avatarBg ?? "var(--accent-softer)",
@@ -107,7 +111,7 @@ export function CompanyLogo({ company, size = 108, ring = false }) {
 export function CompanyAboutCard({ company }) {
   const blocks = parseRichTextBlocks(company.bioLong ?? "");
   return (
-    <section id="about" className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
+    <section id="about" className={sectionClass}>
       <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-4">About</h2>
       <div className="text-[15.5px] leading-[1.72] max-w-[70ch]" style={{ color: "var(--ink)" }}>
         {blocks.map((b, idx) => (
@@ -131,7 +135,7 @@ export function CompanyAboutCard({ company }) {
 export function CompanyRateCard({ company, showEnquire = true }) {
   const packages = company.packages ?? [];
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+    <div className={contactColumnClass}>
       <SidebarHeading>Packages</SidebarHeading>
       {packages.length === 0 && (
         <div className="text-[13.5px] mt-0.5" style={{ color: "var(--sage)" }}>
@@ -169,26 +173,20 @@ export function CompanyRateCard({ company, showEnquire = true }) {
 }
 
 /**
- * The company's tutors, rendered with the SAME <TutorCard> as /browse rather
+ * The company's tutors, rendered with the SAME <TutorRow> as /browse rather
  * than a bespoke row. A company tutor is an ordinary tutor_profiles row, so it
- * already has every field the card reads (suburb / city arrive via the 0066
- * mirrors; there is no rate since 0069, and `isCompanyTutor` drops the card's
- * per-hour tile), and reusing the card is what stops the company page drifting
- * from the listing a student sees everywhere else.
+ * already has every field the row reads (suburb / city arrive via the 0066
+ * mirrors; there is no rate since 0069, so `isCompanyTutor` makes the rate
+ * column read "Priced by package"), and reusing the row is what stops the
+ * company page drifting from the listing a student sees everywhere else.
  *
- * `compact` is what keeps the section the size it was before the card moved in
- * here: it pins TutorCard to the phone composition (80px avatar, 88px rail, no
- * "View full profile") at every width, because this card is nested one level
- * deep inside another and the browse size dwarfs its container.
+ * Two props are deliberately off here. `company` is left unset by
+ * `companyTutorRowToCard`, so the row shows neither the company name nor a
+ * tick: the company's own name on every row of the company's own page says
+ * nothing. `showSave` is false because saved_tutors has no "save a company's
+ * tutor" story yet.
  *
- * Two more props are deliberately off here. `company` is left unset by
- * `companyTutorRowToCard`, so the card falls back to its verified-tick slot and
- * renders nothing there: the company's own chip on every card of the company's
- * own page says nothing. `showSave` is false for the reason the card itself
- * suppresses the bookmark for company tutors (saved_tutors has no "save a
- * company's tutor" story yet).
- *
- * TutorCard is a client component. Importing it does not make this file or the
+ * TutorRow is a client component. Importing it does not make this file or the
  * public page a client component; it just marks that subtree.
  *
  * Hidden tutors are filtered here rather than in the query, because the owner
@@ -198,16 +196,18 @@ export function CompanyTutorsCard({ tutors, companyName }) {
   const visible = (tutors ?? []).filter((t) => t.visibility === "public");
   if (visible.length === 0) return null;
   return (
-    <section className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "20px 24px" }}>
+    <section className={sectionClass}>
       <h2 className="text-[22px] font-light text-slate-800 tracking-tight">Our tutors</h2>
       <p className="text-[13px] text-slate-500 mt-0.5 mb-4">
         {visible.length} {visible.length === 1 ? "tutor" : "tutors"} at {companyName}.
       </p>
-      <div className="flex flex-col gap-3">
+      <ul className="border-t border-[color:var(--paper-line)]">
         {visible.map((t) => (
-          <TutorCard key={t.id} tutor={t} compact showSave={false} />
+          <li key={t.id} className="border-b border-[color:var(--paper-line)]">
+            <TutorRow tutor={t} showSave={false} />
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

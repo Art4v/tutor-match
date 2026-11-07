@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 /**
- * Social proof strip between the hero and "How it works": one row of six fixed
+ * Social proof strip between the hero and "How it works": six fixed
  * slots, each holding a top NSW/VIC high school. Every 2.5s a single slot
  * crossfades to a school not already on screen, so the row is always in gentle
  * motion but never blank. Replaces the old two-row CSS marquee.
@@ -12,10 +12,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
  * Two deliberate constraints:
  *  - The first six are rendered in list order so server and client agree;
  *    randomisation only starts once the interval runs after mount.
- *  - All six slots are always in the DOM. Narrow screens hide slots with
- *    responsive classes rather than state, so there is no hydration mismatch
- *    and no first-paint pop. `visibleCount` only steers which slots the timer
- *    bothers to swap.
+ *  - All six slots are visible at every width: two columns of three on
+ *    phones, three columns of two from sm, one row of six from md.
  */
 
 // `name` is the full school name (used for the image `alt` and the screen
@@ -57,25 +55,6 @@ const SWAP_MAX_MS = 1700;
 const FADE_S = 1.1;
 const LOGO_H = 34;
 const LOGO_W = 48;
-
-// Which slots a given breakpoint actually shows. Mirrors the responsive classes
-// on the slots below; keep the two in sync.
-function useVisibleCount() {
-  const [count, setCount] = useState(SLOTS);
-  useEffect(() => {
-    const md = window.matchMedia("(min-width: 768px)");
-    const sm = window.matchMedia("(min-width: 640px)");
-    const sync = () => setCount(md.matches ? 6 : sm.matches ? 3 : 2);
-    sync();
-    md.addEventListener("change", sync);
-    sm.addEventListener("change", sync);
-    return () => {
-      md.removeEventListener("change", sync);
-      sm.removeEventListener("change", sync);
-    };
-  }, []);
-  return count;
-}
 
 function Slot({ school, className }) {
   return (
@@ -129,11 +108,8 @@ function Slot({ school, className }) {
 export function SchoolsStrip() {
   // Indices into POOL. First render is list order, so SSR and hydration match.
   const [slots, setSlots] = useState(() => Array.from({ length: SLOTS }, (_, i) => i));
-  const visibleCount = useVisibleCount();
   const reduceMotion = useReducedMotion();
   const cursor = useRef(0);
-  const visibleRef = useRef(visibleCount);
-  visibleRef.current = visibleCount;
 
   // Warm the cache for crests that aren't mounted yet, so a swap doesn't fade
   // in a half-loaded image. Local files, so this is cheap.
@@ -152,9 +128,8 @@ export function SchoolsStrip() {
       // Don't burn through the pool while the tab is backgrounded.
       if (!document.hidden) {
         setSlots((prev) => {
-          // Round-robin over the *visible* slots only, so narrow screens don't
-          // waste most swaps on hidden ones.
-          const target = cursor.current % visibleRef.current;
+          // Round-robin over the six slots (all visible at every width).
+          const target = cursor.current % SLOTS;
           cursor.current += 1;
           // Never show the same school twice in the row.
           const candidates = POOL.map((_, i) => i).filter((i) => !prev.includes(i));
@@ -188,14 +163,14 @@ export function SchoolsStrip() {
       {/* The cycling row is decorative churn; the static list below carries the
           same information to screen readers once, without the churn. */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-2 max-w-6xl w-full mx-auto px-6"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-2 gap-y-3 md:gap-y-0 max-w-6xl w-full mx-auto px-6"
         aria-hidden="true"
       >
         {slots.map((poolIndex, slot) => (
           <Slot
             key={slot}
             school={POOL[poolIndex]}
-            className={slot < 2 ? "flex" : slot < 3 ? "hidden sm:flex" : "hidden md:flex"}
+            className="flex"
           />
         ))}
       </div>

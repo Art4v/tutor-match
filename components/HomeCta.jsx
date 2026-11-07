@@ -69,18 +69,36 @@ export function HomeCta() {
               </p>
             </div>
 
+            {/* Phones: the two buttons sit side by side at the smaller `md` size; from
+                sm they keep `lg`. Button's size is a prop, not a class, so each is
+                rendered once per size and the other is display:none (so never in
+                the tab order). Mirrored in app/blog/CtaBand.jsx. */}
             <div
-              className="flex flex-col sm:flex-row gap-5 w-full max-w-[480px] justify-center"
+              className="flex flex-row gap-3 sm:gap-5 w-full max-w-[480px] justify-center"
             >
               <div className="flex-1">
-                <Button variant="primary" size="lg" onClick={() => navigate(signedIn ? "/profile" : "/signup")} full>
-                  Become a tutor
-                </Button>
+                <div className="sm:hidden">
+                  <Button variant="primary" size="md" onClick={() => navigate(signedIn ? "/profile" : "/signup")} full>
+                    Become a tutor
+                  </Button>
+                </div>
+                <div className="hidden sm:block">
+                  <Button variant="primary" size="lg" onClick={() => navigate(signedIn ? "/profile" : "/signup")} full>
+                    Become a tutor
+                  </Button>
+                </div>
               </div>
               <div className="flex-1">
-                <Button variant="outline" size="lg" onClick={() => navigate("/browse")} full>
-                  Browse tutors
-                </Button>
+                <div className="sm:hidden">
+                  <Button variant="outline" size="md" onClick={() => navigate("/browse")} full>
+                    Browse tutors
+                  </Button>
+                </div>
+                <div className="hidden sm:block">
+                  <Button variant="outline" size="lg" onClick={() => navigate("/browse")} full>
+                    Browse tutors
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

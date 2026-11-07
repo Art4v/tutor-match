@@ -44,7 +44,7 @@ export function CompanyTutorsEditor({
   const createdIdRef = useRef(null);
 
   // Subjects are held as slugs while editing and as objects everywhere else
-  // (CompanyTutorsCard feeds these rows straight into the real <TutorCard>,
+  // (CompanyTutorsCard feeds these rows straight into the real <TutorRow>,
   // which expects objects), so resolve them back through the catalog on the way
   // out of the modal.
   const resolveSubjects = (slugs) =>
