@@ -183,7 +183,7 @@ export function TutorRow({
             )}
           </span>
           {tagline && (
-            <span className="text-[12px] md:text-[14px] leading-4 md:leading-5 text-[color:var(--ink-graphite)] line-clamp-1 [overflow-wrap:anywhere]">
+            <span className="text-[12px] md:text-[14px] leading-4 md:leading-5 text-[color:var(--ink-graphite)] line-clamp-2 [overflow-wrap:anywhere]">
               {tagline}
             </span>
           )}
@@ -210,7 +210,7 @@ export function TutorRow({
         <span className="flex flex-col items-end text-right pl-1 md:pl-2">
           <RateBlock tutor={tutor} />
           {(sideShown.length > 0 || featPlace) && (
-            <span className="hidden md:flex flex-col items-end gap-1 mt-3 w-[170px]">
+            <span className="hidden md:flex flex-col items-end gap-1 mt-3 w-[150px]">
               {/* "+N more" is its own line so the clamp on long subject names
                   can never cut it off. */}
               {sideShown.length > 0 && (

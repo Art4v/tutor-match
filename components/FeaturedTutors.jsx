@@ -21,8 +21,9 @@ const PER_ROW = 6;
 const STACK_COUNT = 5;
 
 // Different durations so the two lanes never settle into a visible lockstep.
-const DURATION_TOP = "62s";
-const DURATION_BOTTOM = "74s";
+// Scaled with the 680px item width so the scroll speed stays the same.
+const DURATION_TOP = "75s";
+const DURATION_BOTTOM = "90s";
 
 // Geometry lives as literal Tailwind classes at the point of use (the JIT scans
 // source and can't see a class built from a variable), so the numbers that
@@ -54,7 +55,7 @@ function MarqueeLane({ tutors, direction, duration }) {
     tutors.map((tutor, i) => (
       <div
         key={`${key}-${tutor.id ?? tutor.slug}-${i}`}
-        className="shrink-0 h-full w-[560px] px-8 border-r border-[color:var(--paper-line)]"
+        className="shrink-0 h-full w-[680px] px-8 border-r border-[color:var(--paper-line)]"
       >
         <TutorRow tutor={tutor} variant="feature" tabIndex={tabIndex} />
       </div>
