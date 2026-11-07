@@ -24,7 +24,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendWelcomeIfNeeded } from "@/lib/notifications";
 import { postAuthDest, safeNext } from "@/lib/roles";
-import { INVITE_COOKIE, JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
+import { INVITE_COOKIE, JOIN_DETAILS_PATH, isJoinDetailsNext } from "@/lib/tutorInvite";
 import { redeemInvite } from "@/app/api/join/shared";
 
 export const runtime = "nodejs";
@@ -38,12 +38,12 @@ export async function GET(request) {
   // ".evil.example") would leave the site.
   const next = safeNext(searchParams.get("next"), "/");
 
-  // The tutor invite key parked by /api/join/start for a Google sign-in. It is
+  // The Quick join marker set by /api/join/start for a Google sign-in. It is
   // cleared on every way out of this route, so a sign-in that never completed
   // cannot leave it lying around for the next one.
-  const inviteKey = request.cookies.get(INVITE_COOKIE)?.value;
+  const quickJoin = !!request.cookies.get(INVITE_COOKIE)?.value;
   const finish = (res) => {
-    if (inviteKey) res.cookies.delete(INVITE_COOKIE);
+    if (quickJoin) res.cookies.delete(INVITE_COOKIE);
     return res;
   };
 
@@ -75,16 +75,16 @@ export async function GET(request) {
           name: user.user_metadata?.full_name || user.user_metadata?.name || null,
           origin,
         });
-        // Tutor invite (0076): a Google sign-in started on /join parked the
-        // key in a cookie. Redeem it now that we know who signed in, but only
+        // Quick join (0076/0077): a Google sign-in started on /quick-join set
+        // a marker cookie. Redeem now that we know who signed in, but only
         // for that flow (its `next` is the details step): a cookie left by an
         // abandoned attempt must never bind whoever signs in next, through
         // /login's Google button or an ordinary signup confirmation. On
-        // failure (rotated key, a student account) the user just carries on
-        // through the normal flow below.
+        // failure (a student account, say) the user just carries on through
+        // the normal flow below.
         let invited = false;
-        if (inviteKey && isOAuth && next.startsWith(JOIN_DETAILS_PATH)) {
-          const redeemed = await redeemInvite(admin, { userId: user.id, key: inviteKey, origin });
+        if (quickJoin && isOAuth && isJoinDetailsNext(next)) {
+          const redeemed = await redeemInvite(admin, { userId: user.id, origin });
           invited = redeemed.ok;
         }
         // Role-aware landing (0041): profiles.role is the source of truth. A
@@ -97,11 +97,12 @@ export async function GET(request) {
           .eq("id", user.id)
           .maybeSingle();
         const role = profile?.role ?? null;
-        // An invited tutor continues to the optional documents step, whether
-        // they came back from Google or from the confirmation email (whose
-        // `next` the invite signup route set). /join/details itself sends
-        // anyone it has nothing for on to /profile.
-        const toDetails = role === "tutor" && (invited || next.startsWith(JOIN_DETAILS_PATH));
+        // A Quick join tutor continues to the optional documents step,
+        // whether they came back from Google or from the confirmation email
+        // (whose `next` the signup route set; emails sent before 0077 carry
+        // /join/details). The details page itself sends anyone it has nothing
+        // for on to /profile.
+        const toDetails = role === "tutor" && (invited || isJoinDetailsNext(next));
         return finish(NextResponse.redirect(`${origin}${toDetails ? JOIN_DETAILS_PATH : postAuthDest(role)}`));
       }
     }
