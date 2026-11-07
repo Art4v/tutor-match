@@ -2,31 +2,25 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { checkSignupInput } from "@/lib/signupValidation";
-import { checkRateLimit } from "@/lib/rateLimit";
 import { originOf } from "@/lib/admin/route";
 import { JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
-import { clientIp, inviteKeyValid, redeemInvite, redeemErrorMessage } from "../shared";
+import { consumeQuickJoinAttempt, redeemInvite, redeemErrorMessage, TOO_MANY_ATTEMPTS } from "../shared";
 
 export const runtime = "nodejs";
 
-// Email signup through the tutor invite page (0076). Same checks as
-// /api/auth/signup, plus the invite key (checked FIRST, so a dead link creates
-// no account) and the management consent. The new account is bound to the
-// invite straight away, before email confirmation, so rotating the key later
-// never strands someone halfway through.
+// Email signup through Quick join (0076, public since 0077). Same checks as
+// /api/auth/signup, plus the management consent and the durable per-IP limit,
+// which is consumed only once the input is valid and BEFORE the account is
+// created, so a blocked bot creates nothing. The new account is managed
+// straight away, before email confirmation.
 export async function POST(request) {
-  const limit = checkRateLimit(`join-signup:${clientIp(request)}`, { limit: 10, windowMs: 60 * 60 * 1000 });
-  if (!limit.allowed) {
-    return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
-  }
-
   let body;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  const { key, fullName, email, password, agreed, consent } = body ?? {};
+  const { fullName, email, password, agreed, consent } = body ?? {};
 
   const name = typeof fullName === "string" ? fullName.trim() : "";
   if (!name) {
@@ -38,15 +32,16 @@ export async function POST(request) {
 
   const admin = createSupabaseAdminClient();
   if (!admin) {
-    return NextResponse.json({ error: "Signups through this link aren't available right now." }, { status: 503 });
-  }
-  if (!(await inviteKeyValid(admin, key))) {
-    return NextResponse.json({ error: redeemErrorMessage("invalid_key") }, { status: 400 });
+    return NextResponse.json({ error: "Quick join isn't available right now." }, { status: 503 });
   }
 
   const invalid = await checkSignupInput({ email, password, agreed });
   if (invalid) {
     return NextResponse.json(invalid, { status: 400 });
+  }
+
+  if (!(await consumeQuickJoinAttempt(admin, request))) {
+    return NextResponse.json({ error: TOO_MANY_ATTEMPTS }, { status: 429 });
   }
 
   const supabase = createSupabaseServerClient();
@@ -82,10 +77,10 @@ export async function POST(request) {
     return NextResponse.json({ status: "exists" });
   }
 
-  const redeemed = await redeemInvite(admin, { userId: data.user.id, key, origin: originOf(request) });
+  const redeemed = await redeemInvite(admin, { userId: data.user.id, origin: originOf(request) });
   if (!redeemed.ok) {
-    // The account exists but is not bound (the key was rotated in the last
-    // moment, say). It continues as an ordinary new account.
+    // The account exists but is not managed (a database error, say). It
+    // continues as an ordinary new account.
     return NextResponse.json({ error: redeemErrorMessage(redeemed.hint) }, { status: 400 });
   }
 
