@@ -4,7 +4,7 @@ import { requireAdminRequest, readJson, cleanReason, adminRpcErrorResponse, reva
 
 export const runtime = "nodejs";
 
-// Hide or show a company from /admin/companies.
+// Hide or show a company from /admin/centres.
 // POST { companyId, visibility: "public" | "hidden", reason? }. The 0065
 // cascade trigger carries the change to the company's tutors.
 export async function POST(request) {
@@ -21,11 +21,11 @@ export async function POST(request) {
     p_visibility: body.visibility,
     p_reason: cleanReason(body.reason),
   });
-  if (error) return adminRpcErrorResponse(error, "Could not change the company, please try again.");
+  if (error) return adminRpcErrorResponse(error, "Could not change the tutoring centre, please try again.");
 
   if (result?.applied) {
     revalidateIndexable(revalidatePath);
-    revalidatePath("/companies");
+    revalidatePath("/centres");
   }
   return NextResponse.json({ ok: true, applied: !!result?.applied, visibility: result?.visibility ?? body.visibility });
 }

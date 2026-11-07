@@ -103,7 +103,7 @@ if (linkOnly) {
     console.error(`${data.name} has already been claimed. A fresh link would be inert.`);
     process.exit(1);
   }
-  console.log(`\n${data.name}  (/companies/${data.slug})\n\n  ${claimUrl(data.id)}\n`);
+  console.log(`\n${data.name}  (/centres/${data.slug})\n\n  ${claimUrl(data.id)}\n`);
   process.exit(0);
 }
 
@@ -156,6 +156,6 @@ if (slugError) {
 }
 
 console.log(`\nCreated ${row.name}`);
-console.log(`  page:  ${SITE_URL}/companies/${slug}   (live now)`);
+console.log(`  page:  ${SITE_URL}/centres/${slug}   (live now)`);
 console.log(`  claim: ${claimUrl(created.id)}`);
 console.log("\nSend the claim link to the company. It stops working once used.\n");

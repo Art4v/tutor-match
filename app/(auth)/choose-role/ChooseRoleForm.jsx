@@ -149,7 +149,7 @@ export default function ChooseRoleForm() {
       {/* Companies are invite only (choose_role() refuses 'partner'), so a
           company owner who lands here has lost their claim link on the way. */}
       <p className="text-[12.5px] text-slate-500 text-center leading-[1.5] mt-4">
-        Are you a company owner? Go back and click the invitation link you were sent to claim your
+        Do you run a tutoring centre? Go back and click the invitation link you were sent to claim your
         account.
       </p>
 

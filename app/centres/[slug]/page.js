@@ -19,11 +19,11 @@ import { companyJsonLd } from "@/lib/seo/schema";
 export async function generateMetadata({ params }) {
   const supabase = createSupabaseServerClient();
   const company = await getCompanyBySlug(supabase, params.slug);
-  if (!company) return { title: "Company not found" };
+  if (!company) return { title: "Tutoring centre not found" };
   return {
-    title: `${company.name}, tutoring company`,
+    title: `${company.name}, tutoring centre`,
     description: company.bio || undefined,
-    alternates: { canonical: `/companies/${company.slug}` },
+    alternates: { canonical: `/centres/${company.slug}` },
   };
 }
 

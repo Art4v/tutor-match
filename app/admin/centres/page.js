@@ -3,9 +3,9 @@ import { requireAdmin } from "../guard";
 import { formatDate } from "../_components/format";
 import { InviteCompanies } from "./InviteCompanies";
 
-export const metadata = { title: "Companies" };
+export const metadata = { title: "Tutoring centres" };
 
-// Invites (formerly /companies/invite) plus hide / show / delete. The list
+// Invites (formerly /centres/invite) plus hide / show / delete. The list
 // comes from list_partners_for_inviter, which re-checks the caller is an admin.
 export default async function AdminCompaniesPage() {
   const { supabase } = await requireAdmin();

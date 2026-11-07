@@ -184,7 +184,7 @@ export function CompanyTutorsEditor({
     <div>
       <p className="text-[13px] text-slate-500 mb-4">
         Tutors you list here appear on your page and in the main tutor search, each carrying your
-        company&rsquo;s name. They don&rsquo;t get their own login, and students enquire through you.
+        centre&rsquo;s name. They don&rsquo;t get their own login, and students enquire through you.
       </p>
 
       {tutors.length === 0 ? (

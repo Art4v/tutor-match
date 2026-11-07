@@ -83,7 +83,7 @@ export default function JoinFlow() {
   } else {
     body = (
       <Notice>
-        This link is for tutors. You&rsquo;re signed in with a {account.role === "student" ? "student" : "company"}{" "}
+        This link is for tutors. You&rsquo;re signed in with a {account.role === "student" ? "student" : "tutoring centre"}{" "}
         account, so please log out and sign up with a separate account to join as a tutor.
       </Notice>
     );

@@ -32,17 +32,17 @@ export async function POST(request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Sign in to invite a company." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to invite a tutoring centre." }, { status: 401 });
   }
 
   const { data: unclaimed, error } = await supabase.rpc("partner_link_target", { p_id: companyId });
   if (error) return adminRpcErrorResponse(error, "Could not create a link.");
 
   if (unclaimed === null) {
-    return NextResponse.json({ error: "That company no longer exists." }, { status: 404 });
+    return NextResponse.json({ error: "That tutoring centre no longer exists." }, { status: 404 });
   }
   if (unclaimed === false) {
-    return NextResponse.json({ error: "This company has already been claimed." }, { status: 409 });
+    return NextResponse.json({ error: "This tutoring centre has already been claimed." }, { status: 409 });
   }
 
   const origin = request.headers.get("origin") ?? new URL(request.url).origin;

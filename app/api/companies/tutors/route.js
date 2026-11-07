@@ -69,7 +69,7 @@ export async function POST(request) {
 
   const company = await callerCompany(supabase, user.id);
   if (!company) {
-    return NextResponse.json({ error: "Only a company can add tutors." }, { status: 403 });
+    return NextResponse.json({ error: "Only a tutoring centre can add tutors." }, { status: 403 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -143,7 +143,7 @@ export async function DELETE(request) {
 
   const company = await callerCompany(supabase, user.id);
   if (!company) {
-    return NextResponse.json({ error: "Only a company can remove tutors." }, { status: 403 });
+    return NextResponse.json({ error: "Only a tutoring centre can remove tutors." }, { status: 403 });
   }
 
   const admin = createSupabaseAdminClient();

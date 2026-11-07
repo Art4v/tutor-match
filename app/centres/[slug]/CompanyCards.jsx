@@ -66,7 +66,7 @@ export function CompanyHeaderCard({ company }) {
         )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[13.5px]" style={{ color: "var(--ink-muted)" }}>
           <span className="inline-flex items-center gap-1.5">
-            <Icon name="building" size={14} /> Tutoring company
+            <Icon name="building" size={14} /> Tutoring centre
           </span>
           {location && (
             <span className="inline-flex items-center gap-1.5">
@@ -83,7 +83,7 @@ export function CompanyHeaderCard({ company }) {
  * Logo with the same fallback ladder as components/ui.js Avatar (image →
  * colour + initial), but standalone: Avatar reads tutor-shaped keys.
  */
-// `radius` defaults to a circle for the company page header; the /companies
+// `radius` defaults to a circle for the company page header; the /centres
 // row passes 4 (people are circles, companies are squares, in rows).
 export function CompanyLogo({ company, size = 108, ring = false, radius = 999 }) {
   return (
@@ -139,7 +139,7 @@ export function CompanyRateCard({ company, showEnquire = true }) {
       <SidebarHeading>Packages</SidebarHeading>
       {packages.length === 0 && (
         <div className="text-[13.5px] mt-0.5" style={{ color: "var(--sage)" }}>
-          Contact the company for current pricing.
+          Contact the centre for current pricing.
         </div>
       )}
 

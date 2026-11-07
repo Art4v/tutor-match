@@ -4,7 +4,7 @@ import { requireAdminRequest, readJson, cleanReason, adminRpcErrorResponse, reva
 
 export const runtime = "nodejs";
 
-// Permanently delete a company from /admin/companies: its tutors' shadow
+// Permanently delete a company from /admin/centres: its tutors' shadow
 // accounts, packages and reviews go with it, and a claimed owner keeps their
 // account with role reset to NULL. POST { companyId, reason? }. The body of
 // admin_delete_company (0074) is supabase/utilities/delete_company.sql.
@@ -22,9 +22,9 @@ export async function POST(request) {
     p_partner_id: body.companyId,
     p_reason: cleanReason(body.reason),
   });
-  if (error) return adminRpcErrorResponse(error, "Could not delete the company, please try again.");
+  if (error) return adminRpcErrorResponse(error, "Could not delete the tutoring centre, please try again.");
 
   revalidateIndexable(revalidatePath);
-  revalidatePath("/companies");
+  revalidatePath("/centres");
   return NextResponse.json({ ok: true, tutors: result?.tutors ?? 0 });
 }

@@ -6,7 +6,7 @@ import { verifyCompanyInviteToken } from "@/lib/companyToken";
 import { getCompanyForClaim } from "@/lib/supabase/companies";
 import { ClaimPanel } from "./ClaimPanel";
 
-export const metadata = { title: "Claim your company" };
+export const metadata = { title: "Claim your tutoring centre" };
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -54,7 +54,7 @@ export default async function ClaimCompanyPage({ searchParams }) {
         <StateCard
           tone="error"
           icon="alert-triangle"
-          title="Company not found"
+          title="Tutoring centre not found"
           body="This listing may have been removed. Get in touch if you think that's a mistake."
         />
       </Shell>
@@ -75,20 +75,20 @@ export default async function ClaimCompanyPage({ searchParams }) {
       .select("slug")
       .eq("id", company.id)
       .maybeSingle();
-    if (mine?.slug) redirect(`/companies/${mine.slug}`);
+    if (mine?.slug) redirect(`/centres/${mine.slug}`);
     return (
       <Shell>
         <StateCard
           tone="error"
           icon="alert-triangle"
           title={`${company.name} has already been claimed`}
-          body="Someone at your company has already set this page up. Ask them to add you, or get in touch if you think this is wrong."
+          body="Someone at your centre has already set this page up. Ask them to add you, or get in touch if you think this is wrong."
         />
       </Shell>
     );
   }
 
-  const next = `/companies/claim?token=${encodeURIComponent(token)}`;
+  const next = `/centres/claim?token=${encodeURIComponent(token)}`;
 
   // Logged out: send them through signup or login, carrying the claim URL so
   // they come straight back here afterwards.
@@ -143,7 +143,7 @@ export default async function ClaimCompanyPage({ searchParams }) {
           // role explicitly rather than interpolating the enum. The DB value for
           // a company account is still 'partner' (see the naming note in
           // CLAUDE.md), and interpolating it would show a word the UI never uses.
-          body={`This is a ${role === "tutor" ? "tutor" : "student"} account, which can't also manage a company. Log out and create a separate account for ${company.name}.`}
+          body={`This is a ${role === "tutor" ? "tutor" : "student"} account, which can't also manage a tutoring centre. Log out and create a separate account for ${company.name}.`}
         />
       </Shell>
     );

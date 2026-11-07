@@ -50,7 +50,7 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
               for filtering — that is a ranking fact, not a visual claim.) */}
           {tutor.company ? (
             <a
-              href={`/companies/${tutor.company.slug}`}
+              href={`/centres/${tutor.company.slug}`}
               className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:bg-slate-100"
               style={{
                 background: "var(--accent-softer)",

@@ -27,7 +27,7 @@ export default async function ReviewDetailPage({ params }) {
   const { review, subjectName, subjectHref, studentName, kind } = found;
   const pending = review.status === "pending";
   const last = pending ? null : await lastActionFor(supabase, "review", review.id);
-  const whose = kind === "company" ? "company's" : "tutor's";
+  const whose = kind === "company" ? "centre's" : "tutor's";
 
   return (
     <>

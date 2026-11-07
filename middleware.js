@@ -75,7 +75,7 @@ export async function middleware(request) {
     // and whose choose_role() now RAISES on it. That is a dead end. Worse,
     // redirectPreservingCookies clears url.search, so the bounce would destroy
     // the invite token on the way past.
-    const onCompanyClaim = pathname.startsWith("/companies/claim");
+    const onCompanyClaim = pathname.startsWith("/centres/claim");
     const exempt =
       onChooser ||
       onDisabled ||

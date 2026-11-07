@@ -44,11 +44,11 @@ export default async function sitemap() {
   return [
     entry("/"),
     entry("/browse"),
-    entry("/companies"),
+    entry("/centres"),
     entry("/blog"),
     ...landing.map((p) => entry(p)),
     ...tutors.map((t) => entry(`/tutor/${t.slug}`, t.updatedAt ? { lastModified: t.updatedAt } : {})),
-    ...companies.filter((c) => c.slug).map((c) => entry(`/companies/${c.slug}`)),
+    ...companies.filter((c) => c.slug).map((c) => entry(`/centres/${c.slug}`)),
     ...articles.map((a) =>
       entry(`/blog/${a.slug}`, { lastModified: a.updatedAt || a.publishedAt || undefined })
     ),

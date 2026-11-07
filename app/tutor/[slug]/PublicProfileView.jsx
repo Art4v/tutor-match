@@ -1,6 +1,6 @@
 import { TutorRow } from "@/components/TutorRow";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
-import { CompanyRateCard, EnquireButton } from "@/app/companies/[slug]/CompanyCards";
+import { CompanyRateCard, EnquireButton } from "@/app/centres/[slug]/CompanyCards";
 import { RateCard } from "./RateCard";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";

@@ -9,8 +9,8 @@ import { CompaniesFilters } from "./CompaniesFilters";
 import { CompaniesFeed, CompaniesFeedItem } from "./CompaniesFeed";
 
 export const metadata = {
-  title: "Companies",
-  description: "Tutoring companies listed on MatchTutor.",
+  title: "Tutoring centres",
+  description: "Tutoring centres listed on MatchTutor.",
 };
 
 function asArray(v) {
@@ -51,12 +51,12 @@ export default async function CompaniesPage({ searchParams }) {
               <div className="border-t border-[color:var(--paper-line)] pt-6">
                 <p className="text-[14px] text-[color:var(--ink-muted)]">
                   {hasFilters
-                    ? "No companies match those filters. Try widening your search."
-                    : "We're adding tutoring companies now. Check back soon."}
+                    ? "No tutoring centres match those filters. Try widening your search."
+                    : "We're adding tutoring centres now. Check back soon."}
                 </p>
                 {hasFilters && (
                   <Link
-                    href="/companies"
+                    href="/centres"
                     className="inline-block text-[14px] font-medium mt-2"
                     style={{ color: "var(--accent)" }}
                   >

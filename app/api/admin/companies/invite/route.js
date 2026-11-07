@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 /**
  * POST { name, website?, suburb?, state?, allowDuplicate? } — create a company
- * from /admin/companies and return its claim link.
+ * from /admin/centres and return its claim link.
  *
  * Runs through the USER-SCOPED client on purpose: create_partner_as_inviter
  * (0068, re-pointed at is_admin() in 0074) is SECURITY DEFINER and checks
@@ -35,7 +35,7 @@ export async function POST(request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Sign in to invite a company." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to invite a tutoring centre." }, { status: 401 });
   }
 
   const str = (v) => (typeof v === "string" ? v : "");
@@ -47,7 +47,7 @@ export async function POST(request) {
     p_allow_duplicate: body?.allowDuplicate === true,
   });
 
-  if (error) return adminRpcErrorResponse(error, "Could not create the company.");
+  if (error) return adminRpcErrorResponse(error, "Could not create the tutoring centre.");
 
   if (data?.status === "duplicate") {
     return NextResponse.json({ status: "duplicate", matches: data.matches ?? [] });

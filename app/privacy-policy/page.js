@@ -229,7 +229,7 @@ export default function PrivacyPolicyPage() {
             <p className="mt-3">
               To help with this, we publish a machine-readable summary of public profiles (at /sitemap.xml,
               /llms.txt and /llms-full.txt). It contains only information already shown on public profiles,
-              and only for tutors who are verified or who belong to a tutoring company listed on MatchTutor.
+              and only for tutors who are verified or who belong to a tutoring centre listed on MatchTutor.
             </p>
             <p className="mt-3">
               Tutors can remove their profile from these services at any time by setting its visibility to

@@ -42,7 +42,7 @@ export async function POST(request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Sign in to claim this company." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to claim this tutoring centre." }, { status: 401 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -60,12 +60,12 @@ export async function POST(request) {
   if (error) {
     // The RPC raises with a readable message for the cases worth explaining
     // (wrong account type, already manages a company).
-    return NextResponse.json({ error: error.message || "Could not claim this company." }, { status: 400 });
+    return NextResponse.json({ error: error.message || "Could not claim this tutoring centre." }, { status: 400 });
   }
 
   if (!slug) {
     return NextResponse.json(
-      { error: "This company has already been claimed." },
+      { error: "This tutoring centre has already been claimed." },
       { status: 409 }
     );
   }

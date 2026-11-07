@@ -8,7 +8,7 @@ import { SubjectPicker } from "@/components/SubjectPicker";
 import { AU_STATES } from "@/lib/states";
 
 /**
- * Sidebar for /companies. Same contract as BrowseFilters: the URL is the source
+ * Sidebar for /centres. Same contract as BrowseFilters: the URL is the source
  * of truth and every change router.replace()s, so results are shareable and the
  * back button works.
  *
@@ -59,14 +59,14 @@ export function CompaniesFilters({ catalog, filters, totalCount }) {
           className="text-[30px] leading-none"
           style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}
         >
-          Companies
+          Tutoring centres
         </h1>
         <p className="text-[13.5px] text-slate-500 mt-1.5">
-          {totalCount} {totalCount === 1 ? "company" : "companies"} on MatchTutor.
+          {totalCount} {totalCount === 1 ? "tutoring centre" : "tutoring centres"} on MatchTutor.
         </p>
         {hasFilters && (
           <Link
-            href="/companies"
+            href="/centres"
             className="inline-block text-[12.5px] font-medium mt-2"
             style={{ color: "var(--accent)" }}
           >
@@ -79,7 +79,7 @@ export function CompaniesFilters({ catalog, filters, totalCount }) {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Company name or suburb"
+          placeholder="Centre name or suburb"
           className="w-full text-[14px] px-3 py-2.5 outline-none"
           style={{
             border: "1px solid var(--paper-line)",

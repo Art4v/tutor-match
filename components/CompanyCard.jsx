@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { CompanyLogo } from "@/app/companies/[slug]/CompanyCards";
+import { CompanyLogo } from "@/app/centres/[slug]/CompanyCards";
 import { stripMarkdown } from "@/lib/richText";
 import { subjectLabel } from "@/lib/subjects";
 
-// A tutoring company in the /companies feed, as a ROW (the same pattern as
-// components/TutorRow.jsx): logo | details | "View company". No box of its own;
-// the list draws the rules between rows (app/companies/CompaniesFeed.jsx).
+// A tutoring company in the /centres feed, as a ROW (the same pattern as
+// components/TutorRow.jsx): logo | details | "View centre". No box of its own;
+// the list draws the rules between rows (app/centres/CompaniesFeed.jsx).
 //
 // Differences from the tutor row:
 //   - a square 4px logo (people are circles, companies are squares)
 //   - "Suburb, STATE · N tutors", the company's subjects and up to two
 //     packages instead of credentials and an hourly rate (a company prices by
 //     package only, 0069)
-//   - the right column is a "View company" label instead of a rate; below
+//   - the right column is a "View centre" label instead of a rate; below
 //     640px it hides and the whole row is the link anyway
 //
 // The whole row is one link to the company page. A company's subjects are
@@ -65,7 +65,7 @@ export function CompanyCard({ company }) {
 
   return (
     <Link
-      href={`/companies/${company.slug}`}
+      href={`/centres/${company.slug}`}
       className="group grid grid-cols-[56px_minmax(0,1fr)] sm:grid-cols-[72px_minmax(0,1fr)_auto] gap-x-4 py-4"
     >
       <span className="sm:hidden">
@@ -112,7 +112,7 @@ export function CompanyCard({ company }) {
       {/* Visual only: the whole row is already the link. */}
       <span className="hidden sm:flex items-start pl-4 pt-1 min-w-[120px] justify-end">
         <span className="inline-flex items-center gap-1 text-[14px] font-medium text-[color:var(--accent)] whitespace-nowrap">
-          View company
+          View centre
           <Icon name="chevron-right" size={14} className="shrink-0" />
         </span>
       </span>

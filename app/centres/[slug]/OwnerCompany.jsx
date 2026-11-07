@@ -83,7 +83,7 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
   const saveSection = async () => {
     if (savingKey) return;
     if ((draft.name ?? "").trim() === "") {
-      showToast("error", "Your company needs a name.", 3500);
+      showToast("error", "Your centre needs a name.", 3500);
       return;
     }
     setSavingKey(editingKey);
@@ -103,7 +103,7 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
     showToast("ok", "Section saved", 1600);
     // A rename moves the page, so the URL has to follow it.
     if (result.slug && result.slug !== company.slug) {
-      router.replace(`/companies/${result.slug}`);
+      router.replace(`/centres/${result.slug}`);
     }
   };
 
@@ -159,11 +159,11 @@ export function OwnerCompany({ initialCompany, initialTutors, initialReviews, us
       <DeskBackdrop />
       <div className="relative z-10 max-w-[1128px] mx-auto px-6 pt-6">
         <EditRegion
-          {...regionProps("header", "company details", 1100)}
+          {...regionProps("header", "centre details", 1100)}
           view={<CompanyHeaderCard company={company} />}
           edit={
             <div>
-              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Company details</h2>
+              <h2 className="text-[18px] font-light text-slate-800 tracking-tight">Centre details</h2>
               <p className="text-[13px] text-slate-500 mt-1 mb-5">
                 The logo, banner and name at the top of your page.
               </p>
@@ -314,7 +314,7 @@ function VisibilityCard({ company, onChange }) {
       </button>
       {live && (
         <a
-          href={`/companies/${company.slug}`}
+          href={`/centres/${company.slug}`}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1.5 text-[12.5px] mt-3"

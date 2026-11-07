@@ -108,7 +108,7 @@ export async function POST(request) {
     return NextResponse.json({ error: fieldError }, { status: 400 });
   }
   if (Boolean(tutorId) === Boolean(companyId)) {
-    return NextResponse.json({ error: "Review either a tutor or a company." }, { status: 400 });
+    return NextResponse.json({ error: "Review either a tutor or a tutoring centre." }, { status: 400 });
   }
 
   let subjectName;
@@ -123,9 +123,9 @@ export async function POST(request) {
       .eq("id", companyId)
       .maybeSingle();
     if (!company || company.visibility !== "public") {
-      return NextResponse.json({ error: "Company not found." }, { status: 404 });
+      return NextResponse.json({ error: "Tutoring centre not found." }, { status: 404 });
     }
-    subjectName = company.name || "a company";
+    subjectName = company.name || "a tutoring centre";
     insertRow = { partner_id: companyId, student_id: user.id, rating, body };
   } else {
     // The target must be a real, publicly listable tutor. RLS already hides
@@ -147,7 +147,7 @@ export async function POST(request) {
     // surface for, and which would silently move tutor_profiles.rating.
     if (tutor.partner_id) {
       return NextResponse.json(
-        { error: "Reviews for this tutor go to their company." },
+        { error: "Reviews for this tutor go to their tutoring centre." },
         { status: 403 }
       );
     }
@@ -166,7 +166,7 @@ export async function POST(request) {
       // One of the two partial unique indexes from 0067, whichever domain this
       // write was in.
       return NextResponse.json(
-        { error: `You've already reviewed this ${companyId ? "company" : "tutor"}.`, status: "exists" },
+        { error: `You've already reviewed this ${companyId ? "tutoring centre" : "tutor"}.`, status: "exists" },
         { status: 409 }
       );
     }
@@ -187,7 +187,7 @@ export async function POST(request) {
     await notifyUser(admin, user.id, {
       type: "review_submitted",
       title: "Review submitted",
-      body: `Thanks for leaving a review. Our team checks every review before it appears on ${companyId ? "the company's" : "the tutor's"} page.`,
+      body: `Thanks for leaving a review. Our team checks every review before it appears on ${companyId ? "the centre's" : "the tutor's"} page.`,
       email: { subject: "Thanks for leaving a review", html: reviewReceivedEmail({ name: studentName, tutorName: subjectName }) },
     });
   } catch (err) {

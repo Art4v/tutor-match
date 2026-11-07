@@ -15,7 +15,7 @@ const NAV_LINKS = [
   { label: "Featured tutors", href: "/#featured-tutors", hash: "featured-tutors" },
   { label: "How it works", href: "/#how-it-works", hash: "how-it-works" },
   { label: "For tutors", href: "/#for-tutors", hash: "for-tutors" },
-  { label: "Companies", href: "/companies" },
+  { label: "Tutoring centres", href: "/centres" },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -366,11 +366,11 @@ export function TopNav() {
                         </NavMenuLink>
                       )}
                       {isCompany && (
-                        // Resolves through /company because the company's slug
+                        // Resolves through /centre because the company's slug
                         // isn't known when this fixed URL is built, exactly as
                         // /profile does for tutors.
-                        <NavMenuLink href="/company" onClick={() => setMenuOpen(false)}>
-                          My company
+                        <NavMenuLink href="/centre" onClick={() => setMenuOpen(false)}>
+                          My centre
                         </NavMenuLink>
                       )}
                       <NavMenuLink href="/account" onClick={() => setMenuOpen(false)}>

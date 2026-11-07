@@ -48,7 +48,7 @@ export function CompanyImagesSection({ company, set, supabase, userId }) {
         supabase={supabase}
         userId={userId}
         onChange={(url) => set({ bannerImg: url })}
-        hint="A wide photo of your company. Optional."
+        hint="A wide photo of your centre. Optional."
         aspect={1200 / 320}
         cropShape="rect"
         maxOutputPx={2400}
@@ -89,7 +89,7 @@ export function CompanyIdentitySection({ company, set }) {
   const name = company.name ?? "";
   return (
     <div className="space-y-5">
-      <Field label="Company name" hint="Your business name, as students should see it.">
+      <Field label="Centre name" hint="Your centre's name, as students should see it.">
         <TextInput
           value={name}
           onChange={(v) => set({ name: v, initial: v.trim().charAt(0).toUpperCase() || null })}
@@ -130,7 +130,7 @@ export function CompanyIdentitySection({ company, set }) {
 /** The long-form About body. */
 export function CompanyAboutSection({ company, set }) {
   return (
-    <Field label="About your company" optional hint="Who you teach, how you teach, what makes you different.">
+    <Field label="About your centre" optional hint="Who you teach, how you teach, what makes you different.">
       <RichTextField
         value={company.bioLong ?? ""}
         onChange={(v) => set({ bioLong: v })}

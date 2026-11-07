@@ -46,7 +46,7 @@ export default async function TutorsIndexPage() {
           </h1>
           <p className="mt-5 text-[16px] leading-[1.65] max-w-[720px]" style={{ color: "var(--ink-muted)" }}>
             {tutors.length} tutors are listed on MatchTutor. Every one is verified by MatchTutor or belongs to a
-            listed tutoring company. Choose a state or city to see who is based there.
+            listed tutoring centre. Choose a state or city to see who is based there.
           </p>
         </header>
 

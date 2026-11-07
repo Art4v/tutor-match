@@ -47,7 +47,7 @@ function ErrorNote({ children }) {
 }
 
 /**
- * /admin/companies. Create a company (hidden until claimed) and copy its
+ * /admin/centres. Create a company (hidden until claimed) and copy its
  * claim link, plus the list of every company with a re-copy button on
  * unclaimed ones and hide / show / delete controls. Every write goes through
  * /api/admin/companies/*, whose RPCs are the real permission check and write
@@ -70,7 +70,7 @@ export function InviteCompanies({ initialCompanies, loadFailed }) {
   const submit = async (allowDuplicate = false) => {
     if (!form.name.trim()) {
       setState("error");
-      setMessage("Enter the company's name.");
+      setMessage("Enter the centre's name.");
       return;
     }
     setState("working");
@@ -108,9 +108,9 @@ export function InviteCompanies({ initialCompanies, loadFailed }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[30px] font-light text-slate-800 tracking-tight">Companies</h1>
+        <h1 className="text-[30px] font-light text-slate-800 tracking-tight">Tutoring centres</h1>
         <p className="text-[14px] text-slate-500 mt-1 max-w-[620px]">
-          Create a page for a tutoring company and send them the link. Their page stays hidden until
+          Create a page for a tutoring centre and send them the link. Their page stays hidden until
           they claim it and choose to make it live.
         </p>
       </div>
@@ -128,7 +128,7 @@ export function InviteCompanies({ initialCompanies, loadFailed }) {
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <Field label="Company name">
+              <Field label="Centre name">
                 <TextInput value={form.name} onChange={set("name")} placeholder="Acme Tutoring" maxLength={120} />
               </Field>
             </div>
@@ -153,7 +153,7 @@ export function InviteCompanies({ initialCompanies, loadFailed }) {
               <div className="flex items-start gap-2">
                 <Icon name="alert-triangle" size={15} />
                 <div className="min-w-0">
-                  <div className="font-medium">A company with this name already exists.</div>
+                  <div className="font-medium">A centre with this name already exists.</div>
                   <ul className="mt-1.5 space-y-0.5">
                     {matches.map((m) => (
                       <li key={m.slug}>
@@ -276,7 +276,7 @@ function CreatedCard({ created, onAnother }) {
         <h2 className="text-[20px] font-light text-slate-800 tracking-tight">{created.name} is ready to invite</h2>
       </div>
       <p className="text-[14px] text-slate-500 mt-1.5">
-        Copy this link and send it to the company yourself, by email or message. The link works once and
+        Copy this link and send it to the centre yourself, by email or message. The link works once and
         lasts 90 days. Their page stays hidden until they claim it and make it live.
       </p>
       <div
@@ -327,19 +327,19 @@ function CompanyList({ companies, loadFailed }) {
   return (
     <div className="bg-[color:var(--paper-card)]" style={cardStyle}>
       <div className="pt-5 pb-3">
-        <h2 className="text-[20px] font-light text-slate-800 tracking-tight">All companies</h2>
+        <h2 className="text-[20px] font-light text-slate-800 tracking-tight">All tutoring centres</h2>
         <p className="text-[13px] text-slate-500 mt-0.5">
-          Every company on MatchTutor. Copying a link for an unclaimed company makes a fresh one that lasts 90 days.
-          Manage hides, shows or deletes a company.
+          Every tutoring centre on MatchTutor. Copying a link for an unclaimed centre makes a fresh one that lasts 90 days.
+          Manage hides, shows or deletes a centre.
         </p>
       </div>
 
       {loadFailed ? (
         <div className="pb-5">
-          <ErrorNote>Could not load the company list. Refresh the page to try again.</ErrorNote>
+          <ErrorNote>Could not load the centre list. Refresh the page to try again.</ErrorNote>
         </div>
       ) : companies.length === 0 ? (
-        <p className="pb-6 text-[14px] text-slate-500">No companies yet. Create the first one above.</p>
+        <p className="pb-6 text-[14px] text-slate-500">No tutoring centres yet. Create the first one above.</p>
       ) : (
         <ul>
           {companies.map((c) => (
@@ -350,7 +350,7 @@ function CompanyList({ companies, loadFailed }) {
                     {c.hidden ? (
                       c.name
                     ) : (
-                      <Link href={`/companies/${c.slug}`} className="hover:underline">
+                      <Link href={`/centres/${c.slug}`} className="hover:underline">
                         {c.name}
                       </Link>
                     )}
@@ -393,7 +393,7 @@ function ManageCompany({ company }) {
           {company.hidden
             ? "Making it live shows the page and its tutors in search."
             : "Hiding takes the page and its tutors out of search. The owner can still edit it."}{" "}
-          Deleting removes the company, its tutors, packages and reviews for good; a claimed owner keeps their
+          Deleting removes the centre, its tutors, packages and reviews for good; a claimed owner keeps their
           account and picks a new role at next sign-in.
         </p>
         <DecisionPanel
@@ -404,7 +404,7 @@ function ManageCompany({ company }) {
             company.hidden
               ? { key: "show", label: "Make live", busyLabel: "Saving…", tone: "primary", icon: "eye", path: "visibility", body: { visibility: "public" }, doneText: `${company.name} is live.` }
               : { key: "hide", label: "Hide", busyLabel: "Saving…", tone: "neutral", icon: "eye-off", path: "visibility", body: { visibility: "hidden" }, doneText: `${company.name} is hidden.` },
-            { key: "delete", label: "Delete company", busyLabel: "Deleting…", tone: "danger-outline", icon: "trash", path: "delete", confirmWord: "DELETE", doneText: `${company.name} was deleted.` },
+            { key: "delete", label: "Delete centre", busyLabel: "Deleting…", tone: "danger-outline", icon: "trash", path: "delete", confirmWord: "DELETE", doneText: `${company.name} was deleted.` },
           ]}
         />
       </div>

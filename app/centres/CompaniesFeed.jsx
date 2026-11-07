@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
 /**
- * The /companies feed's entry stagger, matching /browse so the two feeds arrive
+ * The /centres feed's entry stagger, matching /browse so the two feeds arrive
  * the same way now that both are ruled lists of rows.
  *
  * Both wrappers take `children` rather than importing CompanyCard and mapping
@@ -17,7 +17,7 @@ import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
  *
  * No `layout` prop. Framer animates layout with transforms plus scale
  * corrections, which can smear a row's contents. Browse needs it because it filters rows CLIENT
- * side (the saved-tutors toggle); /companies is URL-driven and re-renders from
+ * side (the saved-tutors toggle); /centres is URL-driven and re-renders from
  * the server, so nothing moves under the animation.
  *
  * No AnimatePresence or exit variant, for the same reason: nothing here is ever

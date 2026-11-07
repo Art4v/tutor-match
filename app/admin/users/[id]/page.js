@@ -9,7 +9,7 @@ import { adminPaths } from "@/lib/admin/urls";
 
 export const metadata = { title: "Account" };
 
-const ROLE_LABELS = { tutor: "Tutor", student: "Student", partner: "Company owner" };
+const ROLE_LABELS = { tutor: "Tutor", student: "Student", partner: "Centre owner" };
 
 // One account: who they are, enable / disable, blog authoring, and every
 // admin action taken on them. Admins (and you) are read-only here: is_admin
@@ -62,7 +62,7 @@ export default async function UserDetailPage({ params }) {
                   </a>
                 )}
                 {user.company?.slug && (
-                  <a href={`/companies/${user.company.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
+                  <a href={`/centres/${user.company.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
                     {user.company.name} <Icon name="external" size={13} />
                   </a>
                 )}
