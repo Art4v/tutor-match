@@ -8,8 +8,8 @@ import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // `beforeSignIn` (optional, async) runs first and must resolve true for the
-// redirect to go ahead: the tutor invite page uses it to check its key and
-// park it in a cookie before the browser leaves for Google. `disabled` greys
+// redirect to go ahead: /quick-join uses it to record the management consent
+// in a cookie before the browser leaves for Google. `disabled` greys
 // the button out (e.g. until a required checkbox is ticked).
 export default function OAuthButtons({ divider = "bottom", next = "/profile", beforeSignIn, disabled = false }) {
   // Holds the provider currently redirecting ("google"), so only the clicked

@@ -27,7 +27,7 @@
 -- SET NULL instead of deleted (the row outlives the account, by design):
 --   * articles.author_id      -> their published articles stay up, no byline
 --   * partners.owner_id       -> a company they owned reverts to unclaimed
---   * partners.created_by, admin_actions.admin_id, tutor_invite_key.rotated_by
+--   * partners.created_by, admin_actions.admin_id (and, before 0078, tutor_invite_key.rotated_by)
 --     (History keeps its admin_name snapshot)
 -- The first query below lists any of these so nothing surprises you.
 --

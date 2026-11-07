@@ -1,17 +1,17 @@
 "use client";
 
-// The tutor invite page's body (0076). Step 1 of two: create an account (or
-// opt an existing tutor account in) and consent to MatchTutor managing the
-// profile. Step 2, the optional documents and links, is /join/details.
+// Quick join's body (0076, public since 0077). Step 1 of two: create an
+// account (or opt an existing tutor account in) and consent to MatchTutor
+// managing the profile, which starts hidden until an admin publishes it.
+// Step 2, the optional documents and links, is /quick-join/details.
 //
 // Nothing here touches our server until a button is pressed: the session
-// check is the browser client reading its own cookie, and the key is only
-// validated by the POST it rides on. Never rewrite this page's URL (that is
-// how /browse became a crawler trap).
+// check is the browser client reading its own cookie. Never rewrite this
+// page's URL (that is how /browse became a crawler trap).
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
@@ -21,11 +21,13 @@ import { Wordmark } from "@/components/Logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validatePassword } from "@/lib/password";
 import { validateEmailFormat } from "@/lib/email";
-import { isInviteKey, JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
+import { JOIN_PATH, JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
 import { EASE_OUT } from "@/lib/motion";
 
+// /login honours a same-origin ?next=, so "log in first" comes back here.
+const LOGIN_BACK_HERE = `/login?next=${encodeURIComponent(JOIN_PATH)}`;
+
 export default function JoinFlow() {
-  const key = useSearchParams().get("k") ?? "";
   // null = still reading the local session; then { signedIn, role, managed }.
   const [account, setAccount] = useState(null);
 
@@ -44,13 +46,15 @@ export default function JoinFlow() {
       // anyone without one), since this read is what the visitor waits on.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, tutor:tutor_profiles ( managed_at, invite_materials_submitted_at )")
+        .select("role, is_admin, tutor:tutor_profiles ( managed_at, invite_materials_submitted_at )")
         .eq("id", session.user.id)
         .maybeSingle();
       const tutor = profile?.role === "tutor" ? profile.tutor : null;
       const managed = !!tutor?.managed_at;
       const submitted = !!tutor?.invite_materials_submitted_at;
-      if (!cancelled) setAccount({ signedIn: true, role: profile?.role ?? null, managed, submitted });
+      if (!cancelled) {
+        setAccount({ signedIn: true, role: profile?.role ?? null, admin: !!profile?.is_admin, managed, submitted });
+      }
     })();
     return () => {
       cancelled = true;
@@ -58,16 +62,14 @@ export default function JoinFlow() {
   }, []);
 
   let body;
-  if (!isInviteKey(key)) {
-    body = (
-      <Notice>
-        This invite link is incomplete. Check you copied the whole link, or ask MatchTutor to send it again.
-      </Notice>
-    );
-  } else if (!account) {
+  if (!account) {
     body = <LoadingPlaceholder />;
   } else if (!account.signedIn) {
-    body = <SignupForm inviteKey={key} />;
+    body = <SignupForm />;
+  } else if (account.admin) {
+    // Said up front rather than after the consent box: redeem_tutor_invite
+    // refuses admins (hint admin_account), which stays the real boundary.
+    body = <Notice>Admin accounts can&rsquo;t be managed. Use a separate tutor account to try Quick join.</Notice>;
   } else if (account.managed) {
     body = (
       <Notice>
@@ -79,45 +81,64 @@ export default function JoinFlow() {
       </Notice>
     );
   } else if (account.role === "tutor" || account.role === null) {
-    body = <OptInPanel inviteKey={key} existing={account.role === "tutor"} />;
+    body = <OptInPanel existing={account.role === "tutor"} />;
   } else {
     body = (
       <Notice>
-        This link is for tutors. You&rsquo;re signed in with a {account.role === "student" ? "student" : "tutoring centre"}{" "}
+        Quick join is for tutors. You&rsquo;re signed in with a {account.role === "student" ? "student" : "tutoring centre"}{" "}
         account, so please log out and sign up with a separate account to join as a tutor.
       </Notice>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: EASE_OUT }}
-      className="w-full max-w-[460px] bg-[color:var(--paper-card)]"
-      style={{
-        border: "1px solid var(--paper-line)",
-        borderRadius: "var(--radius-card)",
-        padding: 32,
-        boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
-      }}
+    <div className="w-full flex flex-col items-center">
+      <RegularSignupBar />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.42, ease: EASE_OUT }}
+        className="w-full max-w-[460px] bg-[color:var(--paper-card)]"
+        style={{
+          border: "1px solid var(--paper-line)",
+          borderRadius: "var(--radius-card)",
+          padding: 32,
+          boxShadow: "0 30px 80px -40px rgba(0,30,30,0.18)",
+        }}
+      >
+        <div className="mb-6">
+          <h1 className="text-[40px] leading-[1.05]" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
+            Let us set up your account for you.
+          </h1>
+          <p className="text-[14px] text-slate-500 mt-3 leading-[1.55]">
+            Create your account and the <Wordmark matchColor="var(--ink-muted)" weight={500} /> team will set up your
+            tutor profile for you. It stays hidden until we publish it.
+          </p>
+        </div>
+        {body}
+      </motion.div>
+    </div>
+  );
+}
+
+// Full-bleed strip flush under the nav (the (auth) layout pads its content by
+// px-6 / pt-16, which the negative margins cancel).
+function RegularSignupBar() {
+  return (
+    <div
+      className="-mx-6 -mt-16 mb-12 w-[calc(100%+3rem)] px-6 py-3 text-center text-[13.5px] text-slate-600 leading-[1.5]"
+      style={{ background: "var(--accent-softer)", borderBottom: "1px solid var(--accent-line)" }}
     >
-      <div className="mb-6">
-        <h1 className="text-[40px] leading-none" style={{ color: "var(--ink-graphite)", fontWeight: 300, letterSpacing: "-0.025em" }}>
-          Join as a tutor.
-        </h1>
-        <p className="text-[14px] text-slate-500 mt-2 leading-[1.55]">
-          Create your account and the <Wordmark matchColor="var(--ink-muted)" weight={500} /> team will set up your
-          tutor profile for you.
-        </p>
-      </div>
-      {body}
-    </motion.div>
+      Prefer to manage your own profile?{" "}
+      <Link href="/signup" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
+        Use the regular sign up &rarr;
+      </Link>
+    </div>
   );
 }
 
 // ── Signed out: name, email, password, consent, or Google ────────────────────
-function SignupForm({ inviteKey }) {
+function SignupForm() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -161,7 +182,7 @@ function SignupForm({ inviteKey }) {
       res = await fetch("/api/join/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: inviteKey, fullName, email, password, agreed, consent }),
+        body: JSON.stringify({ fullName, email, password, agreed, consent }),
       });
       payload = await res.json();
     } catch {
@@ -173,7 +194,7 @@ function SignupForm({ inviteKey }) {
     if (!res.ok) return setError(payload?.error ?? "Sign up failed. Please try again.");
     if (payload.status === "exists") {
       return setError(
-        "An account with this email already exists. Log in first (if you haven't confirmed your email yet, use the link we've just sent), then open this invite link again to let us manage your profile."
+        "An account with this email already exists. Log in first (if you haven't confirmed your email yet, use the link we've just sent), then come back to Quick join to let us manage your profile."
       );
     }
     if (payload.status === "confirm") return setNeedsConfirm(true);
@@ -191,7 +212,7 @@ function SignupForm({ inviteKey }) {
       const res = await fetch("/api/join/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: inviteKey, consent, intent: "oauth" }),
+        body: JSON.stringify({ consent, intent: "oauth" }),
       });
       const payload = await res.json();
       if (!res.ok || payload?.status !== "oauth") {
@@ -276,7 +297,17 @@ function SignupForm({ inviteKey }) {
           />
         </Field>
 
-        <ConsentBox checked={consent} onChange={setConsent} />
+        <div>
+          <ConsentBox checked={consent} onChange={setConsent} />
+          {/* Repeats the bar above the card at the point of decision. Signup
+              form only: /signup is closed to signed-in users (middleware). */}
+          <p className="text-[12.5px] text-slate-500 leading-[1.5] mt-2.5 text-left">
+            Prefer to manage your own profile?{" "}
+            <Link href="/signup" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
+              Use the regular sign up &rarr;
+            </Link>
+          </p>
+        </div>
         <Check checked={agreed} onChange={setAgreed}>
           I agree to the{" "}
           <Link href="/terms-of-service" target="_blank" rel="noopener" className="accent-link" style={{ color: "var(--accent)" }}>
@@ -306,17 +337,17 @@ function SignupForm({ inviteKey }) {
       </div>
       <div className="text-[13px] text-slate-500 mt-6 text-center">
         Already have a tutor account?{" "}
-        <Link href="/login" className="font-medium accent-link" style={{ color: "var(--accent)" }}>
+        <Link href={LOGIN_BACK_HERE} className="font-medium accent-link" style={{ color: "var(--accent)" }}>
           Log in
-        </Link>
-        , then open this link again.
+        </Link>{" "}
+        and we&rsquo;ll bring you back here.
       </div>
     </>
   );
 }
 
 // ── Signed in (an existing tutor, or a new account with no role yet) ─────────
-function OptInPanel({ inviteKey, existing }) {
+function OptInPanel({ existing }) {
   const router = useRouter();
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -330,7 +361,7 @@ function OptInPanel({ inviteKey, existing }) {
       const res = await fetch("/api/join/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: inviteKey, consent, intent: "opt_in" }),
+        body: JSON.stringify({ consent, intent: "opt_in" }),
       });
       const payload = await res.json();
       // Only a real redeem moves on: anything else means nothing was bound.
@@ -350,7 +381,7 @@ function OptInPanel({ inviteKey, existing }) {
     <div className="space-y-5">
       <p className="text-[14px] text-slate-600 leading-[1.6]">
         {existing
-          ? "You're signed in to your tutor account. Your profile, verification and visibility stay as they are; our team simply gains access to manage it for you."
+          ? "You're signed in to your tutor account. Our team will take over managing your profile, and it will be hidden until we publish it again. Your details and verification stay as they are."
           : "You're signed in. Continue to create your tutor profile, which our team will set up for you."}
       </p>
       <ConsentBox checked={consent} onChange={setConsent} />

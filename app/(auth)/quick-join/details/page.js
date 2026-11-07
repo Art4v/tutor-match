@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import InviteMaterialsForm from "./InviteMaterialsForm";
 
-// Step 2 of the tutor invite (0076): the optional private documents and links,
-// sent once. Session-guarded and dynamic (unlike /join itself); anyone with
+// Step 2 of Quick join (0076/0077): the optional private documents and links,
+// sent once. Session-guarded and dynamic (unlike /quick-join itself); anyone with
 // nothing to do here goes on to their profile.
 export const dynamic = "force-dynamic";
 

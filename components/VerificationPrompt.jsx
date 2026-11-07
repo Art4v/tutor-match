@@ -60,8 +60,8 @@ export default function VerificationPrompt() {
     pathname === "/reset-password" ||
     pathname === "/terms-of-service" ||
     pathname === "/privacy-policy" ||
-    pathname === "/join" ||
-    pathname.startsWith("/join/") ||
+    pathname === "/quick-join" ||
+    pathname.startsWith("/quick-join/") ||
     pathname.startsWith("/auth");
 
   useEffect(() => {

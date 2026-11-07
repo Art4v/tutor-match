@@ -103,7 +103,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
             </p>
             {!profile.inviteMaterialsSubmitted && (
               <a
-                href="/join/details"
+                href="/quick-join/details"
                 className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium"
                 style={{ color: "var(--accent)" }}
               >

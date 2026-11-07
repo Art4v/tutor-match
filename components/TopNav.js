@@ -263,11 +263,13 @@ export function TopNav() {
         borderBottom: "1px solid transparent",
       }}
     >
-      <div className="max-w-[1400px] mx-auto px-6 h-[64px] flex items-center gap-6">
+      <div className="max-w-[1400px] mx-auto px-6 max-[420px]:px-4 h-[64px] flex items-center gap-6 max-[420px]:gap-3">
         <Link href="/" className="nav-logo flex items-center gap-2 group">
           <BookSproutMark size={28} className="nav-logo-mark shrink-0" />
+          {/* Signed out, the bar holds three buttons (Log in, Sign Up, Quick
+              join), which only fit a narrow phone beside the mark alone. */}
           <Wordmark
-            className="text-[19px] leading-none"
+            className={`text-[19px] leading-none${user ? "" : " max-[420px]:hidden"}`}
             wordClassName="nav-logo-word"
             weight={400}
             style={{ letterSpacing: "-0.01em" }}
@@ -283,7 +285,7 @@ export function TopNav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-3 max-[420px]:gap-1.5 ml-auto">
           {user ? (
             (() => {
               const displayName = profile?.name || user.user_metadata?.full_name || user.email || "";
@@ -425,6 +427,13 @@ export function TopNav() {
               <Link href="/signup">
                 <Button variant="primary" size="sm">Sign Up</Button>
               </Link>
+              {/* Admins can't be managed (redeem_tutor_invite refuses them).
+                  Signed-out only today, so this is a guard for later. */}
+              {!isAdmin && (
+                <Link href="/quick-join">
+                  <Button variant="dark" size="sm">Quick join</Button>
+                </Link>
+              )}
             </>
           )}
         </div>

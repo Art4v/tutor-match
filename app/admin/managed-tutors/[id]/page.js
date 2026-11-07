@@ -24,7 +24,7 @@ export default async function ManagedTutorPage({ params }) {
 
   return (
     <>
-      <PageHeader icon="user" title={tutor.name} lead="Managed by MatchTutor" back={{ href: adminPaths.tutorInvites(), label: "Tutor invites" }} />
+      <PageHeader icon="user" title={tutor.name} lead="Managed by MatchTutor" back={{ href: adminPaths.managedTutors(), label: "Managed tutors" }} />
 
       <div className="space-y-5">
         <Panel>

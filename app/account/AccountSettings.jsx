@@ -291,7 +291,7 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
 }
 
 // Admin-managed tutors (0076): stop MatchTutor managing the profile. Final from
-// here (a new invite link is the only way back in), so it confirms first and
+// here (Quick join is the only way back in), so it confirms first and
 // spells out what is lost.
 function ManagedProfileCard({ showToast }) {
   const router = useRouter();
