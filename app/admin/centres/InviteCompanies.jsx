@@ -326,7 +326,7 @@ function CompanyList({ companies, loadFailed }) {
 
   return (
     <div className="bg-[color:var(--paper-card)]" style={cardStyle}>
-      <div className="pt-5 pb-3">
+      <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
         <h2 className="text-[20px] font-light text-slate-800 tracking-tight">All tutoring centres</h2>
         <p className="text-[13px] text-slate-500 mt-0.5">
           Every tutoring centre on MatchTutor. Copying a link for an unclaimed centre makes a fresh one that lasts 90 days.
@@ -335,16 +335,16 @@ function CompanyList({ companies, loadFailed }) {
       </div>
 
       {loadFailed ? (
-        <div className="pb-5">
+        <div className="px-5 sm:px-6 pb-5">
           <ErrorNote>Could not load the centre list. Refresh the page to try again.</ErrorNote>
         </div>
       ) : companies.length === 0 ? (
-        <p className="pb-6 text-[14px] text-slate-500">No tutoring centres yet. Create the first one above.</p>
+        <p className="px-5 sm:px-6 pb-6 text-[14px] text-slate-500">No tutoring centres yet. Create the first one above.</p>
       ) : (
         <ul>
           {companies.map((c) => (
             <li key={c.id} style={{ borderTop: "1px solid var(--paper-line)" }}>
-              <div className="py-3.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="px-5 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="text-[14.5px] font-medium text-slate-800 truncate">
                     {c.hidden ? (
@@ -387,7 +387,7 @@ function CompanyList({ companies, loadFailed }) {
 // since it removes the company's tutors, packages and reviews for good.
 function ManageCompany({ company }) {
   return (
-    <div className="pb-5">
+    <div className="px-5 sm:px-6 pb-5">
       <div style={{ background: "var(--bg-soft)", border: "1px solid var(--paper-line)", borderRadius: 12, padding: 16 }}>
         <p className="text-[12.5px] text-slate-500 mb-3">
           {company.hidden
