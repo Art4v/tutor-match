@@ -55,7 +55,7 @@ function MarqueeLane({ tutors, direction, duration }) {
     tutors.map((tutor, i) => (
       <div
         key={`${key}-${tutor.id ?? tutor.slug}-${i}`}
-        className="shrink-0 h-full w-[680px] px-8 border-r border-[color:var(--paper-line)]"
+        className="shrink-0 h-full w-[680px] px-8 border-r border-[color:var(--accent-line)]"
       >
         <TutorRow tutor={tutor} variant="feature" tabIndex={tabIndex} />
       </div>
@@ -142,7 +142,7 @@ export function FeaturedTutors({ tutors = [], tutorCount }) {
 
       {/* Phones: no marquee. The first five tutors stacked, a 1px rule between
           each (the list draws the rules, never the row). */}
-      <ul className="md:hidden max-w-xl mx-auto px-5 divide-y divide-[color:var(--paper-line)]">
+      <ul className="md:hidden max-w-xl mx-auto px-5 divide-y divide-[color:var(--accent-line)]">
         {tutors.slice(0, STACK_COUNT).map((t) => (
           <li key={t.id ?? t.slug} className="py-4">
             <TutorRow tutor={t} variant="feature" />
