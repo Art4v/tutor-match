@@ -57,7 +57,7 @@ import { RevealStack } from "./RevealStack";
  * between them (Live is read-only) and offers Submit / Discard / Resend.
  *
  * ADMIN mode (`admin` set, 0076): an admin editing a tutor who consented to
- * being managed, from /admin/tutor-invites/[id]/edit. Same editor, but every
+ * being managed, from /admin/managed-tutors/[id]/edit. Same editor, but every
  * save is LIVE and goes through the /api/admin/managed-tutors routes
  * (adminTutorWriter), since the admin's own session cannot write another
  * tutor's rows or storage folders. No draft, no verification prompts.
