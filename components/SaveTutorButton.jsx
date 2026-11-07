@@ -6,7 +6,7 @@ import { Icon } from "./Icon";
 import { TOOLTIP_STYLE } from "./ui";
 import { useSavedTutors } from "./SavedTutorsProvider";
 
-// Bookmark control shown on every TutorCard and the tutor profile banner. For a
+// Bookmark control shown on every TutorRow and the tutor profile banner. For a
 // logged-in student it toggles the save; for a logged-out
 // visitor it's a decoy that routes to /signup, with a hover tooltip explaining
 // it's a student feature. For a signed-in tutor it renders nothing — saving is a
@@ -35,25 +35,38 @@ export function SaveTutorButton({ tutorId, variant = "card", disabled = false, c
   const [coords, setCoords] = useState(null);
   const wrapRef = useRef(null);
 
-  const size = variant === "banner" ? 40 : 38;
-  const iconSize = variant === "banner" ? 18 : 16;
-  const offset = variant === "banner" ? 16 : 14;
+  const banner = variant === "banner";
+  // The row's bookmark is a 44px tap target; the banner one is a 40px circle.
+  const size = banner ? 40 : 44;
+  const iconSize = banner ? 18 : 16;
+  const offset = banner ? 16 : 14;
 
   const saved = isStudent && isSaved(tutorId);
 
-  // Shared circular translucent pill — reads on both banner images and solid
-  // banner colours.
-  const pill = {
-    width: size,
-    height: size,
-    borderRadius: 999,
-    background: "rgba(255,255,255,0.92)",
-    backdropFilter: "blur(6px)",
-    WebkitBackdropFilter: "blur(6px)",
-    boxShadow: "0 2px 8px rgba(0,30,30,0.10)",
-    color: saved ? "var(--accent)" : "var(--ink-graphite)",
-    transition: "color 160ms ease-out, background 160ms ease-out",
-  };
+  // Banner: a circular translucent pill, which reads over a photo. Row
+  // ("card"): white, a 1px rule border and 4px corners, no blur and no
+  // shadow (borders, not shadows, on static elements).
+  const pill = banner
+    ? {
+        width: size,
+        height: size,
+        borderRadius: 999,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+        boxShadow: "0 2px 8px rgba(0,30,30,0.10)",
+        color: saved ? "var(--accent)" : "var(--ink-graphite)",
+        transition: "color 160ms ease-out, background 160ms ease-out",
+      }
+    : {
+        width: size,
+        height: size,
+        borderRadius: 4,
+        background: "var(--paper)",
+        border: "1px solid var(--paper-line)",
+        color: saved ? "var(--accent)" : "var(--ink-graphite)",
+        transition: "color 160ms ease-out, background 160ms ease-out",
+      };
 
   const tooltipText = isStudent
     ? disabled

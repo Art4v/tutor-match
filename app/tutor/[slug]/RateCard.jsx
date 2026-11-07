@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { MessageTutorButton } from "./MessageTutorButton";
-import { cardStyle } from "./ProfileCards";
+import { contactColumnClass } from "./ProfileCards";
 
 export function RateCard({ tutor, showMessage = true }) {
   const [pkg, setPkg] = useState(0);
@@ -9,10 +9,9 @@ export function RateCard({ tutor, showMessage = true }) {
   const rateLine = "Online or in person · flexible scheduling";
 
   return (
-    <div
-      className="bg-[color:var(--paper-card)]"
-      style={{ ...cardStyle, padding: "18px 20px" }}
-    >
+    // The contact column: a section with a bottom rule below lg, the page's
+    // one bordered box from lg up.
+    <div className={contactColumnClass}>
       <div className="flex items-baseline gap-1">
         <span className="text-[40px] font-light tabular-nums" style={{ color: "var(--ink-graphite-deep)", letterSpacing: "-0.02em" }}>
           ${tutor.rate}

@@ -84,7 +84,9 @@ function NameLine({ tutor, company, showVerifiedLabel, children }) {
           <span className="truncate max-w-[180px]">{company.name}</span>
         </span>
       ) : (
-        tutor.verified && <VerifiedTick size={15} label={showVerifiedLabel} />
+        // The script label hides below sm, where it would push the rate off
+        // the name line; the tick itself stays.
+        tutor.verified && <VerifiedTick size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
       )}
       {children}
     </span>

@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { Icon } from "@/components/Icon";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listCompanies } from "@/lib/supabase/companies";
 import { getSubjects } from "@/lib/supabase/tutors";
 import { isStateCode } from "@/lib/states";
-import { cardStyle } from "@/app/tutor/[slug]/ProfileCards";
 import { CompanyCard } from "@/components/CompanyCard";
 import { CompaniesFilters } from "./CompaniesFilters";
 import { CompaniesFeed, CompaniesFeedItem } from "./CompaniesFeed";
@@ -49,25 +47,20 @@ export default async function CompaniesPage({ searchParams }) {
 
           <div className="min-w-0">
             {companies.length === 0 ? (
-              <div
-                className="bg-[color:var(--paper-card)] text-center py-16 px-6"
-                style={cardStyle}
-              >
-                <h2 className="text-[22px] font-light text-slate-800 tracking-tight">
-                  No companies match those filters
-                </h2>
-                <p className="text-[14px] text-slate-500 mt-1.5">
+              // Empty list: one line of text and one action link. No box.
+              <div className="border-t border-[color:var(--paper-line)] pt-6">
+                <p className="text-[14px] text-[color:var(--ink-muted)]">
                   {hasFilters
-                    ? "Try widening your search."
+                    ? "No companies match those filters. Try widening your search."
                     : "We're adding tutoring companies now. Check back soon."}
                 </p>
                 {hasFilters && (
                   <Link
                     href="/companies"
-                    className="inline-flex items-center gap-1.5 text-[13.5px] font-medium mt-4"
+                    className="inline-block text-[14px] font-medium mt-2"
                     style={{ color: "var(--accent)" }}
                   >
-                    Clear all filters <Icon name="arrow-right" size={14} />
+                    Clear all filters
                   </Link>
                 )}
               </div>

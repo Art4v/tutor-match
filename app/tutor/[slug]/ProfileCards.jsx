@@ -1,20 +1,28 @@
 import { Icon } from "@/components/Icon";
-import { Chip } from "@/components/ui";
 import { subjectLabel } from "@/lib/subjects";
 import ServiceAreaMap from "./ServiceAreaMap";
 
-// Shared profile card chrome — used by the public profile page (server) and the
+// Shared profile chrome, used by the public profile page (server) and the
 // owner inline-editing shell (OwnerProfile, client) so both render identically.
-// Cards are flat: a 1px hairline border does the separating, no shadow.
-
-// Card shells. Main-column and sidebar cards differ only in padding and in the
-// size of their heading, so both live here and every card picks one.
+//
+// The page is SECTIONS, not cards: a heading, the content, and a 1px rule
+// before the next section. No box, no shadow. The exported names keep their
+// historical "Card" suffix (SubjectsCard, ServiceAreaCard, ...) because the
+// owner editor and company pages import them; they are flat sections.
+//
+// `cardStyle` survives only for the few things that must stand apart (the
+// contact column from lg up, and a handful of boxes elsewhere): a 1px rule
+// border and 4px corners, never a shadow. Shadows are for things that float.
 export const cardStyle = {
   border: "1px solid var(--paper-line)",
-  borderRadius: "var(--radius-card)",
-  // Same resting shadow as TutorCard (components/TutorCard.js CARD_SHADOW).
-  boxShadow: "var(--card-shadow)",
+  borderRadius: 4,
 };
+
+// The profile's contact column (rate, packages, Message or Enquire). Below lg
+// it is a section with a bottom rule; from lg it is the one bordered box on the
+// page. Literal classes for Tailwind's scanner.
+export const contactColumnClass =
+  "border-b border-[color:var(--paper-line)] pb-6 lg:border lg:rounded lg:p-6";
 
 export function formatDelivery(tutor) {
   const parts = [];
@@ -48,31 +56,31 @@ export function buildCredentialTiles(credentials) {
   return tiles;
 }
 
-/** Main-column section card: 20px/24px padding, 22px heading. */
+// The rule under every section, as a class so the few sections that are not
+// built from <Section> (AboutCard, ReviewsCard) share it exactly.
+export const sectionClass = "border-b border-[color:var(--paper-line)] py-6";
+
+/** Main-column section: 22px light heading, content, then a rule. No icons. */
 export function Section({ title, subtitle, children, id }) {
   return (
-    <section
-      id={id}
-      className="bg-[color:var(--paper-card)]"
-      style={{ ...cardStyle, padding: "20px 24px" }}
-    >
+    <section id={id} className={sectionClass}>
       <div className="mb-4">
         <h2 className="text-[22px] font-light text-slate-800 tracking-tight">{title}</h2>
-        {subtitle && <div className="text-[13px] text-slate-500 mt-0.5">{subtitle}</div>}
+        {subtitle && <div className="text-[14px] text-slate-500 mt-1">{subtitle}</div>}
       </div>
       {children}
     </section>
   );
 }
 
-/** Sidebar card: 18px/20px padding, 19px heading. */
+/** Sidebar section: same as Section with a smaller heading. */
 export function SidebarCard({ title, subtitle, children }) {
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
+    <section className={sectionClass}>
       <SidebarHeading>{title}</SidebarHeading>
-      {subtitle && <div className="text-[13.5px] mt-0.5" style={{ color: "var(--sage)" }}>{subtitle}</div>}
+      {subtitle && <div className="text-[14px] mt-1" style={{ color: "var(--sage)" }}>{subtitle}</div>}
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -80,14 +88,13 @@ export function SidebarHeading({ children }) {
   return <h2 className="text-[19px] font-light text-slate-800 tracking-tight">{children}</h2>;
 }
 
+// Text, not chips: a plain comma-separated list.
 export function SubjectsCard({ subjects }) {
   return (
     <SidebarCard title="Subjects">
-      <div className="flex flex-wrap gap-1.5 mt-3">
-        {subjects.map((s) => (
-          <Chip key={s.slug} tone="pill" size="sm" icon="graduation">{subjectLabel(s)}</Chip>
-        ))}
-      </div>
+      <p className="text-[14px] leading-6 mt-3 [overflow-wrap:anywhere]" style={{ color: "var(--ink-muted)" }}>
+        {subjects.map(subjectLabel).join(", ")}
+      </p>
     </SidebarCard>
   );
 }

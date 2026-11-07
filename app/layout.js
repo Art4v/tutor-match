@@ -59,7 +59,7 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400&display=swap" rel="stylesheet" />
       </head>
       <body>
-        {/* Saved-tutors state is shared across every TutorCard + the profile
+        {/* Saved-tutors state is shared across every TutorRow + the profile
             banner + the /browse "Saved" filter, so load it once here. */}
         <SavedTutorsProvider>
           {/* Route-loading overlay: intercepts internal link clicks and hosts

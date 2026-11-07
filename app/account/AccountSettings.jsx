@@ -132,7 +132,9 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
           </p>
         </div>
 
-        <div className="space-y-5">
+        {/* Sections, not cards: each has a heading, its content and a bottom
+            rule. Delete account comes last with an error-coloured heading. */}
+        <div className="border-t border-[color:var(--paper-line)]">
           {/* Profile photo (students only) ---------------------------------- */}
           {isStudent && (
             <ProfilePhotoCard
@@ -211,14 +213,8 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
           {managed && <ManagedProfileCard showToast={showToast} />}
 
           {/* Delete account ------------------------------------------------- */}
-          <section
-            className="bg-[color:var(--paper-card)]"
-            style={{ border: "1px solid #FECACA", borderRadius: "var(--radius-card)", padding: 24 }}
-          >
-            <header className="flex items-start gap-2 mb-4">
-              <span className="mt-0.5" style={{ color: "#DC2626" }}>
-                <Icon name="alert-triangle" size={16} />
-              </span>
+          <section className="py-6">
+            <header className="mb-4">
               <div>
                 <h2 className="text-[18px] font-light tracking-tight" style={{ color: "#B91C1C" }}>
                   Delete account
@@ -356,19 +352,15 @@ function ManagedProfileCard({ showToast }) {
 
 // --- Local design primitives (kept inline, matching settings/auth cards) ----
 
+// A flat section: content, then a rule before the next one. No box.
 function Card({ children }) {
-  return (
-    <section className="bg-[color:var(--paper-card)]" style={{ border: "1px solid var(--paper-line)", borderRadius: "var(--radius-card)", padding: 24 }}>
-      {children}
-    </section>
-  );
+  return <section className="border-b border-[color:var(--paper-line)] py-6">{children}</section>;
 }
 
 function SectionHeader({ title, subtitle, icon }) {
   return (
     <header className="mb-5">
       <h2 className="text-[18px] font-light text-slate-800 tracking-tight flex items-center gap-2">
-        {icon && <span className="text-slate-400"><Icon name={icon} size={16} /></span>}
         {title}
       </h2>
       {subtitle && <p className="text-[13px] text-slate-500 mt-1">{subtitle}</p>}

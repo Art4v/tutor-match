@@ -1,14 +1,10 @@
 import { parseRichTextBlocks, RichTextBlock } from "@/components/RichText";
-import { cardStyle } from "./ProfileCards";
+import { sectionClass } from "./ProfileCards";
 
 export function AboutCard({ text }) {
   const blocks = parseRichTextBlocks(text);
   return (
-    <section
-      id="about"
-      className="bg-[color:var(--paper-card)]"
-      style={{ ...cardStyle, padding: "20px 24px" }}
-    >
+    <section id="about" className={sectionClass}>
       <h2 className="text-[22px] font-light text-slate-800 tracking-tight mb-4">About</h2>
       <div className="text-[15.5px] leading-[1.72] max-w-[70ch]" style={{ color: "var(--ink)" }}>
         {blocks.map((b, idx) => (

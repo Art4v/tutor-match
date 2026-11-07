@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "motion/react";
-import { TutorCard } from "@/components/TutorCard";
+import { TutorRow } from "@/components/TutorRow";
 import { useSavedTutors } from "@/components/SavedTutorsProvider";
 import { EASE_OUT, DURATION_MED, STAGGER_FAST } from "@/lib/motion";
 
@@ -15,31 +15,34 @@ export function BrowseResultsGrid({ tutors, savedOnly = false }) {
   // there's no empty flash on load.
   const visible = savedOnly && ready ? tutors.filter((t) => isSaved(t.id)) : tutors;
 
+  // A ruled list of rows: the list draws the rules (top on the <ul>, bottom on
+  // each <li>), never the row.
   return (
-    <motion.div
+    <motion.ul
       initial="hidden"
       animate="show"
       variants={{
         hidden: {},
         show: { transition: { staggerChildren: STAGGER_FAST, delayChildren: 0.05 } },
       }}
-      className="flex flex-col gap-4"
+      className="border-t border-[color:var(--paper-line)]"
     >
       <AnimatePresence mode="popLayout">
         {visible.map((t) => (
-          <motion.div
+          <motion.li
             key={t.id}
             layout
+            className="border-b border-[color:var(--paper-line)]"
             variants={{
               hidden: { opacity: 0, y: 14 },
               show: { opacity: 1, y: 0, transition: { duration: DURATION_MED, ease: EASE_OUT } },
             }}
-            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2, ease: EASE_OUT } }}
+            exit={{ opacity: 0, transition: { duration: 0.2, ease: EASE_OUT } }}
           >
-            <TutorCard tutor={t} />
-          </motion.div>
+            <TutorRow tutor={t} />
+          </motion.li>
         ))}
       </AnimatePresence>
-    </motion.div>
+    </motion.ul>
   );
 }

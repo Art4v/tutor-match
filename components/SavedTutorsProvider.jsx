@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getSavedTutorIds, saveTutor, unsaveTutor } from "@/lib/supabase/saved";
 
-// App-wide saved-tutors state. Mounted once in app/layout.js so every TutorCard
+// App-wide saved-tutors state. Mounted once in app/layout.js so every TutorRow
 // (browse, home featured, similar-tutors) and the profile banner share one
 // source of truth — the saved-id Set is loaded a single time per session rather
 // than per card. Only logged-in students have saves; everyone else gets an empty

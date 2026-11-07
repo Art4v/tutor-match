@@ -1,12 +1,11 @@
-import { Avatar } from "@/components/ui";
+import { TutorRow } from "@/components/TutorRow";
 import { DeskBackdrop } from "@/components/DeskBackdrop";
 import { CompanyRateCard, EnquireButton } from "@/app/companies/[slug]/CompanyCards";
 import { RateCard } from "./RateCard";
 import { ExperienceTimeline } from "./ExperienceTimeline";
 import { EducationTimeline } from "./EducationTimeline";
 import { CredentialsList } from "./CredentialsList";
-import { SimilarTutorMini } from "./SimilarTutorMini";
-import { ProfileHeaderText } from "./ProfileHeaderText";
+import { ProfileHeader } from "./ProfileHeader";
 import { AvailabilityGrid } from "./AvailabilityGrid";
 import { AboutCard } from "./AboutCard";
 import { MessageTutorButton } from "./MessageTutorButton";
@@ -14,7 +13,7 @@ import { ProfileBlockBanner } from "./ProfileBlockBanner";
 import { ProfileSaveButton } from "./ProfileSaveButton";
 import { RevealStack } from "./RevealStack";
 import { ReviewsCard } from "./ReviewsCard";
-import { Section, SidebarHeading, SubjectsCard, DocumentationCard, ServiceAreaCard, cardStyle, formatDelivery, buildCredentialTiles } from "./ProfileCards";
+import { Section, SubjectsCard, DocumentationCard, ServiceAreaCard, formatDelivery, buildCredentialTiles } from "./ProfileCards";
 
 /**
  * The public tutor profile, as students see it. Rendered by /tutor/[slug]
@@ -38,30 +37,19 @@ export function PublicProfileView({ tutor, docs = [], reviews = [], company = nu
         {/* Shown only when the signed-in student has blocked this tutor. */}
         {!preview && <ProfileBlockBanner tutorName={tutor.name} />}
         <RevealStack>
-        <div className="relative bg-[color:var(--paper-card)] overflow-hidden" style={cardStyle}>
-          {/* Save bookmark — top-right of the banner. Public view only; the
-              owner branch above never reaches here. */}
-          {!preview && <ProfileSaveButton tutorId={tutor.id} variant="banner" />}
-          <div
-            style={{
-              height: 150,
-              background: tutor.bannerImg
-                ? `url(${tutor.bannerImg}) center / cover no-repeat`
-                : `linear-gradient(135deg, ${tutor.bannerBg ?? tutor.avatarBg}, oklch(0.96 0.01 250))`,
-            }}
-          />
-          <div className="px-7 pb-[22px]" style={{ marginTop: -54 }}>
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-              <Avatar tutor={tutor} size={108} ring />
-            </div>
-
-            <ProfileHeaderText tutor={tutor} deliveryLabel={deliveryLabel} />
-          </div>
-        </div>
+          <ProfileHeader tutor={tutor} deliveryLabel={deliveryLabel}>
+            {/* Save bookmark, top right of the header. Public view only; the
+                owner branch never reaches here. */}
+            {!preview && <ProfileSaveButton tutorId={tutor.id} variant="banner" />}
+          </ProfileHeader>
         </RevealStack>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-[10px] mt-[10px] items-start">
-          <RevealStack className="space-y-[10px] min-w-0" delayChildren={0.12}>
+        {/* Sections, not cards: each carries its own padding and bottom rule,
+            so the columns need no gap between children. The contact column
+            leads the sidebar; below lg the main column comes first and the
+            fixed contact bar covers contact. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-x-12 items-start">
+          <RevealStack className="min-w-0" delayChildren={0.12}>
             {tutor.bioLong && <AboutCard text={tutor.bioLong} />}
 
             {tiles.length > 0 && (
@@ -89,7 +77,7 @@ export function PublicProfileView({ tutor, docs = [], reviews = [], company = nu
             )}
           </RevealStack>
 
-          <RevealStack as="aside" className="space-y-[10px]" delayChildren={0.12}>
+          <RevealStack as="aside" className="min-w-0 pt-6" delayChildren={0.12}>
             {company ? <CompanyRateCard company={company} /> : <RateCard tutor={tutor} showMessage={!preview} />}
             {tutor.subjects.length > 0 && <SubjectsCard subjects={tutor.subjects} />}
             {docs.length > 0 && <DocumentationCard docs={docs} />}
@@ -100,9 +88,10 @@ export function PublicProfileView({ tutor, docs = [], reviews = [], company = nu
               <ReviewsCard tutorId={tutor.id} tutorName={tutor.name} rating={tutor.rating} reviewCount={tutor.reviews} reviews={reviews} />
             )}
             {(tutor.serviceArea?.suburb || tutor.suburb) && <ServiceAreaCard tutor={tutor} />}
-            {similar.length > 0 && <SimilarTutorsCard similar={similar} />}
           </RevealStack>
         </div>
+
+        {!preview && <OtherVerifiedTutors similar={similar} />}
       </div>
 
       {!preview && (
@@ -126,15 +115,23 @@ export function PublicProfileView({ tutor, docs = [], reviews = [], company = nu
   );
 }
 
-function SimilarTutorsCard({ similar }) {
+// Related tutors, after the main columns: the same ruled list of rows as
+// /browse. Headed "Other verified tutors" (they were never similar) and
+// filtered here to individually verified tutors so the heading is true; a
+// company tutor is excluded, since its tick is not earned individually.
+function OtherVerifiedTutors({ similar }) {
+  const tutors = (similar ?? []).filter((t) => t.verified && !t.company && !t.isCompanyTutor);
+  if (tutors.length === 0) return null;
   return (
-    <div className="bg-[color:var(--paper-card)]" style={{ ...cardStyle, padding: "18px 20px" }}>
-      <SidebarHeading>Similar tutors</SidebarHeading>
-      <div className="grid grid-cols-2 gap-3 mt-3">
-        {similar.map((t) => (
-          <SimilarTutorMini key={t.id} tutor={t} />
+    <section className="pt-12">
+      <h2 className="text-[22px] font-light text-slate-800 tracking-tight">Other verified tutors</h2>
+      <ul className="mt-4 border-t border-[color:var(--paper-line)]">
+        {tutors.map((t) => (
+          <li key={t.id} className="border-b border-[color:var(--paper-line)]">
+            <TutorRow tutor={t} />
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }
