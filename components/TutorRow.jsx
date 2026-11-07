@@ -57,6 +57,16 @@ function RateBlock({ tutor, align = "right" }) {
   );
 }
 
+/** The ATAR in the rate's signature: the number large, "ATAR" small beneath. */
+function AtarBlock({ value }) {
+  return (
+    <span className="inline-flex flex-col items-end leading-none">
+      <span className="text-[20px] leading-7 font-medium text-[color:var(--ink-graphite)] tabular-nums">{value}</span>
+      <span className="text-[12px] leading-4 text-[color:var(--sage)] whitespace-nowrap">ATAR</span>
+    </span>
+  );
+}
+
 function ReviewsLine({ tutor }) {
   const n = Number(tutor.reviews) || 0;
   if (n > 0 && tutor.rating != null) {
@@ -101,7 +111,13 @@ export function TutorRow({
   showVerifiedLabel = true,
 }) {
   const company = tutor.company ?? null;
-  const credentials = (tutor.credentials || []).map(credentialText).filter(Boolean).slice(0, 2);
+  const creds = tutor.credentials || [];
+  const credentials = creds.map(credentialText).filter(Boolean).slice(0, 2);
+  // From the width where the row has a right column, the ATAR moves there
+  // (under the rate) and the left credentials line keeps the rest. Below that
+  // width the ATAR stays in the credentials line.
+  const atar = String(creds.find((c) => c?.icon === "atar")?.label ?? "").trim() || null;
+  const otherCredentials = creds.filter((c) => c?.icon !== "atar").map(credentialText).filter(Boolean).slice(0, 2);
   const subjects = (tutor.subjects || []).filter((s) => s?.name);
   const shown = subjects.slice(0, MAX_SUBJECTS).map(subjectLabel);
   const more = subjects.length - shown.length;
@@ -120,10 +136,22 @@ export function TutorRow({
       {tagline}
     </span>
   );
-  const credentialsLine = credentials.length > 0 && (
-    <span className="text-[14px] leading-5 text-[color:var(--ink-muted)] line-clamp-1 [overflow-wrap:anywhere]">
-      {credentials.join(" · ")}
-    </span>
+  // Two copies: everything below sm, everything but the ATAR from sm.
+  const credentialsLine = (credentials.length > 0 || otherCredentials.length > 0) && (
+    <>
+      {credentials.length > 0 && (
+        <span className="sm:hidden text-[14px] leading-5 text-[color:var(--ink-muted)] line-clamp-1 [overflow-wrap:anywhere]">
+          {credentials.join(" · ")}
+        </span>
+      )}
+      {otherCredentials.length > 0 && (
+        <span className="hidden sm:block">
+          <span className="text-[14px] leading-5 text-[color:var(--ink-muted)] line-clamp-1 [overflow-wrap:anywhere]">
+            {otherCredentials.join(" · ")}
+          </span>
+        </span>
+      )}
+    </>
   );
 
   if (variant === "feature") {
@@ -140,9 +168,10 @@ export function TutorRow({
     // From md the bio runs long enough that the left column ends level with
     // the right one (rate, subjects, +N more, location, View full profile):
     // three lines, plus one for each of the tagline / credentials lines a tutor
+    // (from md the credentials line is everything but the ATAR, which sits under the rate)
     // doesn't have, so a sparse profile still fills the column. Phones keep two
     // lines; their lane is shorter. Literal classes for Tailwind's scanner.
-    const missingLines = (tagline ? 0 : 1) + (credentials.length ? 0 : 1);
+    const missingLines = (tagline ? 0 : 1) + (otherCredentials.length ? 0 : 1);
     const featBioClamp = ["md:line-clamp-3", "md:line-clamp-4", "md:line-clamp-5"][missingLines];
     // Narrower than the row's 4: the right column holds two, then "+N more".
     const sideShown = subjects.slice(0, 2).map(subjectLabel);
@@ -187,7 +216,13 @@ export function TutorRow({
               {tagline}
             </span>
           )}
-          {credentials.length > 0 && <span className={muted}>{credentials.join(" · ")}</span>}
+          {/* From md the ATAR moves under the rate; phones keep it here. */}
+          {credentials.length > 0 && <span className={`md:hidden ${muted}`}>{credentials.join(" · ")}</span>}
+          {otherCredentials.length > 0 && (
+            <span className="hidden md:block">
+              <span className={muted}>{otherCredentials.join(" · ")}</span>
+            </span>
+          )}
           {bio && (
             <span className={`text-[12px] md:text-[14px] leading-4 md:leading-5 text-[color:var(--ink-muted)] line-clamp-2 ${featBioClamp} [overflow-wrap:anywhere]`}>
               {bio}
@@ -209,8 +244,13 @@ export function TutorRow({
 
         <span className="flex flex-col items-end text-right pl-1 md:pl-2">
           <RateBlock tutor={tutor} />
-          {(sideShown.length > 0 || featPlace) && (
+          {(atar || sideShown.length > 0 || featPlace) && (
             <span className="hidden md:flex flex-col items-end gap-1 mt-3 w-[150px]">
+              {atar && (
+                <span className="mb-2">
+                  <AtarBlock value={atar} />
+                </span>
+              )}
               {/* "+N more" is its own line so the clamp on long subject names
                   can never cut it off. */}
               {sideShown.length > 0 && (
@@ -290,6 +330,11 @@ export function TutorRow({
 
         <span className="hidden sm:flex flex-col items-end text-right pl-4 pt-14 min-w-[120px]">
           <RateBlock tutor={tutor} />
+          {atar && (
+            <span className="mt-3">
+              <AtarBlock value={atar} />
+            </span>
+          )}
         </span>
       </Link>
     </div>
