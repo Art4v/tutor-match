@@ -55,6 +55,7 @@ const DISALLOW = [
   "/centre",
   "/centres/claim",
   "/join",
+  "/quick-join",
   "/choose-role",
   "/reset-password",
 ];
