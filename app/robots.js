@@ -52,7 +52,9 @@ const DISALLOW = [
   "/messages",
   "/author",
   "/profile",
-  "/centre",
+  // Anchored: robots rules are prefix matches, so a bare "/centre" would
+  // also block the public /centres directory and every company page.
+  "/centre$",
   "/centres/claim",
   "/join",
   "/quick-join",
