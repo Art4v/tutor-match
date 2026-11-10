@@ -6,7 +6,10 @@ import { adminPaths } from "@/lib/admin/urls";
 import { requireAdmin } from "../../guard";
 import { PageHeader, Panel, Inset, Chip, HistoryList } from "../../_components/ui";
 import { DecisionPanel } from "../../_components/DecisionPanel";
+import { RetryPurgeButton } from "../../_components/RetryPurgeButton";
+import { SupportingDocumentsList } from "../../_components/SupportingDocumentsList";
 import { formatDate, formatDateTime } from "../../_components/format";
+import { getVerificationDocsForAdmin } from "@/lib/admin/verificationDocs";
 
 export const metadata = { title: "Managed tutor" };
 
@@ -21,6 +24,7 @@ export default async function ManagedTutorPage({ params }) {
   if (!tutor) notFound();
   const history = await listHistory(supabase, { targetType: "tutor", targetId: tutor.id, pageSize: 20 });
   const verified = tutor.verificationStatus === "verified";
+  const { docs: supportingDocs, purgePending } = await getVerificationDocsForAdmin(admin, tutor.id);
 
   return (
     <>
@@ -111,6 +115,14 @@ export default async function ManagedTutorPage({ params }) {
             </div>
           )}
         </Panel>
+
+        {supportingDocs.length > 0 && (
+          <Panel title="Supporting documents" lead="Private to admins, from a verification request. Deleted automatically when this tutor is verified.">
+            <SupportingDocumentsList docs={supportingDocs} />
+          </Panel>
+        )}
+
+        {purgePending > 0 && <RetryPurgeButton tutorId={tutor.id} count={purgePending} />}
 
         {tutor.isAdmin ? null : (
           <>
