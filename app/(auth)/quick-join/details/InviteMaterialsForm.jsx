@@ -114,8 +114,8 @@ export default function InviteMaterialsForm() {
       </h1>
       <p className="text-[14px] text-slate-500 mt-2 leading-[1.55]">
         Attach anything that helps us set up your profile, like a resume or certificates, and links such as
-        LinkedIn or a portfolio. Only the MatchTutor team can see these. Everything here is optional, and you
-        can only send it once.
+        LinkedIn or a portfolio. Only the MatchTutor team can see these. Everything here is highly recommended,
+        and you can only send it once.
       </p>
 
       <section className="mt-6">
