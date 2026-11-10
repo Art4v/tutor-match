@@ -132,6 +132,7 @@ const STEPS = [
         <RequestVerification
           status={tutor.verificationStatus}
           completionPct={calcCompletion(tutor).pct}
+          docsMode="inline"
           beforeRequest={async () => {
             const r = await persistProfile();
             if (!r.ok) {
