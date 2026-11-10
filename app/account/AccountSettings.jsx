@@ -98,11 +98,25 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
   const onDeleteAccount = async () => {
     if (!canDelete) return;
     setDeleting(true);
-    const { error } = await supabase.rpc("delete_own_account");
-    if (error) {
+    // Through a route, which removes private verification documents first (0079).
+    let errorMessage = "";
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        errorMessage = data?.error || "Couldn't delete your account. Please try again.";
+      }
+    } catch {
+      errorMessage = "Network error. Please try again.";
+    }
+    if (errorMessage) {
       setDeleting(false);
       setConfirmOpen(false);
-      showToast("error", error.message || "Couldn't delete your account — please try again.", 4000);
+      showToast("error", errorMessage, 4000);
       return;
     }
     // The auth.users row (and everything cascading off it) is gone; clear the

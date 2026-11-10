@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
 import { managedVerificationEmail } from "@/lib/email/send";
+import { purgeVerificationDocs } from "@/lib/admin/verificationDocs";
 import {
   requireAdminRequest,
   readJson,
@@ -43,6 +44,9 @@ export async function POST(request) {
 
   revalidateIndexable(revalidatePath);
   const admin = createSupabaseAdminClient();
+  // Reaching verified flagged the tutor's private files (0079). A failure here
+  // leaves the toggle in place and shows a Retry on the managed tutor page.
+  const purgeFailed = body.verified ? !(await purgeVerificationDocs(admin, body.tutorId)).ok : false;
   const { data: row } = admin
     ? await admin.from("tutor_profiles").select("slug").eq("id", body.tutorId).maybeSingle()
     : { data: null };
@@ -61,5 +65,5 @@ export async function POST(request) {
       }),
     },
   });
-  return NextResponse.json({ ok: true, status: result.status });
+  return NextResponse.json({ ok: true, status: result.status, purgeFailed });
 }

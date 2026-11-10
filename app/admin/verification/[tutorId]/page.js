@@ -5,7 +5,10 @@ import { adminPaths } from "@/lib/admin/urls";
 import { requireAdmin } from "../../guard";
 import { PageHeader, Panel, Inset, DecidedNote, Chip } from "../../_components/ui";
 import { DecisionPanel } from "../../_components/DecisionPanel";
+import { RetryPurgeButton } from "../../_components/RetryPurgeButton";
+import { SupportingDocumentsList } from "../../_components/SupportingDocumentsList";
 import { formatDate } from "../../_components/format";
+import { getVerificationDocsForAdmin } from "@/lib/admin/verificationDocs";
 
 export const metadata = { title: "Review verification" };
 
@@ -33,6 +36,7 @@ export default async function VerificationDetailPage({ params }) {
   const profileHref = tutor.slug ? `/tutor/${tutor.slug}` : null;
   const pending = tutor.verification_status === "pending";
   const last = pending ? null : await lastActionFor(supabase, "tutor", tutor.id, "verification_");
+  const { docs, purgePending } = await getVerificationDocsForAdmin(admin, tutor.id);
 
   return (
     <>
@@ -64,6 +68,22 @@ export default async function VerificationDetailPage({ params }) {
               </a>
             </div>
           </Inset>
+
+          {pending && (
+            <div className="mt-5">
+              <h2 className="text-[15px] font-medium text-slate-800">Supporting documents</h2>
+              <p className="text-[12.5px] text-slate-500 mt-0.5 mb-2">
+                Private to admins. Deleted automatically when you approve. Kept for the tutor&apos;s next request if you reject.
+              </p>
+              <SupportingDocumentsList docs={docs} />
+            </div>
+          )}
+
+          {purgePending > 0 && (
+            <div className="mt-5">
+              <RetryPurgeButton tutorId={tutor.id} count={purgePending} />
+            </div>
+          )}
 
           <div className="mt-5">
             {pending ? (

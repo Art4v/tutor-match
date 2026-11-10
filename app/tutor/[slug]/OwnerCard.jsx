@@ -132,6 +132,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
             status={profile.verificationStatus}
             completionPct={c.pct}
             onRequested={onVerificationRequested}
+            docsMode="modal"
             unstyled
           />
         </div>
