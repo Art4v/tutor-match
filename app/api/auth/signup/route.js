@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { checkSignupInput } from "@/lib/signupValidation";
+import { checkSignupInput, signupErrorResponse } from "@/lib/signupValidation";
 import { safeNext } from "@/lib/roles";
 
 export const runtime = "nodejs";
@@ -51,7 +51,8 @@ export async function POST(request) {
   });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    const { error: message, status } = signupErrorResponse(error);
+    return NextResponse.json({ error: message }, { status });
   }
 
   // Supabase doesn't error when the email is already registered (it avoids

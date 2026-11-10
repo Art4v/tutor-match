@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { checkSignupInput } from "@/lib/signupValidation";
+import { checkSignupInput, signupErrorResponse } from "@/lib/signupValidation";
 import { originOf } from "@/lib/admin/route";
 import { JOIN_DETAILS_PATH } from "@/lib/tutorInvite";
 import { consumeQuickJoinAttempt, redeemInvite, redeemErrorMessage, TOO_MANY_ATTEMPTS } from "../shared";
@@ -59,7 +59,8 @@ export async function POST(request) {
     },
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    const { error: message, status } = signupErrorResponse(error);
+    return NextResponse.json({ error: message }, { status });
   }
 
   // Only bind an account THIS request created; anything else may be someone
