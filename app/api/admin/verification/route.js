@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
 import { userApprovedEmail, userRejectedEmail } from "@/lib/email/send";
+import { countSavedVerificationDocs, purgeVerificationDocs } from "@/lib/admin/verificationDocs";
 import {
   requireAdminRequest,
   readJson,
@@ -46,8 +47,12 @@ export async function POST(request) {
   const admin = createSupabaseAdminClient();
   const origin = originOf(request);
   const name = result.name || "";
+  let purgeFailed = false;
 
   if (decision === "approve") {
+    // The approval flagged the tutor's private files (0079). If this fails the
+    // approval stands, and the admin page offers a Retry.
+    purgeFailed = !(await purgeVerificationDocs(admin, body.tutorId)).ok;
     // A verified tutor joins listIndexableTutors (sitemap, llms, /tutors).
     revalidateIndexable(revalidatePath);
     const profileUrl = result.slug ? `${origin}/tutor/${result.slug}` : null;
@@ -58,18 +63,20 @@ export async function POST(request) {
       email: { subject: "You're verified on MatchTutor ✓", html: userApprovedEmail({ name, profileUrl }) },
     });
   } else {
+    const hasDocuments = (await countSavedVerificationDocs(admin, body.tutorId)) > 0;
+    const main = reason
+      ? `Reviewer's note: "${reason}". Update your profile and you can request another review.`
+      : "An admin reviewed your profile and couldn't verify it this time. Update your profile and you can request another review.";
     await notifyUser(admin, body.tutorId, {
       type: "verification_rejected",
       title: "Verification not approved",
-      body: reason
-        ? `Reviewer's note: "${reason}". Update your profile and you can request another review.`
-        : "An admin reviewed your profile and couldn't verify it this time. Update your profile and you can request another review.",
+      body: hasDocuments ? `${main} Your supporting documents are saved for your next request.` : main,
       email: {
         subject: "Your MatchTutor verification wasn't approved",
-        html: userRejectedEmail({ name, reason, profileUrl: `${origin}/profile` }),
+        html: userRejectedEmail({ name, reason, profileUrl: `${origin}/profile`, hasDocuments }),
       },
     });
   }
 
-  return NextResponse.json({ ok: true, status: result.status });
+  return NextResponse.json({ ok: true, status: result.status, purgeFailed });
 }
