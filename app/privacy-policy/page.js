@@ -52,6 +52,11 @@ export default function PrivacyPolicyPage() {
                 uploaded by tutors during onboarding or profile editing.
               </li>
               <li>
+                <strong>Verification documents:</strong> Private supporting documents a tutor attaches to a
+                verification request. Only MatchTutor administrators can view them, and they are never shown on
+                a profile.
+              </li>
+              <li>
                 <strong>Communications:</strong> Messages sent between students and tutors through the Platform.
               </li>
               <li>
@@ -178,6 +183,12 @@ export default function PrivacyPolicyPage() {
               <li>
                 <strong>Credentials/documents:</strong> Tutor-uploaded documents are deleted within 30 days of
                 account closure upon request.
+              </li>
+              <li>
+                <strong>Verification documents:</strong> Private supporting documents are deleted when the tutor
+                is verified. If a request is rejected or withdrawn, they are kept so the tutor can request
+                another review, until the tutor removes them, is verified, or closes their account. Closing
+                the account deletes them immediately.
               </li>
             </ul>
           </section>
