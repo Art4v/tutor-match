@@ -10,7 +10,7 @@ const STEPS = [
     n: "01",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
     t: "ATAR and Marks Check",
-    b: "We require each tutor to upload their ATAR Advice Notice, and a screenshot of their HSC marks scorecard that NESA sends if they advertise it.",
+    b: "We require each tutor to upload their ATAR Advice Notice, and a screenshot of their NESA HSC marks scorecard",
   },
   {
     n: "02",
