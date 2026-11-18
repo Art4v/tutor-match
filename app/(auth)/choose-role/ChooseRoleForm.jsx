@@ -6,7 +6,6 @@
 // use a select-then-confirm step rather than firing on a single click.
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
@@ -31,7 +30,6 @@ const OPTIONS = [
 ];
 
 export default function ChooseRoleForm() {
-  const router = useRouter();
   const [selected, setSelected] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,9 +58,17 @@ export default function ChooseRoleForm() {
       return;
     }
     // Tutors continue into their profile (which routes on to onboarding);
-    // students land on the tutor list. Refresh so the nav re-reads the new role.
-    router.push(homeFor(selected));
-    router.refresh();
+    // students land on the tutor list.
+    //
+    // A FULL page navigation, deliberately not router.push + router.refresh:
+    // SavedTutorsProvider (root layout) read profiles.role when this account
+    // signed in, while it was still NULL, and only re-reads when the user id
+    // changes. A client-side navigation keeps it mounted, so a new student was
+    // treated as a non-student (no Message, no Write a review, no bookmarks)
+    // until their first reload. Loading the page fresh resets every client
+    // provider at once. `saving` stays true so the buttons stay disabled while
+    // the browser navigates.
+    window.location.assign(homeFor(selected));
   };
 
   return (
