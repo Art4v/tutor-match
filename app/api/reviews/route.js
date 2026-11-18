@@ -8,6 +8,7 @@ import { adminPaths } from "@/lib/admin/urls";
 import { getReviewForModeration } from "@/lib/supabase/reviews";
 import { isAccountEnabled } from "@/lib/supabase/account";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { isValidDurationMonths } from "@/lib/reviewDuration";
 
 export const runtime = "nodejs";
 
@@ -57,7 +58,7 @@ async function requireStudent(supabase) {
   return { user, me };
 }
 
-/** Shared validation for the two writable fields. */
+/** Shared validation for the three writable fields. */
 function parseReviewFields(payload) {
   const rating = payload?.rating;
   // Empty text must become NULL, not "": the 0057 CHECK rejects a blank-but-
@@ -68,7 +69,15 @@ function parseReviewFields(payload) {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return { error: "A rating from 1 to 5 is required." };
   }
-  return { rating, body };
+
+  // Optional (0080). Absent or null means "not given" and is stored as NULL.
+  // Anything else must be a whole number of months the 0080 CHECK accepts; the
+  // form sends null for a zero total, so a 0 here is a hand-rolled request.
+  const rawDuration = payload?.durationMonths ?? null;
+  if (rawDuration !== null && !isValidDurationMonths(rawDuration)) {
+    return { error: "Time with the tutor must be between 1 month and 12 years 11 months." };
+  }
+  return { rating, body, durationMonths: rawDuration };
 }
 
 /** Alert the admins, linking to the review in /admin. */
@@ -103,7 +112,7 @@ export async function POST(request) {
   // giving a readable error rather than a constraint violation.
   const tutorId = payload?.tutorId ?? null;
   const companyId = payload?.companyId ?? null;
-  const { rating, body, error: fieldError } = parseReviewFields(payload);
+  const { rating, body, durationMonths, error: fieldError } = parseReviewFields(payload);
   if (fieldError) {
     return NextResponse.json({ error: fieldError }, { status: 400 });
   }
@@ -126,7 +135,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Tutoring centre not found." }, { status: 404 });
     }
     subjectName = company.name || "a tutoring centre";
-    insertRow = { partner_id: companyId, student_id: user.id, rating, body };
+    insertRow = { partner_id: companyId, student_id: user.id, rating, body, duration_months: durationMonths };
   } else {
     // The target must be a real, publicly listable tutor. RLS already hides
     // disabled owners (0055); visibility + confirmation are app-level filters, so
@@ -152,7 +161,7 @@ export async function POST(request) {
       );
     }
     subjectName = tutor.profile?.full_name || "a tutor";
-    insertRow = { tutor_id: tutorId, student_id: user.id, rating, body };
+    insertRow = { tutor_id: tutorId, student_id: user.id, rating, body, duration_months: durationMonths };
   }
 
   const { data: inserted, error: insertErr } = await supabase
@@ -222,14 +231,14 @@ export async function PATCH(request) {
   }
 
   const reviewId = payload?.reviewId;
-  const { rating, body, error: fieldError } = parseReviewFields(payload);
+  const { rating, body, durationMonths, error: fieldError } = parseReviewFields(payload);
   if (fieldError || !reviewId) {
     return NextResponse.json({ error: fieldError || "A review is required." }, { status: 400 });
   }
 
   const { data: updated, error: updateErr } = await supabase
     .from("reviews")
-    .update({ rating, body, status: "pending", approved_at: null })
+    .update({ rating, body, duration_months: durationMonths, status: "pending", approved_at: null })
     .eq("id", reviewId)
     .select("id")
     .maybeSingle();
