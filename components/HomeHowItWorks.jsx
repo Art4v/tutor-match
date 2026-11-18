@@ -9,20 +9,20 @@ const STEPS = [
   {
     n: "01",
     image: { src: "/images/editorial/step-browse.jpg", alt: "Browsing a grid of profiles on a laptop" },
-    t: "Browse Verified Profiles",
-    b: "Every tutor's ATAR, marks and identity are independently checked. Filter by subject, year, location and rate.",
+    t: "ATAR and Marks Check",
+    b: "We require each tutor to upload their ATAR Advice Notice, and a screenshot of their HSC marks scorecard that NESA sends if they advertise it.",
   },
   {
     n: "02",
     image: { src: "/images/editorial/step-pick.jpg", alt: "A tutor working one-on-one with a student" },
-    t: "Pick a Tutor that Fits",
-    b: "Read bios, compare rates, and check availability. Save the ones you're considering so you can come back later.",
+    t: "WWCC and ID Check",
+    b: "Each tutor shows a valid Working With Children Check and photo ID, which we match to their profile before they can take on students.",
   },
   {
     n: "03",
     image: { src: "/images/editorial/step-lessons.jpg", alt: "A student in an online video lesson with their tutor" },
-    t: "Lessons and Reviews",
-    b: "Meet in person or over video, leave reviews to help other students, and switch tutors any time you want.",
+    t: "Ratings and Reviews",
+    b: "Only ID-verified accounts who have been matched with a tutor can leave a review, meaning every rating is authentic and tutors are accountable for what they promised.",
   },
 ];
 
@@ -212,7 +212,7 @@ export function HomeHowItWorks() {
               color: "var(--ink-graphite)",
             }}
           >
-            Finding the right tutor is easy
+            We verify our tutors in 3 steps
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -221,7 +221,7 @@ export function HomeHowItWorks() {
             transition={{ duration: DURATION_MED, ease: EASE_OUT, delay: 0.1 }}
             className="text-[13px] sm:text-[15px] md:text-[16px] text-[color:var(--ink-muted)] mt-3 leading-[1.5] max-w-[520px]"
           >
-            Browsing, messaging and booking all done on one platform.
+            Our guidelines ensure that your trust and money go where promised.
           </motion.p>
         </div>
 
