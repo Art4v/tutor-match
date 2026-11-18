@@ -7,7 +7,8 @@
 -- are impossible by design). The teardown at the bottom removes them again.
 --
 -- HOW TO APPLY:
---   1. Apply supabase/migrations/0057_reviews.sql first.
+--   1. Apply the migrations first, up to 0080_review_duration.sql (this file
+--      writes reviews.duration_months).
 --   2. Check the tutor name on the ">>> EDIT THIS LINE" row below.
 --   3. Supabase Studio -> SQL Editor -> paste this whole file -> Run.
 --
@@ -18,7 +19,9 @@
 --   * Their profiles (role 'student') + student_profiles rows.
 --   * 5 APPROVED reviews for the target tutor: ratings 5, 5, 4, 5, 3 (average
 --     4.4, deliberately not a whole number so the fractional-star rendering gets
---     exercised) with a mix of with-text and text-free reviews.
+--     exercised) with a mix of with-text and text-free reviews, and a mix of
+--     durations (0080): 2 years 3 months, 8 months, 1 year, 4 years, and one
+--     review with none.
 --
 -- Note the reviews are inserted with status 'approved' directly, which the RLS
 -- insert policy would refuse (it requires 'pending'). That is fine: the SQL
@@ -43,20 +46,21 @@ create temp table _seed_reviewers (
   full_name  text not null,
   rating     int  not null,
   body       text,
+  duration_months int,       -- time with the tutor (0080); null = not given
   age_days   int  not null   -- how long ago the review was left
 ) on commit drop;
 
-insert into _seed_reviewers (id, email, full_name, rating, body, age_days) values
+insert into _seed_reviewers (id, email, full_name, rating, body, duration_months, age_days) values
   ('de000000-0000-4000-8000-000000000001', 'dev+review1@matchtutor.test', 'Mia Chen',
-   5, 'Explained three years of calculus in a way that finally clicked. My marks went up a full band before trials and I actually stopped dreading the subject.', 4),
+   5, 'Explained three years of calculus in a way that finally clicked. My marks went up a full band before trials and I actually stopped dreading the subject.', 27, 4),
   ('de000000-0000-4000-8000-000000000002', 'dev+review2@matchtutor.test', 'Jayden Patel',
-   5, null, 11),
+   5, null, 8, 11),
   ('de000000-0000-4000-8000-000000000003', 'dev+review3@matchtutor.test', 'Sophie Nguyen',
-   4, 'Really patient and always came prepared with past papers. Only reason this is not a 5 is that the sessions sometimes ran a little over time.', 23),
+   4, 'Really patient and always came prepared with past papers. Only reason this is not a 5 is that the sessions sometimes ran a little over time.', 12, 23),
   ('de000000-0000-4000-8000-000000000004', 'dev+review4@matchtutor.test', 'Liam Turner',
-   5, 'Genuinely the reason I got the mark I did. Replies quickly between sessions and never made me feel stupid for asking the same thing twice.', 40),
+   5, 'Genuinely the reason I got the mark I did. Replies quickly between sessions and never made me feel stupid for asking the same thing twice.', 48, 40),
   ('de000000-0000-4000-8000-000000000005', 'dev+review5@matchtutor.test', 'Isabella Rossi',
-   3, null, 62);
+   3, null, null, 62);
 
 -- >>> EDIT THIS LINE — the tutor these reviews are attached to <<<
 select set_config('seed.tutor_name', 'Aarav Bhatt', false);
@@ -137,12 +141,13 @@ select s.id from _seed_reviewers s
 on conflict (id) do nothing;
 
 -- 3. The reviews -------------------------------------------------------------
-insert into public.reviews (tutor_id, student_id, rating, body, status, created_at, updated_at, approved_at)
+insert into public.reviews (tutor_id, student_id, rating, body, duration_months, status, created_at, updated_at, approved_at)
 select
   tutor.id,
   s.id,
   s.rating,
   s.body,
+  s.duration_months,
   'approved',
   now() - make_interval(days => s.age_days),
   now() - make_interval(days => s.age_days),
@@ -157,7 +162,10 @@ select
     order by p.created_at
     limit 1
  ) tutor
-on conflict (tutor_id, student_id) do nothing;
+-- The predicate is required: since 0067 the uniqueness is the PARTIAL index
+-- reviews_one_per_tutor (… where tutor_id is not null), and ON CONFLICT only
+-- infers a partial index when its predicate is restated.
+on conflict (tutor_id, student_id) where tutor_id is not null do nothing;
 
 commit;
 
@@ -172,7 +180,7 @@ select p.full_name as tutor, t.rating, t.review_count,
 
 -- The seeded rows themselves. The temp table is gone after the commit, so this
 -- keys off the auth email pattern instead.
-select a.full_name as author, r.rating, r.status,
+select a.full_name as author, r.rating, r.duration_months, r.status,
        coalesce(left(r.body, 48), '(no text)') as body, r.created_at::date as left_on
   from public.reviews r
   join public.profiles a on a.id = r.student_id
