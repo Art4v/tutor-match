@@ -7,6 +7,7 @@ import { requireAdmin } from "../../guard";
 import { PageHeader, Panel, Inset, DecidedNote } from "../../_components/ui";
 import { DecisionPanel } from "../../_components/DecisionPanel";
 import { formatDate } from "../../_components/format";
+import { formatDuration } from "@/lib/reviewDuration";
 
 export const metadata = { title: "Moderate a review" };
 
@@ -38,6 +39,9 @@ export default async function ReviewDetailPage({ params }) {
             <div className="flex items-center gap-2.5 flex-wrap">
               <StarRating value={review.rating} size={16} />
               <span className="font-medium text-slate-900">{review.rating}/5</span>
+              {review.duration_months && (
+                <span className="text-slate-600 text-[13px]">· {formatDuration(review.duration_months)}</span>
+              )}
               <span className="text-slate-400 text-[13px]">{formatDate(review.created_at)}</span>
             </div>
             {review.body ? (

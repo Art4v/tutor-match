@@ -9,6 +9,7 @@ import { requireAdmin } from "../../guard";
 import { PageHeader, Panel, Inset, DecidedNote, Chip } from "../../_components/ui";
 import { DecisionPanel } from "../../_components/DecisionPanel";
 import { formatDateTime, REPORT_CATEGORY_LABELS } from "../../_components/format";
+import { formatDuration } from "@/lib/reviewDuration";
 
 export const metadata = { title: "Review report" };
 
@@ -114,6 +115,9 @@ export default async function ReportDetailPage({ params }) {
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <StarRating value={reviewed.review.rating} size={16} />
                       <span className="font-medium text-slate-900">{reviewed.review.rating}/5</span>
+                      {reviewed.review.duration_months && (
+                        <span className="text-slate-600 text-[13px]">· {formatDuration(reviewed.review.duration_months)}</span>
+                      )}
                       {reviewed.review.status !== "approved" && <Chip>{reviewed.review.status}</Chip>}
                     </div>
                     <div className="text-slate-500 text-[13px] mt-1.5">

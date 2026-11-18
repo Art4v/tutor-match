@@ -3,6 +3,7 @@ import { adminPaths } from "@/lib/admin/urls";
 import { requireAdmin } from "../guard";
 import { PageHeader, Panel, QueueList, QueueRow } from "../_components/ui";
 import { formatDate } from "../_components/format";
+import { formatDuration } from "@/lib/reviewDuration";
 
 export const metadata = { title: "Reviews" };
 
@@ -21,7 +22,7 @@ export default async function ReviewQueuePage() {
             <QueueRow
               href={adminPaths.review(r.id)}
               title={`${r.studentName} on ${r.subjectName}`}
-              meta={`${r.rating}/5${r.body ? ` · ${r.body}` : " · rating only"}`}
+              meta={`${r.rating}/5${r.durationMonths ? ` · ${formatDuration(r.durationMonths)}` : ""}${r.body ? ` · ${r.body}` : " · rating only"}`}
               aside={formatDate(r.at)}
             />
           )}
