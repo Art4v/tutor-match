@@ -4,6 +4,7 @@ import { Icon } from "@/components/Icon";
 import { Button } from "@/components/ui";
 import { StarRating } from "@/components/StarRating";
 import { lockScroll, unlockScroll } from "@/lib/scrollLock";
+import { MAX_DURATION_YEARS, splitDuration } from "@/lib/reviewDuration";
 
 // Write a review. Same modal chrome as ReviewsModal (there is no shared <Modal>
 // primitive in this codebase; ConfirmModal is confirm-only), including the
@@ -13,17 +14,66 @@ import { lockScroll, unlockScroll } from "@/lib/scrollLock";
 // is clamped client-side AND server-side, the convention used by ReportModal /
 // the reports route.
 //
+// "How long have you been with …" (0080) is optional too: two dropdowns, years
+// and months, sent as ONE total (durationMonths). A blank dropdown counts as 0
+// and a total of 0 means "not given" (null), so this field never blocks a
+// submit, and clearing both on an edit removes the duration.
+//
 // A plain <textarea>, deliberately not RichTextField: that lives in the
 // tutor-only profile editor and pulls in the emoji picker and AI affordances,
 // none of which belong in a student's review.
 
 const MAX_BODY = 500; // must match the 0057 CHECK and the route
 
+// Built once: "" is the blank placeholder option, the rest are whole numbers.
+const YEAR_OPTIONS = Array.from({ length: MAX_DURATION_YEARS + 1 }, (_, n) => ({
+  value: String(n),
+  label: `${n} ${n === 1 ? "year" : "years"}`,
+}));
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, n) => ({
+  value: String(n),
+  label: `${n} ${n === 1 ? "month" : "months"}`,
+}));
+
+// Native selects, written here rather than imported from the profile editor's
+// sections.js: that module drags the suburb picker, subject picker and crop
+// modal into every page that shows a review form.
+function DurationSelect({ id, label, placeholder, value, onChange, options }) {
+  return (
+    <div className="relative flex-1 min-w-0">
+      <select
+        id={id}
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-[14px] appearance-none outline-none"
+        style={{
+          padding: "10px 34px 10px 12px",
+          border: "1px solid var(--paper-line)",
+          borderRadius: 8,
+          background: "var(--bg-soft)",
+          color: value === "" ? "var(--sage)" : "var(--ink)",
+          fontFamily: "inherit",
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--sage)" }}>
+        <Icon name="chevron-down" size={14} />
+      </span>
+    </div>
+  );
+}
+
 export function ReviewFormModal({
   tutorName,
   mode = "create", // "create" | "edit"
   initialRating = 0,
   initialBody = "",
+  initialDurationMonths = null, // total months, or null when none was given
   busy = false,
   error = "",
   sent = false,
@@ -33,6 +83,14 @@ export function ReviewFormModal({
   const editing = mode === "edit";
   const [rating, setRating] = useState(initialRating);
   const [body, setBody] = useState(initialBody);
+  // Strings, because they are <select> values; "" is the blank placeholder.
+  // An existing duration pre-fills BOTH (2 years reads "2 years" + "0 months").
+  const [years, setYears] = useState(() =>
+    initialDurationMonths ? String(splitDuration(initialDurationMonths).years) : ""
+  );
+  const [months, setMonths] = useState(() =>
+    initialDurationMonths ? String(splitDuration(initialDurationMonths).months) : ""
+  );
 
   useEffect(() => {
     const onKey = (e) => {
@@ -114,6 +172,31 @@ export function ReviewFormModal({
       </div>
 
       <div className="mt-5">
+        <label htmlFor="review-duration-years" className="block text-[13px] font-medium mb-2" style={{ color: "var(--ink)" }}>
+          How long have you been with {firstName}?{" "}
+          <span style={{ color: "var(--sage)", fontWeight: 400 }}>(optional)</span>
+        </label>
+        <div className="flex items-center gap-2.5">
+          <DurationSelect
+            id="review-duration-years"
+            label={`Years with ${firstName}`}
+            placeholder="Years"
+            value={years}
+            onChange={setYears}
+            options={YEAR_OPTIONS}
+          />
+          <DurationSelect
+            id="review-duration-months"
+            label={`Months with ${firstName}`}
+            placeholder="Months"
+            value={months}
+            onChange={setMonths}
+            options={MONTH_OPTIONS}
+          />
+        </div>
+      </div>
+
+      <div className="mt-5">
         <label htmlFor="review-body" className="block text-[13px] font-medium mb-2" style={{ color: "var(--ink)" }}>
           Your review <span style={{ color: "var(--sage)", fontWeight: 400 }}>(optional)</span>
         </label>
@@ -138,7 +221,11 @@ export function ReviewFormModal({
         <Button
           variant="primary"
           size="md"
-          onClick={() => onSubmit({ rating, body: body.trim() })}
+          onClick={() => {
+            // Blank counts as 0; a zero total is "not given".
+            const total = (Number(years) || 0) * 12 + (Number(months) || 0);
+            onSubmit({ rating, body: body.trim(), durationMonths: total > 0 ? total : null });
+          }}
           disabled={busy || rating < 1}
         >
           {busy ? "Saving…" : editing ? "Save changes" : "Submit review"}

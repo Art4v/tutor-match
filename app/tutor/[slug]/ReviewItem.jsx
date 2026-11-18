@@ -1,6 +1,7 @@
 "use client";
 import { Avatar } from "@/components/ui";
 import { StarRating } from "@/components/StarRating";
+import { formatDuration } from "@/lib/reviewDuration";
 
 // One review row. Shared by the sidebar card and the "all reviews" modal so the
 // two can never drift; the only difference is that the card clamps long text and
@@ -50,6 +51,9 @@ export function ReviewItem({ review, clamp = false, actions = null }) {
   // one, so hand it the same shape. Students have no avatar_bg column of their
   // own, so every reviewer gets the same soft teal behind the fallback cap.
   const author = { avatarImg: review.authorAvatarUrl || null, avatarBg: "var(--accent-softer)" };
+  // How long the student has been with the tutor or centre (0080). Optional, so
+  // "" for a review without one (every review written before 0080 included).
+  const duration = formatDuration(review.durationMonths);
 
   return (
     <article className="flex items-start gap-2.5">
@@ -63,8 +67,15 @@ export function ReviewItem({ review, clamp = false, actions = null }) {
             <div className="text-[13.5px] font-medium truncate" style={{ color: "var(--ink)" }}>
               {name}
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
+            {/* flex-wrap: in the narrow sidebar the date drops to a second line
+                under a long duration instead of overflowing. */}
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
               <StarRating value={review.rating} size={12} />
+              {duration && (
+                <span className="text-[11.5px]" style={{ color: "var(--sage)" }}>
+                  · {duration}
+                </span>
+              )}
               <span className="text-[11.5px]" style={{ color: "var(--sage)" }}>
                 {formatReviewDate(review.createdAt)}
               </span>

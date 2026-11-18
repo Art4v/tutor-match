@@ -113,7 +113,7 @@ export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount
   // Create and edit hit the same endpoint with a different verb; the server
   // forces an edited review back to 'pending' either way.
   const submit = useCallback(
-    async ({ rating: newRating, body }) => {
+    async ({ rating: newRating, body, durationMonths = null }) => {
       if (busy) return;
       const editing = formMode === "edit";
       setBusy(true);
@@ -124,10 +124,10 @@ export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             editing
-              ? { reviewId: myReview?.id, rating: newRating, body }
+              ? { reviewId: myReview?.id, rating: newRating, body, durationMonths }
               : companyId
-                ? { companyId, rating: newRating, body }
-                : { tutorId, rating: newRating, body }
+                ? { companyId, rating: newRating, body, durationMonths }
+                : { tutorId, rating: newRating, body, durationMonths }
           ),
         });
         const data = await res.json().catch(() => ({}));
@@ -143,6 +143,7 @@ export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount
           id: data.id ?? prev?.id,
           rating: newRating,
           body: body || null,
+          durationMonths,
           status: "pending",
           createdAt: prev?.createdAt ?? new Date().toISOString(),
         }));
@@ -327,6 +328,7 @@ export function ReviewsCard({ tutorId, companyId, tutorName, rating, reviewCount
           mode={formMode}
           initialRating={formMode === "edit" ? myReview?.rating ?? 0 : 0}
           initialBody={formMode === "edit" ? myReview?.body ?? "" : ""}
+          initialDurationMonths={formMode === "edit" ? myReview?.durationMonths ?? null : null}
           busy={busy}
           error={formError}
           sent={sent}
