@@ -28,7 +28,8 @@ import { EASE_OUT } from "@/lib/motion";
 const LOGIN_BACK_HERE = `/login?next=${encodeURIComponent(JOIN_PATH)}`;
 
 export default function JoinFlow() {
-  // null = still reading the local session; then { signedIn, role, managed }.
+  // null = still reading the local session; then { signedIn, role, managed,
+  // verified }.
   const [account, setAccount] = useState(null);
 
   useEffect(() => {
@@ -46,14 +47,15 @@ export default function JoinFlow() {
       // anyone without one), since this read is what the visitor waits on.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, is_admin, tutor:tutor_profiles ( managed_at, invite_materials_submitted_at )")
+        .select("role, is_admin, tutor:tutor_profiles ( managed_at, invite_materials_submitted_at, verification_status )")
         .eq("id", session.user.id)
         .maybeSingle();
       const tutor = profile?.role === "tutor" ? profile.tutor : null;
       const managed = !!tutor?.managed_at;
       const submitted = !!tutor?.invite_materials_submitted_at;
+      const verified = tutor?.verification_status === "verified";
       if (!cancelled) {
-        setAccount({ signedIn: true, role: profile?.role ?? null, admin: !!profile?.is_admin, managed, submitted });
+        setAccount({ signedIn: true, role: profile?.role ?? null, admin: !!profile?.is_admin, managed, submitted, verified });
       }
     })();
     return () => {
@@ -73,9 +75,21 @@ export default function JoinFlow() {
   } else if (account.managed) {
     body = (
       <Notice>
-        MatchTutor already manages your profile.{" "}
+        MatchTutor is already setting up your profile.{" "}
         <Link href={account.submitted ? "/profile" : JOIN_DETAILS_PATH} className="font-medium underline">
           {account.submitted ? "Go to your profile" : "Send us your documents"}
+        </Link>
+        .
+      </Notice>
+    );
+  } else if (account.verified) {
+    // Said up front: redeem_tutor_invite refuses a verified tutor (0081, hint
+    // already_verified), which stays the real boundary.
+    body = (
+      <Notice>
+        Quick join is for tutors who are not verified yet. You&rsquo;re already verified, so your profile is yours to manage.{" "}
+        <Link href="/profile" className="font-medium underline">
+          Go to your profile
         </Link>
         .
       </Notice>
@@ -381,7 +395,7 @@ function OptInPanel({ existing }) {
     <div className="space-y-5">
       <p className="text-[14px] text-slate-600 leading-[1.6]">
         {existing
-          ? "You're signed in to your tutor account. Our team will take over managing your profile, and it will be hidden until we publish it again. Your details and verification stay as they are."
+          ? "You're signed in to your tutor account. Our team will set up your profile for you. It will be hidden and you won't be able to edit it until you have approved it and we have verified you. Your details stay as they are, and a verification request you have open is withdrawn."
           : "You're signed in. Continue to create your tutor profile, which our team will set up for you."}
       </p>
       <ConsentBox checked={consent} onChange={setConsent} />

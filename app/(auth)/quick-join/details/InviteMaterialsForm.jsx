@@ -1,8 +1,10 @@
 "use client";
 
-// Optional signup materials for an invited tutor (0076): up to 5 documents
-// (resumes, certificates) and up to 5 links. PRIVATE: only MatchTutor admins
-// see them, as source material for the profile. Sent once; Skip sends nothing.
+// Optional signup materials for a Quick join tutor (0076): up to 5 documents
+// (resumes, certificates), up to 5 links, and a note for the team (0081).
+// PRIVATE: only MatchTutor admins see them, as source material for the
+// profile. Documents and links are sent once; Skip sends nothing. The note is
+// the same one the tutor can rewrite later from their profile.
 // Files upload only when Send is pressed. A file that uploads and is then not
 // sent (a failed send, a later Skip) is swept by /api/join/materials once the
 // tutor sends or skips, and by opt-out; a retry reuses what already uploaded.
@@ -13,7 +15,7 @@ import { Button } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { uploadInviteMaterial, inviteDocFileError, INVITE_DOC_TYPES } from "@/lib/supabase/storage";
-import { MAX_INVITE_DOCS, MAX_INVITE_LINKS, MAX_LINK_LENGTH } from "@/lib/tutorInvite";
+import { MAX_INVITE_DOCS, MAX_INVITE_LINKS, MAX_LINK_LENGTH, MAX_NOTE_LENGTH } from "@/lib/tutorInvite";
 
 const titleFromName = (name) => String(name || "").replace(/\.[^.]+$/, "").slice(0, 200) || "Document";
 
@@ -21,6 +23,7 @@ export default function InviteMaterialsForm() {
   const router = useRouter();
   const [files, setFiles] = useState([]); // [{ file, title, path? }]; path once uploaded
   const [links, setLinks] = useState([""]);
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -84,7 +87,7 @@ export default function InviteMaterialsForm() {
       const res = await fetch("/api/join/materials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ docs, links: finalLinks }),
+        body: JSON.stringify({ docs, links: finalLinks, note: skip ? "" : note.trim() }),
       });
       const payload = await res.json();
       if (!res.ok) {
@@ -114,8 +117,9 @@ export default function InviteMaterialsForm() {
       </h1>
       <p className="text-[14px] text-slate-500 mt-2 leading-[1.55]">
         Attach anything that helps us set up your profile, like a resume or certificates, and links such as
-        LinkedIn or a portfolio. Only the MatchTutor team can see these. Everything here is highly recommended,
-        and you can only send it once.
+        LinkedIn or a portfolio, and add a note if there is anything we should know. Only the MatchTutor team
+        can see these. Everything here is highly recommended. Documents and links can only be sent once; you
+        can change your note later from your profile.
       </p>
 
       <section className="mt-6">
@@ -205,6 +209,24 @@ export default function InviteMaterialsForm() {
         )}
       </section>
 
+      <section className="mt-6">
+        <label htmlFor="invite-note" className="block text-[12.5px] font-medium text-slate-900 uppercase tracking-wider mb-2.5">
+          Note for our team
+        </label>
+        <textarea
+          id="invite-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value.slice(0, MAX_NOTE_LENGTH))}
+          rows={4}
+          placeholder="Subjects you most want to teach, your rate, when you're available, anything you want on your profile."
+          className="w-full px-3 py-2 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none"
+          style={{ border: "1px solid var(--paper-line)", borderRadius: 8, background: "var(--paper-card)", resize: "vertical" }}
+        />
+        <div className="text-right text-[11.5px] text-slate-400 tabular-nums">
+          {note.length}/{MAX_NOTE_LENGTH}
+        </div>
+      </section>
+
       {error && (
         <div className="mt-5 px-3 py-2 text-[13px] text-red-700" style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8 }}>
           {error}
@@ -220,7 +242,7 @@ export default function InviteMaterialsForm() {
         </Button>
       </div>
       <p className="text-[12px] text-slate-500 mt-3 text-center">
-        Skipping is final too, so send anything you have now.
+        Skipping is final for documents and links, so send anything you have now.
       </p>
     </div>
   );
