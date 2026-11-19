@@ -56,20 +56,29 @@ import { RevealStack } from "./RevealStack";
  * the draft and `live` the approved profile; the owner card switches the page
  * between them (Live is read-only) and offers Submit / Discard / Resend.
  *
- * ADMIN mode (`admin` set, 0076): an admin editing a tutor who consented to
- * being managed, from /admin/managed-tutors/[id]/edit. Same editor, but every
- * save is LIVE and goes through the /api/admin/managed-tutors routes
- * (adminTutorWriter), since the admin's own session cannot write another
- * tutor's rows or storage folders. No draft, no verification prompts.
+ * ADMIN mode (`admin` set, 0076): an admin setting up a tutor who joined
+ * through Quick join, from /admin/managed-tutors/[id]/edit. Same editor, but
+ * every save goes straight to the tutor's (hidden) live profile through the
+ * /api/admin/managed-tutors routes (adminTutorWriter), since the admin's own
+ * session cannot write another tutor's rows or storage folders. No draft, no
+ * verification prompts, no visibility control, and no email to the tutor:
+ * they hear from us when the profile is sent to them for approval (0081).
+ *
+ * A tutor IN MANAGED SETUP viewing their own profile (`editorTutor.managed`,
+ * not admin) gets it read-only: no pens, no draft. Their controls are in the
+ * owner card's ManagedSetupPanel, fed by `managedSetup`.
  */
-export function OwnerProfile({ editorTutor, userId, revision = null, admin = null }) {
+export function OwnerProfile({ editorTutor, userId, revision = null, admin = null, managedSetup = null }) {
   const supabaseRef = useRef(null);
   if (!supabaseRef.current) supabaseRef.current = createSupabaseBrowserClient();
   const supabase = supabaseRef.current;
   const writer = useMemo(() => (admin ? adminTutorWriter(userId) : null), [admin, userId]);
 
-  // An admin edits the live profile directly, so the draft machinery is off.
-  const gated = !admin && !!editorTutor.gated;
+  // Read-only for a tutor whose profile MatchTutor is setting up (0081).
+  const managedOwner = !admin && !!editorTutor.managed;
+  // An admin edits the live profile directly, and a managed tutor edits
+  // nothing, so the draft machinery is off for both.
+  const gated = !admin && !managedOwner && !!editorTutor.gated;
   const [initialProfile] = useState(() =>
     gated && revision ? payloadToEditor(revision.payload, editorTutor) : editorTutor
   );
@@ -317,7 +326,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
       const labels = result.droppedSubjects.map((slug) => subjectLabel(bySlug.get(slug) ?? { name: slug }));
       showToast("warn", `Saved. Skipped unrecognised subjects: ${labels.join(", ")}.`, 5000);
     } else {
-      showToast("ok", writer ? "Saved. The tutor has been emailed the change." : "Section saved", writer ? 2600 : 1600);
+      showToast("ok", writer ? "Saved to the tutor's hidden profile." : "Section saved", writer ? 2600 : 1600);
     }
   };
 
@@ -362,9 +371,6 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     }
     setSavingKey("documentation");
     const result = await docsEditorRef.current?.commit();
-    // Admin mode: the per-document calls were quiet; tell the tutor about the
-    // whole save in one email (`docs` is still the list the editor opened with).
-    if (writer && result) await writer.docs.notify(docs);
     // The document RPCs withdraw a pending request themselves but return no
     // flag, so re-read the status to find out.
     const withdrawn = pending && (await getMyVerificationStatus(supabase, userId)) === "none";
@@ -383,7 +389,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     } else if (result.errors.length > 0) {
       showToast("warn", `Saved, with issues: ${result.errors.map((e) => `${e.name} (${e.message})`).join("; ")}`, 6000);
     } else {
-      showToast("ok", writer ? "Saved. The tutor has been emailed the change." : "Section saved", writer ? 2600 : 1600);
+      showToast("ok", writer ? "Saved to the tutor's hidden profile." : "Section saved", writer ? 2600 : 1600);
     }
   };
 
@@ -391,15 +397,14 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
   // immediately through its own RPC (only the visibility column changes). Keep
   // any open draft in sync so a later section save doesn't revert it.
   const onVisibilityChange = async (value) => {
-    const result = writer ? await writer.setVisibility(value) : await setTutorVisibility(supabase, value);
+    // Never reached in admin mode: the owner card hides visibility there.
+    const result = await setTutorVisibility(supabase, value);
     if (!result.ok) {
       showToast("error", result.error?.message || "Couldn't update visibility.", 3500);
       return false;
     }
-    // Admin mode: visibility moved the profile's version too (see saveSection).
-    const version = result.updatedAt ? { updatedAt: result.updatedAt } : {};
-    setProfile((p) => ({ ...p, visibility: value, ...version }));
-    setLive((p) => ({ ...p, visibility: value, ...version }));
+    setProfile((p) => ({ ...p, visibility: value }));
+    setLive((p) => ({ ...p, visibility: value }));
     setDraft((d) => ({ ...d, visibility: value, ...version }));
     return true;
   };
@@ -485,6 +490,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
       publicHref={publicHref}
       publicUrl={publicUrl}
       adminMode={!!admin}
+      managedSetup={managedSetup}
     />
   );
 
@@ -498,7 +504,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     dirty,
     confirming: confirmKey === k,
     confirmText,
-    readOnly: showingLive,
+    readOnly: showingLive || managedOwner,
     onKeepEditing: () => setConfirmKey(null),
     onEdit: () => openSection(k),
     onCancel: cancel,
@@ -519,7 +525,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
           >
             <Icon name="shield" size={15} />
             <span className="flex-1 min-w-0">
-              Editing as admin. Every save goes live straight away and emails the tutor what changed.
+              Editing as admin. Saves go straight to the tutor&apos;s hidden profile. Nothing is emailed until you send it to them for approval.
             </span>
             {admin.backHref && (
               <a href={admin.backHref} className="font-medium underline underline-offset-2">

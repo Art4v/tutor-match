@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { RequestVerification } from "@/components/RequestVerification";
 import { ProfileReviewStatus } from "./ProfileReviewStatus";
+import { ManagedSetupPanel } from "./ManagedSetupPanel";
 import { calcCompletion } from "@/components/profile-edit/sections";
 
 /**
@@ -19,12 +20,14 @@ import { calcCompletion } from "@/components/profile-edit/sections";
  * `review` (verified tutors only, 0072) carries the draft's review state and
  * handlers for ProfileReviewStatus; null for everyone else.
  *
- * Admin-managed tutors (0076): the tutor sees a "managed by MatchTutor" note,
- * no verification request (admins set it) and a read-only visibility toggle.
- * `adminMode` is the admin editing that tutor: visibility works, and the
- * tutor-only controls are hidden.
+ * Tutors in managed setup (0076, 0081): the tutor sees ManagedSetupPanel
+ * (where setup stands, Approve / Request changes, their note for the team),
+ * no verification request (Verify tutor ends setup) and a locked visibility
+ * toggle. `managedSetup` is their get_my_managed_setup row. `adminMode` is the
+ * admin editing that tutor: the tutor-only controls and the visibility block
+ * are hidden, since the profile stays hidden until Verify tutor.
  */
-export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested, review, publicHref, publicUrl, adminMode = false }) {
+export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested, review, publicHref, publicUrl, adminMode = false, managedSetup = null }) {
   const c = useMemo(() => calcCompletion(profile), [profile]);
   const visibility = profile.visibility ?? "public";
   const managedByUs = !!profile.managed && !adminMode;
@@ -90,26 +93,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
 
         {managedByUs && (
           <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
-            <p className="text-[12.5px] leading-[1.5] flex items-start gap-2" style={{ color: "var(--ink-muted)" }}>
-              <span className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }}><Icon name="shield-check" size={14} /></span>
-              <span>
-                <span className="font-medium" style={{ color: "var(--ink)" }}>MatchTutor manages your profile.</span>{" "}
-                {profile.managedSetupDone
-                  ? "Changes you make are sent to us for approval, and we decide when it is shown."
-                  : "We're setting it up for you and will make it public when it's ready. Changes you make are sent to us for approval."}{" "}
-                You can stop this in{" "}
-                <a href="/account" className="underline underline-offset-2">Account settings</a>.
-              </span>
-            </p>
-            {!profile.inviteMaterialsSubmitted && (
-              <a
-                href="/quick-join/details"
-                className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium"
-                style={{ color: "var(--accent)" }}
-              >
-                <Icon name="upload" size={13} /> Send us your resume, certificates or links
-              </a>
-            )}
+            <ManagedSetupPanel setup={managedSetup} inviteMaterialsSubmitted={!!profile.inviteMaterialsSubmitted} />
           </div>
         )}
 
@@ -122,7 +106,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
         )}
 
         {/* Verification — top of the card so the get-verified nudge leads.
-            Not for managed tutors: admins set their verification (0076). */}
+            Not for managed tutors: Verify tutor ends their setup (0081). */}
         {!adminMode && !profile.managed && (
         <div className="mb-5 pb-5" style={{ borderBottom: "1px solid var(--desk)" }}>
           {/* Keyed on the status: RequestVerification seeds its own state once,
@@ -164,7 +148,9 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
           ))}
         </ul>
 
-        {/* Visibility */}
+        {/* Visibility. Not in admin mode: a managed profile is hidden until
+            Verify tutor publishes it (0081). */}
+        {!adminMode && (
         <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>
           <div className="flex items-center gap-2 mb-2.5">
             <h4 className="text-[13px] font-light text-slate-800">Visibility</h4>
@@ -176,7 +162,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
             )}
           </div>
           {visibilityLocked && (
-            <p className="text-[12px] text-slate-500 mb-2">MatchTutor decides when your profile is shown while we manage it.</p>
+            <p className="text-[12px] text-slate-500 mb-2">Your profile stays hidden until you approve it and we verify you. After that, visibility is yours to change.</p>
           )}
           <div className="space-y-1.5" style={visibilityLocked ? { opacity: 0.65 } : undefined}>
             {visOptions.map((o) => {
@@ -198,6 +184,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
             })}
           </div>
         </div>
+        )}
 
         {/* Share link */}
         <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--desk)" }}>

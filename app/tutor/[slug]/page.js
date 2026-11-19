@@ -64,6 +64,12 @@ export default async function ProfilePage({ params }) {
     const me = await getTutorProfileForEditor(supabase, user.id);
     if (me && me.slug === params.slug) {
       if (!me.onboarded) redirect("/onboarding");
+      // A tutor in managed setup (0081) sees their profile read-only, with
+      // where setup stands and their Approve / Request changes controls.
+      if (me.managed) {
+        const { data: managedSetup } = await supabase.rpc("get_my_managed_setup");
+        return <OwnerProfile editorTutor={me} userId={user.id} managedSetup={managedSetup ?? { stage: "setup" }} />;
+      }
       // A verified tutor edits a reviewed draft (0072): load the open one, if
       // any, so the editor opens on the draft rather than the live profile.
       const revision = me.gated ? await getMyOpenRevision(supabase, user.id) : null;
