@@ -509,7 +509,7 @@ as $$
 declare
   v_name    text;
   v_stage   text;
-  v_message text := public._clean_reason(p_message)
+  v_message text := public._clean_reason(p_message);
 begin
   perform public._require_admin();
   v_name := public._require_managed_tutor(p_tutor_id);
