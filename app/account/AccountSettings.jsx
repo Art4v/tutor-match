@@ -304,9 +304,10 @@ export function AccountSettings({ userEmail, userId, role, fullName, initialAvat
   );
 }
 
-// Admin-managed tutors (0076): stop MatchTutor managing the profile. Final from
-// here (Quick join is the only way back in), so it confirms first and
-// spells out what is lost.
+// Tutors in managed setup (0076, 0081): take the profile back before setup
+// finishes. Final from here (Quick join is the only way back in), so it
+// confirms first and spells out what is lost. The card is gone once Verify
+// tutor ends setup, since nothing is managed after that.
 function ManagedProfileCard({ showToast }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -338,22 +339,22 @@ function ManagedProfileCard({ showToast }) {
       <SectionHeader
         icon="shield-check"
         title="Profile management"
-        subtitle="MatchTutor admins are managing your tutor profile for you."
+        subtitle="The MatchTutor team is setting up your tutor profile for you."
       />
       <p className="text-[13.5px] text-slate-600 leading-[1.6]">
-        While this is on, our team can edit your profile, choose when it is shown and set your verification.
-        Changes you make yourself are sent to us for approval.
+        While this is on, our team edits your profile and it stays hidden. When it is ready we send it to you
+        to approve, then verify you and make it public. After that the profile is yours to manage.
       </p>
       <div className="mt-5">
         <Button variant="outline" size="lg" onClick={() => setOpen(true)}>
-          Stop managing my profile
+          Set up my profile myself
         </Button>
       </div>
       {open && (
         <ConfirmModal
-          title="Stop MatchTutor managing your profile?"
-          body="You'll edit your profile yourself from now on. Your verification will be removed, so you'll need to request it again. Any changes waiting for our approval will be discarded, and the documents you sent at signup will be deleted. You can't turn management back on from here."
-          confirmLabel="Stop managing my profile"
+          title="Set up your profile yourself?"
+          body="You'll edit your profile yourself from now on, and choose when it is shown. You won't be verified, so you'll need to request verification when you're ready. Any approval you have given is cancelled, and the documents, links and note you sent us will be deleted. You can't turn this back on from here."
+          confirmLabel="Set up my profile myself"
           confirmingLabel="Saving…"
           busy={busy}
           onCancel={() => { if (!busy) setOpen(false); }}
