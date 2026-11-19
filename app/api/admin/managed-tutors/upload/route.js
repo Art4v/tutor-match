@@ -41,7 +41,8 @@ export async function POST(request) {
   const name = typeof body?.name === "string" ? body.name : "";
 
   const admin = createSupabaseAdminClient();
-  const refused = await assertManagedTutor(admin, body?.tutorId);
+  // No uploads while the profile is with the tutor (0081).
+  const refused = await assertManagedTutor(admin, body?.tutorId, { editable: true });
   if (refused) return refused;
   const tutorId = body.tutorId;
 
