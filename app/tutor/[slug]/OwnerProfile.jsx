@@ -405,7 +405,7 @@ export function OwnerProfile({ editorTutor, userId, revision = null, admin = nul
     }
     setProfile((p) => ({ ...p, visibility: value }));
     setLive((p) => ({ ...p, visibility: value }));
-    setDraft((d) => ({ ...d, visibility: value, ...version }));
+    setDraft((d) => ({ ...d, visibility: value }));
     return true;
   };
 
