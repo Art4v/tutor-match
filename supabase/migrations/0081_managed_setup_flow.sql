@@ -42,14 +42,17 @@
 --   publicly readable. tutor_profiles.managed_at stays the "is managed" flag.
 --   A managed tutor with no row reads as `setup`.
 --
---   Tutors managed under 0076 are split by whether an admin already verified
---   them:
---   * VERIFIED: released here, keeping their verification and visibility. They
+--   Tutors managed under 0076 are split by whether an admin had FINISHED with
+--   them: marked set up (managed_setup_done_at, the old "Mark set up" button)
+--   AND verified.
+--   * finished: released here, keeping their verification and visibility. They
 --     become ordinary verified tutors (0072 reviewed drafts).
 --   * everyone else: stays managed and enters the new flow at `setup`. Their
---     profile is hidden, a pending verification request is withdrawn and any
---     open draft is withdrawn, so they reach verified and public only through
---     their own approval and Verify tutor. Their signup materials are kept.
+--     profile is hidden, verification goes back to none (a verified badge an
+--     admin gave before setup was finished included, and a pending request),
+--     and any open draft is withdrawn, so they reach verified and public only
+--     through their own approval and Verify tutor. Their signup materials are
+--     kept.
 --   The released tutors' private signup files, and the staged files of every
 --   withdrawn draft, are removed afterwards by
 --   scripts/sweep-released-materials.mjs (Storage cannot be deleted from SQL).
@@ -86,34 +89,39 @@ alter table public.tutor_managed_setup enable row level security;
 -- re-run of this file never touches a tutor already in the new flow
 -- (redeem_tutor_invite and 2c always create a row).
 
--- 2a. A managed tutor who is not verified keeps being managed, and a managed
--- tutor has no drafts (section 3). Withdraw the open one, or it could still be
--- submitted and approved onto the profile behind the edit lock. A verified
--- tutor keeps theirs: they are released below and stay gated by verification.
+-- "Finished" below = verified AND marked set up under the old flow.
+
+-- 2a. A tutor who is not finished keeps being managed, and a managed tutor has
+-- no drafts (section 3). Withdraw the open one, or it could still be submitted
+-- and approved onto the profile behind the edit lock. A finished tutor keeps
+-- theirs: they are released below and stay gated by verification.
 update public.tutor_profile_revisions r
    set status = 'withdrawn', decided_at = now(), updated_at = now()
   from public.tutor_profiles t
  where t.id = r.tutor_id
    and t.managed_at is not null
-   and t.verification_status <> 'verified'
+   and not (t.verification_status = 'verified' and t.managed_setup_done_at is not null)
    and r.status in ('draft', 'pending')
    and not exists (select 1 from public.tutor_managed_setup s where s.tutor_id = t.id);
 
--- 2b. Verified: released as they are.
+-- 2b. Finished: released as they are.
 update public.tutor_profiles t
    set managed_at = null,
        managed_setup_done_at = null,
        invite_materials_submitted_at = null
  where t.managed_at is not null
    and t.verification_status = 'verified'
+   and t.managed_setup_done_at is not null
    and not exists (select 1 from public.tutor_managed_setup s where s.tutor_id = t.id);
 
--- 2c. Everyone else enters the new flow at `setup`: hidden, and out of the
--- Verification queue, the state redeem_tutor_invite leaves a new joiner in.
--- The profile update runs first: once the row exists, this block skips them.
+-- 2c. Everyone else enters the new flow at `setup`: hidden and unverified, the
+-- state redeem_tutor_invite leaves a new joiner in. That takes back a verified
+-- badge given before setup was finished; Verify tutor gives it again once the
+-- tutor has approved. The profile update runs first: once the row exists, this
+-- block skips them.
 update public.tutor_profiles t
    set visibility = 'hidden',
-       verification_status = case when verification_status = 'pending' then 'none' else verification_status end,
+       verification_status = case when verification_status in ('verified', 'pending') then 'none' else verification_status end,
        verification_requested_at = null
  where t.managed_at is not null
    and t.partner_id is null
