@@ -11,9 +11,10 @@ import { removeStagedFiles, sweepInviteMaterials } from "@/lib/supabase/storage"
 
 export const runtime = "nodejs";
 
-// POST (no body). A managed tutor (0076) takes their profile back. The RPC
-// does the state change (verification to none, open draft withdrawn, private
-// materials rows deleted) and returns the storage paths, which only the
+// POST (no body). A tutor in managed setup (0076, 0081) takes their profile
+// back before setup finishes. The RPC does the state change (verification to
+// none, private materials rows and the setup row deleted, so any approval and
+// both notes go too) and returns the storage paths, which only the
 // service role can remove: the tutor has no delete policy on the private
 // materials bucket, by design.
 export async function POST(request) {
