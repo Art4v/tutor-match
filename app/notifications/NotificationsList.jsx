@@ -20,6 +20,9 @@ const TYPES = {
   profile_revision_rejected: "alert-triangle",
   managed_profile_updated: "pencil",
   managed_verification_set: "shield-check",
+  managed_setup_ready: "eye",
+  managed_setup_recalled: "pencil",
+  managed_tutor_verified: "shield-check",
 };
 const FALLBACK = "bell";
 
