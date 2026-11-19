@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { getManagedTutorForAdmin, listHistory } from "@/lib/supabase/adminDashboard";
 import { adminPaths } from "@/lib/admin/urls";
@@ -10,34 +10,90 @@ import { RetryPurgeButton } from "../../_components/RetryPurgeButton";
 import { SupportingDocumentsList } from "../../_components/SupportingDocumentsList";
 import { formatDate, formatDateTime } from "../../_components/format";
 import { getVerificationDocsForAdmin } from "@/lib/admin/verificationDocs";
+import { EDITABLE_STAGES } from "@/app/api/admin/managed-tutors/shared";
+import { STAGE_LABELS, STAGE_TONES } from "../stages";
 
 export const metadata = { title: "Managed tutor" };
 
-// One admin-managed tutor (0076): what they sent at signup (private), the
-// verification toggle, "mark set up", the editor link and their History.
+// One tutor in managed setup (0076, 0081): what they sent at signup and their
+// note (both private), the editor link, and the one Setup panel whose actions
+// follow the stage:
+//   setup / changes_requested -> Send to tutor
+//   sent                      -> Resend email, Recall
+//   approved                  -> Verify tutor, Recall
 // Signed URLs for the private files last 10 minutes; reload for fresh ones.
+// A tutor who is no longer managed (verified and released, or opted out) is
+// redirected to their account page, which is also where the refresh after
+// Verify tutor and old History links land.
 export default async function ManagedTutorPage({ params }) {
   const { supabase, admin } = await requireAdmin();
   if (!admin) notFound();
 
   const tutor = await getManagedTutorForAdmin(admin, params.id);
-  if (!tutor) notFound();
+  if (!tutor) {
+    const { data: account } = await admin.from("profiles").select("id").eq("id", params.id).maybeSingle();
+    if (account) redirect(adminPaths.user(params.id));
+    notFound();
+  }
   const history = await listHistory(supabase, { targetType: "tutor", targetId: tutor.id, pageSize: 20 });
-  const verified = tutor.verificationStatus === "verified";
   const { docs: supportingDocs, purgePending } = await getVerificationDocsForAdmin(admin, tutor.id);
+  const { setup } = tutor;
+  const editable = EDITABLE_STAGES.includes(setup.stage);
+
+  const recall = {
+    key: "recall",
+    path: "recall",
+    label: "Recall to edit",
+    busyLabel: "Recalling…",
+    tone: "neutral",
+    icon: "pencil",
+    body: {},
+    doneText: "Recalled. You can edit the profile again.",
+  };
+  const setupPanel = {
+    setup: {
+      lead: "Edit the profile until it is ready, then send it to the tutor. They are emailed a link to review and approve it.",
+      reasonLabel: "Message to the tutor (optional)",
+      reasonHint: "Shown in their email and on their profile.",
+      actions: [{ key: "send", path: "send", label: "Send to tutor", busyLabel: "Sending…", tone: "primary", icon: "send", body: {}, doneText: "Sent to the tutor for approval." }],
+    },
+    changes_requested: {
+      lead: "The tutor asked for changes. Edit the profile, then send it to them again.",
+      reasonLabel: "Message to the tutor (optional)",
+      reasonHint: "Shown in their email and on their profile.",
+      actions: [{ key: "send", path: "send", label: "Send to tutor again", busyLabel: "Sending…", tone: "primary", icon: "send", body: {}, doneText: "Sent to the tutor for approval." }],
+    },
+    sent: {
+      lead: `Awaiting the tutor since ${formatDateTime(setup.sentAt)}${setup.emailedAt && setup.emailedAt !== setup.sentAt ? ` (last emailed ${formatDateTime(setup.emailedAt)})` : ""}. The profile is locked while it is with them.`,
+      reasonLabel: "Note (optional)",
+      reasonHint: "For a recall: included in the tutor's email.",
+      actions: [
+        { key: "resend", path: "resend", label: "Resend email", busyLabel: "Sending…", tone: "primary", icon: "send", body: {}, doneText: "Email sent again." },
+        recall,
+      ],
+    },
+    approved: {
+      lead: `The tutor approved this profile on ${formatDateTime(setup.respondedAt)}. Verify tutor makes it verified and public and hands it back to them. Recall cancels their approval.`,
+      reasonLabel: "Note (optional)",
+      reasonHint: "Included in the tutor's email.",
+      actions: [
+        { key: "verify", path: "verify", label: "Verify tutor", busyLabel: "Verifying…", tone: "primary", icon: "shield-check", body: {}, doneText: "Tutor verified. Their profile is public and setup has ended." },
+        recall,
+      ],
+    },
+  }[setup.stage];
 
   return (
     <>
-      <PageHeader icon="user" title={tutor.name} lead="Managed by MatchTutor" back={{ href: adminPaths.managedTutors(), label: "Managed tutors" }} />
+      <PageHeader icon="user" title={tutor.name} lead="In managed setup" back={{ href: adminPaths.managedTutors(), label: "Managed tutors" }} />
 
       <div className="space-y-5">
         <Panel>
           <div className="pt-5">
             <Inset>
               <div className="flex flex-wrap gap-1.5 mb-2">
-                <Chip tone={tutor.setupDoneAt ? "good" : "warn"}>{tutor.setupDoneAt ? "Set up" : "New"}</Chip>
-                <Chip tone={tutor.visibility === "public" ? "good" : "muted"}>{tutor.visibility === "public" ? "Public" : "Hidden"}</Chip>
-                <Chip tone={verified ? "good" : "muted"}>{verified ? "Verified" : `Verification: ${tutor.verificationStatus}`}</Chip>
+                <Chip tone={STAGE_TONES[setup.stage]}>{STAGE_LABELS[setup.stage]}</Chip>
+                <Chip tone="muted">Hidden</Chip>
                 {!tutor.emailConfirmed && <Chip tone="warn">Email not confirmed</Chip>}
                 {tutor.accountStatus === "disabled" && <Chip tone="bad">Disabled</Chip>}
               </div>
@@ -51,17 +107,18 @@ export default async function ManagedTutorPage({ params }) {
               </dl>
               {!tutor.emailConfirmed && (
                 <p className="text-[12.5px] text-slate-500 mt-2">
-                  Their profile can&apos;t appear publicly until they confirm their email, even when set to Public.
+                  They need to confirm their email before they can sign in to approve the profile, and before you can verify them.
                 </p>
               )}
               <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[13px]">
-                <Link href={adminPaths.managedTutorEdit(tutor.id)} className="inline-flex items-center gap-1.5 font-medium" style={{ color: "var(--accent)" }}>
-                  <Icon name="pencil" size={13} /> Edit profile
-                </Link>
-                {tutor.slug && tutor.visibility === "public" && (
-                  <a href={`/tutor/${tutor.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                    Public profile <Icon name="external" size={13} />
-                  </a>
+                {editable ? (
+                  <Link href={adminPaths.managedTutorEdit(tutor.id)} className="inline-flex items-center gap-1.5 font-medium" style={{ color: "var(--accent)" }}>
+                    <Icon name="pencil" size={13} /> Edit profile
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-slate-500">
+                    <Icon name="pencil" size={13} /> Locked while it is with the tutor
+                  </span>
                 )}
                 <Link href={adminPaths.user(tutor.id)} className="inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
                   Account
@@ -69,6 +126,27 @@ export default async function ManagedTutorPage({ params }) {
               </div>
             </Inset>
           </div>
+        </Panel>
+
+        {setup.changeNote && (
+          <Panel title="Changes requested" lead={`From the tutor${setup.respondedAt ? `, ${formatDateTime(setup.respondedAt)}` : ""}.`}>
+            <p className="text-[13.5px] text-slate-700 whitespace-pre-wrap break-words">{setup.changeNote}</p>
+          </Panel>
+        )}
+
+        <Panel
+          title="Tutor's note"
+          lead={
+            setup.tutorNote
+              ? `Private to admins. Last changed ${formatDateTime(setup.tutorNoteUpdatedAt)}. The tutor can rewrite it at any time.`
+              : "The tutor can leave one note for the team at any time during setup."
+          }
+        >
+          {setup.tutorNote ? (
+            <p className="text-[13.5px] text-slate-700 whitespace-pre-wrap break-words">{setup.tutorNote}</p>
+          ) : (
+            <p className="text-[13.5px] text-slate-500">No note yet.</p>
+          )}
         </Panel>
 
         <Panel
@@ -125,34 +203,25 @@ export default async function ManagedTutorPage({ params }) {
         {purgePending > 0 && <RetryPurgeButton tutorId={tutor.id} count={purgePending} />}
 
         {tutor.isAdmin ? null : (
-          <>
-            <Panel
-              title="Verification"
-              lead={verified ? "This tutor shows the verified badge. The tutor is emailed either way." : "Give this tutor the verified badge without a request. The tutor is emailed either way."}
-            >
-              <DecisionPanel
-                endpoint="/api/admin/managed-tutors/verification"
-                body={{ tutorId: tutor.id }}
-                reasonHint="Included in the tutor's email."
-                actions={[
-                  verified
-                    ? { key: "unverify", label: "Remove verification", busyLabel: "Saving…", tone: "danger-outline", icon: "x", body: { verified: false }, doneText: "Verification removed." }
-                    : { key: "verify", label: "Verify tutor", busyLabel: "Saving…", tone: "primary", icon: "shield-check", body: { verified: true }, doneText: "Tutor verified." },
-                ]}
-              />
-            </Panel>
-
-            {!tutor.setupDoneAt && (
-              <Panel title="Setup" lead="Mark the profile set up once it's ready. This takes the tutor out of the new-tutor queue.">
-                <DecisionPanel
-                  endpoint="/api/admin/managed-tutors/setup-done"
-                  body={{ tutorId: tutor.id }}
-                  reasonHint="For History only."
-                  actions={[{ key: "done", label: "Mark set up", busyLabel: "Saving…", tone: "primary", icon: "check", body: {}, doneText: "Marked set up." }]}
-                />
-              </Panel>
+          <Panel title="Setup" lead={setupPanel.lead}>
+            {setup.stage === "sent" && setup.adminMessage && (
+              <p className="text-[13px] text-slate-500 mb-3 whitespace-pre-wrap break-words">
+                <span className="font-medium text-slate-700">Your message:</span> {setup.adminMessage}
+              </p>
             )}
-          </>
+            {setup.stage === "approved" && !tutor.emailConfirmed ? (
+              <p className="text-[13.5px] text-slate-500">This tutor can&apos;t be verified until they confirm their email.</p>
+            ) : (
+              <DecisionPanel
+                key={setup.stage}
+                endpoint="/api/admin/managed-tutors"
+                body={{ tutorId: tutor.id }}
+                reasonLabel={setupPanel.reasonLabel}
+                reasonHint={setupPanel.reasonHint}
+                actions={setupPanel.actions}
+              />
+            )}
+          </Panel>
         )}
 
         <Panel title="History" padded={false}>
