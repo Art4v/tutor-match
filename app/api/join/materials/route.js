@@ -3,13 +3,19 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isAccountEnabled } from "@/lib/supabase/account";
 import { sweepInviteMaterials } from "@/lib/supabase/storage";
+import { emailAdmins } from "@/lib/admin/alerts";
+import { adminManagedNoteEmail } from "@/lib/email/send";
+import { adminPaths } from "@/lib/admin/urls";
+import { originOf } from "@/lib/admin/route";
 
 export const runtime = "nodejs";
 
-// POST { docs: [{ path, title }], links: [url] } from /join/details, after the
-// browser has uploaded the files to the private bucket. The RPC is the
-// boundary: it checks the caller is managed, has not submitted before, owns
-// every path and stays within the caps. Empty arrays = Skip.
+// POST { docs: [{ path, title }], links: [url], note? } from
+// /quick-join/details, after the browser has uploaded the files to the private
+// bucket. The RPC is the boundary: it checks the caller is managed, has not
+// submitted before, owns every path and stays within the caps. Empty arrays
+// and no note = Skip. A note (0081, 2000 characters) is the same one the tutor
+// can rewrite later from their profile; sending one alerts the admins.
 export async function POST(request) {
   const supabase = createSupabaseServerClient();
   const {
@@ -31,7 +37,9 @@ export async function POST(request) {
   const docs = Array.isArray(body?.docs) ? body.docs : [];
   const links = Array.isArray(body?.links) ? body.links : [];
 
-  const { error } = await supabase.rpc("submit_invite_materials", { p_docs: docs, p_links: links });
+  const note = typeof body?.note === "string" ? body.note.trim() : "";
+
+  const { error } = await supabase.rpc("submit_invite_materials", { p_docs: docs, p_links: links, p_note: note || null });
   if (error) {
     if (error.hint === "already_submitted") {
       return NextResponse.json({ status: "already" });
@@ -50,5 +58,16 @@ export async function POST(request) {
   await sweepInviteMaterials(createSupabaseAdminClient(), user.id, {
     keep: docs.map((d) => d?.path).filter((p) => typeof p === "string"),
   });
+  if (note) {
+    const { data: me } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    await emailAdmins({
+      subject: "A tutor left a note on their managed profile",
+      html: adminManagedNoteEmail({
+        tutorName: me?.full_name,
+        note,
+        reviewUrl: `${originOf(request)}${adminPaths.managedTutor(user.id)}`,
+      }),
+    });
+  }
   return NextResponse.json({ status: "submitted" });
 }

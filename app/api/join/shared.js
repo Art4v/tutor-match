@@ -38,7 +38,7 @@ export async function consumeQuickJoinAttempt(admin, request) {
  * Make `userId` admin-managed (redeem_tutor_invite, service role) and, on a
  * new binding, alert the admins. Returns { ok, created, already, hint }:
  * `hint` is the RPC's error hint (wrong_role, disabled, admin_account) on
- * failure.
+ * failure (already_verified since 0081: only an unverified tutor can opt in).
  *
  * `origin` goes into the link the admins are emailed, so it must come from the
  * request URL (originOf), never from a client-supplied header.
@@ -54,7 +54,9 @@ export async function redeemInvite(admin, { userId, origin }) {
 
   if (!data?.already) {
     // An existing tutor who opts in has just been hidden (0077), so the
-    // cached machine-facing pages must stop listing them.
+    // cached machine-facing pages must stop listing them. (Only an unverified
+    // tutor can opt in since 0081, and those are not indexable, so this is
+    // belt and braces.)
     if (!data?.created) revalidateIndexable(revalidatePath);
     await emailAdmins({
       subject: data?.created ? "New tutor joined through Quick join" : "A tutor asked us to manage their profile",
@@ -75,6 +77,8 @@ export function redeemErrorMessage(hint) {
       return "Only tutor accounts can be managed. Please sign up with a separate account.";
     case "disabled":
       return "This account is disabled.";
+    case "already_verified":
+      return "Quick join is for tutors who are not verified yet. You already manage your own verified profile.";
     case "admin_account":
       return "Admin accounts can't be managed. Use a separate tutor account.";
     default:
