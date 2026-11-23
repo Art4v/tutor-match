@@ -1,5 +1,6 @@
 "use client";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 
 /** Initials from a display name: first letter of the first and last words. */
@@ -76,10 +77,67 @@ export const TOOLTIP_STYLE = {
   boxShadow: "0 6px 16px -6px rgba(0,49,47,0.5)",
 };
 
-// The calligraphic check shared by VerifiedTick and MarksSeal (24-unit box).
-// Both draw it through TICK_TRANSFORM, so the standalone tick and the one
-// pressed into the seal are exactly the same size, and at the same `size`
-// prop the seal reads as only slightly bigger than the tick.
+// Hover hints for the two badges. Like SaveTutorButton's tooltip, this one is
+// portalled to <body> at position: fixed, because the tutor rows and the home
+// marquee lanes clip overflow and a tooltip inside them would be cut off. It
+// sits centred above the badge, wraps at 240px, is clamped inside the viewport,
+// and hides on scroll (a fixed tooltip would otherwise stay put while the badge
+// scrolls away). Mouse only: the badges sit inside row links, which can't hold
+// another focusable element, and each icon already has an aria-label.
+const VERIFIED_HINT = "This tutor has been reviewed by hand by MatchTutor.";
+const MARKS_SEAL_HINT = "This tutor provided supporting documentation ensuring all their marks are accurate.";
+const BADGE_TIP_MAX = 240;
+
+function useBadgeTip(text) {
+  const ref = useRef(null);
+  const [coords, setCoords] = useState(null);
+
+  useEffect(() => {
+    if (!coords) return;
+    const hide = () => setCoords(null);
+    window.addEventListener("scroll", hide, { passive: true, capture: true });
+    return () => window.removeEventListener("scroll", hide, { capture: true });
+  }, [coords]);
+
+  const show = () => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const half = BADGE_TIP_MAX / 2 + 8;
+    const centre = Math.min(Math.max(r.left + r.width / 2, half), window.innerWidth - half);
+    setCoords({ top: r.top - 6, left: centre });
+  };
+  const hide = () => setCoords(null);
+
+  const node =
+    coords && typeof document !== "undefined"
+      ? createPortal(
+          <span
+            role="tooltip"
+            className="pointer-events-none font-medium"
+            style={{
+              ...TOOLTIP_STYLE,
+              position: "fixed",
+              top: coords.top,
+              left: coords.left,
+              transform: "translate(-50%, -100%)",
+              width: "max-content",
+              maxWidth: BADGE_TIP_MAX,
+              textAlign: "center",
+              zIndex: 1000,
+            }}
+          >
+            {text}
+          </span>,
+          document.body
+        )
+      : null;
+
+  return { ref, show, hide, node };
+}
+
+// The calligraphic check pressed into the MarksSeal (24-unit box), drawn
+// through TICK_TRANSFORM. VerifiedTick went back to its original rosette.
 const TICK_TRANSFORM = "translate(12 11.9) scale(0.64) translate(-12 -12)";
 const TICK_PATH =
   "M1.2 13.4C2.6 12.2 4.7 12.5 6.1 14.5L8.5 17.9C11.6 11 16.4 5.4 22.8 1.6C17.3 6.8 12.7 13.7 9.9 21.3C9.4 22.4 8.1 22.5 7.5 21.4C6.1 18.5 4.4 15.4 1.2 13.4Z";
@@ -90,8 +148,15 @@ const TICK_PATH =
 // stay tick-only. `labelClassName` lets a call site hide the script responsively
 // (a `display:none` label isn't a flex item, so the gap collapses with it).
 export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) {
+  const tip = useBadgeTip(VERIFIED_HINT);
   return (
-    <span className="inline-flex items-center align-middle" style={{ gap: label ? "0.28em" : 0 }}>
+    <span
+      ref={tip.ref}
+      className="inline-flex items-center align-middle"
+      style={{ gap: label ? "0.28em" : 0 }}
+      onMouseEnter={tip.show}
+      onMouseLeave={tip.hide}
+    >
       <span
         className="inline-flex"
         // Nudged down so the icon's centre lands on the centre of the script
@@ -100,9 +165,8 @@ export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) 
         // MarksSeal's nudge identical. In `em`, so it scales at every call site.
         style={{ lineHeight: 0, position: "relative", top: "0.12em" }}
       >
-        {/* A calligraphic tick in the brand teal: a short, thick downstroke
-            that swings into a long stroke tapering to a point, no disc behind
-            it. The same glyph sits pressed into the marks verified seal. */}
+        {/* The original verified badge: a scalloped rosette in the brand teal
+            with a white check. */}
         <svg
           width={size}
           height={size}
@@ -110,7 +174,15 @@ export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) 
           role="img"
           aria-label="Verified by hand"
         >
-          <path fill="var(--ink-graphite)" transform={TICK_TRANSFORM} d={TICK_PATH} />
+          <path
+            fill="var(--ink-graphite)"
+            d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"
+          />
+          <path
+            fill="#fff"
+            transform="translate(12 12) scale(0.78) translate(-12 -12)"
+            d="M9.8 17.3l-4.2-4.1L7 11.8l2.8 2.7L17 7.4l1.4 1.4-8.6 8.5z"
+          />
         </svg>
       </span>
       {label && (
@@ -125,6 +197,7 @@ export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) 
           verified by hand
         </span>
       )}
+      {tip.node}
     </span>
   );
 }
@@ -147,13 +220,20 @@ const SEAL_PATH =
 // purpose, so the two read as a pair at every call site. Back to front: the
 // darker underside showing at the bottom right, the wax (radial gradient for
 // the gloss), a highlight on the upper-left edge, and the verified tick pressed
-// into the centre in a pale wax tint. No inner ring: the full-size tick fills it.
+// into the centre in a pale wax tint. Hovering shows MARKS_SEAL_HINT.
 export function MarksSeal({ size = 16, label = false, labelClassName = "" }) {
+  const tip = useBadgeTip(MARKS_SEAL_HINT);
   // Per-instance gradient id, so several seals on one page never share one.
   // Colons stripped: React's ids contain them and they break url(#…) in Safari.
   const gradId = `seal-${useId().replace(/:/g, "")}`;
   return (
-    <span className="inline-flex items-center align-middle" style={{ gap: label ? "0.28em" : 0 }}>
+    <span
+      ref={tip.ref}
+      className="inline-flex items-center align-middle"
+      style={{ gap: label ? "0.28em" : 0 }}
+      onMouseEnter={tip.show}
+      onMouseLeave={tip.hide}
+    >
       {/* Same nudge as VerifiedTick, so the two icons and both labels share one centre line. */}
       <span className="inline-flex" style={{ lineHeight: 0, position: "relative", top: "0.12em" }}>
         <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="Marks verified">
@@ -181,6 +261,7 @@ export function MarksSeal({ size = 16, label = false, labelClassName = "" }) {
           marks verified
         </span>
       )}
+      {tip.node}
     </span>
   );
 }
