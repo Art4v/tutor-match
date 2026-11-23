@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
-import { Chip } from "@/components/ui";
+import { Chip, MarksSeal } from "@/components/ui";
 import { SuburbAutocomplete } from "@/components/SuburbAutocomplete";
 import { SubjectPicker } from "@/components/SubjectPicker";
 import { CatalogPicker } from "@/components/CatalogPicker";
@@ -107,9 +107,9 @@ export function BrowseFilters({
       }
     });
 
-  // Verified-only defaults ON; toggling off writes the explicit ?verified=0
-  // opt-out, toggling back on just drops the param.
-  const setVerifiedOnly = (on) => setSingle("verified", on ? null : "0", null);
+  // "Marks verified only" (0083) defaults OFF; ON writes ?marks=1, OFF drops
+  // the param.
+  const setSealOnly = (on) => setSingle("marks", on ? "1" : null, null);
 
   // Saved-only defaults OFF; ON writes ?saved=1, OFF drops the param.
   const setSavedOnly = (on) => setSingle("saved", on ? "1" : null, null);
@@ -153,7 +153,7 @@ export function BrowseFilters({
     filters.rateMax != null ||
     (filters.yearLevels?.length ?? 0) > 0 ||
     filters.savedOnly === true ||
-    filters.verifiedOnly === false;
+    filters.sealOnly === true;
 
   return (
     <aside className="space-y-6">
@@ -357,15 +357,15 @@ export function BrowseFilters({
         <button
           type="button"
           role="switch"
-          aria-checked={filters.verifiedOnly !== false}
-          onClick={() => setVerifiedOnly(filters.verifiedOnly === false)}
+          aria-checked={filters.sealOnly === true}
+          onClick={() => setSealOnly(filters.sealOnly !== true)}
           className="w-full flex items-center justify-between gap-3 text-left"
         >
           <span className="inline-flex items-center gap-1.5 text-[13.5px] text-slate-700">
             <span className="inline-flex" style={{ color: "var(--accent)" }}>
-              <Icon name="check-badge" size={15} />
+              <MarksSeal size={15} />
             </span>
-            Verified tutors only
+            Marks verified only
           </span>
           <span
             aria-hidden="true"
@@ -373,7 +373,7 @@ export function BrowseFilters({
             style={{
               width: 38,
               height: 22,
-              background: filters.verifiedOnly !== false ? "var(--accent)" : "var(--paper-line)",
+              background: filters.sealOnly === true ? "var(--accent)" : "var(--paper-line)",
               transition: "background 160ms ease-out",
             }}
           >
@@ -382,7 +382,7 @@ export function BrowseFilters({
               style={{
                 width: 16,
                 height: 16,
-                transform: `translateY(-50%) translateX(${filters.verifiedOnly !== false ? 19 : 3}px)`,
+                transform: `translateY(-50%) translateX(${filters.sealOnly === true ? 19 : 3}px)`,
                 transition: "transform 160ms ease-out",
               }}
             />

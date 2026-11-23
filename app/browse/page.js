@@ -48,8 +48,10 @@ export default async function BrowsePage({ searchParams }) {
     .map(Number)
     .filter((n) => Number.isFinite(n));
   const modes = asArray(searchParams.mode);
-  // Verified-only is ON by default; `?verified=0` is the explicit opt-out.
-  const verifiedOnly = searchParams.verified !== "0";
+  // "Marks verified only" (0083) is OFF by default; `?marks=1` turns it on.
+  // The old `?verified=0` opt-out is gone: /browse never lists an unapproved
+  // tutor, so a leftover param is simply ignored.
+  const sealOnly = searchParams.marks === "1";
   const page = Math.max(1, parseNumber(searchParams.page) ?? 1);
   // Per-page-load shuffle seed for the equal-score tie-break. middleware.js
   // mints the `browse_seed` cookie before this renders (fresh on a hard load,
@@ -82,7 +84,7 @@ export default async function BrowsePage({ searchParams }) {
       rateMax,
       yearLevels,
       modes,
-      verifiedOnly,
+      sealOnly,
       savedIds,
       page,
       pageSize: PAGE_SIZE,
@@ -106,7 +108,7 @@ export default async function BrowsePage({ searchParams }) {
     atarMin,
     rateMax,
     yearLevels,
-    verifiedOnly,
+    sealOnly,
     savedOnly,
   };
 
