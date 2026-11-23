@@ -23,6 +23,11 @@ const TYPES = {
   managed_setup_ready: "eye",
   managed_setup_recalled: "pencil",
   managed_tutor_verified: "shield-check",
+  marks_seal_intro: "sparkle",
+  marks_requested: "shield",
+  marks_granted: "shield-check",
+  marks_declined: "alert-triangle",
+  marks_revoked: "alert-triangle",
 };
 const FALLBACK = "bell";
 
