@@ -83,17 +83,20 @@ export async function POST(request) {
   // An early answer only: add_verification_document re-checks under a lock.
   const { data: tutor } = await supabase
     .from("tutor_profiles")
-    .select("verification_status, managed_at, partner_id")
+    .select("verification_status, marks_status, managed_at, partner_id")
     .eq("id", user.id)
     .maybeSingle();
   if (!tutor || tutor.managed_at || tutor.partner_id) {
     return NextResponse.json({ error: "Documents can't be added to this profile." }, { status: 403 });
   }
-  if (tutor.verification_status === "pending") {
+  // A verified tutor may attach files again, for a marks verified seal
+  // request (0083): locked while that is under review, closed once it is held.
+  const approved = tutor.verification_status === "verified";
+  if (tutor.verification_status === "pending" || (approved && tutor.marks_status === "pending")) {
     return NextResponse.json({ error: "Your documents are locked while your request is under review." }, { status: 409 });
   }
-  if (tutor.verification_status === "verified") {
-    return NextResponse.json({ error: "You are already verified." }, { status: 409 });
+  if (approved && tutor.marks_status === "verified") {
+    return NextResponse.json({ error: "Your marks are already verified." }, { status: 409 });
   }
 
   const { data: saved } = await supabase.rpc("list_my_verification_documents");
