@@ -12,7 +12,7 @@ export default async function VerificationQueuePage() {
 
   return (
     <>
-      <PageHeader icon="shield-check" title="Verification" lead="Tutors asking for the verified badge, oldest first." />
+      <PageHeader icon="shield-check" title="Verification" lead="Tutors asking for the verified badge or the marks verified seal, oldest first." />
       <Panel padded={false}>
         <QueueList
           items={queue}
@@ -21,7 +21,7 @@ export default async function VerificationQueuePage() {
             <QueueRow
               href={adminPaths.verification(t.id)}
               title={t.name}
-              meta={t.location || "No location set"}
+              meta={`${t.kind === "marks" ? "Marks upgrade" : "New tutor"} · ${t.location || "No location set"}`}
               aside={t.at ? `Requested ${formatDate(t.at)}` : null}
             />
           )}

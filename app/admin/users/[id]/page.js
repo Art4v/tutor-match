@@ -9,6 +9,7 @@ import { adminPaths } from "@/lib/admin/urls";
 
 export const metadata = { title: "Account" };
 
+const SEAL_LABELS = { none: "none", pending: "requested", verified: "held", declined: "declined" };
 const ROLE_LABELS = { tutor: "Tutor", student: "Student", partner: "Centre owner" };
 
 // One account: who they are, enable / disable, blog authoring, and every
@@ -26,6 +27,11 @@ export default async function UserDetailPage({ params }) {
   const isTutor = !!user.tutor && !user.tutor.partner_id;
   const name = user.full_name || "This account";
   const disabled = user.status === "disabled";
+  // The marks verified seal (0083): only a verified tutor who is not a
+  // centre's tutor can hold it. Unlike the panels below this one is offered on
+  // admin accounts and your own too, by decision: the admins are tutors.
+  const canHoldSeal = isTutor && user.tutor.verification_status === "verified";
+  const hasSeal = canHoldSeal && user.tutor.marks_status === "verified";
 
   return (
     <>
@@ -40,6 +46,7 @@ export default async function UserDetailPage({ params }) {
                 {user.can_author_articles && <Chip>Author</Chip>}
                 <Chip tone={disabled ? "bad" : "good"}>{disabled ? "Disabled" : "Enabled"}</Chip>
                 {user.tutor && <Chip>Verification: {user.tutor.verification_status}</Chip>}
+                {canHoldSeal && <Chip tone={hasSeal ? "good" : undefined}>Marks seal: {SEAL_LABELS[user.tutor.marks_status] || "none"}</Chip>}
                 {user.tutor?.managed_at && <Chip tone="good">Managed</Chip>}
               </div>
               <dl className="grid grid-cols-[110px_1fr] gap-y-1 text-[13.5px]">
@@ -70,6 +77,34 @@ export default async function UserDetailPage({ params }) {
             </Inset>
           </div>
         </Panel>
+
+        {canHoldSeal && (
+          <Panel
+            title="Marks verified seal"
+            lead={
+              hasSeal
+                ? "This tutor shows the marks verified seal beside their verified badge and ranks at the top of search."
+                : "Grant this only when you can fully support the marks on their profile. It shows beside the verified badge and ranks them at the top of search."
+            }
+          >
+            {user.tutor.marks_status === "pending" && (
+              <p className="text-[13px] text-slate-500 mb-3">
+                This tutor has an open request with supporting documents.{" "}
+                <a href={adminPaths.verification(user.id)} style={{ color: "var(--accent)" }}>Review the request</a>
+              </p>
+            )}
+            <DecisionPanel
+              endpoint="/api/admin/marks/set"
+              body={{ tutorId: user.id }}
+              reasonHint="Sent to the tutor with the change."
+              actions={[
+                hasSeal
+                  ? { key: "revoke", label: "Remove seal", busyLabel: "Saving…", tone: "danger-outline", icon: "x", body: { granted: false }, doneText: "Marks verified seal removed." }
+                  : { key: "grant", label: "Grant seal", busyLabel: "Saving…", tone: "primary", icon: "shield-check", body: { granted: true }, doneText: `${name} now holds the marks verified seal.` },
+              ]}
+            />
+          </Panel>
+        )}
 
         {locked ? (
           <Panel>
