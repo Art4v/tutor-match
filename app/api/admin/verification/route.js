@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
-import { userApprovedEmail, userRejectedEmail } from "@/lib/email/send";
+import { userApprovedEmail, userApprovedWithMarksEmail, userRejectedEmail } from "@/lib/email/send";
 import { countSavedVerificationDocs, purgeVerificationDocs } from "@/lib/admin/verificationDocs";
 import {
   requireAdminRequest,
@@ -17,9 +17,10 @@ import {
 export const runtime = "nodejs";
 
 // Approve or reject a tutor's verification request from /admin/verification.
-// POST { tutorId, decision: "approve" | "reject", reason? }. The decision is
-// admin_decide_verification (0074), which re-checks the caller is an admin,
-// only acts while the request is still pending, and writes History.
+// POST { tutorId, decision: "approve" | "approve_marks" | "reject", reason? }.
+// The decision is admin_decide_verification (0074, 0083), which re-checks the
+// caller is an admin, only acts while the request is still pending, and writes
+// History. "approve_marks" also grants the marks verified seal.
 export async function POST(request) {
   const gate = await requireAdminRequest();
   if (gate.res) return gate.res;
@@ -27,7 +28,7 @@ export async function POST(request) {
 
   const body = await readJson(request);
   const decision = body?.decision;
-  if (!body?.tutorId || !["approve", "reject"].includes(decision)) {
+  if (!body?.tutorId || !["approve", "approve_marks", "reject"].includes(decision)) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
   const reason = cleanReason(body.reason);
@@ -49,7 +50,8 @@ export async function POST(request) {
   const name = result.name || "";
   let purgeFailed = false;
 
-  if (decision === "approve") {
+  if (decision !== "reject") {
+    const withMarks = result.marks === true;
     // The approval flagged the tutor's private files (0079). If this fails the
     // approval stands, and the admin page offers a Retry.
     purgeFailed = !(await purgeVerificationDocs(admin, body.tutorId)).ok;
@@ -58,9 +60,14 @@ export async function POST(request) {
     const profileUrl = result.slug ? `${origin}/tutor/${result.slug}` : null;
     await notifyUser(admin, body.tutorId, {
       type: "verification_approved",
-      title: "You're verified ✓",
-      body: "Your profile now shows the verified badge and ranks higher in search.",
-      email: { subject: "You're verified on MatchTutor ✓", html: userApprovedEmail({ name, profileUrl }) },
+      title: withMarks ? "You're verified, marks included ✓" : "You're verified ✓",
+      body: withMarks
+        ? "Your profile now shows the verified badge and the marks verified seal, and ranks at the top of search."
+        : "Your profile now shows the verified badge and ranks higher in search.",
+      email: {
+        subject: "You're verified on MatchTutor ✓",
+        html: withMarks ? userApprovedWithMarksEmail({ name, profileUrl }) : userApprovedEmail({ name, profileUrl }),
+      },
     });
   } else {
     const hasDocuments = (await countSavedVerificationDocs(admin, body.tutorId)) > 0;
