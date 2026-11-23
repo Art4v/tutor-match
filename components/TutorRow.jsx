@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { Avatar, VerifiedTick, shortName } from "./ui";
+import { Avatar, MarksSeal, VerifiedTick, shortName } from "./ui";
 import { SaveTutorButton } from "./SaveTutorButton";
 import { subjectLabel } from "@/lib/subjects";
 import { stripMarkdown } from "@/lib/richText";
@@ -96,7 +96,14 @@ function NameLine({ tutor, company, showVerifiedLabel, children }) {
       ) : (
         // The script label hides below sm, where it would push the rate off
         // the name line; the tick itself stays.
-        tutor.verified && <VerifiedTick size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
+        tutor.verified && (
+          <>
+            <VerifiedTick size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
+            {/* The marks verified seal (0083) sits beside the tick, never
+                instead of it, and follows the same label rule. */}
+            {tutor.marksVerified && <MarksSeal size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />}
+          </>
+        )
       )}
       {children}
     </span>
@@ -208,7 +215,12 @@ export function TutorRow({
                 <span className="truncate max-w-[160px]">{company.name}</span>
               </span>
             ) : (
-              tutor.verified && <VerifiedTick size={16} />
+              tutor.verified && (
+                <>
+                  <VerifiedTick size={16} />
+                  {tutor.marksVerified && <MarksSeal size={16} />}
+                </>
+              )
             )}
           </span>
           {tagline && (

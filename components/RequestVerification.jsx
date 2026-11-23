@@ -4,6 +4,7 @@ import { Fragment, useCallback, useState } from "react";
 import { Icon } from "./Icon";
 import { Button, VerifiedTick } from "./ui";
 import { SupportingDocumentsModal, SupportingDocumentsPanel, useSupportingDocs } from "./SupportingDocuments";
+import { RequestMarksVerification } from "./RequestMarksVerification";
 
 // Shared "Request verification" card. Used in the /settings sidebar and as the
 // final /onboarding step. Owns its own status (seeded from `status`) so the UI
@@ -22,7 +23,10 @@ import { SupportingDocumentsModal, SupportingDocumentsPanel, useSupportingDocs }
 //   docsMode       private supporting documents (0079): "inline" (onboarding)
 //                  shows the upload area in the card, "modal" (profile sidebar)
 //                  shows a count and a Manage button. Omitted: no documents.
-export function RequestVerification({ status: initialStatus = "none", completionPct = 100, beforeRequest, onRequested, unstyled = false, docsMode }) {
+//   marksStatus    the "marks verified" seal state (0083). When passed, a
+//                  verified tutor also sees the seal block under the card.
+//                  Omitted (onboarding): no seal block.
+export function RequestVerification({ status: initialStatus = "none", completionPct = 100, beforeRequest, onRequested, unstyled = false, docsMode, marksStatus }) {
   const [status, setStatus] = useState(initialStatus);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -139,9 +143,12 @@ export function RequestVerification({ status: initialStatus = "none", completion
       </div>
 
       {status === "verified" ? (
-        <p className="text-[12.5px] text-slate-500 leading-[1.5]">
-          Your account is verified. The badge shows next to your name across MatchTutor, and you rank higher in search.
-        </p>
+        <>
+          <p className="text-[12.5px] text-slate-500 leading-[1.5]">
+            Your account is verified. The badge shows next to your name across MatchTutor, and you rank higher in search.
+          </p>
+          {marksStatus != null && <RequestMarksVerification status={marksStatus} />}
+        </>
       ) : status === "pending" ? (
         <>
           <p className="text-[12.5px] text-slate-500 leading-[1.5] flex items-start gap-2">

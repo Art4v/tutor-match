@@ -194,7 +194,9 @@ export function SupportingDocumentsPanel({ state, readOnly = false }) {
 }
 
 /** The profile card's version of the panel. */
-export function SupportingDocumentsModal({ state, readOnly = false, onClose }) {
+// `note` replaces the default line under the title while the files are
+// editable (the marks verified seal request, 0083, deletes on a different event).
+export function SupportingDocumentsModal({ state, readOnly = false, onClose, note }) {
   useEffect(() => {
     lockScroll();
     const onKey = (e) => {
@@ -232,7 +234,7 @@ export function SupportingDocumentsModal({ state, readOnly = false, onClose }) {
         <p className="text-[13px] text-slate-500 mt-1 mb-4">
           {readOnly
             ? "These were sent with your request and can't be changed while it's under review."
-            : "Only MatchTutor admins can see these. They're deleted once you're verified."}
+            : note || "Only MatchTutor admins can see these. They're deleted once you're verified."}
         </p>
         <SupportingDocumentsPanel state={state} readOnly={readOnly} />
         <div className="flex justify-end mt-5">
