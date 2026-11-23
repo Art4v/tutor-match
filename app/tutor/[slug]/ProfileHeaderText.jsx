@@ -1,6 +1,6 @@
 "use client";
 import { Icon } from "@/components/Icon";
-import { VerifiedTick } from "@/components/ui";
+import { MarksSeal, VerifiedTick } from "@/components/ui";
 import { InlineMarkdown } from "@/components/RichText";
 import { yearRangeLabel } from "@/lib/yearLevels";
 
@@ -64,7 +64,18 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
               {tutor.company.name}
             </a>
           ) : (
-            tutor.verified && <VerifiedTick size={22} label />
+            tutor.verified && (
+              // One group, centred by the row's flex. With the icons' own 0.12em
+              // nudge that lands everything midway between the centre of the
+              // name's capitals and of its lowercase letters, which is where it
+              // reads centred (measured). Don't add an offset here: a 2px shift
+              // onto the x-height centre looked like the badges hung low.
+              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                <VerifiedTick size={26} label />
+                {/* The marks verified seal (0083), beside the tick. */}
+                {tutor.marksVerified && <MarksSeal size={26} label />}
+              </span>
+            )
           )}
         </div>
 

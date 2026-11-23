@@ -114,6 +114,7 @@ export function OwnerCard({ profile, onVisibilityChange, onVerificationRequested
           <RequestVerification
             key={profile.verificationStatus ?? "none"}
             status={profile.verificationStatus}
+            marksStatus={profile.partnerId ? undefined : profile.marksStatus ?? "none"}
             completionPct={c.pct}
             onRequested={onVerificationRequested}
             docsMode="modal"
