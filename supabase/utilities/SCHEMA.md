@@ -10,8 +10,8 @@ human-readable snapshot — the migrations remain the source of truth.
 > Edit the affected section in place (don't append a changelog) — this doc describes the *end
 > state*, not the history. The migration files are the history.
 
-**Applied through:** `0075_drop_company_inviters.sql`
-**Last reviewed:** 2026-10-19
+**Applied through:** `0083_marks_seal.sql`
+**Last reviewed:** 2026-11-20
 
 ---
 
@@ -125,6 +125,8 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `visibility` | text | NOT NULL DEFAULT `'public'` (0003; default `'unlisted'`→`'public'` in 0005); CHECK `public/unlisted/hidden` |
 | `verification_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/rejected` (0021). **Single source of truth** — the app derives the `verified` boolean from `= 'verified'`; the standalone `verified` bool was dropped in 0028 |
 | `verification_requested_at` | timestamptz | (0021) |
+| `marks_status` | text | NOT NULL DEFAULT `'none'`; CHECK `none/pending/verified/declined` (0083). **The "marks verified" seal**, a second fact beside `verification_status` (which keeps meaning "approved to be listed"): `verified` here means MatchTutor can fully support the tutor's marks. CHECK `tutor_profiles_marks_needs_approval`: anything but `none` requires `verification_status = 'verified'` AND `partner_id IS NULL`, so a centre's tutor and an unapproved tutor can never hold or request it. Reset to `none` by `tutor_profiles_clear_marks` when a tutor stops being verified. System column: the guard raises on a client change; written only by `request_marks_verification` / `withdraw_marks_request` and the admin RPCs. The app derives `marksVerified` from it (`hasMarksSeal` in `lib/supabase/tutors.js`) |
+| `marks_requested_at` | timestamptz | (0083) When the open seal request was made; cleared by a withdrawal, a revoke and losing approval. System column |
 | `rate` | int | AUD/hour. **Always NULL for partner tutors** since 0069 (a centre prices by package only; 0066's cheapest-package mirror showed a package price as hourly, so it was removed and the column cleared). Enforced by CHECK `tutor_profiles_partner_no_rate` (`partner_id IS NULL OR rate IS NULL`), since 0065's partner write policy would otherwise let an owner set it via PostgREST. /browse's `rateMax` filter lets partner tutors through explicitly. An ordinary tutor still sets it themselves |
 | `partner_id` | uuid | nullable → `partners(id)` ON DELETE CASCADE (0065). **Non-null ⇒ a partner tutor**: listed and controlled by a tutoring centre, backed by a shadow `auth.users` row that cannot sign in. One nullable FK rather than a boolean plus a link, so the two can't disagree. Drives the partner chip, the centre's rate card, the Enquire button, the `start_conversation` refusal and the `/api/reviews` 403 |
 | `onboarded` | bool | NOT NULL DEFAULT false; drives `/onboarding` gate (0018) |
@@ -134,7 +136,7 @@ Extension table keyed 1:1 with `profiles`. The most-altered table — columns be
 | `admin_edited_at` | timestamptz | (0076) Last admin edit during managed setup |
 | `updated_at` | timestamptz | NOT NULL DEFAULT `now()` (0002) |
 
-**Indexes:** `(visibility)`, `(city)`, `(atar)`, `(rate)` (0004); `(email_confirmed_at)` (0007); `(service_lat, service_lng)` (0008).
+**Indexes:** `(visibility)`, `(city)`, `(atar)`, `(rate)` (0004); `(email_confirmed_at)` (0007); `(service_lat, service_lng)` (0008); partial `(marks_status) WHERE marks_status <> 'none'` (0083).
 
 ### `student_profiles`
 | Column | Type | Constraints / Notes |
@@ -452,7 +454,7 @@ Append-only History of every admin action, shown at `/admin/history`, on each us
 | `id` | uuid | PK, `gen_random_uuid()` |
 | `admin_id` | uuid | FK → `profiles.id`, ON DELETE SET NULL |
 | `admin_name` | text | Snapshot of the admin's name, so the row survives their account |
-| `action` | text | NOT NULL, CHECK in `verification_approved/rejected`, `review_approved/rejected`, `report_disable_reported/disable_reporter/dismiss/remove_review`, `revision_approved/rejected`, `account_disabled/enabled`, `author_granted/revoked`, `company_invited/link_issued/hidden/shown/deleted`, and (0076) `tutor_invite_rotated`, `managed_profile_edited`, `managed_visibility_set`, `managed_document_changed`, `verification_set`, `managed_setup_done`, and (0081) `managed_setup_sent`, `managed_setup_resent`, `managed_setup_recalled`, `managed_tutor_verified` |
+| `action` | text | NOT NULL, CHECK in `verification_approved/rejected`, `review_approved/rejected`, `report_disable_reported/disable_reporter/dismiss/remove_review`, `revision_approved/rejected`, `account_disabled/enabled`, `author_granted/revoked`, `company_invited/link_issued/hidden/shown/deleted`, and (0076) `tutor_invite_rotated`, `managed_profile_edited`, `managed_visibility_set`, `managed_document_changed`, `verification_set`, `managed_setup_done`, and (0081) `managed_setup_sent`, `managed_setup_resent`, `managed_setup_recalled`, `managed_tutor_verified`, and (0083) `marks_granted`, `marks_declined`, `marks_revoked` |
 | `target_type` | text | NOT NULL, CHECK in `tutor` / `review` / `report` / `revision` / `company` / `user` |
 | `target_id` | uuid | **No FK**, so the record outlives a deleted target |
 | `target_label` | text | Readable snapshot ("Review of …", the company name) |
@@ -472,6 +474,12 @@ Indexes on `(created_at desc)`, `(admin_id, created_at desc)`, `(target_type, ta
 | `uploaded_at` | timestamptz | NOT NULL DEFAULT `now()` |
 
 Index on `tutor_id`. Public SELECT (the profile page reads any tutor's rows with the anon client). **Writes are RPC-only** (0071 dropped the 0034 owner INSERT/UPDATE/DELETE policies): `add_tutor_document` (checks the folder, that the object exists in `tutor-docs`, and the 5-document cap), `rename_tutor_document`, `delete_tutor_document` (returns the storage path for file cleanup). This table is the source of truth for the profile "Documentation" card — the app never lists the bucket. On account deletion rows cascade; the storage files orphan (accepted, like 0015's profile-images note).
+
+### `tutor_verification_documents` (0079, reopened for seal requests in 0083)
+The **private** supporting documents a tutor attaches to a request: a verification request, or (0083) a verified tutor's request for the marks verified seal. `id`, `tutor_id` → `tutor_profiles` ON DELETE CASCADE, `storage_path` (UNIQUE; CHECK first folder = `tutor_id`), `file_name`, `uploaded_at`, `purge_requested_at`. Max 10 per tutor. RLS on, **no client policies**: the tutor goes through `add_verification_document` / `remove_verification_document` / `list_my_verification_documents`, admins through the service-role `list_tutor_verification_documents` / `delete_flagged_verification_documents`. `_lock_verification_docs_editable` decides when the tutor may change them: while there is no open request (`verification_status` `none` / `rejected`, or `verified` with `marks_status` `none` / `declined`); locked while either request is pending; refused once the seal is held, and for managed and centre tutors. **Deletion is two steps** because Storage cannot be deleted from SQL: a trigger flags the rows (`purge_requested_at`) when the tutor reaches `verified` or reaches the seal, and `purgeVerificationDocs` (`lib/admin/verificationDocs.js`) then removes the files and the rows. A reject or a decline keeps them for the next request. So approval **without** the seal deletes them, and a later seal request starts from fresh uploads.
+
+### Storage: `verification-documents` bucket (0079)
+**Private**, 10 MB, `{application/pdf, image/jpeg, image/png, image/webp, image/gif}` (never SVG). **No client policies**: uploads use signed URLs from `/api/verification/documents`, reads are service-role signed URLs. Layout `<uid>/<file>`.
 
 ### Storage: `profile-images` bucket (0006)
 Public read; owner-scoped INSERT/UPDATE/DELETE keyed on `(storage.foldername(name))[1] = auth.uid()::text`. Bucket-level `file_size_limit` 5 MB + `allowed_mime_types` `{image/jpeg, image/png, image/webp, image/gif}` since 0070 (no SVG: public bucket). A stored `avatar_url` / `banner_url` must point into the writer's own folder of this bucket (`_valid_profile_image`, 0070), or be unchanged.
@@ -595,14 +603,18 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `reject_profile_revision(p_revision_id, p_reason)` | jsonb | **service_role only.** Pending → `rejected` (+ reason), and a fresh draft copying the content | 0072 |
 | `is_admin()` | boolean | STABLE SECURITY DEFINER: `profiles.is_admin AND status = 'enabled'` for `auth.uid()`. The single admin check, called by every admin RPC, the `admin_actions` policy (which runs as the caller) and the app (TopNav, the `/admin` guard, the API routes). Granted to `authenticated`; it takes no arguments and answers only about the caller | 0074 |
 | `_require_admin()` / `_log_admin_action(…)` / `_assert_admin_target(id)` / `_clean_reason(text)` | | Internal (0074). Raise 42501 unless an admin; insert an `admin_actions` row with the caller's name snapshot; refuse the caller themselves or any admin as a target (22023); trim, blank → NULL, cap at 500 | 0074 |
-| `admin_decide_verification(p_tutor_id, p_decision, p_reason)` | jsonb | `approve` / `reject` a **pending** request (`verified` / `rejected`), logs; otherwise `{ applied: false, status }`. Returns `name`, `slug` for the route's email | 0074 |
+| `admin_decide_verification(p_tutor_id, p_decision, p_reason)` | jsonb | `approve` / `approve_marks` / `reject` a **pending** request (`verified` / `rejected`), logs; otherwise `{ applied: false, status }`. `approve_marks` (0083) also sets `marks_status = 'verified'` in the same UPDATE (refused for a centre's tutor) and logs `verification_approved` with details `{ marks: true }`. Returns `name`, `slug`, `marks` for the route's email | 0074 → 0083 |
+| `request_marks_verification()` | text | `auth.uid()`-scoped. A verified, enabled tutor who is not managed and not a centre's tutor: `marks_status` `none` / `declined` → `pending`, stamps `marks_requested_at`. Idempotent, returns the resulting status. Raises 22023 hint `not_verified` otherwise | 0083 |
+| `withdraw_marks_request()` | text | `auth.uid()`-scoped: `pending` → `none`, which unlocks the tutor's files. Returns the resulting status | 0083 |
+| `admin_decide_marks(p_tutor_id, p_decision, p_reason)` | jsonb | Admin: `grant` / `decline` a **pending** seal request (`verified` / `declined`), logs `marks_granted` / `marks_declined`; otherwise `{ applied: false, status }` | 0083 |
+| `admin_set_marks(p_tutor_id, p_granted, p_reason)` | jsonb | Admin: grant or remove the seal directly, with or without a request (target must be verified and not a centre's tutor). A grant also settles a pending request; a revoke goes to `none`. `{ applied: false, status }` when already in that state. Logs `marks_granted` / `marks_revoked` with details `{ direct: true }`. **Not** behind `_assert_admin_target`: the admins are tutors and may hold the seal | 0083 |
 | `admin_decide_review(p_review_id, p_decision, p_reason)` | jsonb | Pending → `approved` (+ `approved_at`) / `rejected`; `removed` stays terminal because only pending moves. Logs | 0074 |
 | `admin_resolve_report(p_report_id, p_action, p_reason)` | jsonb | `disable_reported` / `disable_reporter` / `dismiss` / `remove_review` in one transaction, **only while the report is pending** (the old token route had no such guard). Refuses to disable an admin or the caller. Logs | 0074 |
 | `admin_apply_profile_revision(p_revision_id, p_file_map, p_reason)` / `admin_reject_profile_revision(p_revision_id, p_reason)` | jsonb | Admin-checked wrappers over the service-role `apply_profile_revision` / `reject_profile_revision`; log on success | 0074 |
 | `admin_set_account_status(p_user_id, p_status, p_reason)` | jsonb | Enable / disable any non-admin account other than the caller's. Logs | 0074 |
 | `admin_set_author(p_user_id, p_enabled, p_reason)` | jsonb | Grant / revoke `can_author_articles`; target must be a non-company tutor and not an admin. Logs | 0074 |
 | `admin_set_company_visibility(p_partner_id, p_visibility, p_reason)` / `admin_delete_company(p_partner_id, p_reason)` | jsonb | Hide / show (through the 0065 cascade) and delete (the body of `delete_company.sql`: shadow tutor accounts, owner's role → NULL, the row with its packages and reviews). Log | 0074 |
-| `admin_pending_counts()` | jsonb | `{ verifications, reviews, reports, revisions, invites }` pending counts, for the dashboard sidebar and the TopNav badge (`invites` = every tutor in managed setup since 0081) | 0074, 0076, 0081 |
+| `admin_pending_counts()` | jsonb | `{ verifications, reviews, reports, revisions, invites }` pending counts, for the dashboard sidebar and the TopNav badge (`invites` = every tutor in managed setup since 0081; `verifications` also counts pending seal requests since 0083, as they share the queue) | 0074, 0076, 0081, 0083 |
 | `tutor_edits_gated(id)` (0076) | boolean | Now `(verified OR managed_at IS NOT NULL) AND partner_id IS NULL`, so managed tutors use the draft flow everywhere the 0072/0073 gate applies. **No longer granted to `authenticated`** (with any id it would reveal who is managed); only SECURITY DEFINER functions and the service role call it | 0076 |
 | `caller_edits_gated()` | boolean | `tutor_edits_gated(auth.uid())`, about the caller only (like `is_admin()`). Granted to `authenticated`; the `profile-images` INSERT/UPDATE, `tutor-docs` INSERT and `profile-staging` INSERT policies use it | 0076 |
 | `can_upload_invite_materials(p_id)` | boolean | Managed and `invite_materials_submitted_at` NULL. **service_role only**: called by `/api/join/materials/upload` before it signs an upload, and inside `submit_invite_materials` | 0076 |
@@ -640,6 +652,8 @@ Note: verification **approve/reject have no RPC** — the admin has no session; 
 | `profiles_guard_capabilities` | `profiles` | BEFORE UPDATE | `profiles_guard_capabilities()` → pins `can_author_articles`; raises on client changes to `is_admin` (0074), `role` / `status` (0070) | 0061, 0068, 0070, 0074, 0075 |
 | `profiles_guard_tutor_name` | `profiles` | BEFORE UPDATE | `profiles_guard_tutor_name()` → a tutor's name changes only through an RPC | 0071 |
 | `tutor_profiles_cancel_revisions` | `tutor_profiles` | AFTER UPDATE OF `verification_status` | `tutor_profiles_cancel_revisions()` → leaving `verified` cancels the open revision, unless the tutor is managed (still gated, 0076) | 0072, 0076 |
+| `tutor_profiles_clear_marks` | `tutor_profiles` | BEFORE UPDATE OF `verification_status`, `partner_id` | `tutor_profiles_clear_marks()` → a tutor who is not verified, or belongs to a centre, has `marks_status = 'none'` (keeps `tutor_profiles_marks_needs_approval` true for every writer) | 0083 |
+| `tutor_profiles_flag_verification_docs` / `tutor_profiles_flag_marks_docs` | `tutor_profiles` | AFTER UPDATE OF `verification_status` (WHEN it becomes `verified`) / OF `marks_status` (WHEN it becomes `verified`) | `tutor_profiles_flag_verification_docs()` → sets `purge_requested_at` on the tutor's private supporting documents | 0079, 0083 |
 | `tutor_profile_revisions_refuse_managed` | `tutor_profile_revisions` | BEFORE INSERT | Raises hint `managed_by_admin` when the tutor is in managed setup: a managed tutor has no drafts (0081) |
 
 ---
