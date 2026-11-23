@@ -18,7 +18,7 @@ const dateTimeFmt = new Intl.DateTimeFormat("en-AU", {
 export const formatDate = (iso) => (iso ? dateFmt.format(new Date(iso)) : "");
 export const formatDateTime = (iso) => (iso ? dateTimeFmt.format(new Date(iso)) : "");
 
-// History action -> plain words. Keep in step with the admin_actions CHECK (0074, 0076, 0081).
+// History action -> plain words. Keep in step with the admin_actions CHECK (0074, 0076, 0081, 0083).
 export const ACTION_LABELS = {
   verification_approved: "Approved verification",
   verification_rejected: "Rejected verification",
@@ -49,11 +49,15 @@ export const ACTION_LABELS = {
   managed_setup_resent: "Resent approval email",
   managed_setup_recalled: "Recalled profile from tutor",
   managed_tutor_verified: "Verified tutor and ended setup",
+  marks_granted: "Granted marks verified seal",
+  marks_declined: "Declined marks verification",
+  marks_revoked: "Removed marks verified seal",
 };
 
 // The History filter groups actions by prefix (lib/supabase/adminDashboard.js).
 export const ACTION_GROUPS = [
   { value: "verification", label: "Verification" },
+  { value: "marks", label: "Marks seal" },
   { value: "review", label: "Reviews" },
   { value: "report", label: "Reports" },
   { value: "revision", label: "Profile changes" },
