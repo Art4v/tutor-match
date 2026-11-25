@@ -211,7 +211,7 @@ const SEAL_RED = "#902434";
 const SEAL_CHECK = "#db7683";
 
 // The "marks verified" seal (0083): VerifiedTick's rosette, same shape and
-// size, in red. Shown BESIDE (and before) the tick for a tutor whose marks
+// size, in red. Shown INSTEAD of the tick for a tutor whose marks
 // MatchTutor can fully support. Same API and same script-label format as
 // VerifiedTick on purpose, so the two read as a pair at every call site.
 // Hovering shows MARKS_SEAL_HINT.

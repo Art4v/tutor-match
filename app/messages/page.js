@@ -75,6 +75,7 @@ export default async function MessagesPage({ searchParams }) {
             avatarBg: tutor.avatarBg,
             initial: tutor.initial,
             verified: tutor.verified,
+            marksVerified: tutor.marksVerified,
           };
         }
       }

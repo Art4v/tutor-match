@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Avatar, VerifiedTick, Button, TOOLTIP_STYLE, shortName, initialsFrom } from "@/components/ui";
+import { Avatar, MarksSeal, VerifiedTick, Button, TOOLTIP_STYLE, shortName, initialsFrom } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getConversation, getConversations } from "@/lib/supabase/messaging";
@@ -709,7 +709,7 @@ export function MessagesClient({ userId, viewerIsTutor, viewer, initialConversat
                             <span className="text-[14px] leading-5 font-medium text-[color:var(--ink-graphite)] truncate">
                               {r.name ? shortName(r.name) : "Unknown"}
                             </span>
-                            {r.verified && <VerifiedTick size={16} />}
+                            {r.verified && (r.marksVerified ? <MarksSeal size={16} /> : <VerifiedTick size={16} />)}
                             {r.blocked && <span className="shrink-0 text-[12px] leading-4 text-red-600">Blocked</span>}
                             {!r.isDraft && r.lastAt && (
                               <span className="ml-auto shrink-0 text-[12px] leading-4 text-[color:var(--sage)]">{relativeTime(r.lastAt)}</span>
@@ -768,7 +768,7 @@ export function MessagesClient({ userId, viewerIsTutor, viewer, initialConversat
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[16px] leading-6 font-medium text-[color:var(--ink-graphite)] truncate">{thread.name || "Unknown"}</span>
-                    {thread.verified && <VerifiedTick size={16} />}
+                    {thread.verified && (thread.marksVerified ? <MarksSeal size={16} /> : <VerifiedTick size={16} />)}
                   </div>
                   {thread.otherIsTutor && thread.slug && (
                     <a href={`/tutor/${thread.slug}`} className="inline-flex min-h-6 items-center text-[12px] leading-4 text-accent hover:text-accent-hover">

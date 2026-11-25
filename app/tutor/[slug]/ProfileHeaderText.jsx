@@ -71,9 +71,9 @@ export function ProfileHeaderText({ tutor, deliveryLabel }) {
               // reads centred (measured). Don't add an offset here: a 2px shift
               // onto the x-height centre looked like the badges hung low.
               <span className="inline-flex items-center gap-1.5 flex-wrap">
-                {/* The marks verified seal (0083), beside the tick and first. */}
-                {tutor.marksVerified && <MarksSeal size={22} label />}
-                <VerifiedTick size={22} label />
+                {/* The marks verified seal (0083) REPLACES the tick: only a
+                    verified tutor can hold it, so it already says what the tick does. */}
+                {tutor.marksVerified ? <MarksSeal size={22} label /> : <VerifiedTick size={22} label />}
               </span>
             )
           )}

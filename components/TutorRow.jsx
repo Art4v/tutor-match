@@ -97,12 +97,14 @@ function NameLine({ tutor, company, showVerifiedLabel, children }) {
         // The script label hides below sm, where it would push the rate off
         // the name line; the tick itself stays.
         tutor.verified && (
-          <>
-            {/* The marks verified seal (0083) sits beside the tick, never
-                instead of it, and comes first. Same label rule. */}
-            {tutor.marksVerified && <MarksSeal size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />}
+          // The marks verified seal (0083) REPLACES the tick: only a verified
+          // tutor can hold it, so it already says everything the tick does.
+          // Same label rule either way.
+          tutor.marksVerified ? (
+            <MarksSeal size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
+          ) : (
             <VerifiedTick size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
-          </>
+          )
         )
       )}
       {children}
@@ -216,10 +218,8 @@ export function TutorRow({
               </span>
             ) : (
               tutor.verified && (
-                <>
-                  {tutor.marksVerified && <MarksSeal size={16} />}
-                  <VerifiedTick size={16} />
-                </>
+                // The seal replaces the tick for its holders (see above).
+                tutor.marksVerified ? <MarksSeal size={16} /> : <VerifiedTick size={16} />
               )
             )}
           </span>

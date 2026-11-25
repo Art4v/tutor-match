@@ -83,8 +83,8 @@ export default async function UserDetailPage({ params }) {
             title="Marks verified seal"
             lead={
               hasSeal
-                ? "This tutor shows the marks verified seal beside their verified badge and ranks at the top of search."
-                : "Grant this only when you can fully support the marks on their profile. It shows beside the verified badge and ranks them at the top of search."
+                ? "This tutor shows the marks verified seal in place of their verified badge and ranks at the top of search."
+                : "Grant this only when you can fully support the marks on their profile. It replaces the verified badge and ranks them at the top of search."
             }
           >
             {user.tutor.marks_status === "pending" && (
