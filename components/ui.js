@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 
@@ -136,11 +136,13 @@ function useBadgeTip(text) {
   return { ref, show, hide, node };
 }
 
-// The calligraphic check pressed into the MarksSeal (24-unit box), drawn
-// through TICK_TRANSFORM. VerifiedTick went back to its original rosette.
-const TICK_TRANSFORM = "translate(12 11.9) scale(0.64) translate(-12 -12)";
-const TICK_PATH =
-  "M1.2 13.4C2.6 12.2 4.7 12.5 6.1 14.5L8.5 17.9C11.6 11 16.4 5.4 22.8 1.6C17.3 6.8 12.7 13.7 9.9 21.3C9.4 22.4 8.1 22.5 7.5 21.4C6.1 18.5 4.4 15.4 1.2 13.4Z";
+// The scalloped rosette and its check (24-unit box), shared by VerifiedTick and
+// MarksSeal so the two badges are exactly the same shape and size; only their
+// colours differ.
+const ROSETTE_PATH =
+  "M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z";
+const CHECK_PATH = "M9.8 17.3l-4.2-4.1L7 11.8l2.8 2.7L17 7.4l1.4 1.4-8.6 8.5z";
+const CHECK_TRANSFORM = "translate(12 12) scale(0.78) translate(-12 -12)";
 
 // `label` renders the handwritten "verified by hand" script inline beside the
 // tick (dark green, sized off the surrounding name text). Off by default so the
@@ -176,12 +178,12 @@ export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) 
         >
           <path
             fill="var(--ink-graphite)"
-            d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"
+            d={ROSETTE_PATH}
           />
           <path
             fill="#fff"
-            transform="translate(12 12) scale(0.78) translate(-12 -12)"
-            d="M9.8 17.3l-4.2-4.1L7 11.8l2.8 2.7L17 7.4l1.4 1.4-8.6 8.5z"
+            transform={CHECK_TRANSFORM}
+            d={CHECK_PATH}
           />
         </svg>
       </span>
@@ -202,30 +204,19 @@ export function VerifiedTick({ size = 16, label = false, labelClassName = "" }) 
   );
 }
 
-// The seal's wax colours: a dark, brownish burnt orange. They belong to this one component, the only
-// deliberate non-teal element of the brand, so they stay out of the palette.
-const SEAL_ORANGE = "#9c4a1a";
-const SEAL_ORANGE_LIGHT = "#b8622a";
-const SEAL_ORANGE_DEEP = "#6b2f0e";
+// The seal's colours: a red rosette with its check in a lighter red. They
+// belong to this one component, the only deliberate non-teal element of the
+// brand, so they stay out of the palette.
+const SEAL_RED = "#902434";
+const SEAL_CHECK = "#db7683";
 
-// A wax seal's wavy edge: seven soft lobes with a slight irregularity so it
-// reads as poured wax rather than a stamped cog. Generated once from
-// r = 9.6 + 0.9cos(7t + 0.4) + 0.25cos(3t + 1) around (12, 11.7).
-const SEAL_PATH =
-  "M22.56 11.7L22.2 12.46L21.63 13.15L20.99 13.75L20.41 14.29L19.98 14.83L19.74 15.43L19.66 16.12L19.65 16.91L19.59 17.75L19.38 18.55L18.98 19.22L18.37 19.69L17.61 19.93L16.79 19.99L15.98 19.96L15.23 19.94L14.57 20.04L13.97 20.33L13.37 20.79L12.72 21.34L12 21.86L11.21 22.22L10.4 22.32L9.62 22.11L8.94 21.62L8.37 20.94L7.91 20.19L7.49 19.51L7.05 18.96L6.51 18.58L5.86 18.32L5.1 18.1L4.32 17.82L3.62 17.41L3.09 16.84L2.82 16.12L2.79 15.31L2.96 14.49L3.21 13.71L3.43 12.99L3.5 12.34L3.36 11.7L3.05 11.03L2.65 10.29L2.27 9.48L2.06 8.64L2.11 7.82L2.45 7.1L3.03 6.52L3.78 6.1L4.57 5.78L5.31 5.49L5.92 5.14L6.4 4.68L6.8 4.07L7.19 3.37L7.65 2.66L8.22 2.07L8.91 1.7L9.7 1.61L10.51 1.8L11.29 2.19L12 2.66L12.65 3.08L13.26 3.34L13.9 3.39L14.6 3.27L15.39 3.07L16.24 2.9L17.09 2.88L17.86 3.1L18.48 3.57L18.92 4.25L19.18 5.04L19.33 5.85L19.48 6.6L19.72 7.24L20.11 7.79L20.66 8.3L21.31 8.83L21.93 9.43L22.41 10.13L22.64 10.9Z";
-
-// The "marks verified" seal (0083): a burnt-orange wax seal, the kind pressed
-// onto an envelope, shown BESIDE the tick for a tutor whose marks MatchTutor
-// can fully support. Same API and same script-label format as VerifiedTick on
-// purpose, so the two read as a pair at every call site. Back to front: the
-// darker underside showing at the bottom right, the wax (radial gradient for
-// the gloss), a highlight on the upper-left edge, and the verified tick pressed
-// into the centre in a pale wax tint. Hovering shows MARKS_SEAL_HINT.
+// The "marks verified" seal (0083): VerifiedTick's rosette, same shape and
+// size, in red. Shown BESIDE (and before) the tick for a tutor whose marks
+// MatchTutor can fully support. Same API and same script-label format as
+// VerifiedTick on purpose, so the two read as a pair at every call site.
+// Hovering shows MARKS_SEAL_HINT.
 export function MarksSeal({ size = 16, label = false, labelClassName = "" }) {
   const tip = useBadgeTip(MARKS_SEAL_HINT);
-  // Per-instance gradient id, so several seals on one page never share one.
-  // Colons stripped: React's ids contain them and they break url(#…) in Safari.
-  const gradId = `seal-${useId().replace(/:/g, "")}`;
   return (
     <span
       ref={tip.ref}
@@ -237,25 +228,15 @@ export function MarksSeal({ size = 16, label = false, labelClassName = "" }) {
       {/* Same nudge as VerifiedTick, so the two icons and both labels share one centre line. */}
       <span className="inline-flex" style={{ lineHeight: 0, position: "relative", top: "0.12em" }}>
         <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label="Marks verified">
-          <defs>
-            <radialGradient id={gradId} gradientUnits="userSpaceOnUse" cx="9" cy="8" r="16">
-              <stop offset="0%" stopColor={SEAL_ORANGE_LIGHT} />
-              <stop offset="100%" stopColor={SEAL_ORANGE} />
-            </radialGradient>
-          </defs>
-          <path fill={SEAL_ORANGE_DEEP} transform="translate(0.55 0.75)" d={SEAL_PATH} />
-          <path fill={`url(#${gradId})`} d={SEAL_PATH} />
-          <path fill="none" stroke="#fff" strokeWidth="0.7" strokeLinecap="round" opacity="0.4" d="M4.3 9.2C4.6 7.6 5.6 6.2 6.8 5.4" />
-          {/* The verified tick, the same size as VerifiedTick's, pressed in. Its tip
-              sits close to the wax edge, so a thin wax-coloured outline keeps it clean. */}
-          <path fill="#f5d9c0" stroke={SEAL_ORANGE} strokeWidth="0.6" strokeLinejoin="round" transform={TICK_TRANSFORM} d={TICK_PATH} />
+          <path fill={SEAL_RED} d={ROSETTE_PATH} />
+          <path fill={SEAL_CHECK} transform={CHECK_TRANSFORM} d={CHECK_PATH} />
         </svg>
       </span>
       {label && (
         // aria-hidden: the svg already announces "Marks verified".
         <span
           className={`font-hand whitespace-nowrap ${labelClassName}`}
-          style={{ color: SEAL_ORANGE, fontSize: "1em", lineHeight: 1 }}
+          style={{ color: SEAL_RED, fontSize: "1em", lineHeight: 1 }}
           aria-hidden="true"
         >
           marks verified

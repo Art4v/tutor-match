@@ -98,10 +98,10 @@ function NameLine({ tutor, company, showVerifiedLabel, children }) {
         // the name line; the tick itself stays.
         tutor.verified && (
           <>
-            <VerifiedTick size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
             {/* The marks verified seal (0083) sits beside the tick, never
-                instead of it, and follows the same label rule. */}
+                instead of it, and comes first. Same label rule. */}
             {tutor.marksVerified && <MarksSeal size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />}
+            <VerifiedTick size={15} label={showVerifiedLabel} labelClassName="hidden sm:inline" />
           </>
         )
       )}
@@ -217,8 +217,8 @@ export function TutorRow({
             ) : (
               tutor.verified && (
                 <>
-                  <VerifiedTick size={16} />
                   {tutor.marksVerified && <MarksSeal size={16} />}
+                  <VerifiedTick size={16} />
                 </>
               )
             )}
