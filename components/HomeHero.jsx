@@ -110,7 +110,7 @@ export function HomeHero({ catalog }) {
                   className="uppercase text-[9px] sm:text-[12px] font-medium"
                   style={{ color: "var(--accent)", letterSpacing: "0.14em" }}
                 >
-                  Australia&apos;s Most Trusted Tutor Network
+                  Australia&apos;s Most Trusted Non-Profit Tutor Network
                 </span>
               </motion.div>
 
